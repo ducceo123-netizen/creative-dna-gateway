@@ -779,12 +779,12 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white mt-12 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="font-semibold text-slate-900">Creative DNA</span>
-            <span>&bull;</span>
-            <span>Read-only ChatGPT App</span>
-            <span>&bull;</span>
-            <span>Creative DNA Canonical Datastore</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-900">Creative DNA</span>
+              <span>&bull;</span>
+              <span>Built for ChatGPT using the Apps SDK and Model Context Protocol</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-medium text-slate-600">

@@ -5,8 +5,11 @@
 **Creative DNA** is a live brand creative intelligence system designed for ecommerce brands. It connects ChatGPT and OpenAI Apps SDK environments directly to structured, canonical creative direction, visual design systems, landing-page architecture, hero/banner specifications, product-image guidelines, UGC rules, and brand-specific production constraints.
 
 - **Name:** Creative DNA
-- **Short Description:** Live brand creative guidelines and production rules for ecommerce creative generation.
-- **Long Description:** Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints.
+- **Short Description:** Live brand creative guidelines and production rules for ecommerce teams.
+- **Long Description:** Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints.
+- **Primary Category:** Productivity
+- **Secondary Categories:** Design / Marketing / Ecommerce
+- **Branding Statement:** Built for ChatGPT using the Apps SDK and Model Context Protocol.
 - **Developer / Publisher:** Creative DNA Systems
 - **Production MCP Endpoint:** `https://creative-dna-gateway.vercel.app/api/mcp`
 - **Supported Brands:**
@@ -14,12 +17,13 @@
   - `GiftSoul`
   - `SoulPrise`
 - **Key Capabilities:**
-  - Brand DNA & Visual Direction
-  - Landing Page Systems (LDP)
-  - Hero & Banner Design Rules
-  - Product Imagery & Photography Standards
-  - User Generated Content (UGC) Direction
-  - Onepage Conversion Systems
+  - Brand DNA retrieval
+  - Landing Page systems
+  - Hero and banner rules
+  - Product imagery rules
+  - UGC creative rules
+  - Onepage production systems
+  - Canonical asset specifications
 
 ---
 
@@ -81,18 +85,17 @@ Creative DNA exposes two remote MCP tools over standards-compliant Streamable HT
                  │ 2. Canonical Fetch (HTTPS POST)
                  ▼
 ┌────────────────────────────────────────────────────────┐
-│     Upstream Supabase Creative DNA Gateway (Edge)      │
-│  https://wuonwttmkadwsmefjukv.supabase.co/functions/   │
-│                v1/creative-dna-public                  │
+│     Upstream Creative DNA Canonical Datastore          │
 │                                                        │
 │  • Source of Truth for Brand Knowledge Graph           │
-│  • Read-Only Database Queries                          │
+│  • Strictly Read-Only Database Queries                 │
+│  • Server-to-Server Encrypted Transport                │
 └────────────────────────────────────────────────────────┘
 ```
 
 1. **Client Interaction:** User prompts ChatGPT (e.g. *"Write a hero section for PawfectHouse using their Onepage Creative DNA"*).
 2. **Tool Invocation:** ChatGPT automatically identifies the brand (`PawfectHouse`) and branch (`Onepage`) and dispatches `resolve_creative_dna` to `https://creative-dna-gateway.vercel.app/api/mcp`.
-3. **Stateless Forwarding:** The Gateway validates arguments with Zod schemas and queries the upstream Supabase edge function.
+3. **Stateless Forwarding:** The Gateway validates arguments with Zod schemas and queries the upstream canonical datastore.
 4. **Canonical Return:** The exact upstream creative spec is returned untouched to ChatGPT.
 5. **Creative Execution:** ChatGPT applies the authoritative brand rules to fulfill the user's creative generation task.
 
@@ -100,7 +103,7 @@ Creative DNA exposes two remote MCP tools over standards-compliant Streamable HT
 
 ## 4. Read-Only Security Model
 
-1. **Immutable Upstream Source:** All Creative DNA data lives in the managed upstream Supabase repository. The Gateway holds zero database credentials, zero service-role keys, and no database write permissions.
+1. **Immutable Upstream Source:** All Creative DNA data lives in the managed upstream canonical datastore. The Gateway holds zero database credentials, zero service-role keys, and no database write permissions.
 2. **Zero Mutation Endpoints:** There are no `CREATE`, `UPDATE`, `DELETE`, or patch endpoints on the gateway.
 3. **No Generative Rewriting:** Creative DNA specifications are returned verbatim from the canonical source. The gateway does not synthesize or alter specifications.
 4. **Tool Annotations:**

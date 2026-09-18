@@ -15,20 +15,33 @@ export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/
 
 export const APP_METADATA = {
   name: "Creative DNA",
-  shortDescription: "Live brand creative guidelines and production rules for ecommerce creative generation.",
+  shortDescription: "Live brand creative guidelines and production rules for ecommerce teams.",
   longDescription:
-    "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints.",
-  supportedBrands: ["PawfectHouse", "GiftSoul", "SoulPrise"],
-  capabilities: [
-    "Brand DNA",
+    "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints.",
+  category: "Productivity",
+  secondaryCategories: ["Design", "Marketing", "Ecommerce"],
+  coreCapabilities: [
+    "Brand DNA retrieval",
     "Landing Page systems",
-    "Hero/banner rules",
+    "Hero and banner rules",
     "Product imagery rules",
-    "UGC rules",
-    "Onepage systems",
+    "UGC creative rules",
+    "Onepage production systems",
+    "Canonical asset specifications",
   ],
+  capabilities: [
+    "Brand DNA retrieval",
+    "Landing Page systems",
+    "Hero and banner rules",
+    "Product imagery rules",
+    "UGC creative rules",
+    "Onepage production systems",
+    "Canonical asset specifications",
+  ],
+  supportedBrands: ["PawfectHouse", "GiftSoul", "SoulPrise"],
   status: "Live",
   mode: "Read-only",
+  complianceStatement: "Built for ChatGPT using the Apps SDK and Model Context Protocol.",
   sourceOfTruth: "Creative DNA canonical datastore",
   mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
   canonicalOrigin: CANONICAL_PRODUCTION_ORIGIN,
@@ -281,7 +294,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints. Strictly read-only connection to the Creative DNA canonical datastore. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications. No modifications, generation, or synthesis allowed.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Strictly read-only connection to the Creative DNA canonical datastore. Built for ChatGPT using the Apps SDK and Model Context Protocol. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications. No modifications, generation, or synthesis allowed.",
     }
   );
 
@@ -579,7 +592,7 @@ export function createApp(): express.Application {
       name_for_human: APP_METADATA.name,
       name_for_model: "creative_dna",
       description_for_human: APP_METADATA.shortDescription,
-      description_for_model: APP_METADATA.longDescription + " Strictly read-only connection to the Creative DNA canonical datastore. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
+      description_for_model: APP_METADATA.longDescription + " Strictly read-only connection to the Creative DNA canonical datastore. Built for ChatGPT using the Apps SDK and Model Context Protocol. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
       auth: {
         type: "none",
       },
@@ -664,7 +677,7 @@ export function createApp(): express.Application {
       title: "Privacy Policy",
       app: APP_METADATA.name,
       updated: "2026-09-18",
-      summary: "Creative DNA is a strictly read-only brand intelligence system. We do not store, harvest, sell, or collect personal user data or chat logs.",
+      summary: "Creative DNA is a strictly read-only information retrieval service. We do not modify the Creative DNA database, do not sell user data, and do not request or store passwords, financial data, health records, or sensitive personal information.",
       fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/privacy`,
     });
   });
@@ -674,7 +687,7 @@ export function createApp(): express.Application {
       title: "Terms of Service",
       app: APP_METADATA.name,
       updated: "2026-09-18",
-      summary: "Creative DNA specifications are provided as read-only creative direction and production rules for authorized ecommerce creative generation.",
+      summary: "Creative DNA specifications are provided as read-only creative direction and production rules. Specifications are provided as-is without guarantee of completeness for every use case; users remain responsible for final creative and product decisions.",
       fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/terms`,
     });
   });
@@ -683,6 +696,8 @@ export function createApp(): express.Application {
     return res.json({
       title: "Support & Contact",
       app: APP_METADATA.name,
+      purpose: "Technical assistance, brand onboarding, and ChatGPT App integration support.",
+      supportedBrands: APP_METADATA.supportedBrands,
       contact: "support@creative-dna-gateway.vercel.app",
       mcpUrl: CANONICAL_PRODUCTION_MCP_URL,
       fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/support`,

@@ -3,7 +3,7 @@
   "info": {
     "title": "Creative DNA",
     "version": "1.0.0",
-    "description": "Live brand creative guidelines and production rules for ecommerce creative generation. Strictly read-only connection to the Creative DNA canonical datastore."
+    "description": "Live brand creative guidelines and production rules for ecommerce teams. Strictly read-only connection to the Creative DNA canonical datastore. Built for ChatGPT using the Apps SDK and Model Context Protocol."
   },
   "servers": [
     {

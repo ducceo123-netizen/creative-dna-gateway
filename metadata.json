@@ -1,6 +1,6 @@
 {
   "name": "Creative DNA Gateway",
-  "description": "Live brand creative guidelines and production rules for ecommerce creative generation.",
+  "description": "Live brand creative guidelines and production rules for ecommerce teams.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

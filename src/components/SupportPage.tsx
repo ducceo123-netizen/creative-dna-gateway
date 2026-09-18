@@ -91,27 +91,73 @@ export function SupportPage({ onBack }: SupportPageProps) {
         </div>
       </div>
 
-      {/* Frequently Asked Questions */}
+      {/* Frequently Asked Questions & Operational Guidance */}
       <div className="space-y-4 pt-4">
-        <h2 className="text-base font-semibold text-slate-900">Frequently Asked Questions</h2>
-        <div className="space-y-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5">
-            <h3 className="text-xs font-semibold text-slate-900">How do I invoke Creative DNA in ChatGPT?</h3>
+        <h2 className="text-base font-semibold text-slate-900">Support, Troubleshooting & FAQ</h2>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">What does Creative DNA do?</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Simply reference the brand and branch in your prompt: &quot;Creative DNA — Use: PawfectHouse / Onepage&quot;. ChatGPT will automatically query the canonical knowledge graph and use the returned guidelines.
+              Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, typography rules, landing-page systems, hero and banner specifications, product imagery rules, UGC direction, and brand-specific production constraints.
             </p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5">
-            <h3 className="text-xs font-semibold text-slate-900">Is Creative DNA read-only?</h3>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Which brands are currently supported?</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Yes. All specifications are strictly read-only and maintained directly in the canonical Creative DNA datastore. ChatGPT cannot modify or overwrite brand rules.
+              Currently supported brands with full canonical creative systems include:
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-xs font-medium">PawfectHouse</span>
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-xs font-medium">GiftSoul</span>
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-xs font-medium">SoulPrise</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Basic Usage Examples in ChatGPT</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              You can invoke Creative DNA naturally in your prompts:
+            </p>
+            <ul className="list-disc pl-5 text-xs text-slate-600 space-y-1">
+              <li><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800 font-mono">Creative DNA — Use: PawfectHouse / Onepage</code> to write an above-the-fold landing page layout.</li>
+              <li><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800 font-mono">Check Creative DNA rules for PawfectHouse LDP Hero section.</code></li>
+              <li><code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800 font-mono">List available Creative DNA routes.</code> to discover all registered branches.</li>
+            </ul>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Is Creative DNA strictly read-only?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Yes. All specifications are strictly read-only reference data stored in an authoritative canonical datastore. The application does not support, expose, or perform database writes, mutations, or generative alterations of brand guidelines.
             </p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5">
-            <h3 className="text-xs font-semibold text-slate-900">How can I discover all supported branches?</h3>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Troubleshooting & Resolution</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Ask ChatGPT: &quot;List available Creative DNA routes&quot;, or inspect the interactive Brand DNA Explorer on this app.
+              If ChatGPT cannot locate a brand or branch:
             </p>
+            <ul className="list-disc pl-5 text-xs text-slate-600 space-y-1">
+              <li>Call <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">list_creative_dna_routes</code> to inspect valid branch keys.</li>
+              <li>Common aliases are automatically handled (e.g. &quot;Onepage&quot; maps to &quot;onepage-system&quot;, &quot;LDP Hero&quot; maps to &quot;ldp-hero&quot;).</li>
+              <li>If you encounter a rate limit response (HTTP 429), pause for a few seconds before retrying.</li>
+            </ul>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Reporting Incorrect Resolutions or Security Issues</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              - <strong>Incorrect Resolution:</strong> If a route resolves unexpected specifications, please send the requested brand/branch name and expected behavior to our support contact below.
+              <br />
+              - <strong>Security & Privacy Inquiries:</strong> If you identify potential vulnerabilities or privacy concerns, please report them directly to our designated support channel.
+            </p>
+            <div className="pt-1">
+              <span className="text-xs text-slate-700 font-semibold">Designated Support Contact: </span>
+              <a href="mailto:support@creative-dna-gateway.vercel.app" className="text-indigo-600 hover:text-indigo-800 text-xs font-mono font-medium">
+                support@creative-dna-gateway.vercel.app
+              </a>
+            </div>
           </div>
         </div>
       </div>
