@@ -1,6 +1,5 @@
 import express, { Request, Response } from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -382,25 +381,17 @@ export function createApp(): express.Application {
 export const app = createApp();
 export default app;
 
-export async function startServer() {
+export function startServer() {
   const PORT = 3000;
+  const distPath = path.join(process.cwd(), "dist");
 
-  // Vite middleware setup
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  // Serve static assets from built Vite dist
+  app.use(express.static(distPath));
+  app.get("*", (_req: Request, res: Response) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
 
-  app.listen(PORT, "0.0.0.0", () => {
+  return app.listen(PORT, "0.0.0.0", () => {
     console.log(`Creative DNA Gateway server running on http://0.0.0.0:${PORT}`);
     console.log(`Production MCP endpoint configured at: ${CANONICAL_PRODUCTION_MCP_URL}`);
   });
