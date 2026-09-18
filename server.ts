@@ -368,12 +368,21 @@ export function createApp(): express.Application {
     }
   });
 
+  // Explicit 404 handler for unmatched /api/* requests - guarantees API requests never fall through to the SPA index.html
+  app.all("/api/*", (_req: Request, res: Response) => {
+    return res.status(404).json({
+      error: "Not Found",
+      message: "The requested API endpoint does not exist on this gateway.",
+    });
+  });
+
   return app;
 }
 
 export const app = createApp();
+export default app;
 
-async function startServer() {
+export async function startServer() {
   const PORT = 3000;
 
   // Vite middleware setup
@@ -397,7 +406,31 @@ async function startServer() {
   });
 }
 
-// Start server if run directly
-if (process.env.NODE_ENV !== "test") {
+/**
+ * Determines whether server.ts is executed directly as the main process
+ * (e.g. `npm run dev` with tsx or `npm start` with node dist/server.cjs)
+ * versus being imported as a module by a serverless function entrypoint (like Vercel `api/index.ts`)
+ * or a test runner.
+ */
+export function isDirectExecution(): boolean {
+  // Never start standalone server on Vercel or in serverless environments
+  if (process.env.VERCEL || process.env.NOW_REGION || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return false;
+  }
+  // Never start standalone server in test mode
+  if (process.env.NODE_ENV === "test") {
+    return false;
+  }
+  // Check process entry argument to see if this file was invoked directly
+  if (typeof process.argv[1] !== "string") {
+    return false;
+  }
+  const entryFile = path.resolve(process.argv[1]);
+  const baseName = path.basename(entryFile);
+  return baseName === "server.ts" || baseName === "server.cjs" || baseName === "server.js";
+}
+
+// Start server if run directly (local dev / container)
+if (isDirectExecution()) {
   startServer();
 }
