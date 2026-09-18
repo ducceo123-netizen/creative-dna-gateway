@@ -1,0 +1,116 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Creative DNA",
+    "version": "1.0.0",
+    "description": "Live brand creative guidelines and production rules for ecommerce creative generation. Strictly read-only connection to the canonical Supabase Creative DNA source of truth."
+  },
+  "servers": [
+    {
+      "url": "https://creative-dna-gateway.vercel.app",
+      "description": "Canonical Production Gateway"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "get_health_status",
+        "summary": "Check system health and upstream connectivity",
+        "description": "Returns the read-only operational status of the Creative DNA Gateway and upstream Supabase connectivity.",
+        "responses": {
+          "200": {
+            "description": "Operational status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "mode": { "type": "string", "example": "read_only" },
+                    "upstream": { "type": "string", "example": "connected" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routes": {
+      "get": {
+        "operationId": "list_creative_dna_routes_get",
+        "summary": "List available Creative DNA brand routes",
+        "description": "Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.",
+        "responses": {
+          "200": {
+            "description": "List of available brand routes and metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "list_creative_dna_routes",
+        "summary": "List available Creative DNA brand routes",
+        "description": "Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.",
+        "responses": {
+          "200": {
+            "description": "List of available brand routes and metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resolve": {
+      "post": {
+        "operationId": "resolve_creative_dna",
+        "summary": "Resolve canonical Creative DNA specification",
+        "description": "Use whenever a user requests or references a Creative DNA brand and branch, for example: Creative DNA — Use: PawfectHouse / Onepage, PawfectHouse LDP Hero, GiftSoul Shop By Product Image, SoulPrise Onepage. The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["brand", "branch"],
+                "properties": {
+                  "brand": {
+                    "type": "string",
+                    "description": "Target brand name (e.g., 'PawfectHouse', 'GiftSoul', 'SoulPrise')"
+                  },
+                  "branch": {
+                    "type": "string",
+                    "description": "Target branch or module path (e.g., 'Onepage', 'LDP Hero', 'Home Hero', 'Seasonal Banner', 'Shop By Product', 'Shop By Categories', 'UGC')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Canonical Creative DNA specification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

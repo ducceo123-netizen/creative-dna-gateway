@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Creative DNA",
+  "name_for_model": "creative_dna",
+  "description_for_human": "Live brand creative guidelines and production rules for ecommerce creative generation.",
+  "description_for_model": "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints. Strictly read-only source of truth from Supabase. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://creative-dna-gateway.vercel.app/api/openapi.json"
+  },
+  "logo_url": "https://creative-dna-gateway.vercel.app/icon.png",
+  "contact_email": "support@creative-dna-gateway.vercel.app",
+  "legal_info_url": "https://creative-dna-gateway.vercel.app/terms"
+}

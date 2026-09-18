@@ -8,6 +8,43 @@ const SUPABASE_PUBLIC_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/
 export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
 
+export const APP_METADATA = {
+  name: "Creative DNA",
+  shortDescription: "Live brand creative guidelines and production rules for ecommerce creative generation.",
+  longDescription:
+    "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints.",
+  supportedBrands: ["PawfectHouse", "GiftSoul", "SoulPrise"],
+  capabilities: [
+    "Brand DNA",
+    "Landing Page systems",
+    "Hero/banner rules",
+    "Product imagery rules",
+    "UGC rules",
+    "Onepage systems",
+  ],
+  status: "Live",
+  mode: "Read-only",
+  sourceOfTruth: "Connected to Creative DNA source of truth (Supabase)",
+  mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
+  canonicalOrigin: CANONICAL_PRODUCTION_ORIGIN,
+};
+
+export const RESOLVE_CREATIVE_DNA_DESC = `Use whenever a user requests or references a Creative DNA brand and branch, for example:
+- Creative DNA — Use: PawfectHouse / Onepage
+- PawfectHouse LDP Hero
+- GiftSoul Shop By Product Image
+- SoulPrise Onepage
+
+The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task.`;
+
+export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.`;
+
+export const READ_ONLY_TOOL_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: false,
+};
+
 // Clean core gateway functions - strictly read-only and stateless
 export async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
   const response = await fetch(SUPABASE_PUBLIC_URL, {
@@ -51,7 +88,9 @@ export async function listCreativeDnaRoutes() {
 export const TOOL_DEFINITIONS = [
   {
     name: "resolve_creative_dna",
-    description: "Resolves and returns the canonical, read-only Creative DNA specification (content policy, input schema, asset rules, design references) for a specified brand and branch from the upstream Supabase source of truth.",
+    title: "Resolve Creative DNA",
+    description: RESOLVE_CREATIVE_DNA_DESC,
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: {
       type: "object",
       properties: {
@@ -69,7 +108,9 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: "list_creative_dna_routes",
-    description: "Lists all available brands, branches, titles, versions, and node types registered in the canonical Creative DNA knowledge graph.",
+    title: "List Creative DNA Routes",
+    description: LIST_CREATIVE_DNA_ROUTES_DESC,
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: {
       type: "object",
       properties: {},
@@ -87,7 +128,7 @@ export const TOOL_DEFINITIONS = [
 export function createMcpServer(): McpServer {
   const server = new McpServer(
     {
-      name: "Creative DNA Gateway",
+      name: "Creative DNA",
       version: "1.0.0",
     },
     {
@@ -95,7 +136,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Read-only gateway for the Creative DNA system. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications from the upstream Supabase source of truth. No modifications, generation, or synthesis allowed.",
+        "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints. Strictly read-only source of truth from Supabase. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications from the upstream Supabase source of truth. No modifications, generation, or synthesis allowed.",
     }
   );
 
@@ -104,8 +145,7 @@ export function createMcpServer(): McpServer {
     "resolve_creative_dna",
     {
       title: "Resolve Creative DNA",
-      description:
-        "Resolves and returns the canonical, read-only Creative DNA specification (content policy, input schema, asset rules, design references) for a specified brand and branch from the upstream Supabase source of truth.",
+      description: RESOLVE_CREATIVE_DNA_DESC,
       inputSchema: {
         brand: z
           .string()
@@ -116,6 +156,7 @@ export function createMcpServer(): McpServer {
           .min(1)
           .describe("Target branch or module path (e.g., 'Onepage', 'LDP Hero', 'Home Hero', 'Seasonal Banner', 'Shop By Product', 'Shop By Categories', 'UGC')"),
       },
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     async ({ brand, branch }) => {
       try {
@@ -148,9 +189,9 @@ export function createMcpServer(): McpServer {
     "list_creative_dna_routes",
     {
       title: "List Creative DNA Routes",
-      description:
-        "Lists all available brands, branches, titles, versions, and node types registered in the canonical Creative DNA knowledge graph.",
+      description: LIST_CREATIVE_DNA_ROUTES_DESC,
       inputSchema: {},
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     async () => {
       try {
@@ -288,12 +329,134 @@ export function createApp(): express.Application {
   // Tool discovery & OpenAPI / schema endpoint
   app.get("/api/tools", (_req: Request, res: Response) => {
     return res.json({
-      name: "Creative DNA Gateway",
+      name: APP_METADATA.name,
       version: "1.0.0",
-      description: "Read-only gateway for the canonical Creative DNA knowledge system.",
+      description: APP_METADATA.shortDescription,
       canonicalOrigin: CANONICAL_PRODUCTION_ORIGIN,
       mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
       tools: TOOL_DEFINITIONS,
+    });
+  });
+
+  // ChatGPT App / OpenAI Apps SDK discovery endpoint
+  app.get(["/api/info", "/api/app"], (_req: Request, res: Response) => {
+    return res.json(APP_METADATA);
+  });
+
+  // Well-known OpenAI Plugin manifest endpoint
+  app.get("/.well-known/ai-plugin.json", (_req: Request, res: Response) => {
+    return res.json({
+      schema_version: "v1",
+      name_for_human: APP_METADATA.name,
+      name_for_model: "creative_dna",
+      description_for_human: APP_METADATA.shortDescription,
+      description_for_model: APP_METADATA.longDescription + " Strictly read-only source of truth from Supabase. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
+      auth: {
+        type: "none",
+      },
+      api: {
+        type: "openapi",
+        url: `${CANONICAL_PRODUCTION_ORIGIN}/api/openapi.json`,
+      },
+      logo_url: `${CANONICAL_PRODUCTION_ORIGIN}/icon.png`,
+      contact_email: "support@creative-dna-gateway.vercel.app",
+      legal_info_url: `${CANONICAL_PRODUCTION_ORIGIN}/terms`,
+    });
+  });
+
+  // OpenAPI 3.1 specification for ChatGPT Actions / Custom GPTs
+  app.get("/api/openapi.json", (_req: Request, res: Response) => {
+    return res.json({
+      openapi: "3.1.0",
+      info: {
+        title: APP_METADATA.name,
+        version: "1.0.0",
+        description: APP_METADATA.shortDescription,
+      },
+      servers: [
+        {
+          url: CANONICAL_PRODUCTION_ORIGIN,
+          description: "Canonical Production Gateway",
+        },
+      ],
+      paths: {
+        "/api/health": {
+          get: {
+            operationId: "get_health_status",
+            summary: "Check system health and upstream connectivity",
+            description: "Returns the read-only operational status of the Creative DNA Gateway and upstream Supabase connectivity.",
+            responses: { "200": { description: "Operational status" } },
+          },
+        },
+        "/api/routes": {
+          get: {
+            operationId: "list_creative_dna_routes_get",
+            summary: "List available Creative DNA brand routes",
+            description: LIST_CREATIVE_DNA_ROUTES_DESC,
+            responses: { "200": { description: "List of available routes" } },
+          },
+          post: {
+            operationId: "list_creative_dna_routes",
+            summary: "List available Creative DNA brand routes",
+            description: LIST_CREATIVE_DNA_ROUTES_DESC,
+            responses: { "200": { description: "List of available routes" } },
+          },
+        },
+        "/api/resolve": {
+          post: {
+            operationId: "resolve_creative_dna",
+            summary: "Resolve canonical Creative DNA specification",
+            description: RESOLVE_CREATIVE_DNA_DESC,
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["brand", "branch"],
+                    properties: {
+                      brand: { type: "string", description: "Target brand name (e.g., 'PawfectHouse', 'GiftSoul', 'SoulPrise')" },
+                      branch: { type: "string", description: "Target branch or module path (e.g., 'Onepage', 'LDP Hero', 'Home Hero', 'Seasonal Banner', 'Shop By Product', 'Shop By Categories', 'UGC')" },
+                    },
+                  },
+                },
+              },
+            },
+            responses: { "200": { description: "Canonical Creative DNA specification" } },
+          },
+        },
+      },
+    });
+  });
+
+  // App support, terms, privacy API endpoints (machine readable)
+  app.get("/api/privacy", (_req: Request, res: Response) => {
+    return res.json({
+      title: "Privacy Policy",
+      app: APP_METADATA.name,
+      updated: "2026-09-18",
+      summary: "Creative DNA is a strictly read-only brand intelligence system. We do not store, harvest, sell, or collect personal user data or chat logs.",
+      fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/privacy`,
+    });
+  });
+
+  app.get("/api/terms", (_req: Request, res: Response) => {
+    return res.json({
+      title: "Terms of Service",
+      app: APP_METADATA.name,
+      updated: "2026-09-18",
+      summary: "Creative DNA specifications are provided as read-only creative direction and production rules for authorized ecommerce creative generation.",
+      fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/terms`,
+    });
+  });
+
+  app.get("/api/support", (_req: Request, res: Response) => {
+    return res.json({
+      title: "Support & Contact",
+      app: APP_METADATA.name,
+      contact: "support@creative-dna-gateway.vercel.app",
+      mcpUrl: CANONICAL_PRODUCTION_MCP_URL,
+      fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/support`,
     });
   });
 
@@ -305,9 +468,10 @@ export function createApp(): express.Application {
     // Friendly browser / GET discovery if not requesting text/event-stream
     if (req.method === "GET" && !accept.includes("text/event-stream")) {
       return res.json({
-        name: "Creative DNA Gateway",
+        name: APP_METADATA.name,
         version: "1.0.0",
-        description: "Standards-compliant Remote Model Context Protocol (MCP) server for OpenAI Apps SDK and ChatGPT.",
+        shortDescription: APP_METADATA.shortDescription,
+        longDescription: APP_METADATA.longDescription,
         canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
         protocolVersion: "2024-11-05",
         transports: ["Streamable HTTP (POST)", "Server-Sent Events (GET SSE)"],
@@ -317,17 +481,29 @@ export function createApp(): express.Application {
         tools: [
           {
             name: "resolve_creative_dna",
-            description: "Resolves and returns the canonical, read-only Creative DNA specification for brand and branch.",
-            parameters: { brand: "string (required)", branch: "string (required)" },
+            title: "Resolve Creative DNA",
+            description: RESOLVE_CREATIVE_DNA_DESC,
+            annotations: READ_ONLY_TOOL_ANNOTATIONS,
+            parameters: {
+              brand: "string (required, e.g. PawfectHouse, GiftSoul, SoulPrise)",
+              branch: "string (required, e.g. Onepage, LDP Hero, Shop By Product, UGC)",
+            },
           },
           {
             name: "list_creative_dna_routes",
-            description: "Lists all available brands, branches, titles, versions, and node types in the Creative DNA graph.",
+            title: "List Creative DNA Routes",
+            description: LIST_CREATIVE_DNA_ROUTES_DESC,
+            annotations: READ_ONLY_TOOL_ANNOTATIONS,
             parameters: {},
           },
         ],
+        supportedBrands: APP_METADATA.supportedBrands,
+        capabilitiesList: APP_METADATA.capabilities,
         security: {
           read_only: true,
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
           database_writes: "forbidden",
           generative_rewriting: "disabled",
           source_of_truth: "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public",

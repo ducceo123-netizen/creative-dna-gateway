@@ -4,6 +4,7 @@ import { Copy, Check, Terminal, FileCode } from "lucide-react";
 interface JsonViewerProps {
   data: any;
   title?: string;
+  loading?: boolean;
   meta?: {
     action: string;
     durationMs: number;
@@ -11,7 +12,7 @@ interface JsonViewerProps {
   } | null;
 }
 
-export function JsonViewer({ data, title = "JSON Response Viewer", meta }: JsonViewerProps) {
+export function JsonViewer({ data, title = "Canonical Spec Viewer", loading = false, meta }: JsonViewerProps) {
   const [copied, setCopied] = useState(false);
 
   const formattedJson = data !== null && data !== undefined ? JSON.stringify(data, null, 2) : "";
@@ -84,7 +85,12 @@ export function JsonViewer({ data, title = "JSON Response Viewer", meta }: JsonV
 
       {/* Code body */}
       <div className="relative max-h-[580px] overflow-auto p-4 font-mono text-[13px] leading-relaxed select-text bg-[#0d1117]">
-        {formattedJson ? (
+        {loading ? (
+          <div className="py-16 flex flex-col items-center justify-center text-slate-400 text-center gap-3">
+            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs font-mono text-slate-400">Fetching canonical specification from Supabase...</p>
+          </div>
+        ) : formattedJson ? (
           <pre className="text-slate-300 whitespace-pre-wrap break-words font-mono">
             {formattedJson}
           </pre>
@@ -93,7 +99,7 @@ export function JsonViewer({ data, title = "JSON Response Viewer", meta }: JsonV
             <FileCode className="w-8 h-8 text-slate-600 mb-2 stroke-[1.5]" />
             <p className="text-sm">No response data yet.</p>
             <p className="text-xs text-slate-600 mt-1">
-              Click &quot;Resolve Creative DNA&quot; or &quot;List Routes&quot; to inspect live JSON payload.
+              Click &quot;Resolve Creative DNA&quot; or &quot;Discover Routes&quot; to inspect live JSON payload.
             </p>
           </div>
         )}
