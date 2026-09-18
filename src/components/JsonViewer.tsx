@@ -88,7 +88,7 @@ export function JsonViewer({ data, title = "Canonical Spec Viewer", loading = fa
         {loading ? (
           <div className="py-16 flex flex-col items-center justify-center text-slate-400 text-center gap-3">
             <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs font-mono text-slate-400">Fetching canonical specification from Supabase...</p>
+            <p className="text-xs font-mono text-slate-400">Fetching canonical specification from Creative DNA datastore...</p>
           </div>
         ) : formattedJson ? (
           <pre className="text-slate-300 whitespace-pre-wrap break-words font-mono">

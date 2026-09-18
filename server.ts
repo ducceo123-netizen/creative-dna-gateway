@@ -4,7 +4,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
-const SUPABASE_PUBLIC_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
+const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
+
+// Upstream datastore URL configured via server-only environment variable.
+// Never exposed to client bundles or public API responses.
+const UPSTREAM_URL = process.env.CREATIVE_DNA_UPSTREAM_URL || DEFAULT_UPSTREAM_URL;
+
 export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
 
@@ -24,7 +29,7 @@ export const APP_METADATA = {
   ],
   status: "Live",
   mode: "Read-only",
-  sourceOfTruth: "Connected to Creative DNA source of truth (Supabase)",
+  sourceOfTruth: "Creative DNA canonical datastore",
   mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
   canonicalOrigin: CANONICAL_PRODUCTION_ORIGIN,
 };
@@ -45,12 +50,77 @@ export const READ_ONLY_TOOL_ANNOTATIONS = {
   openWorldHint: false,
 };
 
+/**
+ * Strict input validation for resolve_creative_dna
+ * Enforces non-empty strings with reasonable length limits.
+ * Preserves aliases without alteration.
+ */
+export function validateResolveInput(brand: unknown, branch: unknown): { brand: string; branch: string } {
+  if (typeof brand !== "string" || !brand.trim()) {
+    throw new Error("Missing or invalid 'brand' parameter. Must be a non-empty string.");
+  }
+  if (typeof branch !== "string" || !branch.trim()) {
+    throw new Error("Missing or invalid 'branch' parameter. Must be a non-empty string.");
+  }
+  const cleanBrand = brand.trim();
+  const cleanBranch = branch.trim();
+
+  if (cleanBrand.length > 100) {
+    throw new Error("'brand' parameter exceeds maximum allowed length of 100 characters.");
+  }
+  if (cleanBranch.length > 150) {
+    throw new Error("'branch' parameter exceeds maximum allowed length of 150 characters.");
+  }
+
+  return { brand: cleanBrand, branch: cleanBranch };
+}
+
+/**
+ * Sanitizes errors returned to public consumers.
+ * Strips raw internal URLs, tokens, database details, or stack traces.
+ */
+export function sanitizePublicError(err: unknown, fallback = "Unable to resolve Creative DNA"): string {
+  console.error("[GATEWAY SERVER ERROR]", err);
+  if (err instanceof Error) {
+    if (
+      err.message.includes("parameter") ||
+      err.message.includes("required") ||
+      err.message.includes("exceeds maximum allowed length")
+    ) {
+      return err.message.replace(/https?:\/\/[^\s]+/gi, "[redacted]");
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Sanitizes route enumeration data to expose only safe routing metadata:
+ * - brand
+ * - branch
+ * - title
+ * Strips internal database IDs, table names, or upstream metadata.
+ */
+export function sanitizeRoutesData(data: any): any {
+  if (!data || !Array.isArray(data.routes)) {
+    return { mode: "read_only", routes: [] };
+  }
+  return {
+    mode: "read_only",
+    routes: data.routes.map((r: any) => ({
+      brand: String(r.brand || ""),
+      branch: String(r.branch || ""),
+      title: String(r.title || ""),
+    })),
+  };
+}
+
 // Clean core gateway functions - strictly read-only and stateless
 export async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
-  const response = await fetch(SUPABASE_PUBLIC_URL, {
+  const response = await fetch(UPSTREAM_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "User-Agent": "Creative-DNA-Gateway/1.0",
     },
     body: JSON.stringify(payload),
   });
@@ -64,17 +134,12 @@ export async function fetchUpstream(payload: { action: "resolve"; brand: string;
 }
 
 export async function resolveCreativeDna(brand: string, branch: string) {
-  if (!brand || typeof brand !== "string" || !brand.trim()) {
-    throw new Error("Missing or invalid 'brand' parameter");
-  }
-  if (!branch || typeof branch !== "string" || !branch.trim()) {
-    throw new Error("Missing or invalid 'branch' parameter");
-  }
+  const validated = validateResolveInput(brand, branch);
 
   return fetchUpstream({
     action: "resolve",
-    brand: brand.trim(),
-    branch: branch.trim(),
+    brand: validated.brand,
+    branch: validated.branch,
   });
 }
 
@@ -82,6 +147,86 @@ export async function listCreativeDnaRoutes() {
   return fetchUpstream({
     action: "routes",
   });
+}
+
+/**
+ * Distributed / Serverless friendly sliding-window rate limiter.
+ * - Extracts client IP safely from x-forwarded-for or x-real-ip
+ * - Memory-bounded sliding window with automatic garbage collection
+ * - Conservative limit (120 req/min per IP) to prevent scraping while accommodating normal ChatGPT bursts
+ * - Emits clean 429 response without leaking internal state
+ */
+interface RateLimitRecord {
+  count: number;
+  resetTime: number;
+}
+
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 120;
+const MAX_ENTRIES = 5000;
+
+const ipRateLimitStore = new Map<string, RateLimitRecord>();
+
+function cleanRateLimitStore() {
+  const now = Date.now();
+  for (const [ip, record] of ipRateLimitStore.entries()) {
+    if (now > record.resetTime) {
+      ipRateLimitStore.delete(ip);
+    }
+  }
+}
+
+export function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetSeconds: number } {
+  const now = Date.now();
+  if (ipRateLimitStore.size > MAX_ENTRIES) {
+    cleanRateLimitStore();
+  }
+
+  const record = ipRateLimitStore.get(ip);
+  if (!record || now > record.resetTime) {
+    const newRecord: RateLimitRecord = {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    };
+    ipRateLimitStore.set(ip, newRecord);
+    return {
+      allowed: true,
+      remaining: MAX_REQUESTS_PER_WINDOW - 1,
+      resetSeconds: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+    };
+  }
+
+  record.count += 1;
+  const resetSeconds = Math.max(1, Math.ceil((record.resetTime - now) / 1000));
+
+  if (record.count > MAX_REQUESTS_PER_WINDOW) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetSeconds,
+    };
+  }
+
+  return {
+    allowed: true,
+    remaining: MAX_REQUESTS_PER_WINDOW - record.count,
+    resetSeconds,
+  };
+}
+
+export function getClientIp(req: Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  if (Array.isArray(forwarded) && forwarded.length > 0) {
+    return forwarded[0].trim();
+  }
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string") {
+    return realIp.trim();
+  }
+  return req.socket?.remoteAddress || "127.0.0.1";
 }
 
 // Tool definitions for OpenAPI / ChatGPT Actions / Discovery documentation
@@ -122,7 +267,7 @@ export const TOOL_DEFINITIONS = [
  * Creates and configures a standards-compliant Model Context Protocol server.
  * Strictly adheres to read-only security rules:
  * - No database writes, training, seeding, approvals, updates, or deletes.
- * - Single source of truth is the upstream Supabase API.
+ * - Single source of truth is the canonical Creative DNA datastore.
  * - Returns upstream response unchanged without rewriting, summarizing, or synthesizing new DNA.
  */
 export function createMcpServer(): McpServer {
@@ -136,7 +281,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints. Strictly read-only source of truth from Supabase. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications from the upstream Supabase source of truth. No modifications, generation, or synthesis allowed.",
+        "Creative DNA connects ChatGPT to a live, structured brand knowledge system containing creative direction, visual rules, landing-page systems, asset specifications, product-image rules, UGC direction, and brand-specific production constraints. Strictly read-only connection to the Creative DNA canonical datastore. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications. No modifications, generation, or synthesis allowed.",
     }
   );
 
@@ -149,11 +294,15 @@ export function createMcpServer(): McpServer {
       inputSchema: {
         brand: z
           .string()
-          .min(1)
+          .trim()
+          .min(1, "Brand name cannot be empty")
+          .max(100, "Brand name exceeds maximum allowed length of 100 characters")
           .describe("Target brand name (e.g., 'PawfectHouse', 'GiftSoul', 'SoulPrise')"),
         branch: z
           .string()
-          .min(1)
+          .trim()
+          .min(1, "Branch name cannot be empty")
+          .max(150, "Branch name exceeds maximum allowed length of 150 characters")
           .describe("Target branch or module path (e.g., 'Onepage', 'LDP Hero', 'Home Hero', 'Seasonal Banner', 'Shop By Product', 'Shop By Categories', 'UGC')"),
       },
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
@@ -161,21 +310,23 @@ export function createMcpServer(): McpServer {
     async ({ brand, branch }) => {
       try {
         const upstream = await resolveCreativeDna(brand, branch);
+        const text = typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2);
         return {
           content: [
             {
               type: "text",
-              text: typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2),
+              text,
             },
           ],
           isError: !upstream.ok,
         };
       } catch (err: any) {
+        const safeMsg = sanitizePublicError(err, "Error resolving Creative DNA");
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: err?.message || "Error resolving Creative DNA" }),
+              text: JSON.stringify({ error: safeMsg }),
             },
           ],
           isError: true,
@@ -196,21 +347,23 @@ export function createMcpServer(): McpServer {
     async () => {
       try {
         const upstream = await listCreativeDnaRoutes();
+        const safeData = sanitizeRoutesData(upstream.data);
         return {
           content: [
             {
               type: "text",
-              text: typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2),
+              text: JSON.stringify(safeData, null, 2),
             },
           ],
           isError: !upstream.ok,
         };
       } catch (err: any) {
+        console.error("[MCP LIST ROUTES ERROR]", err);
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: err?.message || "Error listing Creative DNA routes" }),
+              text: JSON.stringify({ error: "Error listing Creative DNA routes" }),
             },
           ],
           isError: true,
@@ -228,12 +381,33 @@ export function createMcpServer(): McpServer {
 export function createApp(): express.Application {
   const app = express();
 
-  app.use(express.json());
+  // Conservative body limit - MCP tools only send small text parameters
+  app.use(express.json({ limit: "64kb" }));
 
-  // CORS headers for direct remote integration (OpenAI Apps SDK, ChatGPT, MCP clients, curl)
+  // Handle payload too large
+  app.use((err: any, _req: Request, res: Response, next: any) => {
+    if (err && (err.type === "entity.too.large" || err.status === 413)) {
+      return res.status(413).json({
+        error: "Payload Too Large",
+        message: "The request body exceeds the maximum permitted size.",
+      });
+    }
+    next(err);
+  });
+
+  // Production security headers
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("X-DNS-Prefetch-Control", "off");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
+
+  // CORS headers - strictly GET, POST, OPTIONS (no DELETE or mutation verbs)
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader(
       "Access-Control-Allow-Headers",
       "Content-Type, Authorization, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID"
@@ -245,7 +419,43 @@ export function createApp(): express.Application {
     next();
   });
 
-  // Health / Upstream connectivity check
+  // Conservative rate limiting on /api/* routes
+  app.use("/api", (req: Request, res: Response, next: () => void) => {
+    if (req.method === "OPTIONS") {
+      return next();
+    }
+
+    const ip = getClientIp(req);
+    const limit = checkRateLimit(ip);
+
+    res.setHeader("RateLimit-Limit", String(MAX_REQUESTS_PER_WINDOW));
+    res.setHeader("RateLimit-Remaining", String(limit.remaining));
+    res.setHeader("RateLimit-Reset", String(limit.resetSeconds));
+
+    if (!limit.allowed) {
+      res.setHeader("Retry-After", String(limit.resetSeconds));
+
+      if (req.path === "/mcp" && req.method === "POST") {
+        return res.status(429).json({
+          jsonrpc: "2.0",
+          id: req.body?.id ?? null,
+          error: {
+            code: -32000,
+            message: "Rate limit exceeded. Please retry after a brief pause.",
+          },
+        });
+      }
+
+      return res.status(429).json({
+        error: "Too Many Requests",
+        message: "Rate limit exceeded. Please retry after a brief pause.",
+      });
+    }
+
+    next();
+  });
+
+  // Health / Upstream connectivity check - strictly safe operational info
   app.get("/api/health", async (_req: Request, res: Response) => {
     const startTime = Date.now();
     try {
@@ -254,18 +464,18 @@ export function createApp(): express.Application {
       return res.json({
         status: "ok",
         mode: "read_only",
-        upstream: upstream.ok ? "connected" : "error",
-        upstreamStatus: upstream.status,
+        upstream: upstream.ok ? "connected" : "degraded",
         latencyMs,
         productionMcpUrl: CANONICAL_PRODUCTION_MCP_URL,
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
+      console.error("[HEALTH CHECK ERROR]", err);
       return res.status(502).json({
         status: "error",
         mode: "read_only",
         upstream: "unreachable",
-        message: err?.message || "Failed to reach upstream Creative DNA API",
+        message: "Unable to reach canonical Creative DNA datastore",
         latencyMs: Date.now() - startTime,
         productionMcpUrl: CANONICAL_PRODUCTION_MCP_URL,
         timestamp: new Date().toISOString(),
@@ -277,16 +487,19 @@ export function createApp(): express.Application {
   app.post("/api/resolve", async (req: Request, res: Response) => {
     try {
       const { brand, branch } = req.body || {};
-      if (!brand || !branch) {
-        return res.status(400).json({
-          error: "Both 'brand' and 'branch' are required string parameters.",
+      const validated = validateResolveInput(brand, branch);
+
+      const upstream = await resolveCreativeDna(validated.brand, validated.branch);
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({
+          error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
         });
       }
-
-      const upstream = await resolveCreativeDna(brand, branch);
       return res.status(upstream.status).json(upstream.data);
     } catch (err: any) {
-      return res.status(500).json({ error: err?.message || "Internal server error" });
+      const safeMsg = sanitizePublicError(err, "Unable to resolve Creative DNA");
+      const isClientError = err?.message && (err.message.includes("parameter") || err.message.includes("required") || err.message.includes("exceeds"));
+      return res.status(isClientError ? 400 : 500).json({ error: safeMsg });
     }
   });
 
@@ -294,9 +507,15 @@ export function createApp(): express.Application {
   app.all("/api/routes", async (_req: Request, res: Response) => {
     try {
       const upstream = await listCreativeDnaRoutes();
-      return res.status(upstream.status).json(upstream.data);
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({
+          error: "Unable to list Creative DNA routes",
+        });
+      }
+      return res.status(upstream.status).json(sanitizeRoutesData(upstream.data));
     } catch (err: any) {
-      return res.status(500).json({ error: err?.message || "Internal server error" });
+      console.error("[ROUTES ERROR]", err);
+      return res.status(500).json({ error: "Unable to list Creative DNA routes" });
     }
   });
 
@@ -305,24 +524,34 @@ export function createApp(): express.Application {
     try {
       const brand = req.body?.brand || req.body?.arguments?.brand;
       const branch = req.body?.branch || req.body?.arguments?.branch;
-      if (!brand || !branch) {
-        return res.status(400).json({
-          error: "Missing required arguments: brand, branch",
+      const validated = validateResolveInput(brand, branch);
+
+      const upstream = await resolveCreativeDna(validated.brand, validated.branch);
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({
+          error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
         });
       }
-      const upstream = await resolveCreativeDna(brand, branch);
       return res.status(upstream.status).json(upstream.data);
     } catch (err: any) {
-      return res.status(500).json({ error: err?.message || "Error resolving Creative DNA" });
+      const safeMsg = sanitizePublicError(err, "Unable to resolve Creative DNA");
+      const isClientError = err?.message && (err.message.includes("parameter") || err.message.includes("required") || err.message.includes("exceeds"));
+      return res.status(isClientError ? 400 : 500).json({ error: safeMsg });
     }
   });
 
   app.post("/api/tools/list_creative_dna_routes", async (_req: Request, res: Response) => {
     try {
       const upstream = await listCreativeDnaRoutes();
-      return res.status(upstream.status).json(upstream.data);
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({
+          error: "Unable to list Creative DNA routes",
+        });
+      }
+      return res.status(upstream.status).json(sanitizeRoutesData(upstream.data));
     } catch (err: any) {
-      return res.status(500).json({ error: err?.message || "Error listing Creative DNA routes" });
+      console.error("[TOOLS LIST ROUTES ERROR]", err);
+      return res.status(500).json({ error: "Unable to list Creative DNA routes" });
     }
   });
 
@@ -350,7 +579,7 @@ export function createApp(): express.Application {
       name_for_human: APP_METADATA.name,
       name_for_model: "creative_dna",
       description_for_human: APP_METADATA.shortDescription,
-      description_for_model: APP_METADATA.longDescription + " Strictly read-only source of truth from Supabase. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
+      description_for_model: APP_METADATA.longDescription + " Strictly read-only connection to the Creative DNA canonical datastore. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
       auth: {
         type: "none",
       },
@@ -383,8 +612,8 @@ export function createApp(): express.Application {
         "/api/health": {
           get: {
             operationId: "get_health_status",
-            summary: "Check system health and upstream connectivity",
-            description: "Returns the read-only operational status of the Creative DNA Gateway and upstream Supabase connectivity.",
+            summary: "Check system health and upstream datastore connectivity",
+            description: "Returns the read-only operational status of the Creative DNA Gateway and upstream datastore connectivity.",
             responses: { "200": { description: "Operational status" } },
           },
         },
@@ -506,7 +735,7 @@ export function createApp(): express.Application {
           openWorldHint: false,
           database_writes: "forbidden",
           generative_rewriting: "disabled",
-          source_of_truth: "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public",
+          source_of_truth: "Creative DNA canonical datastore",
         },
       });
     }
@@ -536,7 +765,7 @@ export function createApp(): express.Application {
           id: req.body?.id ?? null,
           error: {
             code: -32603,
-            message: err?.message || "Internal MCP Server error",
+            message: "Internal MCP Server error",
           },
         });
       }

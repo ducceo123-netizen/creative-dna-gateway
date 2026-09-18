@@ -458,7 +458,7 @@ export default function App() {
               </div>
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Source of Truth</div>
-                <div className="text-xs font-bold text-slate-900 mt-0.5 truncate">Upstream Supabase Gateway</div>
+                <div className="text-xs font-bold text-slate-900 mt-0.5 truncate">Creative DNA Canonical Datastore</div>
               </div>
             </div>
           </div>
@@ -784,7 +784,7 @@ export default function App() {
             <span>&bull;</span>
             <span>Read-only ChatGPT App</span>
             <span>&bull;</span>
-            <span>Connected to Supabase</span>
+            <span>Creative DNA Canonical Datastore</span>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-medium text-slate-600">

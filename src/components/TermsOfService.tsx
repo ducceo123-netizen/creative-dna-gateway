@@ -76,7 +76,7 @@ export function TermsOfService({ onBack }: TermsOfServiceProps) {
         <section className="space-y-2">
           <h2 className="text-lg font-semibold text-slate-900">5. Disclaimer of Warranties</h2>
           <p>
-            The Creative DNA gateway is provided &quot;as is&quot; without warranties of any kind. While we strive for continuous availability and accurate canonical synchronization with Supabase, we do not guarantee uninterrupted uptime.
+            The Creative DNA gateway is provided &quot;as is&quot; without warranties of any kind. While we strive for continuous availability and accurate canonical synchronization with the Creative DNA datastore, we do not guarantee uninterrupted uptime.
           </p>
         </section>
 

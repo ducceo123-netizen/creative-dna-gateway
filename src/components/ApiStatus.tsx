@@ -57,7 +57,7 @@ export function ApiStatus({ health, loading, onRefresh }: ApiStatusProps) {
             </span>
           </div>
           <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
-            <span>Source: Supabase Edge Function</span>
+            <span>Source: Creative DNA Canonical Datastore</span>
             {health?.latencyMs !== undefined && (
               <>
                 <span className="text-slate-300">•</span>

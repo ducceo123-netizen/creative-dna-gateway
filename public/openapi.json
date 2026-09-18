@@ -3,7 +3,7 @@
   "info": {
     "title": "Creative DNA",
     "version": "1.0.0",
-    "description": "Live brand creative guidelines and production rules for ecommerce creative generation. Strictly read-only connection to the canonical Supabase Creative DNA source of truth."
+    "description": "Live brand creative guidelines and production rules for ecommerce creative generation. Strictly read-only connection to the Creative DNA canonical datastore."
   },
   "servers": [
     {
@@ -15,8 +15,8 @@
     "/api/health": {
       "get": {
         "operationId": "get_health_status",
-        "summary": "Check system health and upstream connectivity",
-        "description": "Returns the read-only operational status of the Creative DNA Gateway and upstream Supabase connectivity.",
+        "summary": "Check system health and upstream datastore connectivity",
+        "description": "Returns the read-only operational status of the Creative DNA Gateway and upstream datastore connectivity.",
         "responses": {
           "200": {
             "description": "Operational status",

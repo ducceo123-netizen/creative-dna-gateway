@@ -104,7 +104,7 @@ export function SupportPage({ onBack }: SupportPageProps) {
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5">
             <h3 className="text-xs font-semibold text-slate-900">Is Creative DNA read-only?</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Yes. All specifications are strictly read-only and maintained directly in the upstream Supabase knowledge base. ChatGPT cannot modify or overwrite brand rules.
+              Yes. All specifications are strictly read-only and maintained directly in the canonical Creative DNA datastore. ChatGPT cannot modify or overwrite brand rules.
             </p>
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-1.5">

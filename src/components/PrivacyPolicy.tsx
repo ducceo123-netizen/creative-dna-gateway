@@ -69,7 +69,7 @@ export function PrivacyPolicy({ onBack }: PrivacyPolicyProps) {
             4. Upstream Data Source & Security
           </h2>
           <p>
-            The canonical source of truth for Creative DNA brand guidelines is hosted on a secure Supabase infrastructure.
+            The canonical source of truth for Creative DNA brand guidelines is hosted on an isolated, secure cloud datastore.
             The Creative DNA Gateway communicates with this upstream source via encrypted HTTPS requests using public read-only functions.
             No private database credentials or administrative permissions exist within the gateway runtime.
           </p>
