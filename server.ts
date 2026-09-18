@@ -1,11 +1,16 @@
 import express, { Request, Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { z } from "zod";
 
 const SUPABASE_PUBLIC_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
+export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
+export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
 
 // Clean core gateway functions - strictly read-only and stateless
-async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
+export async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
   const response = await fetch(SUPABASE_PUBLIC_URL, {
     method: "POST",
     headers: {
@@ -43,8 +48,8 @@ export async function listCreativeDnaRoutes() {
   });
 }
 
-// MCP and ChatGPT tool definitions
-const TOOL_DEFINITIONS = [
+// Tool definitions for OpenAPI / ChatGPT Actions / Discovery documentation
+export const TOOL_DEFINITIONS = [
   {
     name: "resolve_creative_dna",
     description: "Resolves and returns the canonical, read-only Creative DNA specification (content policy, input schema, asset rules, design references) for a specified brand and branch from the upstream Supabase source of truth.",
@@ -73,17 +78,127 @@ const TOOL_DEFINITIONS = [
   },
 ];
 
-async function startServer() {
+/**
+ * Creates and configures a standards-compliant Model Context Protocol server.
+ * Strictly adheres to read-only security rules:
+ * - No database writes, training, seeding, approvals, updates, or deletes.
+ * - Single source of truth is the upstream Supabase API.
+ * - Returns upstream response unchanged without rewriting, summarizing, or synthesizing new DNA.
+ */
+export function createMcpServer(): McpServer {
+  const server = new McpServer(
+    {
+      name: "Creative DNA Gateway",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {
+        tools: { listChanged: false },
+      },
+      instructions:
+        "Read-only gateway for the Creative DNA system. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications from the upstream Supabase source of truth. No modifications, generation, or synthesis allowed.",
+    }
+  );
+
+  // Tool 1: resolve_creative_dna
+  server.registerTool(
+    "resolve_creative_dna",
+    {
+      title: "Resolve Creative DNA",
+      description:
+        "Resolves and returns the canonical, read-only Creative DNA specification (content policy, input schema, asset rules, design references) for a specified brand and branch from the upstream Supabase source of truth.",
+      inputSchema: {
+        brand: z
+          .string()
+          .min(1)
+          .describe("Target brand name (e.g., 'PawfectHouse', 'GiftSoul', 'SoulPrise')"),
+        branch: z
+          .string()
+          .min(1)
+          .describe("Target branch or module path (e.g., 'Onepage', 'LDP Hero', 'Home Hero', 'Seasonal Banner', 'Shop By Product', 'Shop By Categories', 'UGC')"),
+      },
+    },
+    async ({ brand, branch }) => {
+      try {
+        const upstream = await resolveCreativeDna(brand, branch);
+        return {
+          content: [
+            {
+              type: "text",
+              text: typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2),
+            },
+          ],
+          isError: !upstream.ok,
+        };
+      } catch (err: any) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: err?.message || "Error resolving Creative DNA" }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool 2: list_creative_dna_routes
+  server.registerTool(
+    "list_creative_dna_routes",
+    {
+      title: "List Creative DNA Routes",
+      description:
+        "Lists all available brands, branches, titles, versions, and node types registered in the canonical Creative DNA knowledge graph.",
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const upstream = await listCreativeDnaRoutes();
+        return {
+          content: [
+            {
+              type: "text",
+              text: typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2),
+            },
+          ],
+          isError: !upstream.ok,
+        };
+      } catch (err: any) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: err?.message || "Error listing Creative DNA routes" }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  return server;
+}
+
+/**
+ * Builds the Express application with all API endpoints and the standards-compliant MCP server.
+ */
+export function createApp(): express.Application {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
 
-  // CORS headers for direct remote integration
+  // CORS headers for direct remote integration (OpenAI Apps SDK, ChatGPT, MCP clients, curl)
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID"
+    );
+    res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, Mcp-Protocol-Version");
     if (req.method === "OPTIONS") {
       return res.sendStatus(204);
     }
@@ -102,6 +217,7 @@ async function startServer() {
         upstream: upstream.ok ? "connected" : "error",
         upstreamStatus: upstream.status,
         latencyMs,
+        productionMcpUrl: CANONICAL_PRODUCTION_MCP_URL,
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
@@ -111,6 +227,7 @@ async function startServer() {
         upstream: "unreachable",
         message: err?.message || "Failed to reach upstream Creative DNA API",
         latencyMs: Date.now() - startTime,
+        productionMcpUrl: CANONICAL_PRODUCTION_MCP_URL,
         timestamp: new Date().toISOString(),
       });
     }
@@ -119,7 +236,7 @@ async function startServer() {
   // Operation 1: resolve_creative_dna
   app.post("/api/resolve", async (req: Request, res: Response) => {
     try {
-      const { brand, branch } = req.body;
+      const { brand, branch } = req.body || {};
       if (!brand || !branch) {
         return res.status(400).json({
           error: "Both 'brand' and 'branch' are required string parameters.",
@@ -146,8 +263,8 @@ async function startServer() {
   // Tool-compatible aliases (for direct ChatGPT Actions / RPC calls)
   app.post("/api/tools/resolve_creative_dna", async (req: Request, res: Response) => {
     try {
-      const brand = req.body.brand || req.body.arguments?.brand;
-      const branch = req.body.branch || req.body.arguments?.branch;
+      const brand = req.body?.brand || req.body?.arguments?.brand;
+      const branch = req.body?.branch || req.body?.arguments?.branch;
       if (!brand || !branch) {
         return res.status(400).json({
           error: "Missing required arguments: brand, branch",
@@ -169,100 +286,95 @@ async function startServer() {
     }
   });
 
-  // Tool discovery & OpenAPI / MCP schema endpoints
+  // Tool discovery & OpenAPI / schema endpoint
   app.get("/api/tools", (_req: Request, res: Response) => {
     return res.json({
       name: "Creative DNA Gateway",
       version: "1.0.0",
       description: "Read-only gateway for the canonical Creative DNA knowledge system.",
+      canonicalOrigin: CANONICAL_PRODUCTION_ORIGIN,
+      mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
       tools: TOOL_DEFINITIONS,
     });
   });
 
-  // Remote MCP JSON-RPC 2.0 endpoint (compatible with MCP Clients & ChatGPT)
-  app.post("/api/mcp", async (req: Request, res: Response) => {
-    const { jsonrpc, id, method, params } = req.body || {};
+  // Standards-compliant Remote Model Context Protocol (MCP) Streamable HTTP & SSE Server
+  // Supports initialize, notifications/initialized, ping, tools/list, and tools/call
+  app.all("/api/mcp", async (req: Request, res: Response) => {
+    const accept = (req.headers.accept || "").toLowerCase();
 
-    if (method === "tools/list") {
+    // Friendly browser / GET discovery if not requesting text/event-stream
+    if (req.method === "GET" && !accept.includes("text/event-stream")) {
       return res.json({
-        jsonrpc: jsonrpc || "2.0",
-        id: id ?? null,
-        result: {
-          tools: TOOL_DEFINITIONS,
+        name: "Creative DNA Gateway",
+        version: "1.0.0",
+        description: "Standards-compliant Remote Model Context Protocol (MCP) server for OpenAI Apps SDK and ChatGPT.",
+        canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
+        protocolVersion: "2024-11-05",
+        transports: ["Streamable HTTP (POST)", "Server-Sent Events (GET SSE)"],
+        capabilities: {
+          tools: { listChanged: false },
+        },
+        tools: [
+          {
+            name: "resolve_creative_dna",
+            description: "Resolves and returns the canonical, read-only Creative DNA specification for brand and branch.",
+            parameters: { brand: "string (required)", branch: "string (required)" },
+          },
+          {
+            name: "list_creative_dna_routes",
+            description: "Lists all available brands, branches, titles, versions, and node types in the Creative DNA graph.",
+            parameters: {},
+          },
+        ],
+        security: {
+          read_only: true,
+          database_writes: "forbidden",
+          generative_rewriting: "disabled",
+          source_of_truth: "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public",
         },
       });
     }
 
-    if (method === "tools/call") {
-      const toolName = params?.name;
-      const toolArgs = params?.arguments || {};
+    // Normalize Accept header for clients that omit text/event-stream or send default Accept: */*
+    if (req.method === "POST") {
+      if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+        req.headers.accept = "application/json, text/event-stream";
+      }
+    }
 
-      try {
-        if (toolName === "resolve_creative_dna") {
-          const upstream = await resolveCreativeDna(toolArgs.brand, toolArgs.branch);
-          return res.json({
-            jsonrpc: jsonrpc || "2.0",
-            id: id ?? null,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(upstream.data, null, 2),
-                },
-              ],
-              isError: !upstream.ok,
-            },
-          });
-        }
+    try {
+      // Per-request stateless Streamable HTTP transport (MCP spec compliant, serverless & Vercel friendly)
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
 
-        if (toolName === "list_creative_dna_routes") {
-          const upstream = await listCreativeDnaRoutes();
-          return res.json({
-            jsonrpc: jsonrpc || "2.0",
-            id: id ?? null,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(upstream.data, null, 2),
-                },
-              ],
-              isError: !upstream.ok,
-            },
-          });
-        }
-
-        return res.status(404).json({
-          jsonrpc: jsonrpc || "2.0",
-          id: id ?? null,
-          error: {
-            code: -32601,
-            message: `Method or tool '${toolName}' not found`,
-          },
-        });
-      } catch (err: any) {
-        return res.status(500).json({
-          jsonrpc: jsonrpc || "2.0",
-          id: id ?? null,
+      const server = createMcpServer();
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (err: any) {
+      console.error("MCP Server Error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          id: req.body?.id ?? null,
           error: {
             code: -32603,
-            message: err?.message || "Internal error executing tool",
+            message: err?.message || "Internal MCP Server error",
           },
         });
       }
     }
-
-    // Default response for unrecognized JSON-RPC method
-    return res.json({
-      jsonrpc: jsonrpc || "2.0",
-      id: id ?? null,
-      result: {
-        server: "Creative DNA Gateway",
-        status: "ready",
-        read_only: true,
-      },
-    });
   });
+
+  return app;
+}
+
+export const app = createApp();
+
+async function startServer() {
+  const PORT = 3000;
 
   // Vite middleware setup
   if (process.env.NODE_ENV !== "production") {
@@ -281,7 +393,11 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Creative DNA Gateway server running on http://0.0.0.0:${PORT}`);
+    console.log(`Production MCP endpoint configured at: ${CANONICAL_PRODUCTION_MCP_URL}`);
   });
 }
 
-startServer();
+// Start server if run directly
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}

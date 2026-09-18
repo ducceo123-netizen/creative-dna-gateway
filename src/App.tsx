@@ -9,10 +9,18 @@ import {
   ExternalLink,
   Info,
   CheckCircle,
+  Copy,
+  Check,
+  ShieldCheck,
+  Cpu,
+  Play,
 } from "lucide-react";
 import { JsonViewer } from "./components/JsonViewer";
 import { ApiStatus } from "./components/ApiStatus";
 import { HealthResponse, QueryMeta, RouteItem } from "./types";
+
+const PRODUCTION_MCP_URL = "https://creative-dna-gateway.vercel.app/api/mcp";
+const PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 
 const NATURAL_ROUTES_PRESETS: Array<{ brand: string; branch: string; label: string }> = [
   { brand: "PawfectHouse", branch: "Onepage", label: "PawfectHouse / Onepage" },
@@ -38,6 +46,78 @@ export default function App() {
   const [responseMeta, setResponseMeta] = useState<QueryMeta | null>(null);
   const [activeTab, setActiveTab] = useState<"viewer" | "specs">("viewer");
   const [routesList, setRoutesList] = useState<RouteItem[]>([]);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [mcpTesting, setMcpTesting] = useState(false);
+  const [mcpTestResult, setMcpTestResult] = useState<any>(null);
+
+  // Copy helper
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  // Live MCP protocol tester
+  const runMcpLiveTest = async (testType: "initialize" | "tools/list" | "tools/call") => {
+    setMcpTesting(true);
+    try {
+      let body: any;
+      if (testType === "initialize") {
+        body = {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: { name: "gateway-tester", version: "1.0.0" },
+          },
+        };
+      } else if (testType === "tools/list") {
+        body = {
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/list",
+          params: {},
+        };
+      } else {
+        body = {
+          jsonrpc: "2.0",
+          id: 3,
+          method: "tools/call",
+          params: {
+            name: "resolve_creative_dna",
+            arguments: { brand: "PawfectHouse", branch: "Onepage" },
+          },
+        };
+      }
+
+      const res = await fetch("/api/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      setMcpTestResult({
+        testType,
+        status: res.status,
+        ok: res.ok,
+        timestamp: new Date().toLocaleTimeString(),
+        request: body,
+        response: json,
+      });
+    } catch (err: any) {
+      setMcpTestResult({
+        testType,
+        status: 500,
+        ok: false,
+        timestamp: new Date().toLocaleTimeString(),
+        error: err?.message || "Failed to execute MCP test",
+      });
+    } finally {
+      setMcpTesting(false);
+    }
+  };
 
   // Fetch health on mount
   const checkHealth = async () => {
@@ -447,59 +527,231 @@ export default function App() {
               </div>
             ) : (
               /* Integration Specs Tab */
-              <div className="space-y-4 bg-white border border-slate-200 rounded-xl p-5 text-xs shadow-xs">
-                <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <Info className="w-4 h-4 text-slate-600" />
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    ChatGPT &amp; Remote MCP Server Integration
-                  </h3>
+              <div className="space-y-5 bg-white border border-slate-200 rounded-xl p-5 text-xs shadow-xs">
+                {/* Header & Production Banner */}
+                <div className="space-y-3 pb-4 border-b border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-slate-800" />
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        OpenAI Apps SDK &amp; Model Context Protocol (MCP) Server
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+                        Protocol 2024-11-05
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        Read-Only Gateway
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-slate-600 leading-relaxed text-xs">
+                    Standards-compliant remote MCP server providing direct integration for OpenAI Apps SDK, ChatGPT Custom Actions, Claude Desktop, and Cursor.
+                  </p>
+
+                  {/* Production Endpoint Display */}
+                  <div className="p-3 bg-slate-950 text-slate-100 rounded-lg border border-slate-800 space-y-1.5 font-mono">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Canonical Production MCP URL:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(PRODUCTION_MCP_URL, "prod-url")}
+                        className="flex items-center gap-1 text-[11px] text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        {copiedKey === "prod-url" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedKey === "prod-url" ? "Copied" : "Copy URL"}</span>
+                      </button>
+                    </div>
+                    <div className="text-xs font-semibold text-emerald-400 break-all select-all">
+                      {PRODUCTION_MCP_URL}
+                    </div>
+                  </div>
                 </div>
 
-                <p className="text-slate-600 leading-relaxed">
-                  This server implements the clean tool interfaces needed for remote execution via ChatGPT Custom GPT Actions or Model Context Protocol (MCP) clients.
-                </p>
-
-                {/* Tool 1: resolve_creative_dna */}
-                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between font-mono font-semibold text-slate-900">
-                    <span>1. resolve_creative_dna</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700">POST /api/resolve</span>
+                {/* Exposing Exactly Two Read-Only Tools */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Exposed Read-Only Tools (2)</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-400">Upstream Supabase Single Source of Truth</span>
                   </div>
-                  <p className="text-slate-500 text-[11px]">
-                    Resolves canonical Creative DNA specification for a specified brand and branch.
-                  </p>
-                  <div className="bg-slate-900 text-slate-200 p-2.5 rounded font-mono text-[11px] overflow-x-auto">
-                    {`curl -X POST https://${window.location.host}/api/resolve \\
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Tool 1 */}
+                    <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between font-mono text-[11px]">
+                        <span className="font-semibold text-slate-900">resolve_creative_dna</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">Tool</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        Resolves canonical Creative DNA specification without rewriting, summarizing, or generating new DNA.
+                      </p>
+                      <div className="text-[11px] font-mono text-slate-500 bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400">Input:</span> {"{ brand: string, branch: string }"}
+                      </div>
+                    </div>
+
+                    {/* Tool 2 */}
+                    <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between font-mono text-[11px]">
+                        <span className="font-semibold text-slate-900">list_creative_dna_routes</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">Tool</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        Lists all available brands, branches, titles, versions, and node types in the Creative DNA graph.
+                      </p>
+                      <div className="text-[11px] font-mono text-slate-500 bg-white p-2 rounded border border-slate-200">
+                        <span className="text-slate-400">Input:</span> {"{}"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live MCP Protocol Tester */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-900 text-xs">
+                      <Play className="w-3.5 h-3.5 text-slate-700" />
+                      <span>Live MCP Protocol Inspector</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500">Run real JSON-RPC handshakes &amp; tool calls</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={mcpTesting}
+                      onClick={() => runMcpLiveTest("initialize")}
+                      className="px-3 py-1.5 rounded-md bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-mono text-[11px] font-medium shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      Test Handshake (initialize)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={mcpTesting}
+                      onClick={() => runMcpLiveTest("tools/list")}
+                      className="px-3 py-1.5 rounded-md bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-mono text-[11px] font-medium shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      Test Discovery (tools/list)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={mcpTesting}
+                      onClick={() => runMcpLiveTest("tools/call")}
+                      className="px-3 py-1.5 rounded-md bg-white border border-slate-300 hover:border-slate-400 text-slate-800 font-mono text-[11px] font-medium shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      Test Tool Call (resolve_creative_dna)
+                    </button>
+                  </div>
+
+                  {mcpTesting && (
+                    <div className="p-3 bg-white rounded border border-slate-200 text-slate-600 font-mono text-[11px] animate-pulse">
+                      Executing MCP protocol request...
+                    </div>
+                  )}
+
+                  {mcpTestResult && !mcpTesting && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                        <span>Method: {mcpTestResult.testType} &bull; Status: {mcpTestResult.status}</span>
+                        <span>{mcpTestResult.timestamp}</span>
+                      </div>
+                      <div className="p-3 bg-slate-900 text-slate-100 rounded-lg font-mono text-[11px] max-h-56 overflow-y-auto">
+                        <pre>{JSON.stringify(mcpTestResult.response || mcpTestResult.error, null, 2)}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Client Configuration Examples */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <Terminal className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Remote Client Configuration</span>
+                    </h4>
+                  </div>
+
+                  {/* Claude Desktop / Cursor Config */}
+                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-700 font-medium">
+                      <span>Claude Desktop &amp; Cursor (mcpServers config)</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopy(
+                            JSON.stringify(
+                              {
+                                mcpServers: {
+                                  "creative-dna-gateway": {
+                                    url: PRODUCTION_MCP_URL,
+                                  },
+                                },
+                              },
+                              null,
+                              2
+                            ),
+                            "mcp-config"
+                          )
+                        }
+                        className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 font-mono cursor-pointer"
+                      >
+                        {copiedKey === "mcp-config" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedKey === "mcp-config" ? "Copied" : "Copy JSON"}</span>
+                      </button>
+                    </div>
+                    <pre className="p-2.5 bg-slate-900 text-slate-200 rounded font-mono text-[11px] overflow-x-auto">
+{`{
+  "mcpServers": {
+    "creative-dna-gateway": {
+      "url": "${PRODUCTION_MCP_URL}"
+    }
+  }
+}`}
+                    </pre>
+                  </div>
+
+                  {/* Direct curl testing */}
+                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-700 font-medium">
+                      <span>curl Protocol Inspection</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopy(
+                            `curl -X POST ${PRODUCTION_MCP_URL} \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}'`,
+                            "curl-cmd"
+                          )
+                        }
+                        className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 font-mono cursor-pointer"
+                      >
+                        {copiedKey === "curl-cmd" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedKey === "curl-cmd" ? "Copied" : "Copy curl"}</span>
+                      </button>
+                    </div>
+                    <pre className="p-2.5 bg-slate-900 text-slate-200 rounded font-mono text-[11px] overflow-x-auto">
+{`curl -X POST ${PRODUCTION_MCP_URL} \\
   -H "Content-Type: application/json" \\
-  -d '{"brand": "PawfectHouse", "branch": "Onepage"}'`}
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}'`}
+                    </pre>
                   </div>
                 </div>
 
-                {/* Tool 2: list_creative_dna_routes */}
-                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between font-mono font-semibold text-slate-900">
-                    <span>2. list_creative_dna_routes</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700">POST /api/routes</span>
+                {/* Hard Security Rules Banner */}
+                <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-950">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    <span>Hard Security &amp; Isolation Guarantees</span>
                   </div>
-                  <p className="text-slate-500 text-[11px]">
-                    Returns all available brands and branches registered in the Creative DNA knowledge graph.
-                  </p>
-                  <div className="bg-slate-900 text-slate-200 p-2.5 rounded font-mono text-[11px] overflow-x-auto">
-                    {`curl -X POST https://${window.location.host}/api/routes \\
-  -H "Content-Type: application/json"`}
-                  </div>
-                </div>
-
-                {/* Remote MCP Endpoint */}
-                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between font-mono font-semibold text-slate-900">
-                    <span>3. Remote MCP JSON-RPC Endpoint</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700">POST /api/mcp</span>
-                  </div>
-                  <p className="text-slate-500 text-[11px]">
-                    Supports JSON-RPC 2.0 <code className="font-semibold text-slate-700">tools/list</code> and{" "}
-                    <code className="font-semibold text-slate-700">tools/call</code> methods natively for Cursor, Claude Desktop, and MCP agents.
-                  </p>
+                  <ul className="text-[11px] text-emerald-900/85 space-y-1 list-disc list-inside">
+                    <li><strong>Read-only gateway:</strong> Zero database writes, training, seeding, approving, updating, or deleting.</li>
+                    <li><strong>No SQL execution:</strong> Operates solely via the upstream Supabase function endpoint.</li>
+                    <li><strong>Zero secrets exposed:</strong> No Supabase service-role keys exposed to clients or browser.</li>
+                    <li><strong>No generative rewriting:</strong> Gemini does not rewrite, synthesize, or alter Creative DNA content.</li>
+                  </ul>
                 </div>
               </div>
             )}
