@@ -27,6 +27,7 @@ import { ApiStatus } from "./components/ApiStatus";
 import { PrivacyPolicy } from "./components/PrivacyPolicy";
 import { TermsOfService } from "./components/TermsOfService";
 import { SupportPage } from "./components/SupportPage";
+import { AdminFeedback } from "./components/AdminFeedback";
 import { HealthResponse, QueryMeta, RouteItem } from "./types";
 
 const PRODUCTION_MCP_URL = "https://creative-dna-gateway.vercel.app/api/mcp";
@@ -92,7 +93,7 @@ const PRESET_PROMPTS = [
   },
 ];
 
-type ActivePage = "home" | "privacy" | "terms" | "support";
+type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<ActivePage>("home");
@@ -119,6 +120,8 @@ export default function App() {
         setCurrentPage("terms");
       } else if (path === "/support") {
         setCurrentPage("support");
+      } else if (path === "/admin/feedback") {
+        setCurrentPage("admin-feedback");
       } else {
         setCurrentPage("home");
       }
@@ -131,7 +134,7 @@ export default function App() {
 
   const navigateTo = (page: ActivePage) => {
     setCurrentPage(page);
-    const path = page === "home" ? "/" : `/${page}`;
+    const path = page === "home" ? "/" : page === "admin-feedback" ? "/admin/feedback" : `/${page}`;
     if (window.location.pathname !== path) {
       window.history.pushState({}, "", path);
     }
@@ -336,6 +339,14 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
         <TermsOfService onBack={() => navigateTo("home")} />
+      </div>
+    );
+  }
+
+  if (currentPage === "admin-feedback") {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
+        <AdminFeedback onBack={() => navigateTo("home")} />
       </div>
     );
   }
