@@ -480,7 +480,7 @@ export function createApp(): express.Application {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "consolidate", brand_slug: "pawfecthouse", target_slug: "onepage-system" }),
+        body: JSON.stringify({ mode: "list" }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to load admin feedback" });
