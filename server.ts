@@ -9,6 +9,7 @@ const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions
 // Upstream datastore URL configured via server-only environment variable.
 // Never exposed to client bundles or public API responses.
 const UPSTREAM_URL = process.env.CREATIVE_DNA_UPSTREAM_URL || DEFAULT_UPSTREAM_URL;
+const FEEDBACK_UPSTREAM_URL = process.env.CREATIVE_DNA_FEEDBACK_UPSTREAM_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-feedback-submit";
 
 export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
@@ -56,6 +57,10 @@ export const RESOLVE_CREATIVE_DNA_DESC = `Use whenever a user requests or refere
 The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task.`;
 
 export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.`;
+
+export const SUBMIT_FEEDBACK_DESC = `Use when a team member explicitly provides Creative DNA training feedback, especially prompts like "Creative DNA — Train: Brand / Branch". This only submits a Pending proposal for admin review. It never modifies canonical Creative DNA.`;
+
+export const PENDING_WRITE_TOOL_ANNOTATIONS = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
 
 export const READ_ONLY_TOOL_ANNOTATIONS = {
   readOnlyHint: true,
@@ -127,7 +132,16 @@ export function sanitizeRoutesData(data: any): any {
   };
 }
 
-// Clean core gateway functions - strictly read-only and stateless
+export async function submitTrainingFeedback(brand:string, branch:string, feedback:string, submitter_name?:string, proposed_scope?:string) {
+  const validated = validateResolveInput(brand, branch);
+  const cleanFeedback = String(feedback || "").trim();
+  if (cleanFeedback.length < 3) throw new Error("feedback is required");
+  if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
+  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope})});
+  return {status:response.status,ok:response.ok,data:await response.json()};
+}
+
+// Core gateway functions
 export async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
   const response = await fetch(UPSTREAM_URL, {
     method: "POST",
@@ -265,6 +279,13 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: "submit_training_feedback",
+    title: "Submit Training Feedback",
+    description: SUBMIT_FEEDBACK_DESC,
+    annotations: PENDING_WRITE_TOOL_ANNOTATIONS,
+    inputSchema: { type:"object", properties:{ brand:{type:"string"}, branch:{type:"string"}, feedback:{type:"string"}, submitter_name:{type:"string"}, proposed_scope:{type:"string"} }, required:["brand","branch","feedback"] },
+  },
+  {
     name: "list_creative_dna_routes",
     title: "List Creative DNA Routes",
     description: LIST_CREATIVE_DNA_ROUTES_DESC,
@@ -294,7 +315,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Strictly read-only connection to the Creative DNA canonical datastore. Built for ChatGPT using the Apps SDK and Model Context Protocol. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications. No modifications, generation, or synthesis allowed.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Canonical Creative DNA resolution is read-only. Team members may use submit_training_feedback only to create Pending review proposals; this tool never changes canonical DNA. Use list_creative_dna_routes to discover routes and resolve_creative_dna to resolve canonical specifications.",
     }
   );
 
@@ -345,6 +366,24 @@ export function createMcpServer(): McpServer {
           isError: true,
         };
       }
+    }
+  );
+
+  // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
+  server.registerTool(
+    "submit_training_feedback",
+    {
+      title:"Submit Training Feedback", description:SUBMIT_FEEDBACK_DESC,
+      inputSchema:{
+        brand:z.string().trim().min(1).max(100), branch:z.string().trim().min(1).max(150),
+        feedback:z.string().trim().min(3).max(8000),
+        submitter_name:z.string().trim().max(120).optional(),
+        proposed_scope:z.string().trim().max(80).optional()
+      }, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
+    },
+    async ({brand,branch,feedback,submitter_name,proposed_scope})=>{
+      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
+      catch(err:any){ return {content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to submit training feedback")})}],isError:true}; }
     }
   );
 
@@ -776,6 +815,10 @@ export function createApp(): express.Application {
             },
           },
           {
+            name:"submit_training_feedback", title:"Submit Training Feedback", description:SUBMIT_FEEDBACK_DESC, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
+            parameters:{brand:"string (required)",branch:"string (required)",feedback:"string (required)",submitter_name:"string (optional)",proposed_scope:"string (optional)"},
+          },
+          {
             name: "list_creative_dna_routes",
             title: "List Creative DNA Routes",
             description: LIST_CREATIVE_DNA_ROUTES_DESC,
@@ -786,8 +829,8 @@ export function createApp(): express.Application {
         supportedBrands: APP_METADATA.supportedBrands,
         capabilitiesList: APP_METADATA.capabilities,
         security: {
-          read_only: true,
-          readOnlyHint: true,
+          canonical_dna_read_only: true,
+          pending_feedback_submission: true,
           destructiveHint: false,
           openWorldHint: false,
           database_writes: "forbidden",
