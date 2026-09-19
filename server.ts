@@ -468,6 +468,48 @@ export function createApp(): express.Application {
     next();
   });
 
+  // Admin feedback review proxy. The browser supplies the authenticated Supabase JWT;
+  // no service-role secret is exposed to the client.
+  const adminUpstreamUrl = process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;
+
+  app.get("/api/admin/feedback", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "list" }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to load admin feedback" });
+      return res.json({ proposals: data?.proposals || [] });
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to load admin feedback") });
+    }
+  });
+
+  app.post("/api/admin/feedback/:id/review", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    const decision = req.body?.decision;
+    if (decision !== "accept" && decision !== "reject") return res.status(400).json({ error: "decision must be accept or reject" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, review_note: req.body?.review_note || "" }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to review feedback" });
+      return res.json(data);
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to review feedback") });
+    }
+  });
+
   // Health / Upstream connectivity check - strictly safe operational info
   app.get("/api/health", async (_req: Request, res: Response) => {
     const startTime = Date.now();
