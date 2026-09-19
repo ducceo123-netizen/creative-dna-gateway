@@ -10,6 +10,7 @@ const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions
 // Never exposed to client bundles or public API responses.
 const UPSTREAM_URL = process.env.CREATIVE_DNA_UPSTREAM_URL || DEFAULT_UPSTREAM_URL;
 const FEEDBACK_UPSTREAM_URL = process.env.CREATIVE_DNA_FEEDBACK_UPSTREAM_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-feedback-submit";
+const COMPILE_ONEPAGE_URL = process.env.CREATIVE_DNA_COMPILE_ONEPAGE_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-compile-onepage";
 
 export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
@@ -57,6 +58,8 @@ export const RESOLVE_CREATIVE_DNA_DESC = `Use whenever a user requests or refere
 The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task.`;
 
 export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.`;
+
+export const COMPILE_ONEPAGE_DESC = `Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation.`;
 
 export const SUBMIT_FEEDBACK_DESC = `Use when a team member explicitly provides Creative DNA training feedback, especially prompts like "Creative DNA — Train: Brand / Branch". This only submits a Pending proposal for admin review. It never modifies canonical Creative DNA.`;
 
@@ -139,6 +142,12 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
   const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope})});
   return {status:response.status,ok:response.ok,data:await response.json()};
+}
+
+export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string) {
+ const validated=validateResolveInput(brand,"onepage-system");
+ const response=await fetch(COMPILE_ONEPAGE_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme})});
+ return {status:response.status,ok:response.ok,data:await response.json()};
 }
 
 // Core gateway functions
@@ -279,6 +288,10 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name:"compile_onepage_job", title:"Compile Onepage Job", description:COMPILE_ONEPAGE_DESC, annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{type:"object",properties:{brand:{type:"string"},source_url:{type:"string"},source_type:{type:"string",enum:["auto","product","collection"]},theme:{type:"string"}},required:["brand"]},
+  },
+  {
     name: "submit_training_feedback",
     title: "Submit Training Feedback",
     description: SUBMIT_FEEDBACK_DESC,
@@ -315,7 +328,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Canonical Creative DNA resolution is read-only. Team members may use submit_training_feedback only to create Pending review proposals; this tool never changes canonical DNA. Use list_creative_dna_routes to discover routes and resolve_creative_dna to resolve canonical specifications.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Canonical Creative DNA resolution is read-only. Team members may use submit_training_feedback only to create Pending review proposals; this tool never changes canonical DNA. For Onepage tasks, prefer compile_onepage_job first; use resolve_creative_dna only when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
     }
   );
 
@@ -368,6 +381,12 @@ export function createMcpServer(): McpServer {
       }
     }
   );
+
+  // Preferred Onepage compiler: compact execution contract, no canonical mutation
+  server.registerTool("compile_onepage_job",{
+    title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
+    inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional()},annotations:READ_ONLY_TOOL_ANNOTATIONS
+  },async({brand,source_url,source_type,theme})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme);return{content:[{type:"text",text:JSON.stringify(u.data,null,2)}],isError:!u.ok}}catch(err:any){return{content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}}});
 
   // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
   server.registerTool(
@@ -813,6 +832,10 @@ export function createApp(): express.Application {
               brand: "string (required, e.g. PawfectHouse, GiftSoul, SoulPrise)",
               branch: "string (required, e.g. Onepage, LDP Hero, Shop By Product, UGC)",
             },
+          },
+          {
+            name:"compile_onepage_job",title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+            parameters:{brand:"string (required)",source_url:"string (optional)",source_type:"auto | product | collection",theme:"string (optional)"},
           },
           {
             name:"submit_training_feedback", title:"Submit Training Feedback", description:SUBMIT_FEEDBACK_DESC, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
