@@ -42,7 +42,7 @@ export const APP_METADATA = {
   ],
   supportedBrands: ["PawfectHouse", "GiftSoul", "SoulPrise"],
   status: "Live",
-  mode: "Read-only",
+  mode: "Canonical read-only + pending feedback submission",
   complianceStatement: "Built for ChatGPT using the Apps SDK and Model Context Protocol.",
   sourceOfTruth: "Creative DNA canonical datastore",
   mcpEndpoint: CANONICAL_PRODUCTION_MCP_URL,
@@ -653,6 +653,17 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/tools/submit_training_feedback", async (req: Request, res: Response) => {
+    try {
+      const body = req.body?.arguments || req.body || {};
+      const upstream = await submitTrainingFeedback(body.brand, body.branch, body.feedback, body.submitter_name, body.proposed_scope);
+      return res.status(upstream.status).json(upstream.data);
+    } catch (err: any) {
+      const safeMsg = sanitizePublicError(err, "Unable to submit training feedback");
+      return res.status(400).json({ error: safeMsg });
+    }
+  });
+
   app.post("/api/tools/list_creative_dna_routes", async (_req: Request, res: Response) => {
     try {
       const upstream = await listCreativeDnaRoutes();
@@ -692,7 +703,7 @@ export function createApp(): express.Application {
       name_for_human: APP_METADATA.name,
       name_for_model: "creative_dna",
       description_for_human: APP_METADATA.shortDescription,
-      description_for_model: APP_METADATA.longDescription + " Strictly read-only connection to the Creative DNA canonical datastore. Built for ChatGPT using the Apps SDK and Model Context Protocol. Use list_creative_dna_routes to discover available brand routes, and resolve_creative_dna to resolve canonical specifications.",
+      description_for_model: APP_METADATA.longDescription + " Canonical Creative DNA is read-only, but team members can submit training feedback as Pending admin-review proposals with submit_training_feedback. A pending proposal never changes canonical DNA. Use list_creative_dna_routes to discover routes, resolve_creative_dna for canonical specifications, and submit_training_feedback whenever the user explicitly says Creative DNA — Train: Brand / Branch.",
       auth: {
         type: "none",
       },
@@ -744,6 +755,32 @@ export function createApp(): express.Application {
             responses: { "200": { description: "List of available routes" } },
           },
         },
+        "/api/tools/submit_training_feedback": {
+          post: {
+            operationId: "submit_training_feedback",
+            summary: "Submit Creative DNA training feedback for admin review",
+            description: SUBMIT_FEEDBACK_DESC,
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["brand", "branch", "feedback"],
+                    properties: {
+                      brand: { type: "string" },
+                      branch: { type: "string" },
+                      feedback: { type: "string" },
+                      submitter_name: { type: "string" },
+                      proposed_scope: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+            responses: { "200": { description: "Pending feedback proposal accepted for admin review" } },
+          },
+        },
         "/api/resolve": {
           post: {
             operationId: "resolve_creative_dna",
@@ -777,7 +814,7 @@ export function createApp(): express.Application {
       title: "Privacy Policy",
       app: APP_METADATA.name,
       updated: "2026-09-18",
-      summary: "Creative DNA is a strictly read-only information retrieval service. We do not modify the Creative DNA database, do not sell user data, and do not request or store passwords, financial data, health records, or sensitive personal information.",
+      summary: "Creative DNA keeps canonical specifications read-only for member sessions. Team members may submit training feedback into a Pending admin-review queue; pending submissions do not modify canonical DNA. We do not sell user data and do not request or store passwords, financial data, health records, or sensitive personal information.",
       fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/privacy`,
     });
   });
@@ -856,7 +893,7 @@ export function createApp(): express.Application {
           pending_feedback_submission: true,
           destructiveHint: false,
           openWorldHint: false,
-          database_writes: "forbidden",
+          database_writes: "pending_feedback_proposals_only",
           generative_rewriting: "disabled",
           source_of_truth: "Creative DNA canonical datastore",
         },
