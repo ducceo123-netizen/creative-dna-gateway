@@ -530,6 +530,27 @@ export function createApp(): express.Application {
   // no service-role secret is exposed to the client.
   const adminUpstreamUrl = process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;
 
+  app.post("/api/admin/login", async (req: Request, res: Response) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
+    try {
+      const upstream = await fetch("https://wuonwttmkadwsmefjukv.supabase.co/auth/v1/token?grant_type=password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok || !data?.access_token) return res.status(401).json({ error: "Invalid email or password" });
+      return res.json({ access_token: data.access_token, expires_in: data.expires_in || 3600 });
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to sign in") });
+    }
+  });
+
   app.get("/api/admin/feedback", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
