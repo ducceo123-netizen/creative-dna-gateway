@@ -61,7 +61,7 @@ export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Crea
 
 export const COMPILE_ONEPAGE_DESC = `Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation.`;
 
-export const SUBMIT_FEEDBACK_DESC = `Use when a team member explicitly provides Creative DNA training feedback, especially prompts like "Creative DNA — Train: Brand / Branch". This only submits a Pending proposal for admin review. It never modifies canonical Creative DNA.`;
+export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This is an allowed write operation that creates only a Pending proposal for admin review and never modifies canonical Creative DNA.`;
 
 export const PENDING_WRITE_TOOL_ANNOTATIONS = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
 
@@ -123,10 +123,10 @@ export function sanitizePublicError(err: unknown, fallback = "Unable to resolve 
  */
 export function sanitizeRoutesData(data: any): any {
   if (!data || !Array.isArray(data.routes)) {
-    return { mode: "read_only", routes: [] };
+    return { mode: "canonical_read_only_pending_feedback_write", routes: [] };
   }
   return {
-    mode: "read_only",
+    mode: "canonical_read_only_pending_feedback_write",
     routes: data.routes.map((r: any) => ({
       brand: String(r.brand || ""),
       branch: String(r.branch || ""),
@@ -312,10 +312,10 @@ export const TOOL_DEFINITIONS = [
 
 /**
  * Creates and configures a standards-compliant Model Context Protocol server.
- * Strictly adheres to read-only security rules:
- * - No database writes, training, seeding, approvals, updates, or deletes.
- * - Single source of truth is the canonical Creative DNA datastore.
- * - Returns upstream response unchanged without rewriting, summarizing, or synthesizing new DNA.
+ * Canonical Creative DNA resolution remains read-only.
+ * Training feedback is the only member write path and creates Pending proposals only.
+ * Pending feedback never mutates canonical Creative DNA; admin review/merge remains separate.
+ * Single source of truth is the canonical Creative DNA datastore.
  */
 export function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -328,7 +328,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. It provides canonical brand direction, visual rules, landing-page systems, asset specifications, product imagery rules, UGC direction, and brand-specific production constraints. Canonical Creative DNA resolution is read-only. Team members may use submit_training_feedback only to create Pending review proposals; this tool never changes canonical DNA. For Onepage tasks, prefer compile_onepage_job first; use resolve_creative_dna only when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
     }
   );
 
@@ -576,7 +576,7 @@ export function createApp(): express.Application {
       const latencyMs = Date.now() - startTime;
       return res.json({
         status: "ok",
-        mode: "read_only",
+        mode: "canonical_read_only_pending_feedback_write",
         upstream: upstream.ok ? "connected" : "degraded",
         latencyMs,
         productionMcpUrl: CANONICAL_PRODUCTION_MCP_URL,
@@ -586,7 +586,7 @@ export function createApp(): express.Application {
       console.error("[HEALTH CHECK ERROR]", err);
       return res.status(502).json({
         status: "error",
-        mode: "read_only",
+        mode: "canonical_read_only_pending_feedback_write",
         upstream: "unreachable",
         message: "Unable to reach canonical Creative DNA datastore",
         latencyMs: Date.now() - startTime,
@@ -737,7 +737,7 @@ export function createApp(): express.Application {
           get: {
             operationId: "get_health_status",
             summary: "Check system health and upstream datastore connectivity",
-            description: "Returns the read-only operational status of the Creative DNA Gateway and upstream datastore connectivity.",
+            description: "Returns operational status of the Creative DNA Gateway. Canonical DNA is read-only; pending feedback submission is writable.",
             responses: { "200": { description: "Operational status" } },
           },
         },
@@ -824,7 +824,7 @@ export function createApp(): express.Application {
       title: "Terms of Service",
       app: APP_METADATA.name,
       updated: "2026-09-18",
-      summary: "Creative DNA specifications are provided as read-only creative direction and production rules. Specifications are provided as-is without guarantee of completeness for every use case; users remain responsible for final creative and product decisions.",
+      summary: "Canonical Creative DNA specifications are read-only for member sessions. Members may submit training feedback to a Pending admin-review queue; pending feedback does not modify canonical DNA. Specifications are provided as-is and users remain responsible for final creative and product decisions.",
       fullUrl: `${CANONICAL_PRODUCTION_ORIGIN}/terms`,
     });
   });
