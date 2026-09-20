@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock3, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, LogIn, LogOut, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
 
 type Proposal = {
   id: string;
@@ -16,6 +16,9 @@ type Proposal = {
 
 export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [token, setToken] = useState(() => sessionStorage.getItem("creative_dna_admin_token") || "");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -24,15 +27,30 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
 
   const filtered = useMemo(() => filter === "all" ? proposals : proposals.filter(p => p.status === filter), [proposals, filter]);
 
-  const load = async () => {
-    if (!token.trim()) return setMessage("Paste an authenticated admin JWT first.");
+  const login = async () => {
+    if (!email.trim() || !password) return setMessage("Enter your admin email and password.");
+    setAuthLoading(true); setMessage("");
+    try {
+      const res = await fetch("/api/admin/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ email:email.trim(), password }) });
+      const data = await res.json();
+      if (!res.ok || !data.access_token) throw new Error(data.error || "Unable to sign in");
+      sessionStorage.setItem("creative_dna_admin_token", data.access_token);
+      setToken(data.access_token); setPassword("");
+      await load(data.access_token);
+    } catch(e:any) { setMessage(e.message); } finally { setAuthLoading(false); }
+  };
+
+  const logout = () => { sessionStorage.removeItem("creative_dna_admin_token"); setToken(""); setProposals([]); setMessage("Signed out."); };
+
+  const load = async (authToken = token) => {
+    if (!authToken.trim()) return setMessage("Sign in with your admin account first.");
     setLoading(true); setMessage("");
     try {
-      const res = await fetch("/api/admin/feedback", { headers: { Authorization: `Bearer ${token.trim()}` } });
+      const res = await fetch("/api/admin/feedback", { headers: { Authorization: `Bearer ${authToken.trim()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load feedback queue");
       setProposals(data.proposals || []);
-      sessionStorage.setItem("creative_dna_admin_token", token.trim());
+      sessionStorage.setItem("creative_dna_admin_token", authToken.trim());
     } catch (e:any) { setMessage(e.message); } finally { setLoading(false); }
   };
 
@@ -63,10 +81,14 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>
         <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${loading?"animate-spin":""}`}/>Refresh</button>
       </div>
-      <div className="grid sm:grid-cols-[1fr_auto] gap-3">
-        <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="Admin Supabase JWT" className="w-full px-3 py-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
+      {!token ? <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3">
+        <input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Admin email" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
+        <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==="Enter") login();}} placeholder="Password" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
+        <button onClick={login} disabled={authLoading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-50"><LogIn className="w-4 h-4"/>{authLoading?"Signing in...":"Sign in"}</button>
+      </div> : <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex gap-1">{["pending","accepted","rejected","all"].map(x=><button key={x} onClick={()=>setFilter(x)} className={`px-3 py-2 text-xs font-semibold rounded-lg border ${filter===x?"bg-slate-900 text-white border-slate-900":"bg-white text-slate-600 border-slate-200"}`}>{x}</button>)}</div>
-      </div>
+        <button onClick={logout} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600"><LogOut className="w-3.5 h-3.5"/>Sign out</button>
+      </div>}
       {message && <div className="text-xs p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">{message}</div>}
     </section>
     <section className="space-y-3">
