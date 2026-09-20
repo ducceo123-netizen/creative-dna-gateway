@@ -539,7 +539,7 @@ export function createApp(): express.Application {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": "sb_publishable_KyU6zB4b5oNPNw2bIezJ6Q_mC7K9oJX",
+          "apikey": "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_",
         },
         body: JSON.stringify({ email, password }),
       });
