@@ -569,6 +569,24 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/admin/feedback/:id/merge", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "merge", proposal_id: req.params.id }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to merge feedback" });
+      return res.json(data);
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to merge feedback") });
+    }
+  });
+
   app.post("/api/admin/feedback/:id/review", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
