@@ -738,18 +738,21 @@ export function createApp(): express.Application {
     }
   });
 
-  app.post("/api/feedback/context-assets/upload", express.raw({type:["image/png","image/jpeg","image/webp","image/gif"],limit:"10mb"}), async (req: Request, res: Response) => {
+  app.post("/api/feedback/context-assets/upload", async (req: Request, res: Response) => {
     try {
-      const contentType=String(req.header("content-type")||"").split(";")[0].toLowerCase();
-      if(!["image/png","image/jpeg","image/webp","image/gif"].includes(contentType)) return res.status(415).json({error:"PNG, JPEG, WebP, or GIF required"});
-      const bytes=Buffer.isBuffer(req.body)?req.body:Buffer.from(req.body||[]);
-      if(!bytes.length) return res.status(400).json({error:"Image body is required"});
+      const body=req.body||{};
+      const mimeType=String(body.mime_type||"").toLowerCase();
+      if(!["image/png","image/jpeg","image/webp","image/gif"].includes(mimeType)) return res.status(415).json({error:"PNG, JPEG, WebP, or GIF required"});
+      const clean=String(body.data_base64||"").replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/,"").replace(/\s+/g,"");
+      if(!clean) return res.status(400).json({error:"Image data is required"});
+      const bytes=Buffer.from(clean,"base64");
+      if(!bytes.length) return res.status(400).json({error:"Image data is invalid"});
       if(bytes.length>10*1024*1024) return res.status(413).json({error:"Image exceeds 10 MB"});
       const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
       if(!serviceKey) return res.status(503).json({error:"Storage upload is not configured"});
-      const ext=contentType==="image/png"?"png":contentType==="image/webp"?"webp":contentType==="image/gif"?"gif":"jpg";
+      const ext=mimeType==="image/png"?"png":mimeType==="image/webp"?"webp":mimeType==="image/gif"?"gif":"jpg";
       const objectPath=`member/${Date.now()}-${Math.random().toString(36).slice(2,10)}.${ext}`;
-      const upload=await fetch(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":contentType,"x-upsert":"false"},body:bytes});
+      const upload=await fetch(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":mimeType,"x-upsert":"false"},body:bytes});
       if(!upload.ok) return res.status(502).json({error:"Unable to persist feedback image"});
       return res.status(201).json({asset_id:objectPath,image_url:`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/public/feedback-context/${objectPath}`});
     } catch(err:any){ return res.status(500).json({error:sanitizePublicError(err,"Unable to upload feedback context asset")}); }
