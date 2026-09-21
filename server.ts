@@ -700,6 +700,32 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/feedback/context-image", async (req: Request, res: Response) => {
+    if (!feedbackUpstreamUrl) return res.status(503).json({ error:"Feedback service is not configured" });
+    try {
+      const body = req.body || {};
+      const sourceUrl = String(body.source_url || "").trim();
+      const referenceId = String(body.reference_id || "").trim();
+      if (!sourceUrl || !/^https:\/\/chatgpt\.com\/api\/library\/files\/libfile_[a-zA-Z0-9_-]+\/download(?:\?.*)?$/.test(sourceUrl)) {
+        return res.status(400).json({ error:"A valid ChatGPT Library image source_url is required" });
+      }
+      const upstream = await fetch(sourceUrl, { headers: req.header("authorization") ? { Authorization:req.header("authorization")! } : undefined });
+      if (!upstream.ok) return res.status(400).json({ error:"Unable to fetch Library image. Upload requires an accessible source in the current session." });
+      const contentType = upstream.headers.get("content-type") || "";
+      if (!/^image\/(png|jpeg|webp|gif)/i.test(contentType)) return res.status(415).json({ error:"Source is not a supported image" });
+      const bytes = Buffer.from(await upstream.arrayBuffer());
+      if (bytes.length > 10*1024*1024) return res.status(413).json({ error:"Image exceeds 10 MB" });
+      const ext = contentType.includes("png")?"png":contentType.includes("webp")?"webp":contentType.includes("gif")?"gif":"jpg";
+      const safeRef = (referenceId || "context").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100);
+      const objectPath = `member/${Date.now()}-${safeRef}.${ext}`;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!serviceKey) return res.status(503).json({ error:"Storage upload is not configured" });
+      const upload = await fetch(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`, { method:"POST", headers:{ Authorization:`Bearer ${serviceKey}`, apikey:serviceKey, "Content-Type":contentType, "x-upsert":"false" }, body:bytes });
+      if (!upload.ok) return res.status(502).json({ error:"Unable to persist feedback image" });
+      return res.json({ image_url:`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/public/feedback-context/${objectPath}`, reference_id:referenceId || null });
+    } catch (err:any) { return res.status(500).json({ error:sanitizePublicError(err,"Unable to persist feedback image") }); }
+  });
+
   app.post("/api/tools/submit_training_feedback", async (req: Request, res: Response) => {
     try {
       const body = req.body?.arguments || req.body || {};
