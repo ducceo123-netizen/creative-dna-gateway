@@ -12,6 +12,8 @@ type Proposal = {
   created_at?: string;
   reviewed_at?: string;
   review_note?: string;
+  merged_at?: string;
+  context_images?: Array<{ role:string; image_url?:string|null; reference_id?:string|null; caption?:string|null }>;
 };
 
 export function AdminFeedback({ onBack }: { onBack: () => void }) {
@@ -111,6 +113,13 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
         </div>
         <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 text-sm leading-relaxed whitespace-pre-wrap">{p.raw_feedback}</div>
+        {!!p.context_images?.length && <div className="space-y-2">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Generation context · {p.context_images.length} image{p.context_images.length===1?"":"s"}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">{p.context_images.map((img,i)=><div key={i} className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
+            {img.image_url ? <a href={img.image_url} target="_blank" rel="noreferrer"><img src={img.image_url} alt={img.caption || img.role} className="w-full aspect-square object-cover bg-white"/></a> : <div className="aspect-square p-3 flex items-center justify-center text-center text-[10px] text-slate-400 break-all">{img.reference_id || "Image reference"}</div>}
+            <div className="p-2 space-y-1"><div className="text-[10px] font-bold text-indigo-700 break-words">{img.role.replaceAll("_"," ")}</div>{img.caption && <div className="text-[11px] text-slate-600 line-clamp-2">{img.caption}</div>}{img.reference_id && <div className="text-[9px] text-slate-400 truncate" title={img.reference_id}>{img.reference_id}</div>}</div>
+          </div>)}</div>
+        </div>}
         <div className="text-xs text-slate-500">Proposed scope: <span className="font-semibold text-slate-700">{p.proposed_scope || "brand_branch"}</span></div>
         {p.status==="pending" && <div className="space-y-2">
           <textarea value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin review note..." className="w-full min-h-20 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
