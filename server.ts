@@ -61,7 +61,7 @@ export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Crea
 
 export const COMPILE_ONEPAGE_DESC = `Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation.`;
 
-export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This creates only a Pending proposal. When the feedback concerns generated images or the conversation contains images/files used to explain the feedback, ALWAYS populate context_images rather than mentioning the image only inside feedback text. Prefer OUTPUT_BEING_REVIEWED for generated outputs being critiqued; use STYLE_REFERENCE, PRODUCT_REFERENCE, or GENERATION_CONTEXT only when appropriate. Pass an accessible image_url when available; otherwise pass the exact file/library/reference identifier in reference_id plus a concise caption. Do not omit context_images merely because only a file/reference ID is available. References are review evidence only and never become canonical style references automatically.`;
+export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This creates only a Pending proposal. When the feedback concerns generated images or the conversation contains images/files used to explain the feedback, ALWAYS populate context_images rather than mentioning the image only inside feedback text. Prefer OUTPUT_BEING_REVIEWED for generated outputs being critiqued; use STYLE_REFERENCE, PRODUCT_REFERENCE, or GENERATION_CONTEXT only when appropriate. When actual attachment/image bytes are available, prefer context_image_uploads with base64 data + mime_type; the gateway will persist the image to Creative DNA Storage and convert it into context_images automatically. Use context_images.image_url only for URLs that are genuinely cross-site accessible. Never use chatgpt.com Library download URLs as image_url. If bytes are unavailable, pass the exact file/library/reference identifier in context_images.reference_id plus a concise caption. References are review evidence only and never become canonical style references automatically.`;
 
 export const PENDING_WRITE_TOOL_ANNOTATIONS = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
 
@@ -136,13 +136,31 @@ export function sanitizeRoutesData(data: any): any {
 }
 
 export type FeedbackContextImage = { role:"OUTPUT_BEING_REVIEWED"|"STYLE_REFERENCE"|"PRODUCT_REFERENCE"|"GENERATION_CONTEXT"; image_url?:string; reference_id?:string; caption?:string };
+export type FeedbackContextImageUpload = { role:"OUTPUT_BEING_REVIEWED"|"STYLE_REFERENCE"|"PRODUCT_REFERENCE"|"GENERATION_CONTEXT"; data_base64:string; mime_type:"image/png"|"image/jpeg"|"image/webp"|"image/gif"; reference_id?:string; caption?:string };
 
-export async function submitTrainingFeedback(brand:string, branch:string, feedback:string, submitter_name?:string, proposed_scope?:string, context_images?:FeedbackContextImage[]) {
+async function persistFeedbackContextImage(upload:FeedbackContextImageUpload):Promise<FeedbackContextImage> {
+  const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!serviceKey) throw new Error("feedback image storage is not configured");
+  const clean=String(upload.data_base64||"").replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/,"").replace(/\s+/g,"");
+  if(!clean) throw new Error("context image data is required");
+  const bytes=Buffer.from(clean,"base64");
+  if(!bytes.length || bytes.length>10*1024*1024) throw new Error("context image exceeds maximum allowed size");
+  const ext=upload.mime_type==="image/png"?"png":upload.mime_type==="image/webp"?"webp":upload.mime_type==="image/gif"?"gif":"jpg";
+  const safeRef=String(upload.reference_id||"context").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"context";
+  const objectPath=`member/${Date.now()}-${safeRef}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const response=await fetch(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":upload.mime_type,"x-upsert":"false"},body:bytes});
+  if(!response.ok) throw new Error("unable to persist context image");
+  return {role:upload.role,image_url:`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/public/feedback-context/${objectPath}`,reference_id:upload.reference_id,caption:upload.caption};
+}
+
+export async function submitTrainingFeedback(brand:string, branch:string, feedback:string, submitter_name?:string, proposed_scope?:string, context_images?:FeedbackContextImage[], context_image_uploads?:FeedbackContextImageUpload[]) {
   const validated = validateResolveInput(brand, branch);
   const cleanFeedback = String(feedback || "").trim();
   if (cleanFeedback.length < 3) throw new Error("feedback is required");
   if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
-  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope,context_images})});
+  const persistedUploads=context_image_uploads?.length ? await Promise.all(context_image_uploads.slice(0,12).map(persistFeedbackContextImage)) : [];
+  const normalizedImages=[...(context_images||[]),...persistedUploads].slice(0,12);
+  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope,context_images:normalizedImages})});
   return {status:response.status,ok:response.ok,data:await response.json()};
 }
 
@@ -298,7 +316,7 @@ export const TOOL_DEFINITIONS = [
     title: "Submit Training Feedback",
     description: SUBMIT_FEEDBACK_DESC,
     annotations: PENDING_WRITE_TOOL_ANNOTATIONS,
-    inputSchema: { type:"object", properties:{ brand:{type:"string"}, branch:{type:"string"}, feedback:{type:"string"}, submitter_name:{type:"string"}, proposed_scope:{type:"string"}, context_images:{type:"array",maxItems:12,description:"Optional images from the generation/review context. Attach the output being reviewed whenever an accessible image URL or reference is available.",items:{type:"object",properties:{role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]},image_url:{type:"string"},reference_id:{type:"string"},caption:{type:"string"}},required:["role"]}} }, required:["brand","branch","feedback"] },
+    inputSchema: { type:"object", properties:{ brand:{type:"string"}, branch:{type:"string"}, feedback:{type:"string"}, submitter_name:{type:"string"}, proposed_scope:{type:"string"}, context_images:{type:"array",maxItems:12,description:"Optional images from the generation/review context. Attach the output being reviewed whenever an accessible image URL or reference is available.",items:{type:"object",properties:{role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]},image_url:{type:"string"},reference_id:{type:"string"},caption:{type:"string"}},required:["role"]}}, context_image_uploads:{type:"array",maxItems:12,description:"Preferred for attached images when image bytes are available. Send base64 image data; the gateway persists it to Creative DNA Storage and stores the resulting URL in context_images.",items:{type:"object",properties:{role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]},data_base64:{type:"string"},mime_type:{type:"string",enum:["image/png","image/jpeg","image/webp","image/gif"]},reference_id:{type:"string"},caption:{type:"string"}},required:["role","data_base64","mime_type"]}} }, required:["brand","branch","feedback"] },
   },
   {
     name: "list_creative_dna_routes",
@@ -330,7 +348,7 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For image-related Train requests, MUST attach the relevant conversation/generated image context through context_images. If an image has no accessible URL, send its exact file/library reference in reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For image-related Train requests, MUST attach relevant image evidence. Prefer context_image_uploads whenever attachment/image bytes are available so the gateway persists them to Creative DNA Storage. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
     }
   );
 
@@ -405,11 +423,18 @@ export function createMcpServer(): McpServer {
           image_url:z.string().url().max(4000).optional(),
           reference_id:z.string().max(500).optional(),
           caption:z.string().max(500).optional()
+        })).max(12).optional(),
+        context_image_uploads:z.array(z.object({
+          role:z.enum(["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]),
+          data_base64:z.string().min(1),
+          mime_type:z.enum(["image/png","image/jpeg","image/webp","image/gif"]),
+          reference_id:z.string().max(500).optional(),
+          caption:z.string().max(500).optional()
         })).max(12).optional()
       }, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
     },
-    async ({brand,branch,feedback,submitter_name,proposed_scope,context_images})=>{
-      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope,context_images); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
+    async ({brand,branch,feedback,submitter_name,proposed_scope,context_images,context_image_uploads})=>{
+      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope,context_images,context_image_uploads); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
       catch(err:any){ return {content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to submit training feedback")})}],isError:true}; }
     }
   );
@@ -461,7 +486,7 @@ export function createApp(): express.Application {
   const app = express();
 
   // Conservative body limit - MCP tools only send small text parameters
-  app.use(express.json({ limit: "64kb" }));
+  app.use(express.json({ limit: "14mb" }));
 
   // Handle payload too large
   app.use((err: any, _req: Request, res: Response, next: any) => {
@@ -729,7 +754,7 @@ export function createApp(): express.Application {
   app.post("/api/tools/submit_training_feedback", async (req: Request, res: Response) => {
     try {
       const body = req.body?.arguments || req.body || {};
-      const upstream = await submitTrainingFeedback(body.brand, body.branch, body.feedback, body.submitter_name, body.proposed_scope, body.context_images);
+      const upstream = await submitTrainingFeedback(body.brand, body.branch, body.feedback, body.submitter_name, body.proposed_scope, body.context_images, body.context_image_uploads);
       return res.status(upstream.status).json(upstream.data);
     } catch (err: any) {
       const safeMsg = sanitizePublicError(err, "Unable to submit training feedback");
@@ -847,6 +872,7 @@ export function createApp(): express.Application {
                       submitter_name: { type: "string" },
                       proposed_scope: { type: "string" },
                       context_images: { type:"array", maxItems:12, items:{ type:"object", properties:{ role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]}, image_url:{type:"string"}, reference_id:{type:"string"}, caption:{type:"string"} }, required:["role"] } },
+                      context_image_uploads: { type:"array", maxItems:12, items:{ type:"object", properties:{ role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]}, data_base64:{type:"string"}, mime_type:{type:"string",enum:["image/png","image/jpeg","image/webp","image/gif"]}, reference_id:{type:"string"}, caption:{type:"string"} }, required:["role","data_base64","mime_type"] } },
                     },
                   },
                 },
