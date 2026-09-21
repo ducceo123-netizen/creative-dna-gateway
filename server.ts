@@ -61,7 +61,7 @@ export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Crea
 
 export const COMPILE_ONEPAGE_DESC = `Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation.`;
 
-export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This is an allowed write operation that creates only a Pending proposal for admin review and never modifies canonical Creative DNA.`;
+export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This creates only a Pending proposal. When accessible images from the generation/review context exist, include them in context_images, especially OUTPUT_BEING_REVIEWED; references are evidence only and never become canonical style references automatically.`;
 
 export const PENDING_WRITE_TOOL_ANNOTATIONS = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
 
@@ -135,12 +135,14 @@ export function sanitizeRoutesData(data: any): any {
   };
 }
 
-export async function submitTrainingFeedback(brand:string, branch:string, feedback:string, submitter_name?:string, proposed_scope?:string) {
+export type FeedbackContextImage = { role:"OUTPUT_BEING_REVIEWED"|"STYLE_REFERENCE"|"PRODUCT_REFERENCE"|"GENERATION_CONTEXT"; image_url?:string; reference_id?:string; caption?:string };
+
+export async function submitTrainingFeedback(brand:string, branch:string, feedback:string, submitter_name?:string, proposed_scope?:string, context_images?:FeedbackContextImage[]) {
   const validated = validateResolveInput(brand, branch);
   const cleanFeedback = String(feedback || "").trim();
   if (cleanFeedback.length < 3) throw new Error("feedback is required");
   if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
-  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope})});
+  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:cleanFeedback,submitter_name,proposed_scope,context_images})});
   return {status:response.status,ok:response.ok,data:await response.json()};
 }
 
@@ -296,7 +298,7 @@ export const TOOL_DEFINITIONS = [
     title: "Submit Training Feedback",
     description: SUBMIT_FEEDBACK_DESC,
     annotations: PENDING_WRITE_TOOL_ANNOTATIONS,
-    inputSchema: { type:"object", properties:{ brand:{type:"string"}, branch:{type:"string"}, feedback:{type:"string"}, submitter_name:{type:"string"}, proposed_scope:{type:"string"} }, required:["brand","branch","feedback"] },
+    inputSchema: { type:"object", properties:{ brand:{type:"string"}, branch:{type:"string"}, feedback:{type:"string"}, submitter_name:{type:"string"}, proposed_scope:{type:"string"}, context_images:{type:"array",maxItems:12,description:"Optional images from the generation/review context. Attach the output being reviewed whenever an accessible image URL or reference is available.",items:{type:"object",properties:{role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]},image_url:{type:"string"},reference_id:{type:"string"},caption:{type:"string"}},required:["role"]}} }, required:["brand","branch","feedback"] },
   },
   {
     name: "list_creative_dna_routes",
@@ -397,11 +399,17 @@ export function createMcpServer(): McpServer {
         brand:z.string().trim().min(1).max(100), branch:z.string().trim().min(1).max(150),
         feedback:z.string().trim().min(3).max(8000),
         submitter_name:z.string().trim().max(120).optional(),
-        proposed_scope:z.string().trim().max(80).optional()
+        proposed_scope:z.string().trim().max(80).optional(),
+        context_images:z.array(z.object({
+          role:z.enum(["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]),
+          image_url:z.string().url().max(4000).optional(),
+          reference_id:z.string().max(500).optional(),
+          caption:z.string().max(500).optional()
+        })).max(12).optional()
       }, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
     },
-    async ({brand,branch,feedback,submitter_name,proposed_scope})=>{
-      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
+    async ({brand,branch,feedback,submitter_name,proposed_scope,context_images})=>{
+      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope,context_images); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
       catch(err:any){ return {content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to submit training feedback")})}],isError:true}; }
     }
   );
@@ -695,7 +703,7 @@ export function createApp(): express.Application {
   app.post("/api/tools/submit_training_feedback", async (req: Request, res: Response) => {
     try {
       const body = req.body?.arguments || req.body || {};
-      const upstream = await submitTrainingFeedback(body.brand, body.branch, body.feedback, body.submitter_name, body.proposed_scope);
+      const upstream = await submitTrainingFeedback(body.brand, body.branch, body.feedback, body.submitter_name, body.proposed_scope, body.context_images);
       return res.status(upstream.status).json(upstream.data);
     } catch (err: any) {
       const safeMsg = sanitizePublicError(err, "Unable to submit training feedback");
@@ -812,6 +820,7 @@ export function createApp(): express.Application {
                       feedback: { type: "string" },
                       submitter_name: { type: "string" },
                       proposed_scope: { type: "string" },
+                      context_images: { type:"array", maxItems:12, items:{ type:"object", properties:{ role:{type:"string",enum:["OUTPUT_BEING_REVIEWED","STYLE_REFERENCE","PRODUCT_REFERENCE","GENERATION_CONTEXT"]}, image_url:{type:"string"}, reference_id:{type:"string"}, caption:{type:"string"} }, required:["role"] } },
                     },
                   },
                 },
@@ -915,7 +924,7 @@ export function createApp(): express.Application {
           },
           {
             name:"submit_training_feedback", title:"Submit Training Feedback", description:SUBMIT_FEEDBACK_DESC, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
-            parameters:{brand:"string (required)",branch:"string (required)",feedback:"string (required)",submitter_name:"string (optional)",proposed_scope:"string (optional)"},
+            parameters:{brand:"string (required)",branch:"string (required)",feedback:"string (required)",submitter_name:"string (optional)",proposed_scope:"string (optional)",context_images:"array (optional; role + image_url/reference_id + caption)"},
           },
           {
             name: "list_creative_dna_routes",
