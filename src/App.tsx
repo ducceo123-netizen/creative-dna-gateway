@@ -28,6 +28,7 @@ import { PrivacyPolicy } from "./components/PrivacyPolicy";
 import { TermsOfService } from "./components/TermsOfService";
 import { SupportPage } from "./components/SupportPage";
 import { AdminFeedback } from "./components/AdminFeedback";
+import { FeedbackUpload } from "./components/FeedbackUpload";
 import { HealthResponse, QueryMeta, RouteItem } from "./types";
 
 const PRODUCTION_MCP_URL = "https://creative-dna-gateway.vercel.app/api/mcp";
@@ -93,7 +94,7 @@ const PRESET_PROMPTS = [
   },
 ];
 
-type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback";
+type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback" | "feedback-upload";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<ActivePage>("home");
@@ -122,6 +123,8 @@ export default function App() {
         setCurrentPage("support");
       } else if (path === "/admin/feedback") {
         setCurrentPage("admin-feedback");
+      } else if (path === "/feedback/upload") {
+        setCurrentPage("feedback-upload");
       } else {
         setCurrentPage("home");
       }
@@ -347,6 +350,14 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
         <AdminFeedback onBack={() => navigateTo("home")} />
+      </div>
+    );
+  }
+
+  if (currentPage === "feedback-upload") {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
+        <FeedbackUpload onBack={() => navigateTo("home")} />
       </div>
     );
   }
