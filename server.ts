@@ -1069,6 +1069,37 @@ export function createApp(): express.Application {
       });
     }
 
+    // Compatibility bridge for MCP 2026-07-28 clients while this gateway uses SDK v1's
+    // legacy stateless Streamable HTTP transport. Modern clients mirror request metadata
+    // into headers + params._meta; SDK v1 can reject that envelope before tool dispatch.
+    // Validate the mirrored routing fields first, then remove only the modern transport
+    // metadata so the existing stateless tool handler can execute the same JSON-RPC call.
+    if (req.method === "POST" && req.body && typeof req.body === "object") {
+      const protocolHeader = String(req.headers["mcp-protocol-version"] || "");
+      const methodHeader = String(req.headers["mcp-method"] || "");
+      const nameHeader = String(req.headers["mcp-name"] || "");
+      const bodyMethod = String(req.body.method || "");
+      const bodyName = String(req.body?.params?.name || req.body?.params?.uri || "");
+      const modern = protocolHeader === "2026-07-28" || Boolean(req.body?.params?._meta?.["io.modelcontextprotocol/protocolVersion"]);
+
+      if (modern) {
+        if ((methodHeader && methodHeader !== bodyMethod) || (nameHeader && bodyName && nameHeader !== bodyName)) {
+          return res.status(400).json({jsonrpc:"2.0",id:req.body?.id??null,error:{code:-32020,message:"MCP request metadata header mismatch"}});
+        }
+        if (req.body?.params?._meta) {
+          const meta={...req.body.params._meta};
+          delete meta["io.modelcontextprotocol/protocolVersion"];
+          delete meta["io.modelcontextprotocol/clientInfo"];
+          delete meta["io.modelcontextprotocol/clientCapabilities"];
+          if (Object.keys(meta).length) req.body.params._meta=meta;
+          else delete req.body.params._meta;
+        }
+        delete req.headers["mcp-protocol-version"];
+        delete req.headers["mcp-method"];
+        delete req.headers["mcp-name"];
+      }
+    }
+
     // Normalize Accept header for clients that omit text/event-stream or send default Accept: */*
     if (req.method === "POST") {
       if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
