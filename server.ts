@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import path from "path";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
+import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
@@ -1010,127 +1010,39 @@ export function createApp(): express.Application {
     });
   });
 
-  // Standards-compliant Remote Model Context Protocol (MCP) Streamable HTTP & SSE Server
-  // Supports initialize, notifications/initialized, ping, tools/list, and tools/call
-  app.all("/api/mcp", async (req: Request, res: Response) => {
-    const accept = (req.headers.accept || "").toLowerCase();
+  // MCP v2 HTTP entry: serves modern 2026-07-28 per-request metadata and
+  // legacy 2025-era stateless clients from the same endpoint.
+  const mcpHandler = createMcpHandler(() => createMcpServer(), { legacy: "stateless" });
+  const mcpNodeHandler = toNodeHandler(mcpHandler);
 
-    // Friendly browser / GET discovery if not requesting text/event-stream
-    if (req.method === "GET" && !accept.includes("text/event-stream")) {
-      return res.json({
-        name: APP_METADATA.name,
-        version: "1.0.0",
-        shortDescription: APP_METADATA.shortDescription,
-        longDescription: APP_METADATA.longDescription,
-        canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
-        protocolVersion: "2024-11-05",
-        transports: ["Streamable HTTP (POST)", "Server-Sent Events (GET SSE)"],
-        capabilities: {
-          tools: { listChanged: false },
-        },
-        tools: [
-          {
-            name: "resolve_creative_dna",
-            title: "Resolve Creative DNA",
-            description: RESOLVE_CREATIVE_DNA_DESC,
-            annotations: READ_ONLY_TOOL_ANNOTATIONS,
-            parameters: {
-              brand: "string (required, e.g. PawfectHouse, GiftSoul, SoulPrise)",
-              branch: "string (required, e.g. Onepage, LDP Hero, Shop By Product, UGC)",
-            },
-          },
-          {
-            name:"compile_onepage_job",title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,annotations:READ_ONLY_TOOL_ANNOTATIONS,
-            parameters:{brand:"string (required)",source_url:"string (optional)",source_type:"auto | product | collection",theme:"string (optional)"},
-          },
-          {
-            name:"submit_training_feedback", title:"Submit Training Feedback", description:SUBMIT_FEEDBACK_DESC, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
-            parameters:{brand:"string (required)",branch:"string (required)",feedback:"string (required)",submitter_name:"string (optional)",proposed_scope:"string (optional)",context_images:"array (optional; role + image_url/reference_id + caption)"},
-          },
-          {
-            name: "list_creative_dna_routes",
-            title: "List Creative DNA Routes",
-            description: LIST_CREATIVE_DNA_ROUTES_DESC,
-            annotations: READ_ONLY_TOOL_ANNOTATIONS,
-            parameters: {},
-          },
-        ],
-        supportedBrands: APP_METADATA.supportedBrands,
-        capabilitiesList: APP_METADATA.capabilities,
-        security: {
-          canonical_dna_read_only: true,
-          pending_feedback_submission: true,
-          destructiveHint: false,
-          openWorldHint: false,
-          database_writes: "pending_feedback_proposals_only",
-          generative_rewriting: "disabled",
-          source_of_truth: "Creative DNA canonical datastore",
-        },
-      });
-    }
-
-    // Compatibility bridge for MCP 2026-07-28 clients while this gateway uses SDK v1's
-    // legacy stateless Streamable HTTP transport. Modern clients mirror request metadata
-    // into headers + params._meta; SDK v1 can reject that envelope before tool dispatch.
-    // Validate the mirrored routing fields first, then remove only the modern transport
-    // metadata so the existing stateless tool handler can execute the same JSON-RPC call.
-    if (req.method === "POST" && req.body && typeof req.body === "object") {
-      const protocolHeader = String(req.headers["mcp-protocol-version"] || "");
-      const methodHeader = String(req.headers["mcp-method"] || "");
-      const nameHeader = String(req.headers["mcp-name"] || "");
-      const bodyMethod = String(req.body.method || "");
-      const bodyName = String(req.body?.params?.name || req.body?.params?.uri || "");
-      const modern = protocolHeader === "2026-07-28" || Boolean(req.body?.params?._meta?.["io.modelcontextprotocol/protocolVersion"]);
-
-      if (modern) {
-        if ((methodHeader && methodHeader !== bodyMethod) || (nameHeader && bodyName && nameHeader !== bodyName)) {
-          return res.status(400).json({jsonrpc:"2.0",id:req.body?.id??null,error:{code:-32020,message:"MCP request metadata header mismatch"}});
-        }
-        if (req.body?.params?._meta) {
-          const meta={...req.body.params._meta};
-          delete meta["io.modelcontextprotocol/protocolVersion"];
-          delete meta["io.modelcontextprotocol/clientInfo"];
-          delete meta["io.modelcontextprotocol/clientCapabilities"];
-          if (Object.keys(meta).length) req.body.params._meta=meta;
-          else delete req.body.params._meta;
-        }
-        delete req.headers["mcp-protocol-version"];
-        delete req.headers["mcp-method"];
-        delete req.headers["mcp-name"];
-      }
-    }
-
-    // Normalize Accept header for clients that omit text/event-stream or send default Accept: */*
-    if (req.method === "POST") {
-      if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
-        req.headers.accept = "application/json, text/event-stream";
-      }
-    }
-
-    try {
-      // Per-request stateless Streamable HTTP transport (MCP spec compliant, serverless & Vercel friendly)
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
-        enableJsonResponse: true,
-      });
-
-      const server = createMcpServer();
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-    } catch (err: any) {
-      console.error("MCP Server Error:", err);
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: "2.0",
-          id: req.body?.id ?? null,
-          error: {
-            code: -32603,
-            message: "Internal MCP Server error",
-          },
-        });
-      }
-    }
+  // Human/browser discovery remains JSON; actual MCP traffic is handled by v2.
+  app.get("/api/mcp", (req: Request, res: Response, next) => {
+    const accept = String(req.headers.accept || "").toLowerCase();
+    if (accept.includes("text/event-stream")) return next();
+    return res.json({
+      name: APP_METADATA.name,
+      version: "2.0.0",
+      shortDescription: APP_METADATA.shortDescription,
+      longDescription: APP_METADATA.longDescription,
+      canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
+      protocolVersion: "2026-07-28",
+      legacyProtocolSupport: "stateless",
+      transports: ["Streamable HTTP (POST)"],
+      capabilities: { tools: { listChanged: false } },
+      tools: TOOL_DEFINITIONS.map(({ name, title, description, annotations }) => ({ name, title, description, annotations })),
+      supportedBrands: APP_METADATA.supportedBrands,
+      capabilitiesList: APP_METADATA.capabilities,
+      security: {
+        canonical_dna_read_only: true,
+        pending_feedback_submission: true,
+        destructiveHint: false,
+        openWorldHint: false,
+        database_writes: "pending_feedback_proposals_only",
+        source_of_truth: "Creative DNA canonical datastore",
+      },
+    });
   });
+  app.all("/api/mcp", mcpNodeHandler);
 
   // Explicit 404 handler for unmatched /api/* requests - guarantees API requests never fall through to the SPA index.html
   app.all("/api/*", (_req: Request, res: Response) => {
