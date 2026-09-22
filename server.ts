@@ -1015,34 +1015,23 @@ export function createApp(): express.Application {
   const mcpHandler = createMcpHandler(() => createMcpServer(), { legacy: "stateless" });
   const mcpNodeHandler = toNodeHandler(mcpHandler);
 
-  // Human/browser discovery remains JSON; actual MCP traffic is handled by v2.
-  app.get("/api/mcp", (req: Request, res: Response, next) => {
-    const accept = String(req.headers.accept || "").toLowerCase();
-    if (accept.includes("text/event-stream")) return next();
+  // IMPORTANT: /api/mcp is protocol-only. Do not return a custom JSON discovery
+  // document here: ChatGPT probes the MCP URL with GET/SSE during app creation and must
+  // receive the MCP transport response, not application metadata.
+  app.all("/api/mcp", mcpNodeHandler);
+
+  // Optional human-readable discovery lives on a separate URL so it cannot shadow MCP.
+  app.get("/api/mcp-info", (_req: Request, res: Response) => {
     return res.json({
       name: APP_METADATA.name,
       version: "2.0.0",
-      shortDescription: APP_METADATA.shortDescription,
-      longDescription: APP_METADATA.longDescription,
       canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
       protocolVersion: "2026-07-28",
       legacyProtocolSupport: "stateless",
-      transports: ["Streamable HTTP (POST)"],
       capabilities: { tools: { listChanged: false } },
       tools: TOOL_DEFINITIONS.map(({ name, title, description, annotations }) => ({ name, title, description, annotations })),
-      supportedBrands: APP_METADATA.supportedBrands,
-      capabilitiesList: APP_METADATA.capabilities,
-      security: {
-        canonical_dna_read_only: true,
-        pending_feedback_submission: true,
-        destructiveHint: false,
-        openWorldHint: false,
-        database_writes: "pending_feedback_proposals_only",
-        source_of_truth: "Creative DNA canonical datastore",
-      },
     });
   });
-  app.all("/api/mcp", mcpNodeHandler);
 
   // Explicit 404 handler for unmatched /api/* requests - guarantees API requests never fall through to the SPA index.html
   app.all("/api/*", (_req: Request, res: Response) => {
