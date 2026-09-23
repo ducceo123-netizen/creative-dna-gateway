@@ -1014,7 +1014,12 @@ export function createApp(): express.Application {
   // IMPORTANT: /api/mcp is protocol-only. Do not return a custom JSON discovery
   // document here: ChatGPT probes the MCP URL with GET/SSE during app creation and must
   // receive the MCP transport response, not application metadata.
-  app.all("/api/mcp", mcpNodeHandler);
+  // Express JSON middleware has already consumed POST bodies before this route.
+  // Pass req.body explicitly so the MCP Node adapter does not try to re-read an exhausted stream.
+  // This is required by @modelcontextprotocol/node when mounted behind express.json().
+  app.all("/api/mcp", (req: Request, res: Response) => {
+    void mcpNodeHandler(req, res, req.body);
+  });
 
   // Optional human-readable discovery lives on a separate URL so it cannot shadow MCP.
   app.get("/api/mcp-info", (_req: Request, res: Response) => {
