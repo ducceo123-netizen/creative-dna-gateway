@@ -139,6 +139,24 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span>{p.submitted_by_name || "Member"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
         </div>
+        {previewImages(p).length>0 && <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Case context</div>
+            <div className="text-[10px] text-slate-400">Problem → reference/product truth → generation context</div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {previewImages(p).slice(0,12).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="shrink-0 w-32 rounded-lg overflow-hidden border border-slate-200 bg-white">
+              <div className="relative">
+                <img src={img.image_url!} alt={img.caption || img.role || "Context"} className="w-full aspect-[4/3] object-cover"/>
+                <span className="absolute left-1.5 top-1.5 px-1.5 py-0.5 rounded bg-slate-950/75 text-white text-[8px] font-bold uppercase tracking-wide">{String(img.role || "context").replaceAll("_"," ")}</span>
+              </div>
+              <div className="p-2">
+                <div className="text-[10px] font-semibold text-slate-700 line-clamp-2">{img.caption || "Context image"}</div>
+                {img.reference_id && <div className="text-[9px] text-slate-400 truncate mt-1">{img.reference_id}</div>}
+              </div>
+            </a>)}
+          </div>
+        </div>}
         {(outs.length>0 || refs.length>0) && <div className="grid md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3"><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">Outcome / Problem</div>{outs.length ? <div className="grid grid-cols-2 gap-2">{outs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="relative overflow-hidden rounded-lg border border-rose-100 bg-white"><img src={img.image_url!} alt={img.caption || "Outcome"} className="w-full aspect-[4/3] object-cover"/>{img.caption && <div className="absolute inset-x-0 bottom-0 bg-slate-950/75 text-white text-[10px] p-2 line-clamp-2">{img.caption}</div>}</a>)}</div> : <div className="text-xs text-slate-400">No persisted outcome image</div>}</div>
           <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3"><div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2">Target / Reference</div>{refs.length ? <div className="grid grid-cols-2 gap-2">{refs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="relative overflow-hidden rounded-lg border border-emerald-100 bg-white"><img src={img.image_url!} alt={img.caption || "Reference"} className="w-full aspect-[4/3] object-cover"/>{img.caption && <div className="absolute inset-x-0 bottom-0 bg-slate-950/75 text-white text-[10px] p-2 line-clamp-2">{img.caption}</div>}</a>)}</div> : <div className="text-xs text-slate-400">No persisted target/reference image</div>}</div>
