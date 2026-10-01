@@ -142,7 +142,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     return res;
   };
 
-  const loadTeam = async (authToken = token) => {
+  const loadTeam = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token) => {
     if (!authToken.trim()) return;
     setTeamLoading(true);
     try {
@@ -173,7 +173,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setTeamLoading(false); }
   };
 
-  const load = async (authToken = token, silent = false) => {
+  const load = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token, silent = false) => {
     if (!authToken.trim()) return;
     if (!silent) { setLoading(true); setMessage(""); }
     try {
@@ -181,7 +181,6 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load feedback queue");
       setProposals(data.proposals || []);
-      sessionStorage.setItem("creative_dna_admin_token", authToken.trim());
     } catch (e:any) { if (!silent) setMessage(e.message); }
     finally { if (!silent) setLoading(false); }
   };
@@ -252,6 +251,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         <div>
           <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-indigo-600"/><h1 className="text-2xl font-extrabold text-slate-900">Admin Feedback Queue</h1></div>
           <p className="text-sm text-slate-500 mt-1">Visual-first review: scan context, problem, reusable rule and scope. Accept now merges directly into canonical DNA in one action.</p>
+          {token && <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>Auto-sync mỗi 10 giây · tự refresh session</div>}
         </div>
         <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${loading?"animate-spin":""}`}/>Refresh</button>
       </div>
