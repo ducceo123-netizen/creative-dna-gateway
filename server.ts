@@ -193,7 +193,7 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   const normalizedImages=[...(context_images||[]),...persistedUploads,...persistedAssets].slice(0,12);
   const normalizedSpec=validateTrainingSpec(training_spec);
   const enrichedFeedback=normalizedSpec ? `${cleanFeedback}\n\n--- AI INTERPRETED TRAINING SPEC ---\nObserved issue: ${normalizedSpec.observed_issue}\nGeneralized rule: ${normalizedSpec.generalized_rule}\nExpected behavior: ${normalizedSpec.expected_behavior}\nReject conditions: ${normalizedSpec.reject_conditions.join(" | ") || "None specified"}\nScope: ${normalizedSpec.scope}\nRule class: ${normalizedSpec.rule_class}\nEvidence summary: ${normalizedSpec.evidence_summary}\nConfidence: ${normalizedSpec.confidence}` : cleanFeedback;
-  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:enrichedFeedback,submitter_name,proposed_scope:normalizedSpec?.scope||proposed_scope,context_images:normalizedImages})});
+  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:enrichedFeedback,submitter_name,proposed_scope:normalizedSpec?.scope||proposed_scope,context_images:normalizedImages,training_spec:normalizedSpec})});
   return {status:response.status,ok:response.ok,data:await response.json()};
 }
 
