@@ -632,9 +632,41 @@ export function createApp(): express.Application {
       });
       const data:any = await upstream.json();
       if (!upstream.ok || !data?.access_token) return res.status(401).json({ error: "Invalid email or password" });
-      return res.json({ access_token: data.access_token, expires_in: data.expires_in || 3600 });
+      return res.json({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in || 3600,
+        expires_at: data.expires_at || null,
+      });
     } catch (err:any) {
       return res.status(502).json({ error: sanitizePublicError(err, "Unable to sign in") });
+    }
+  });
+
+  app.post("/api/admin/refresh", async (req: Request, res: Response) => {
+    const refreshToken = typeof req.body?.refresh_token === "string" ? req.body.refresh_token.trim() : "";
+    if (!refreshToken) return res.status(400).json({ error: "Refresh token is required" });
+    try {
+      const upstream = await fetch("https://wuonwttmkadwsmefjukv.supabase.co/auth/v1/token?grant_type=refresh_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_",
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok || !data?.access_token) {
+        return res.status(401).json({ error: "Admin session expired. Please sign in again." });
+      }
+      return res.json({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || refreshToken,
+        expires_in: data.expires_in || 3600,
+        expires_at: data.expires_at || null,
+      });
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to refresh admin session") });
     }
   });
 
