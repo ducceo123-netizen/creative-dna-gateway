@@ -709,6 +709,28 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/admin/feedback/delete-all", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    const status = typeof req.body?.status === "string" ? req.body.status.trim().toLowerCase() : "";
+    if (!["pending","accepted","merged","rejected","all"].includes(status)) {
+      return res.status(400).json({ error: "Valid status is required" });
+    }
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "delete_all", status }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to delete proposals" });
+      return res.json(data);
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to delete proposals") });
+    }
+  });
+
   app.get("/api/admin/feedback", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
