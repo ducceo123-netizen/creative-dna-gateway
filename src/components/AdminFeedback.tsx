@@ -22,6 +22,7 @@ type Proposal = {
 
 export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [token, setToken] = useState(() => sessionStorage.getItem("creative_dna_admin_token") || "");
+  const [refreshToken, setRefreshToken] = useState(() => sessionStorage.getItem("creative_dna_admin_refresh_token") || "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -87,19 +88,65 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       const data = await res.json();
       if (!res.ok || !data.access_token) throw new Error(data.error || "Unable to sign in");
       sessionStorage.setItem("creative_dna_admin_token", data.access_token);
-      setToken(data.access_token); setPassword("");
+      if (data.refresh_token) sessionStorage.setItem("creative_dna_admin_refresh_token", data.refresh_token);
+      setToken(data.access_token);
+      if (data.refresh_token) setRefreshToken(data.refresh_token);
+      setPassword("");
       await load(data.access_token);
       await loadTeam(data.access_token);
     } catch(e:any) { setMessage(e.message); } finally { setAuthLoading(false); }
   };
 
-  const logout = () => { sessionStorage.removeItem("creative_dna_admin_token"); setToken(""); setProposals([]); setMessage("Signed out."); };
+  const logout = () => {
+    sessionStorage.removeItem("creative_dna_admin_token");
+    sessionStorage.removeItem("creative_dna_admin_refresh_token");
+    setToken("");
+    setRefreshToken("");
+    setProposals([]);
+    setTeamMembers([]);
+    setMessage("Signed out.");
+  };
+
+  const refreshSession = async () => {
+    const currentRefresh = sessionStorage.getItem("creative_dna_admin_refresh_token") || refreshToken;
+    if (!currentRefresh) return "";
+    const res = await fetch("/api/admin/refresh", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ refresh_token:currentRefresh })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.access_token) {
+      logout();
+      setMessage(data.error || "Phiên admin đã hết hạn. Vui lòng đăng nhập lại.");
+      return "";
+    }
+    sessionStorage.setItem("creative_dna_admin_token", data.access_token);
+    if (data.refresh_token) sessionStorage.setItem("creative_dna_admin_refresh_token", data.refresh_token);
+    setToken(data.access_token);
+    if (data.refresh_token) setRefreshToken(data.refresh_token);
+    return data.access_token as string;
+  };
+
+  const authFetch = async (url:string, init:RequestInit = {}, explicitToken?:string) => {
+    let access = explicitToken || sessionStorage.getItem("creative_dna_admin_token") || token;
+    const run = (t:string) => fetch(url, {
+      ...init,
+      headers:{ ...(init.headers || {}), Authorization:`Bearer ${t}` }
+    });
+    let res = await run(access);
+    if (res.status === 401) {
+      const fresh = await refreshSession();
+      if (fresh) res = await run(fresh);
+    }
+    return res;
+  };
 
   const loadTeam = async (authToken = token) => {
     if (!authToken.trim()) return;
     setTeamLoading(true);
     try {
-      const res = await fetch("/api/admin/team", { headers: { Authorization: `Bearer ${authToken.trim()}` } });
+      const res = await authFetch("/api/admin/team", {}, authToken.trim());
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load admin team");
       setTeamMembers(data.members || []);
@@ -111,9 +158,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     if (!adminEmail.trim()) return setMessage("Enter an email address.");
     setTeamLoading(true); setMessage("");
     try {
-      const res = await fetch("/api/admin/team/grant", {
+      const res = await authFetch("/api/admin/team/grant", {
         method:"POST",
-        headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token.trim()}` },
+        headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({ email:adminEmail.trim() })
       });
       const data = await res.json();
@@ -126,23 +173,24 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setTeamLoading(false); }
   };
 
-  const load = async (authToken = token) => {
-    if (!authToken.trim()) return setMessage("Sign in with your admin account first.");
-    setLoading(true); setMessage("");
+  const load = async (authToken = token, silent = false) => {
+    if (!authToken.trim()) return;
+    if (!silent) { setLoading(true); setMessage(""); }
     try {
-      const res = await fetch("/api/admin/feedback", { headers: { Authorization: `Bearer ${authToken.trim()}` } });
+      const res = await authFetch("/api/admin/feedback", {}, authToken.trim());
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load feedback queue");
       setProposals(data.proposals || []);
       sessionStorage.setItem("creative_dna_admin_token", authToken.trim());
-    } catch (e:any) { setMessage(e.message); } finally { setLoading(false); }
+    } catch (e:any) { if (!silent) setMessage(e.message); }
+    finally { if (!silent) setLoading(false); }
   };
 
   const merge = async (id:string) => {
     if (!confirm("Merge this accepted feedback into canonical Creative DNA? Structural Onepage feedback will sync across brands.")) return;
     setLoading(true); setActiveAction({ id, type:"merge" }); setMessage("");
     try {
-      const res = await fetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token.trim()}` } });
+      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Merge failed");
       setMessage(`Merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).`);
@@ -154,9 +202,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const decide = async (id:string, decision:"accept"|"reject") => {
     setLoading(true); setActiveAction({ id, type:decision }); setMessage("");
     try {
-      const res = await fetch(`/api/admin/feedback/${id}/review`, {
+      const res = await authFetch(`/api/admin/feedback/${id}/review`, {
         method:"POST",
-        headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token.trim()}` },
+        headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({ decision, review_note:notes[id] || "" })
       });
       const data = await res.json();
@@ -167,7 +215,35 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setActiveAction(null); }
   };
 
-  useEffect(() => { if (token) { load(); loadTeam(); } }, []);
+  useEffect(() => {
+    if (!token) return;
+
+    load(undefined, true);
+    loadTeam();
+
+    const sync = () => {
+      if (document.visibilityState === "visible") load(undefined, true);
+    };
+    const onFocus = () => load(undefined, true);
+
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible") load(undefined, true);
+    }, 10000);
+
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") refreshSession();
+    }, 45 * 60 * 1000);
+
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.clearInterval(poll);
+      window.clearInterval(refresh);
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [token]);
 
   return <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
     <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"><ArrowLeft className="w-4 h-4"/>Back to Creative DNA</button>
