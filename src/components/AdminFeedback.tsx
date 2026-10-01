@@ -60,6 +60,25 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const outcomeImages = (p:Proposal) => previewImages(p).filter(x => x.role === "OUTPUT_BEING_REVIEWED");
   const referenceImages = (p:Proposal) => previewImages(p).filter(x => x.role !== "OUTPUT_BEING_REVIEWED");
 
+  const legacyOverviewVi = (p:Proposal) => {
+    if (p.id === "43e89303-c790-4ee5-abe9-3c6fcb80682d") return {
+      summary: "Case Gardening LDP / Plants & Pets / Niche Product Combo theo style Studio Soft Shadow, tỉ lệ 1:1. Tumbler 20oz bị dựng quá cao và quá ốm vì assistant tự suy đoán kích thước thay vì bám silhouette thật của SKU trên PDP.",
+      why_it_matters: "User đã reject trực tiếp vì hình dáng tumbler sai thực tế. Lỗi gốc là biến capacity 20oz thành dimension cụ thể và generic slim silhouette dù PDP không hề xác nhận.",
+      proposed_change: "Không tự suy đoán height/width từ capacity. Khi thiếu dimension, phải bám shape, taper, lid, base và tỷ lệ height-to-width từ product reference thực tế."
+    };
+    if (p.id === "11bfba25-7092-4b2e-ad3d-32626ff03068") return {
+      summary: "Đây là proposal CORRECTION cho wisdom về word count của 4 Occasion cards. Bản trước đếm sai và kết luận nhầm một số body không đạt brief 8–10 từ.",
+      why_it_matters: "Nếu giữ số đếm sai, database sẽ học một lỗi QA. Sau khi recount đúng, cả 4 Occasion bodies đều nằm trong brief 8–10 từ.",
+      proposed_change: "Supersede numerical claim cũ. Giữ wisdom tổng quát: luôn recount thực tế và kiểm tra đúng slot/constraint trước khi kết luận vi phạm word limit."
+    };
+    if (p.id === "aeca3d6e-9079-404b-a47e-e1c98d0f613e") return {
+      summary: "Case follow-up cho Squishy Dumpling Advent Calendar / PawfectHouse Onepage. Bản copy mới rõ hơn về experience arc, WYL, Occasion và Good To Know nhưng vẫn còn claim cần verify.",
+      why_it_matters: "Case cho thấy copy có thể tốt hơn về specificity và section differentiation nhưng vẫn dễ trượt sang unverified construction, recipient narrowing, personalization assumption hoặc word-count QA sai.",
+      proposed_change: "Giữ flow product truth → distinct section roles → experience continuity → occasion fit → Good To Know. Mọi claim về construction, personalization, care, recipient và word count phải verify riêng."
+    };
+    return null;
+  };
+
   const login = async () => {
     if (!email.trim() || !password) return setMessage("Enter your admin email and password.");
     setAuthLoading(true); setMessage("");
@@ -205,7 +224,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     </section>
     <section className="space-y-3">
       {!loading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
-      {filtered.map(p=>{ const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=(p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+      {filtered.map(p=>{ const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span>{p.submitted_by_name || "Member"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
