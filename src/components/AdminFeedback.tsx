@@ -213,32 +213,32 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">Admin Overview</div>
-              <div className="text-xs text-slate-500 mt-0.5">Quick context to understand the case before approving the database payload.</div>
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">Tóm tắt cho Admin</div>
+              <div className="text-xs text-slate-500 mt-0.5">Nhìn nhanh để hiểu case trước khi duyệt phần nạp vào database.</div>
             </div>
             <span className="px-2 py-1 rounded-full bg-white border border-indigo-100 text-[10px] font-bold text-indigo-700">{String(overview?.rule_class || spec?.rule_class || "TRAINING").replaceAll("_"," ")}</span>
           </div>
           <div className="grid md:grid-cols-3 gap-2.5">
             <div className="rounded-lg bg-white border border-slate-200 p-3">
-              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Case summary</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Case này là gì?</div>
               <div className="text-xs text-slate-800 leading-relaxed">{String(overview?.summary || spec?.observed_issue || p.change_summary || parsed.memberFeedback || "—")}</div>
             </div>
             <div className="rounded-lg bg-white border border-slate-200 p-3">
-              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Why / evidence</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Vì sao rút ra wisdom này?</div>
               <div className="text-xs text-slate-800 leading-relaxed">{String(overview?.why_it_matters || spec?.evidence_summary || "No additional evidence summary.")}</div>
             </div>
             <div className="rounded-lg bg-white border border-slate-200 p-3">
-              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Proposed change</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Sau này cần làm khác thế nào?</div>
               <div className="text-xs font-semibold text-slate-900 leading-relaxed">{String(overview?.proposed_change || spec?.generalized_rule || spec?.expected_behavior || p.proposed_content_md || "—")}</div>
             </div>
           </div>
           {(outs.length>0 || refs.length>0) && <div className="grid md:grid-cols-2 gap-3">
             <div className="rounded-lg border border-rose-100 bg-rose-50/50 p-3">
-              <div className="text-[9px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">Before / Problem</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">Before / Bản có vấn đề</div>
               {outs.length ? <div className="grid grid-cols-2 gap-2">{outs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-rose-100 bg-white"><img src={img.image_url!} alt={img.caption || "Before"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || img.reference_id || "Problem output"}</div></a>)}</div> : <div className="text-xs text-slate-400">No before/problem image attached.</div>}
             </div>
             <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
-              <div className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2">After / Target / Reference</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2">After / Bản đúng / Reference</div>
               {refs.length ? <div className="grid grid-cols-2 gap-2">{refs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-emerald-100 bg-white"><img src={img.image_url!} alt={img.caption || "After or target"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || img.reference_id || "Target/reference"}</div></a>)}</div> : <div className="text-xs text-slate-400">No after/target image attached.</div>}
             </div>
           </div>}
@@ -269,7 +269,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <div>
               <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Database Payload</div>
-              <div className="text-xs text-slate-500 mt-0.5">This is the canonical rule content that will be merged when you approve.</div>
+              <div className="text-xs text-slate-500 mt-0.5">Phần này giữ nguyên nội dung canonical và sẽ được nạp vào Creative DNA khi duyệt.</div>
             </div>
             <span className="px-2 py-1 rounded-full bg-white border border-emerald-100 text-[10px] font-bold text-emerald-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span>
           </div>
