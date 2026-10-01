@@ -32,6 +32,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [notes, setNotes] = useState<Record<string,string>>({});
   const [filter, setFilter] = useState("pending");
   const [expanded, setExpanded] = useState<Record<string,boolean>>({});
+  const [adminEmail, setAdminEmail] = useState("");
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
 
   const filtered = useMemo(() => filter === "all" ? proposals : proposals.filter(p => p.status === filter), [proposals, filter]);
 
@@ -67,10 +70,42 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       sessionStorage.setItem("creative_dna_admin_token", data.access_token);
       setToken(data.access_token); setPassword("");
       await load(data.access_token);
+      await loadTeam(data.access_token);
     } catch(e:any) { setMessage(e.message); } finally { setAuthLoading(false); }
   };
 
   const logout = () => { sessionStorage.removeItem("creative_dna_admin_token"); setToken(""); setProposals([]); setMessage("Signed out."); };
+
+  const loadTeam = async (authToken = token) => {
+    if (!authToken.trim()) return;
+    setTeamLoading(true);
+    try {
+      const res = await fetch("/api/admin/team", { headers: { Authorization: `Bearer ${authToken.trim()}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load admin team");
+      setTeamMembers(data.members || []);
+    } catch (e:any) { setMessage(e.message); }
+    finally { setTeamLoading(false); }
+  };
+
+  const grantAdmin = async () => {
+    if (!adminEmail.trim()) return setMessage("Enter an email address.");
+    setTeamLoading(true); setMessage("");
+    try {
+      const res = await fetch("/api/admin/team/grant", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token.trim()}` },
+        body:JSON.stringify({ email:adminEmail.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to grant admin access");
+      const grantedEmail = adminEmail.trim();
+      setAdminEmail("");
+      setMessage(data.invited ? `Admin access granted to ${grantedEmail}; invitation requested.` : `Admin access granted to ${grantedEmail}.`);
+      await loadTeam();
+    } catch(e:any){ setMessage(e.message); }
+    finally { setTeamLoading(false); }
+  };
 
   const load = async (authToken = token) => {
     if (!authToken.trim()) return setMessage("Sign in with your admin account first.");
@@ -113,7 +148,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setActiveAction(null); }
   };
 
-  useEffect(() => { if (token) load(); }, []);
+  useEffect(() => { if (token) { load(); loadTeam(); } }, []);
 
   return <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
     <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"><ArrowLeft className="w-4 h-4"/>Back to Creative DNA</button>
