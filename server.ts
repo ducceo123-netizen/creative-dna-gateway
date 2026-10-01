@@ -628,6 +628,45 @@ export function createApp(): express.Application {
     }
   });
 
+  app.get("/api/admin/team", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "team_list" }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to load admin team" });
+      return res.json({ members: data?.members || [] });
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to load admin team") });
+    }
+  });
+
+  app.post("/api/admin/team/grant", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+    const display_name = typeof req.body?.display_name === "string" ? req.body.display_name.trim() : "";
+    if (!email) return res.status(400).json({ error: "Email is required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "grant_admin", email, display_name }),
+      });
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to grant admin access" });
+      return res.json(data);
+    } catch (err:any) {
+      return res.status(502).json({ error: sanitizePublicError(err, "Unable to grant admin access") });
+    }
+  });
+
   app.get("/api/admin/feedback", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
