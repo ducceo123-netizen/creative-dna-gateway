@@ -398,11 +398,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             <ImagePlus className="w-4 h-4 text-indigo-600"/>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-slate-700">Branch Visual Guide</div>
-              <div className="text-xs text-slate-500 mt-0.5">Upload screenshot UI để user biết branch này tạo material cho đúng khu vực nào.</div>
+              <div className="text-xs text-slate-500 mt-0.5">Chỉ cần chọn branch và upload UI screenshot. Tên, mô tả, badge và output tự lấy từ database.</div>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-[210px_230px_1fr] gap-3">
+          <div className="grid lg:grid-cols-[220px_1fr] gap-3">
             <select
               value={guideBrand}
               onChange={e=>{
@@ -424,47 +424,29 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             >
               {guideRoutes.filter(r=>r.brand===guideBrand).map(r=><option key={r.branch} value={r.branch}>{r.title || r.branch}</option>)}
             </select>
-
-            <input
-              value={guideForm.title_vi}
-              onChange={e=>setGuideForm({...guideForm,title_vi:e.target.value})}
-              placeholder="Tên hiển thị, ví dụ: Recipient Image"
-              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
-            />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-3 mt-3">
-            <textarea
-              value={guideForm.description_vi}
-              onChange={e=>setGuideForm({...guideForm,description_vi:e.target.value})}
-              placeholder="Dùng cho đâu? Ví dụ: Material cho block Shop by Recipient / Gift For trên LDP."
-              className="min-h-24 px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
-            />
-            <textarea
-              value={guideForm.output_note}
-              onChange={e=>setGuideForm({...guideForm,output_note:e.target.value})}
-              placeholder="Output chính, ví dụ: 4 ảnh recipient, mỗi ảnh 1 nhóm người nhận."
-              className="min-h-24 px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
-            />
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-3 mt-3">
-            <input value={guideForm.usage_badge} onChange={e=>setGuideForm({...guideForm,usage_badge:e.target.value})} placeholder="Badge: LDP · Recipient" className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
-            <input value={guideForm.ratio_note} onChange={e=>setGuideForm({...guideForm,ratio_note:e.target.value})} placeholder="Ratio: 1:1 / 4:3..." className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
-            <input value={guideForm.image_caption} onChange={e=>setGuideForm({...guideForm,image_caption:e.target.value})} placeholder="Caption ảnh UI" className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold text-slate-900">{guideForm.title_vi || guideBranch}</div>
+                <div className="text-xs text-slate-500 mt-1">{guideForm.description_vi || "Metadata tự lấy từ database."}</div>
+              </div>
+              {guideForm.image_url && <a href={guideForm.image_url} target="_blank" rel="noreferrer" className="w-24 h-14 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0"><img src={guideForm.image_url} alt="Current guide" className="w-full h-full object-cover"/></a>}
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-[1fr_auto] gap-3 mt-3 items-end">
-            <div className="flex items-center gap-3">
-              <label className="flex-1 cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-600 hover:border-indigo-300">
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e=>setGuideFile(e.target.files?.[0] || null)}/>
-                {guideFile ? guideFile.name : "Upload UI screenshot (PNG/JPG/WebP, tối đa 8MB)"}
-              </label>
-              {guideForm.image_url && <a href={guideForm.image_url} target="_blank" rel="noreferrer" className="w-20 h-14 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 shrink-0"><img src={guideForm.image_url} alt="Current guide" className="w-full h-full object-cover"/></a>}
-            </div>
-            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
+            <label className="cursor-pointer rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-xs text-slate-600 hover:border-indigo-300">
+              <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e=>setGuideFile(e.target.files?.[0] || null)}/>
+              <div className="flex items-center gap-2">
+                <ImagePlus className="w-4 h-4 text-indigo-500"/>
+                <span>{guideFile ? guideFile.name : "Upload UI screenshot (PNG/JPG/WebP, tối đa 8MB)"}</span>
+              </div>
+            </label>
+            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch || !guideFile} className="inline-flex items-center justify-center gap-2 px-4 py-4 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
               {guideLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}
-              {guideLoading ? "Saving..." : "Save visual guide"}
+              {guideLoading ? "Saving..." : "Save screenshot"}
             </button>
           </div>
         </div>
