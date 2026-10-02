@@ -334,23 +334,20 @@ export default function App() {
 
               <div>
                 <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[260px]">
-                  {selectedGuide.image_url ? (
-                    <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full block p-3">
-                      <img
-                        src={selectedGuide.image_url}
-                        alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`}
-                        className="w-full h-auto max-h-[620px] object-contain rounded-lg"
-                      />
-                    </a>
+                  {selectedGuide.page_url && selectedGuide.css_selector ? (
+                    <iframe
+                      src={`/api/branch-preview?url=${encodeURIComponent(selectedGuide.page_url)}&selector=${encodeURIComponent(selectedGuide.css_selector)}`}
+                      title={`${brand} ${branch} live UI preview`}
+                      className="w-full h-[520px] bg-white"
+                    />
                   ) : (
                     <div className="text-center px-6">
                       <Layers className="w-7 h-7 text-slate-300 mx-auto mb-2" />
-                      <div className="text-xs font-bold text-slate-500">Chưa có UI preview</div>
-                      <div className="text-[11px] text-slate-400 mt-1">Admin có thể upload screenshot để user nhìn đúng vị trí material này được dùng.</div>
+                      <div className="text-xs font-bold text-slate-500">Chưa có Live UI preview</div>
+                      <div className="text-[11px] text-slate-400 mt-1">Admin lưu Page URL + CSS selector để nhúng section thật.</div>
                     </div>
                   )}
                 </div>
-                {selectedGuide.image_caption && <div className="text-[10px] text-slate-400 mt-2">{selectedGuide.image_caption}</div>}
               </div>
 
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
