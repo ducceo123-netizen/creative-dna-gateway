@@ -39,8 +39,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [guideRoutes, setGuideRoutes] = useState<Array<{brand:string;branch:string;title:string}>>([]);
   const [guideBrand, setGuideBrand] = useState("giftsoul");
   const [guideBranch, setGuideBranch] = useState("home-hero");
-  const [guideForm, setGuideForm] = useState({ title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"" });
-  const [guideFile, setGuideFile] = useState<File | null>(null);
+  const [guideForm, setGuideForm] = useState({ title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"", page_url:"", css_selector:"", preview_mode:"selector" });
   const [guideLoading, setGuideLoading] = useState(false);
 
   const filtered = useMemo(() => filter === "all" ? proposals : proposals.filter(p => p.status === filter), [proposals, filter]);
@@ -168,6 +167,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           output_note:current.output_note || "",
           image_url:current.image_url || "",
           image_caption:current.image_caption || "",
+          page_url:current.page_url || "",
+          css_selector:current.css_selector || "",
+          preview_mode:current.preview_mode || "selector",
         });
       }
     } catch {
@@ -191,25 +193,21 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         output_note:current.output_note || "",
         image_url:current.image_url || "",
         image_caption:current.image_caption || "",
-      } : { title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"" });
-      setGuideFile(null);
+        page_url:current.page_url || "",
+        css_selector:current.css_selector || "",
+        preview_mode:current.preview_mode || "selector",
+      } : { title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"", page_url:"", css_selector:"", preview_mode:"selector" });
     } finally {
       setGuideLoading(false);
     }
   };
 
-  const fileToDataUrl = (file:File) => new Promise<string>((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Unable to read image"));
-    reader.readAsDataURL(file);
-  });
-
   const saveBranchGuide = async () => {
-    if (!guideFile) return setMessage("Chọn UI screenshot trước khi lưu.");
+    if (!guideForm.page_url.trim() || !guideForm.css_selector.trim()) {
+      return setMessage("Nhập Page URL và CSS selector trước khi lưu.");
+    }
     setGuideLoading(true); setMessage("");
     try {
-      const image_data_base64 = await fileToDataUrl(guideFile);
       const res = await authFetch("/api/admin/branch-guides/upsert", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
@@ -217,15 +215,22 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           brand_slug:guideBrand,
           branch_slug:guideBranch,
           ...guideForm,
-          image_data_base64,
-          mime_type:guideFile.type,
+          preview_mode:"selector",
+          image_url:"",
+          image_caption:"",
         })
       });
       const data = await res.json();
-      if (!res.ok || !data?.guide?.image_url) throw new Error(data.error || "Unable to save branch visual guide");
-      setGuideFile(null);
-      setGuideForm(prev=>({ ...prev, image_url:data.guide.image_url }));
-      setMessage("Đã lưu screenshot và sync vào Branch Visual Guide.");
+      if (!res.ok) throw new Error(data.error || "Unable to save branch live preview");
+      setGuideForm(prev=>({
+        ...prev,
+        page_url:data?.guide?.page_url || prev.page_url,
+        css_selector:data?.guide?.css_selector || prev.css_selector,
+        image_url:"",
+        image_caption:"",
+        preview_mode:"selector",
+      }));
+      setMessage("Đã lưu Live UI selector cho branch này.");
       await loadSelectedGuide(guideBrand, guideBranch);
     } catch(e:any) {
       setMessage(e.message);
@@ -395,7 +400,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             <ImagePlus className="w-4 h-4 text-indigo-600"/>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-slate-700">Branch Visual Guide</div>
-              <div className="text-xs text-slate-500 mt-0.5">Chỉ cần chọn branch và upload UI screenshot. Tên, mô tả, badge và output tự lấy từ database.</div>
+              <div className="text-xs text-slate-500 mt-0.5">Chọn branch, nhập URL trang thật và CSS selector của đúng section. Preview sẽ render live theo web hiện tại.</div>
             </div>
           </div>
 
@@ -424,26 +429,35 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-bold text-slate-900">{guideForm.title_vi || guideBranch}</div>
-                <div className="text-xs text-slate-500 mt-1">{guideForm.description_vi || "Metadata tự lấy từ database."}</div>
-              </div>
-              {guideForm.image_url && <a href={guideForm.image_url} target="_blank" rel="noreferrer" className="w-24 h-14 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0"><img src={guideForm.image_url} alt="Current guide" className="w-full h-full object-cover"/></a>}
+            <div className="text-sm font-bold text-slate-900">{guideForm.title_vi || guideBranch}</div>
+            <div className="text-xs text-slate-500 mt-1">{guideForm.description_vi || "Metadata tự lấy từ database."}</div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-3 mt-3">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Page URL</div>
+              <input
+                value={guideForm.page_url}
+                onChange={e=>setGuideForm({...guideForm,page_url:e.target.value})}
+                placeholder="https://giftsoul.co/pages/..."
+                className="w-full px-3 py-3 text-sm bg-white border border-slate-200 rounded-lg"
+              />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">CSS selector</div>
+              <input
+                value={guideForm.css_selector}
+                onChange={e=>setGuideForm({...guideForm,css_selector:e.target.value})}
+                placeholder="#shopify-section-template--...__hero"
+                className="w-full px-3 py-3 text-sm font-mono bg-white border border-slate-200 rounded-lg"
+              />
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_auto] gap-3 mt-3 items-end">
-            <label className="cursor-pointer rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-xs text-slate-600 hover:border-indigo-300">
-              <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e=>setGuideFile(e.target.files?.[0] || null)}/>
-              <div className="flex items-center gap-2">
-                <ImagePlus className="w-4 h-4 text-indigo-500"/>
-                <span>{guideFile ? guideFile.name : "Upload UI screenshot (PNG/JPG/WebP, tối đa 8MB)"}</span>
-              </div>
-            </label>
-            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch || !guideFile} className="inline-flex items-center justify-center gap-2 px-4 py-4 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
+          <div className="mt-3 flex justify-end">
+            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch || !guideForm.page_url.trim() || !guideForm.css_selector.trim()} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
               {guideLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}
-              {guideLoading ? "Saving..." : "Save screenshot"}
+              {guideLoading ? "Saving..." : "Save Live UI"}
             </button>
           </div>
         </div>
