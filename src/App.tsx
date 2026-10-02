@@ -43,6 +43,18 @@ const FALLBACK_BRANDS = [
   { name:"SoulPrise", category:"Modern Artisanal Gifting", branches:["Onepage"] },
 ];
 
+const DEFAULT_BRANCH_HELP: Record<string,{usage_badge:string;description_vi:string;output_note:string}> = {
+  "onepage-system": { usage_badge:"PDP / Onepage", description_vi:"Material cho toàn bộ khối Onepage gắn vào PDP: Banner, Why You'll Love It, Product Details, Occasion và Good To Know.", output_note:"Output theo cấu trúc Onepage canonical của brand." },
+  "ldp-system": { usage_badge:"Landing Page", description_vi:"Hệ thống material cho toàn bộ LDP: hierarchy, section logic, copy flow và visual consistency.", output_note:"Dùng khi làm hoặc kiểm tra cả Landing Page." },
+  "ldp-hero": { usage_badge:"LDP · Hero", description_vi:"Material cho hero đầu Landing Page, tập trung visual story, sản phẩm chính và khoảng trống cho content.", output_note:"Hero image theo ratio và alignment của campaign." },
+  "home-hero": { usage_badge:"Homepage · Hero", description_vi:"Material cho khu vực hero trên Homepage. Dùng để tạo Main/Side hero hoặc hero campaign tương ứng.", output_note:"Homepage hero theo đúng format của brand." },
+  "recipient-image": { usage_badge:"LDP · Recipient", description_vi:"Material cho block Shop by Recipient / Gift For, giúp user nhận ra nhanh món quà dành cho ai.", output_note:"Một image riêng cho từng recipient group." },
+  "seasonal-banner": { usage_badge:"Seasonal Banner", description_vi:"Material cho banner theo mùa/campaign, thường nằm giữa hành trình browse hoặc trên collection/LDP.", output_note:"Banner ngang, ưu tiên scene + product + text runway." },
+  "shop-by-product-image": { usage_badge:"Shop By Product", description_vi:"Material cho block Shop By Product, tập trung một sản phẩm chính, clean staging và product fidelity.", output_note:"Một image riêng cho từng product tile." },
+  "shop-by-categories": { usage_badge:"Shop By Categories", description_vi:"Material cho block Shop By Categories, đại diện trực quan cho từng category/niche để user scan nhanh.", output_note:"Một image riêng cho từng category." },
+  "ugc-image": { usage_badge:"UGC / Social Proof", description_vi:"Material UGC dùng cho social proof, lifestyle proof hoặc content creator-style trong LDP/PDP.", output_note:"Ảnh tự nhiên, đa angle, ưu tiên authenticity." },
+};
+
 type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback" | "feedback-upload";
 
 export default function App() {
@@ -55,6 +67,7 @@ export default function App() {
   const [responseData, setResponseData] = useState<any>(null);
   const [responseMeta, setResponseMeta] = useState<QueryMeta | null>(null);
   const [supportedBrands, setSupportedBrands] = useState(FALLBACK_BRANDS);
+  const [branchGuides, setBranchGuides] = useState<any[]>([]);
 
   useEffect(() => {
     const loadCanonicalRoutes = async () => {
@@ -83,6 +96,17 @@ export default function App() {
       }
     };
     loadCanonicalRoutes();
+
+    const loadBranchGuides = async () => {
+      try {
+        const res = await fetch("/api/branch-guides");
+        const data = await res.json();
+        if (res.ok && Array.isArray(data?.guides)) setBranchGuides(data.guides);
+      } catch {
+        // Optional visual guide layer; branch selection remains usable without it.
+      }
+    };
+    loadBranchGuides();
   }, []);
 
   useEffect(() => {
@@ -115,6 +139,24 @@ export default function App() {
 
   const useCommand = useMemo(() => `Creative DNA — Use: ${brand} / ${branch}`, [brand, branch]);
   const trainCommand = useMemo(() => `Creative DNA — Train: ${brand} / ${branch}`, [brand, branch]);
+
+  const selectedBranchSlug = useMemo(() => {
+    const entry = Object.entries(BRANCH_LABELS).find(([,label]) => label === branch);
+    return entry?.[0] || branch.toLowerCase().replace(/\s+/g,"-");
+  }, [branch]);
+
+  const selectedGuide = useMemo(() => {
+    const brandSlug = brand.toLowerCase();
+    const stored = branchGuides.find((g:any) => g.brand_slug === brandSlug && g.branch_slug === selectedBranchSlug) || null;
+    return {
+      ...(DEFAULT_BRANCH_HELP[selectedBranchSlug] || {
+        usage_badge:"Creative DNA",
+        description_vi:"Material guide cho branch này.",
+        output_note:"Bám canonical Creative DNA của branch."
+      }),
+      ...(stored || {}),
+    };
+  }, [brand, branchGuides, selectedBranchSlug]);
 
   const selectBranch = (nextBrand: string, nextBranch: string) => {
     setBrand(nextBrand);
@@ -264,6 +306,49 @@ export default function App() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div className="flex flex-col lg:flex-row gap-5">
+            <div className="lg:w-[46%]">
+              <div className="aspect-[16/9] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                {selectedGuide.image_url ? (
+                  <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full h-full block">
+                    <img src={selectedGuide.image_url} alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`} className="w-full h-full object-cover" />
+                  </a>
+                ) : (
+                  <div className="text-center px-6">
+                    <Layers className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                    <div className="text-xs font-bold text-slate-500">Chưa có UI preview</div>
+                    <div className="text-[11px] text-slate-400 mt-1">Admin có thể upload screenshot để user nhìn đúng vị trí material này được dùng.</div>
+                  </div>
+                )}
+              </div>
+              {selectedGuide.image_caption && <div className="text-[10px] text-slate-400 mt-2">{selectedGuide.image_caption}</div>}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">{selectedGuide.usage_badge}</span>
+                {selectedGuide.ratio_note && <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{selectedGuide.ratio_note}</span>}
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900">{selectedGuide.title_vi || `${brand} / ${branch}`}</h3>
+              <p className="text-sm text-slate-600 leading-relaxed mt-2">{selectedGuide.description_vi}</p>
+
+              <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Output chính</div>
+                <div className="text-xs text-slate-700 mt-1">{selectedGuide.output_note}</div>
+              </div>
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 rounded-lg bg-slate-950 px-3 py-2.5 font-mono text-xs text-emerald-300 break-words">{useCommand}</div>
+                <button onClick={() => handleCopy(useCommand,"guide-use-command")} className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-xs font-bold">
+                  {copiedKey === "guide-use-command" ? <Check className="w-3.5 h-3.5"/> : <Copy className="w-3.5 h-3.5"/>}
+                  {copiedKey === "guide-use-command" ? "Đã copy" : "Copy"}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
