@@ -4,7 +4,6 @@ import {
   Copy,
   ExternalLink,
   Layers,
-  MessageSquareText,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -138,7 +137,6 @@ export default function App() {
   };
 
   const useCommand = useMemo(() => `Creative DNA — Use: ${brand} / ${branch}`, [brand, branch]);
-  const trainCommand = useMemo(() => `Creative DNA — Train: ${brand} / ${branch}`, [brand, branch]);
 
   const selectedBranchSlug = useMemo(() => {
     const entry = Object.entries(BRANCH_LABELS).find(([,label]) => label === branch);
@@ -164,7 +162,7 @@ export default function App() {
     setResponseData(null);
     setResponseMeta(null);
     requestAnimationFrame(() => {
-      document.getElementById("chatgpt-command")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("branch-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   };
 
@@ -269,79 +267,81 @@ export default function App() {
           </p>
         </section>
 
-        <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-600" />
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Chọn Brand / Branch</h2>
-            </div>
-            <span className="text-xs text-slate-400">{supportedBrands.length} brands</span>
-          </div>
-
-          <div className="space-y-3">
-            {supportedBrands.map((b) => (
-              <div key={b.name} className={`rounded-xl border p-4 transition-colors ${brand === b.name ? "border-indigo-200 bg-indigo-50/30" : "border-slate-100 bg-slate-50/60"}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3">
-                  <span className="text-sm font-extrabold text-slate-900">{b.name}</span>
-                  <span className="text-[11px] text-slate-400">{b.category}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {b.branches.map((br) => {
-                    const selected = brand === b.name && branch === br;
-                    return (
-                      <button
-                        key={br}
-                        type="button"
-                        onClick={() => selectBranch(b.name, br)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          selected
-                            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:text-indigo-700"
-                        }`}
-                      >
-                        {br}
-                      </button>
-                    );
-                  })}
-                </div>
+        <div className="grid xl:grid-cols-[0.9fr_1.1fr] gap-5 items-start">
+          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-indigo-600" />
+                <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Chọn Brand / Branch</h2>
               </div>
-            ))}
-          </div>
-        </section>
+              <span className="text-xs text-slate-400">{supportedBrands.length} brands</span>
+            </div>
 
-        <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div className="flex flex-col lg:flex-row gap-5">
-            <div className="lg:w-[46%]">
-              <div className="aspect-[16/9] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
-                {selectedGuide.image_url ? (
-                  <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full h-full block">
-                    <img src={selectedGuide.image_url} alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`} className="w-full h-full object-cover" />
-                  </a>
-                ) : (
-                  <div className="text-center px-6">
-                    <Layers className="w-7 h-7 text-slate-300 mx-auto mb-2" />
-                    <div className="text-xs font-bold text-slate-500">Chưa có UI preview</div>
-                    <div className="text-[11px] text-slate-400 mt-1">Admin có thể upload screenshot để user nhìn đúng vị trí material này được dùng.</div>
+            <div className="space-y-3">
+              {supportedBrands.map((b) => (
+                <div key={b.name} className={`rounded-xl border p-4 transition-colors ${brand === b.name ? "border-indigo-200 bg-indigo-50/30" : "border-slate-100 bg-slate-50/60"}`}>
+                  <div className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row sm:items-center xl:items-start 2xl:items-center sm:justify-between gap-1.5 mb-3">
+                    <span className="text-sm font-extrabold text-slate-900">{b.name}</span>
+                    <span className="text-[11px] text-slate-400">{b.category}</span>
                   </div>
-                )}
-              </div>
-              {selectedGuide.image_caption && <div className="text-[10px] text-slate-400 mt-2">{selectedGuide.image_caption}</div>}
+                  <div className="flex flex-wrap gap-2">
+                    {b.branches.map((br) => {
+                      const selected = brand === b.name && branch === br;
+                      return (
+                        <button
+                          key={br}
+                          type="button"
+                          onClick={() => selectBranch(b.name, br)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            selected
+                              ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:text-indigo-700"
+                          }`}
+                        >
+                          {br}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
+          </section>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">{selectedGuide.usage_badge}</span>
-                {selectedGuide.ratio_note && <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{selectedGuide.ratio_note}</span>}
+          <section id="branch-preview" className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs xl:sticky xl:top-20">
+            <div className="space-y-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">{selectedGuide.usage_badge}</span>
+                  {selectedGuide.ratio_note && <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{selectedGuide.ratio_note}</span>}
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900">{selectedGuide.title_vi || `${brand} / ${branch}`}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed mt-2">{selectedGuide.description_vi}</p>
               </div>
-              <h3 className="text-xl font-extrabold text-slate-900">{selectedGuide.title_vi || `${brand} / ${branch}`}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed mt-2">{selectedGuide.description_vi}</p>
 
-              <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <div>
+                <div className="aspect-[16/9] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                  {selectedGuide.image_url ? (
+                    <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full h-full block">
+                      <img src={selectedGuide.image_url} alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`} className="w-full h-full object-cover" />
+                    </a>
+                  ) : (
+                    <div className="text-center px-6">
+                      <Layers className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                      <div className="text-xs font-bold text-slate-500">Chưa có UI preview</div>
+                      <div className="text-[11px] text-slate-400 mt-1">Admin có thể upload screenshot để user nhìn đúng vị trí material này được dùng.</div>
+                    </div>
+                  )}
+                </div>
+                {selectedGuide.image_caption && <div className="text-[10px] text-slate-400 mt-2">{selectedGuide.image_caption}</div>}
+              </div>
+
+              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Output chính</div>
                 <div className="text-xs text-slate-700 mt-1">{selectedGuide.output_note}</div>
               </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 rounded-lg bg-slate-950 px-3 py-2.5 font-mono text-xs text-emerald-300 break-words">{useCommand}</div>
                 <button onClick={() => handleCopy(useCommand,"guide-use-command")} className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-xs font-bold">
                   {copiedKey === "guide-use-command" ? <Check className="w-3.5 h-3.5"/> : <Copy className="w-3.5 h-3.5"/>}
@@ -349,57 +349,8 @@ export default function App() {
                 </button>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section id="chatgpt-command" className="bg-slate-950 text-white rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-indigo-300">
-                <MessageSquareText className="w-4 h-4" />
-                <span className="text-[11px] font-extrabold uppercase tracking-wider">Câu lệnh dùng trong ChatGPT</span>
-              </div>
-              <div className="text-lg font-extrabold mt-1">{brand} / {branch}</div>
-            </div>
-            <span className="self-start px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold text-slate-300 border border-white/10">
-              Selected branch
-            </span>
-          </div>
-
-          <div className="rounded-xl bg-slate-900 border border-slate-700 overflow-hidden">
-            <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-700">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Use</span>
-              <button
-                type="button"
-                onClick={() => handleCopy(useCommand, "use-command")}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200"
-              >
-                {copiedKey === "use-command" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedKey === "use-command" ? "Đã copy" : "Copy"}
-              </button>
-            </div>
-            <div className="px-4 py-4 font-mono text-sm sm:text-base text-emerald-300 break-words">{useCommand}</div>
-          </div>
-
-          <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-center rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Khi muốn train feedback / wisdom</div>
-              <div className="font-mono text-xs text-slate-300 mt-1 break-words">{trainCommand}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleCopy(trainCommand, "train-command")}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-white"
-            >
-              {copiedKey === "train-command" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              {copiedKey === "train-command" ? "Đã copy" : "Copy Train"}
-            </button>
-          </div>
-
-          <p className="text-xs text-slate-400">
-            Sau câu lệnh, chỉ cần viết tiếp yêu cầu của bạn, ví dụ product URL, theme, ratio hoặc feedback cụ thể.
-          </p>
-        </section>
+          </section>
+        </div>
 
         <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <button
