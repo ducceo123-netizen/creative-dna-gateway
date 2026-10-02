@@ -857,7 +857,7 @@ export function createApp(): express.Application {
     const publicKey = "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_";
     try {
       const upstream = await fetch(
-        "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,output_note,image_url,image_caption,updated_at&order=brand_slug.asc,branch_slug.asc",
+        "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,output_note,image_url,image_caption,page_url,css_selector,preview_mode,updated_at&order=brand_slug.asc,branch_slug.asc",
         {
           headers: {
             apikey: publicKey,
