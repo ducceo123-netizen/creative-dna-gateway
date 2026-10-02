@@ -333,10 +333,14 @@ export default function App() {
               </div>
 
               <div>
-                <div className="aspect-[16/9] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[260px]">
                   {selectedGuide.image_url ? (
-                    <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full h-full block">
-                      <img src={selectedGuide.image_url} alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`} className="w-full h-full object-cover" />
+                    <a href={selectedGuide.image_url} target="_blank" rel="noreferrer" className="w-full block p-3">
+                      <img
+                        src={selectedGuide.image_url}
+                        alt={selectedGuide.image_caption || `${brand} ${branch} UI preview`}
+                        className="w-full h-auto max-h-[620px] object-contain rounded-lg"
+                      />
                     </a>
                   ) : (
                     <div className="text-center px-6">
