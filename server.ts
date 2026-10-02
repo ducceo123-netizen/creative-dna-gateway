@@ -876,6 +876,53 @@ export function createApp(): express.Application {
     }
   });
 
+  app.get("/api/branch-preview", async (req: Request, res: Response) => {
+    const pageUrl = String(req.query.url || "").trim();
+    const selector = String(req.query.selector || "").trim();
+    if (!pageUrl || !selector) return res.status(400).send("Missing url or selector");
+
+    let parsed: URL;
+    try { parsed = new URL(pageUrl); } catch { return res.status(400).send("Invalid URL"); }
+    if (parsed.protocol !== "https:") return res.status(400).send("HTTPS required");
+
+    const host = parsed.hostname.toLowerCase();
+    const allowed =
+      host === "pawfecthouse.com" || host.endsWith(".pawfecthouse.com") ||
+      host === "giftsoul.co" || host.endsWith(".giftsoul.co") ||
+      host === "soulprise.co" || host.endsWith(".soulprise.co") ||
+      host.endsWith(".myshopify.com");
+    if (!allowed) return res.status(400).send("Preview host is not allowed");
+
+    try {
+      const upstream = await fetch(pageUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 CreativeDNA-Preview/1.0", Accept: "text/html" },
+        redirect: "follow",
+      });
+      if (!upstream.ok) return res.status(502).send("Unable to fetch preview page");
+      let html = await upstream.text();
+
+      html = html
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/gi, "");
+
+      const cssSelector = selector.replace(/<|>|\{/g, "");
+      const injected = `<base href="${parsed.origin}/"><style>
+        html,body{margin:0!important;padding:0!important;background:#fff!important}
+        body *:not(${cssSelector}):not(${cssSelector} *):not(:has(${cssSelector})){display:none!important}
+        ${cssSelector}{display:block!important;margin:0!important}
+      </style>`;
+
+      if (/<head[^>]*>/i.test(html)) html = html.replace(/<head([^>]*)>/i, `<head$1>${injected}`);
+      else html = `<head>${injected}</head>${html}`;
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, max-age=0");
+      return res.send(html);
+    } catch (err:any) {
+      return res.status(500).send(sanitizePublicError(err, "Unable to render live preview"));
+    }
+  });
+
   // Operation 2: list_creative_dna_routes
   app.all("/api/routes", async (_req: Request, res: Response) => {
     try {
