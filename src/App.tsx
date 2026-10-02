@@ -19,22 +19,28 @@ import { QueryMeta } from "./types";
 
 const PRODUCTION_MCP_URL = "https://creative-dna-gateway.vercel.app/api/mcp";
 
-const SUPPORTED_BRANDS = [
-  {
-    name: "PawfectHouse",
-    category: "Personalized Pet & Family Gifts",
-    branches: ["Onepage", "LDP Hero", "Home Hero", "Seasonal Banner", "Shop By Product", "Shop By Categories", "UGC"],
-  },
-  {
-    name: "GiftSoul",
-    category: "Custom Keepsakes & Emotional Gifts",
-    branches: ["LDP Hero", "Shop By Product", "UGC"],
-  },
-  {
-    name: "SoulPrise",
-    category: "Modern Artisanal Gifting",
-    branches: ["Onepage"],
-  },
+const BRAND_META: Record<string, { name:string; category:string }> = {
+  pawfecthouse: { name:"PawfectHouse", category:"Personalized Pet & Family Gifts" },
+  giftsoul: { name:"GiftSoul", category:"Custom Keepsakes & Emotional Gifts" },
+  soulprise: { name:"SoulPrise", category:"Modern Artisanal Gifting" },
+};
+
+const BRANCH_LABELS: Record<string,string> = {
+  "onepage-system":"Onepage",
+  "ldp-system":"LDP",
+  "ldp-hero":"LDP Hero",
+  "home-hero":"Home Hero",
+  "recipient-image":"Recipient Image",
+  "seasonal-banner":"Seasonal Banner",
+  "shop-by-product-image":"Shop By Product",
+  "shop-by-categories":"Shop By Categories",
+  "ugc-image":"UGC",
+};
+
+const FALLBACK_BRANDS = [
+  { name:"PawfectHouse", category:"Personalized Pet & Family Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Seasonal Banner","Shop By Product","Shop By Categories","UGC"] },
+  { name:"GiftSoul", category:"Custom Keepsakes & Emotional Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Recipient Image","Seasonal Banner","Shop By Product","UGC"] },
+  { name:"SoulPrise", category:"Modern Artisanal Gifting", branches:["Onepage"] },
 ];
 
 type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback" | "feedback-upload";
@@ -48,6 +54,36 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [responseData, setResponseData] = useState<any>(null);
   const [responseMeta, setResponseMeta] = useState<QueryMeta | null>(null);
+  const [supportedBrands, setSupportedBrands] = useState(FALLBACK_BRANDS);
+
+  useEffect(() => {
+    const loadCanonicalRoutes = async () => {
+      try {
+        const res = await fetch("/api/routes", { method:"POST", headers:{ "Content-Type":"application/json" } });
+        const data = await res.json();
+        if (!res.ok || !Array.isArray(data?.routes)) return;
+
+        const grouped = new Map<string, { name:string; category:string; branches:string[] }>();
+        for (const route of data.routes) {
+          const brandKey = String(route.brand || "").toLowerCase();
+          const branchKey = String(route.branch || "").toLowerCase();
+          if (!brandKey || !branchKey) continue;
+          const meta = BRAND_META[brandKey] || { name:route.brand, category:"Creative DNA" };
+          if (!grouped.has(brandKey)) grouped.set(brandKey, { ...meta, branches:[] });
+          const label = BRANCH_LABELS[branchKey] || branchKey.split("-").map((x:string)=>x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
+          const item = grouped.get(brandKey)!;
+          if (!item.branches.includes(label)) item.branches.push(label);
+        }
+
+        const order = ["pawfecthouse","giftsoul","soulprise"];
+        const next = order.map(k=>grouped.get(k)).filter(Boolean) as { name:string; category:string; branches:string[] }[];
+        if (next.length) setSupportedBrands(next);
+      } catch {
+        // Keep fallback routes so dashboard remains usable if route discovery is temporarily unavailable.
+      }
+    };
+    loadCanonicalRoutes();
+  }, []);
 
   useEffect(() => {
     const syncRouteFromPath = () => {
@@ -197,11 +233,11 @@ export default function App() {
               <Layers className="w-4 h-4 text-indigo-600" />
               <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Chọn Brand / Branch</h2>
             </div>
-            <span className="text-xs text-slate-400">{SUPPORTED_BRANDS.length} brands</span>
+            <span className="text-xs text-slate-400">{supportedBrands.length} brands</span>
           </div>
 
           <div className="space-y-3">
-            {SUPPORTED_BRANDS.map((b) => (
+            {supportedBrands.map((b) => (
               <div key={b.name} className={`rounded-xl border p-4 transition-colors ${brand === b.name ? "border-indigo-200 bg-indigo-50/30" : "border-slate-100 bg-slate-50/60"}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3">
                   <span className="text-sm font-extrabold text-slate-900">{b.name}</span>
