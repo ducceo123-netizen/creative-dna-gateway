@@ -854,20 +854,22 @@ export function createApp(): express.Application {
   });
 
   app.get("/api/branch-guides", async (_req: Request, res: Response) => {
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!serviceKey) return res.status(503).json({ error: "Branch guide service is not configured" });
+    const publicKey = "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_";
     try {
       const upstream = await fetch(
         "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,output_note,image_url,image_caption,updated_at&order=brand_slug.asc,branch_slug.asc",
         {
           headers: {
-            apikey: serviceKey,
-            Authorization: `Bearer ${serviceKey}`,
+            apikey: publicKey,
+            Authorization: `Bearer ${publicKey}`,
+            "Cache-Control": "no-cache",
           },
+          cache: "no-store",
         },
       );
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(502).json({ error: "Unable to load branch visual guides" });
+      res.setHeader("Cache-Control", "no-store, max-age=0");
       return res.json({ guides: Array.isArray(data) ? data : [] });
     } catch (err:any) {
       return res.status(500).json({ error: sanitizePublicError(err, "Unable to load branch visual guides") });
