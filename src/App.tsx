@@ -40,7 +40,7 @@ const BRANCH_LABELS: Record<string,string> = {
 const FALLBACK_BRANDS = [
   { name:"PawfectHouse", category:"Personalized Pet & Family Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Seasonal Banner","Shop By Product","Shop By Categories","UGC"] },
   { name:"GiftSoul", category:"Custom Keepsakes & Emotional Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Recipient Image","Seasonal Banner","Shop By Product","UGC"] },
-  { name:"SoulPrise", category:"Modern Artisanal Gifting", branches:["Onepage"] },
+  { name:"SoulPrise", category:"Modern Artisanal Gifting", branches:["Home Hero","Recipient Image","Seasonal Banner","Shop By Product","Onepage"] },
 ];
 
 const DEFAULT_BRANCH_HELP: Record<string,{usage_badge:string;description_vi:string;output_note:string}> = {
@@ -53,6 +53,61 @@ const DEFAULT_BRANCH_HELP: Record<string,{usage_badge:string;description_vi:stri
   "shop-by-product-image": { usage_badge:"Shop By Product", description_vi:"Material cho block Shop By Product, tập trung một sản phẩm chính, clean staging và product fidelity.", output_note:"Một image riêng cho từng product tile." },
   "shop-by-categories": { usage_badge:"Shop By Categories", description_vi:"Material cho block Shop By Categories, đại diện trực quan cho từng category/niche để user scan nhanh.", output_note:"Một image riêng cho từng category." },
   "ugc-image": { usage_badge:"UGC / Social Proof", description_vi:"Material UGC dùng cho social proof, lifestyle proof hoặc content creator-style trong LDP/PDP.", output_note:"Ảnh tự nhiên, đa angle, ưu tiên authenticity." },
+};
+
+type PromptField = { label:string; required:boolean; placeholder:string };
+const TASK_PROMPT_FIELDS: Record<string,PromptField[]> = {
+  "onepage-system": [
+    { label:"Product / Collection", required:true, placeholder:"PDP URL hoặc Collection URL" },
+    { label:"Theme", required:false, placeholder:"Halloween / Christmas / Book Lovers /..." },
+    { label:"Custom content", required:false, placeholder:"Copy, angle hoặc yêu cầu riêng nếu có" },
+  ],
+  "ldp-system": [
+    { label:"Product / Collection", required:true, placeholder:"Product URL hoặc Collection URL" },
+    { label:"Theme / Campaign", required:false, placeholder:"America 250 / Book Lovers / Christmas /..." },
+    { label:"Page goal", required:false, placeholder:"Campaign page, niche page, product line..." },
+  ],
+  "ldp-hero": [
+    { label:"Product / Collection", required:true, placeholder:"Product hoặc collection cần làm hero" },
+    { label:"Theme", required:false, placeholder:"Campaign / niche / season" },
+    { label:"Ratio / Align", required:false, placeholder:"21:9, 18:9, center, right..." },
+    { label:"Angle / Story", required:false, placeholder:"Moment hoặc art direction mong muốn" },
+  ],
+  "home-hero": [
+    { label:"Product / Collection", required:true, placeholder:"Product URL hoặc Collection URL" },
+    { label:"Theme / Campaign", required:true, placeholder:"Halloween / Christmas /..." },
+    { label:"Slot", required:false, placeholder:"Main / Side / Both nếu branch hỗ trợ" },
+    { label:"Idea", required:false, placeholder:"Story, moment hoặc creative angle" },
+  ],
+  "recipient-image": [
+    { label:"Recipient", required:true, placeholder:"Family / Couple / Dad & Grandpa /..." },
+    { label:"Theme", required:false, placeholder:"Campaign / season nếu có" },
+    { label:"Quantity", required:false, placeholder:"Số ảnh cần tạo" },
+    { label:"Age / Relationship", required:false, placeholder:"Chi tiết casting nếu cần" },
+  ],
+  "seasonal-banner": [
+    { label:"Product / Collection", required:true, placeholder:"Product hoặc collection liên quan" },
+    { label:"Theme / Campaign", required:true, placeholder:"Halloween / Christmas /..." },
+    { label:"Idea", required:false, placeholder:"Moment / story / use case" },
+    { label:"Custom size", required:false, placeholder:"Chỉ nhập khi muốn override size mặc định" },
+  ],
+  "shop-by-product-image": [
+    { label:"Product", required:true, placeholder:"PDP URL / product image / product spec" },
+    { label:"Product type", required:false, placeholder:"Mug / Socks / Ornament /..." },
+    { label:"Theme / Context", required:false, placeholder:"Book Lover / Halloween /..." },
+    { label:"Ratio / Size", required:false, placeholder:"Nếu muốn override mặc định" },
+  ],
+  "shop-by-categories": [
+    { label:"Category / Niche", required:true, placeholder:"Reading / Crochet / Gardening /..." },
+    { label:"Product pool", required:false, placeholder:"Collection URL hoặc danh sách sản phẩm" },
+    { label:"Theme", required:false, placeholder:"Campaign / season nếu có" },
+  ],
+  "ugc-image": [
+    { label:"Product / Collection", required:true, placeholder:"PDP hoặc Collection URL" },
+    { label:"Theme / Context", required:false, placeholder:"Use case / campaign / occasion" },
+    { label:"Quantity", required:false, placeholder:"Số ảnh UGC cần tạo" },
+    { label:"Angle mix", required:false, placeholder:"POV / human with product / product-only..." },
+  ],
 };
 
 type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback" | "feedback-upload";
@@ -156,6 +211,16 @@ export default function App() {
     const entry = Object.entries(BRANCH_LABELS).find(([,label]) => label === branch);
     return entry?.[0] || branch.toLowerCase().replace(/\s+/g,"-");
   }, [branch]);
+
+  const promptFields = useMemo(
+    () => TASK_PROMPT_FIELDS[selectedBranchSlug] || [],
+    [selectedBranchSlug],
+  );
+
+  const samplePrompt = useMemo(() => {
+    const lines = [useCommand, ...promptFields.map(f => `${f.label}: <${f.placeholder}>`)];
+    return lines.join("\n");
+  }, [useCommand, promptFields]);
 
   const selectedGuide = useMemo(() => {
     const brandSlug = brand.toLowerCase();
@@ -354,6 +419,39 @@ export default function App() {
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Output chính</div>
                 <div className="text-xs text-slate-700 mt-1">{selectedGuide.output_note}</div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Input thường cần</div>
+                    <div className="text-[11px] text-slate-400 mt-1">Prompt mẫu để user biết task này cần đưa gì vào.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(samplePrompt,"sample-prompt")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200"
+                  >
+                    {copiedKey === "sample-prompt" ? <Check className="w-3.5 h-3.5 text-emerald-600"/> : <Copy className="w-3.5 h-3.5"/>}
+                    {copiedKey === "sample-prompt" ? "Đã copy" : "Copy prompt"}
+                  </button>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-2 mt-3">
+                  {promptFields.map((field) => (
+                    <div key={field.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">{field.label}</span>
+                        <span className={`text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${field.required ? "bg-rose-50 text-rose-600 border border-rose-100" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                          {field.required ? "Required" : "Optional"}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-1">{field.placeholder}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-950 px-3 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 overflow-x-auto">{samplePrompt}</pre>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">
