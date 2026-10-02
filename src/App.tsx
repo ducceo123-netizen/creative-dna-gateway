@@ -473,15 +473,16 @@ export default function App() {
                 <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Cài Creative DNA vào ChatGPT</h2>
               </div>
               <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-                Dùng MCP endpoint bên dưới để tạo plugin/app Creative DNA trong ChatGPT. Cần tài khoản hoặc workspace có quyền dùng Developer mode / custom MCP.
+                Flow cài đúng theo UI ChatGPT hiện tại: bật Chế độ nhà phát triển → vào Plugin → tạo server MCP tùy chỉnh → điền thông tin Creative DNA.
               </p>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5 mt-4">
                 {[
-                  ["1", "Bật Developer mode", "ChatGPT → Settings → Security and login."],
-                  ["2", "Mở Plugins", "Vào Plugins và bấm dấu + để thêm MCP server."],
-                  ["3", "Dán MCP endpoint", "Dùng đúng URL /api/mcp bên cạnh."],
-                  ["4", "Create & dùng", "Tạo plugin, sau đó gọi bằng @Creative DNA trong chat/Work."],
+                  ["1", "Bật Chế độ nhà phát triển", "ChatGPT → Settings → Plugin → Chế độ nhà phát triển."],
+                  ["2", "Mở trang Plugin", "Vào Plugin ở sidebar → bấm dấu + góc phải."],
+                  ["3", "Tạo MCP tùy chỉnh", "Chọn “Tạo server MCP tùy chỉnh”."],
+                  ["4", "Điền thông tin", "Tên: Creative DNA · URL máy chủ: MCP endpoint bên cạnh · Xác thực: Không có tính năng xác thực."],
+                  ["5", "Xác nhận & Tạo", "Tick “Tôi hiểu và muốn tiếp tục” → bấm Tạo. Sau đó Creative DNA sẽ xuất hiện trong Plugin."],
                 ].map(([n,title,desc])=>(
                   <div key={n} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <div className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold flex items-center justify-center">{n}</div>
@@ -503,14 +504,11 @@ export default function App() {
                 {copiedKey === "install-mcp-url" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedKey === "install-mcp-url" ? "Đã copy endpoint" : "Copy MCP endpoint"}
               </button>
-              <a
-                href="https://developers.openai.com/plugins/quickstart"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 inline-flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900"
-              >
-                Hướng dẫn chính thức của OpenAI <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              <div className="mt-3 rounded-lg border border-indigo-100 bg-white px-3 py-2.5 text-[11px] leading-relaxed text-slate-600">
+                <div><span className="font-bold text-slate-800">Tên:</span> Creative DNA</div>
+                <div className="mt-1"><span className="font-bold text-slate-800">URL máy chủ:</span> {PRODUCTION_MCP_URL}</div>
+                <div className="mt-1"><span className="font-bold text-slate-800">Xác thực:</span> Không có tính năng xác thực</div>
+              </div>
             </div>
           </div>
         </section>
