@@ -670,6 +670,94 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/admin/branch-guides/upsert", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin service is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) return res.status(503).json({ error: "Branch guide storage is not configured" });
+
+    try {
+      const authCheck = await fetch(adminUpstreamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "team_list" }),
+      });
+      if (!authCheck.ok) return res.status(403).json({ error: "Admin permission required" });
+
+      const body = req.body || {};
+      const brandSlug = String(body.brand_slug || "").trim().toLowerCase();
+      const branchSlug = String(body.branch_slug || "").trim().toLowerCase();
+      if (!brandSlug || !branchSlug) return res.status(400).json({ error: "brand_slug and branch_slug are required" });
+
+      let imageUrl = typeof body.image_url === "string" ? body.image_url.trim() : "";
+      const dataBase64 = typeof body.image_data_base64 === "string" ? body.image_data_base64.trim() : "";
+      const mimeType = String(body.mime_type || "").toLowerCase();
+
+      if (dataBase64) {
+        if (!["image/png","image/jpeg","image/webp"].includes(mimeType)) {
+          return res.status(415).json({ error: "PNG, JPEG, or WebP required" });
+        }
+        const clean = dataBase64.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "").replace(/\s+/g, "");
+        const bytes = Buffer.from(clean, "base64");
+        if (!bytes.length) return res.status(400).json({ error: "Invalid image data" });
+        if (bytes.length > 8 * 1024 * 1024) return res.status(413).json({ error: "Image exceeds 8 MB" });
+
+        const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+        const safeBrand = brandSlug.replace(/[^a-z0-9-]/g, "");
+        const safeBranch = branchSlug.replace(/[^a-z0-9-]/g, "");
+        const objectPath = `branch-guides/${safeBrand}/${safeBranch}-${Date.now()}.${ext}`;
+        const upload = await fetch(
+          `https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${serviceKey}`,
+              apikey: serviceKey,
+              "Content-Type": mimeType,
+              "x-upsert": "false",
+            },
+            body: bytes,
+          },
+        );
+        if (!upload.ok) return res.status(502).json({ error: "Unable to upload branch guide image" });
+        imageUrl = `https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/public/feedback-context/${objectPath}`;
+      }
+
+      const payload = {
+        brand_slug: brandSlug,
+        branch_slug: branchSlug,
+        title_vi: String(body.title_vi || "").trim() || null,
+        description_vi: String(body.description_vi || "").trim() || null,
+        usage_badge: String(body.usage_badge || "").trim() || null,
+        ratio_note: String(body.ratio_note || "").trim() || null,
+        output_note: String(body.output_note || "").trim() || null,
+        image_url: imageUrl || null,
+        image_caption: String(body.image_caption || "").trim() || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const upstream = await fetch(
+        "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?on_conflict=brand_slug,branch_slug",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            Prefer: "resolution=merge-duplicates,return=representation",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(502).json({ error: "Unable to save branch visual guide" });
+      return res.json({ guide: Array.isArray(data) ? data[0] : data });
+    } catch (err:any) {
+      return res.status(500).json({ error: sanitizePublicError(err, "Unable to save branch visual guide") });
+    }
+  });
+
   app.get("/api/admin/team", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
@@ -832,6 +920,27 @@ export function createApp(): express.Application {
       const safeMsg = sanitizePublicError(err, "Unable to resolve Creative DNA");
       const isClientError = err?.message && (err.message.includes("parameter") || err.message.includes("required") || err.message.includes("exceeds"));
       return res.status(isClientError ? 400 : 500).json({ error: safeMsg });
+    }
+  });
+
+  app.get("/api/branch-guides", async (_req: Request, res: Response) => {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) return res.status(503).json({ error: "Branch guide service is not configured" });
+    try {
+      const upstream = await fetch(
+        "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,output_note,image_url,image_caption,updated_at&order=brand_slug.asc,branch_slug.asc",
+        {
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+          },
+        },
+      );
+      const data:any = await upstream.json();
+      if (!upstream.ok) return res.status(502).json({ error: "Unable to load branch visual guides" });
+      return res.json({ guides: Array.isArray(data) ? data : [] });
+    } catch (err:any) {
+      return res.status(500).json({ error: sanitizePublicError(err, "Unable to load branch visual guides") });
     }
   });
 
