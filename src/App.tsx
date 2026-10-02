@@ -98,7 +98,7 @@ export default function App() {
 
     const loadBranchGuides = async () => {
       try {
-        const res = await fetch("/api/branch-guides");
+        const res = await fetch("/api/branch-guides", { cache:"no-store" });
         const data = await res.json();
         if (res.ok && Array.isArray(data?.guides)) setBranchGuides(data.guides);
       } catch {
@@ -106,6 +106,19 @@ export default function App() {
       }
     };
     loadBranchGuides();
+
+    const syncGuides = () => {
+      if (document.visibilityState === "visible") loadBranchGuides();
+    };
+    const guidePoll = window.setInterval(syncGuides, 10000);
+    document.addEventListener("visibilitychange", syncGuides);
+    window.addEventListener("focus", syncGuides);
+
+    return () => {
+      window.clearInterval(guidePoll);
+      document.removeEventListener("visibilitychange", syncGuides);
+      window.removeEventListener("focus", syncGuides);
+    };
   }, []);
 
   useEffect(() => {
