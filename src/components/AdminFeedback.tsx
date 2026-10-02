@@ -206,14 +206,21 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   });
 
   const saveBranchGuide = async () => {
+    if (!guideFile) return setMessage("Chọn UI screenshot trước khi lưu.");
     setGuideLoading(true); setMessage("");
     try {
-      let image_data_base64 = "";
-      let mime_type = "";
-      if (guideFile) {
-        image_data_base64 = await fileToDataUrl(guideFile);
-        mime_type = guideFile.type;
-      }
+      const image_data_base64 = await fileToDataUrl(guideFile);
+      const uploadRes = await fetch("/api/feedback/context-assets/upload", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          data_base64:image_data_base64,
+          mime_type:guideFile.type,
+        })
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.image_url) throw new Error(uploadData.error || "Unable to upload screenshot");
+
       const res = await authFetch("/api/admin/branch-guides/upsert", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
@@ -221,15 +228,15 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           brand_slug:guideBrand,
           branch_slug:guideBranch,
           ...guideForm,
-          image_data_base64,
-          mime_type,
+          image_url:uploadData.image_url,
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to save branch visual guide");
       setGuideFile(null);
-      if (data?.guide?.image_url) setGuideForm(prev=>({ ...prev, image_url:data.guide.image_url }));
-      setMessage("Đã lưu Branch Visual Guide. Dashboard sẽ dùng context này cho user.");
+      setGuideForm(prev=>({ ...prev, image_url:uploadData.image_url }));
+      setMessage("Đã lưu screenshot và sync vào Branch Visual Guide.");
+      await loadSelectedGuide(guideBrand, guideBranch);
     } catch(e:any) {
       setMessage(e.message);
     } finally {
