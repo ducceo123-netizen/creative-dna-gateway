@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 
 type Proposal = {
   id: string;
@@ -36,6 +36,12 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [adminEmail, setAdminEmail] = useState("");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
+  const [guideRoutes, setGuideRoutes] = useState<Array<{brand:string;branch:string;title:string}>>([]);
+  const [guideBrand, setGuideBrand] = useState("giftsoul");
+  const [guideBranch, setGuideBranch] = useState("home-hero");
+  const [guideForm, setGuideForm] = useState({ title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"" });
+  const [guideFile, setGuideFile] = useState<File | null>(null);
+  const [guideLoading, setGuideLoading] = useState(false);
 
   const filtered = useMemo(() => filter === "all" ? proposals : proposals.filter(p => p.status === filter), [proposals, filter]);
 
@@ -142,6 +148,95 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     return res;
   };
 
+  const loadGuideRoutes = async () => {
+    try {
+      const [routesRes, guidesRes] = await Promise.all([fetch("/api/routes", { method:"POST" }), fetch("/api/branch-guides")]);
+      const routesData = await routesRes.json();
+      const guidesData = await guidesRes.json();
+      const routes = Array.isArray(routesData?.routes) ? routesData.routes : [];
+      setGuideRoutes(routes);
+
+      const current = Array.isArray(guidesData?.guides)
+        ? guidesData.guides.find((g:any)=>g.brand_slug===guideBrand && g.branch_slug===guideBranch)
+        : null;
+      if (current) {
+        setGuideForm({
+          title_vi:current.title_vi || "",
+          description_vi:current.description_vi || "",
+          usage_badge:current.usage_badge || "",
+          ratio_note:current.ratio_note || "",
+          output_note:current.output_note || "",
+          image_url:current.image_url || "",
+          image_caption:current.image_caption || "",
+        });
+      }
+    } catch {
+      // Visual guide management is optional; keep feedback queue usable if this fails.
+    }
+  };
+
+  const loadSelectedGuide = async (brandSlug:string, branchSlug:string) => {
+    setGuideLoading(true);
+    try {
+      const res = await fetch("/api/branch-guides");
+      const data = await res.json();
+      const current = Array.isArray(data?.guides)
+        ? data.guides.find((g:any)=>g.brand_slug===brandSlug && g.branch_slug===branchSlug)
+        : null;
+      setGuideForm(current ? {
+        title_vi:current.title_vi || "",
+        description_vi:current.description_vi || "",
+        usage_badge:current.usage_badge || "",
+        ratio_note:current.ratio_note || "",
+        output_note:current.output_note || "",
+        image_url:current.image_url || "",
+        image_caption:current.image_caption || "",
+      } : { title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"" });
+      setGuideFile(null);
+    } finally {
+      setGuideLoading(false);
+    }
+  };
+
+  const fileToDataUrl = (file:File) => new Promise<string>((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Unable to read image"));
+    reader.readAsDataURL(file);
+  });
+
+  const saveBranchGuide = async () => {
+    setGuideLoading(true); setMessage("");
+    try {
+      let image_data_base64 = "";
+      let mime_type = "";
+      if (guideFile) {
+        image_data_base64 = await fileToDataUrl(guideFile);
+        mime_type = guideFile.type;
+      }
+      const res = await authFetch("/api/admin/branch-guides/upsert", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          brand_slug:guideBrand,
+          branch_slug:guideBranch,
+          ...guideForm,
+          image_data_base64,
+          mime_type,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to save branch visual guide");
+      setGuideFile(null);
+      if (data?.guide?.image_url) setGuideForm(prev=>({ ...prev, image_url:data.guide.image_url }));
+      setMessage("Đã lưu Branch Visual Guide. Dashboard sẽ dùng context này cho user.");
+    } catch(e:any) {
+      setMessage(e.message);
+    } finally {
+      setGuideLoading(false);
+    }
+  };
+
   const loadTeam = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token) => {
     if (!authToken.trim()) return;
     setTeamLoading(true);
@@ -219,6 +314,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
 
     load(undefined, true);
     loadTeam();
+    loadGuideRoutes();
 
     const sync = () => {
       if (document.visibilityState === "visible") load(undefined, true);
@@ -295,6 +391,82 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             {m.email || m.display_name || m.user_id}
           </span>)}
           {!teamLoading && teamMembers.filter((m:any)=>m.role==="admin" && m.is_active).length===0 && <span className="text-xs text-slate-400">No active admins found.</span>}
+        </div>
+
+        <div className="border-t border-slate-100 pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ImagePlus className="w-4 h-4 text-indigo-600"/>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-700">Branch Visual Guide</div>
+              <div className="text-xs text-slate-500 mt-0.5">Upload screenshot UI để user biết branch này tạo material cho đúng khu vực nào.</div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-[210px_230px_1fr] gap-3">
+            <select
+              value={guideBrand}
+              onChange={e=>{
+                const next=e.target.value;
+                setGuideBrand(next);
+                const first=guideRoutes.find(r=>r.brand===next)?.branch || "";
+                setGuideBranch(first);
+                if(first) loadSelectedGuide(next,first);
+              }}
+              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
+            >
+              {[...new Set(guideRoutes.map(r=>r.brand))].map(b=><option key={b} value={b}>{b}</option>)}
+            </select>
+
+            <select
+              value={guideBranch}
+              onChange={e=>{setGuideBranch(e.target.value); loadSelectedGuide(guideBrand,e.target.value);}}
+              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
+            >
+              {guideRoutes.filter(r=>r.brand===guideBrand).map(r=><option key={r.branch} value={r.branch}>{r.title || r.branch}</option>)}
+            </select>
+
+            <input
+              value={guideForm.title_vi}
+              onChange={e=>setGuideForm({...guideForm,title_vi:e.target.value})}
+              placeholder="Tên hiển thị, ví dụ: Recipient Image"
+              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
+            />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-3 mt-3">
+            <textarea
+              value={guideForm.description_vi}
+              onChange={e=>setGuideForm({...guideForm,description_vi:e.target.value})}
+              placeholder="Dùng cho đâu? Ví dụ: Material cho block Shop by Recipient / Gift For trên LDP."
+              className="min-h-24 px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
+            />
+            <textarea
+              value={guideForm.output_note}
+              onChange={e=>setGuideForm({...guideForm,output_note:e.target.value})}
+              placeholder="Output chính, ví dụ: 4 ảnh recipient, mỗi ảnh 1 nhóm người nhận."
+              className="min-h-24 px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-3 mt-3">
+            <input value={guideForm.usage_badge} onChange={e=>setGuideForm({...guideForm,usage_badge:e.target.value})} placeholder="Badge: LDP · Recipient" className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
+            <input value={guideForm.ratio_note} onChange={e=>setGuideForm({...guideForm,ratio_note:e.target.value})} placeholder="Ratio: 1:1 / 4:3..." className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
+            <input value={guideForm.image_caption} onChange={e=>setGuideForm({...guideForm,image_caption:e.target.value})} placeholder="Caption ảnh UI" className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"/>
+          </div>
+
+          <div className="grid lg:grid-cols-[1fr_auto] gap-3 mt-3 items-end">
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-600 hover:border-indigo-300">
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e=>setGuideFile(e.target.files?.[0] || null)}/>
+                {guideFile ? guideFile.name : "Upload UI screenshot (PNG/JPG/WebP, tối đa 8MB)"}
+              </label>
+              {guideForm.image_url && <a href={guideForm.image_url} target="_blank" rel="noreferrer" className="w-20 h-14 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 shrink-0"><img src={guideForm.image_url} alt="Current guide" className="w-full h-full object-cover"/></a>}
+            </div>
+            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
+              {guideLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}
+              {guideLoading ? "Saving..." : "Save visual guide"}
+            </button>
+          </div>
         </div>
       </div>}
     </section>
