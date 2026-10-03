@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import path from "path";
+import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, ONEPAGE_TEMPLATE_DESC } from "./onepage-ui-template.ts";
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
@@ -207,7 +208,8 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
 export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string) {
  const validated=validateResolveInput(brand,"onepage-system");
  const response=await fetch(COMPILE_ONEPAGE_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme})});
- return {status:response.status,ok:response.ok,data:await response.json()};
+ const data = await response.json();
+ return {status:response.status,ok:response.ok,data:response.ok ? attachOnepageUiTemplate(data,validated.brand,"onepage-system") : data};
 }
 
 // Core gateway functions
@@ -232,11 +234,12 @@ export async function fetchUpstream(payload: { action: "resolve"; brand: string;
 export async function resolveCreativeDna(brand: string, branch: string) {
   const validated = validateResolveInput(brand, branch);
 
-  return fetchUpstream({
+  const result = await fetchUpstream({
     action: "resolve",
     brand: validated.brand,
     branch: validated.branch,
   });
+  return { ...result, data: result.ok ? attachOnepageUiTemplate(result.data, validated.brand, validated.branch) : result.data };
 }
 
 export async function listCreativeDnaRoutes() {
@@ -328,6 +331,10 @@ export function getClientIp(req: Request): string {
 // Tool definitions for OpenAPI / ChatGPT Actions / Discovery documentation
 export const TOOL_DEFINITIONS = [
   {
+    name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] } } },
+  },
+  {
     name: "resolve_creative_dna",
     title: "Resolve Creative DNA",
     description: RESOLVE_CREATIVE_DNA_DESC,
@@ -388,9 +395,20 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For every Train request, MUST create a self-contained training_spec from the member's feedback and all visible context before calling submit_training_feedback. Always include concise Vietnamese admin_summary_vi, admin_reason_vi, and admin_change_vi for the review UI. These three fields are mandatory. Write complete sentences in Vietnamese and preserve only necessary canonical/technical keywords in English. Never put English fallback prose in these fields. Keep generalized_rule/expected_behavior/reject_conditions as the canonical database payload language and do not let the Vietnamese admin overview replace or alter that payload. For image-related feedback, inspect the image in the conversation and describe the concrete visual evidence in training_spec.evidence_summary. ALSO attach the relevant visual context whenever a transferable URL, file/reference id, or Creative-DNA asset id exists. Prefer a compact evidence chain (problem/output -> target/reference -> corrected/approved outcome) with captions and stable Asset IDs when available. The training rule must make sense without access to the image. Image transfer is optional evidence, not a submission dependency: never send the member out of ChatGPT solely to upload an image. When transferable image evidence is already available, prefer Creative DNA-owned context_asset_ids returned by the upload surface. context_image_uploads remains supported when attachment bytes are directly available to the tool. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. Use list_creative_dna_routes to discover routes.",
+        "Creative DNA connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For every Train request, MUST create a self-contained training_spec from the member's feedback and all visible context before calling submit_training_feedback. Always include concise Vietnamese admin_summary_vi, admin_reason_vi, and admin_change_vi for the review UI. These three fields are mandatory. Write complete sentences in Vietnamese and preserve only necessary canonical/technical keywords in English. Never put English fallback prose in these fields. Keep generalized_rule/expected_behavior/reject_conditions as the canonical database payload language and do not let the Vietnamese admin overview replace or alter that payload. For image-related feedback, inspect the image in the conversation and describe the concrete visual evidence in training_spec.evidence_summary. ALSO attach the relevant visual context whenever a transferable URL, file/reference id, or Creative-DNA asset id exists. Prefer a compact evidence chain (problem/output -> target/reference -> corrected/approved outcome) with captions and stable Asset IDs when available. The training rule must make sense without access to the image. Image transfer is optional evidence, not a submission dependency: never send the member out of ChatGPT solely to upload an image. When transferable image evidence is already available, prefer Creative DNA-owned context_asset_ids returned by the upload surface. context_image_uploads remains supported when attachment bytes are directly available to the tool. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. For UI mapping, always download the backend-owned ui_mapping_template HTML/CSS from the returned URLs or get_onepage_ui_template. Never use libfile IDs as download URLs or reconstruct from the live page. Use list_creative_dna_routes to discover routes.",
     }
   );
+
+  server.registerTool("get_onepage_ui_template", {
+    title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: { version: z.string().trim().max(80).optional(), format: z.enum(["manifest", "source"]).optional() },
+  }, async ({ version, format }) => {
+    try {
+      return { content: [{ type: "text", text: JSON.stringify(getOnepageUiTemplate(version, format), null, 2) }] };
+    } catch {
+      return { content: [{ type: "text", text: JSON.stringify({ error: "Unknown Onepage UI template version or format" }) }], isError: true };
+    }
+  });
 
   // Tool 1: resolve_creative_dna
   server.registerTool(
@@ -432,7 +450,7 @@ export function createMcpServer(): McpServer {
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: JSON.stringify({ error: safeMsg }),
             },
           ],
@@ -487,8 +505,8 @@ export function createMcpServer(): McpServer {
         }).optional()
       }, annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
     },
-    async ({brand,branch,feedback,submitter_name,proposed_scope,context_images,context_image_uploads,context_asset_ids,training_spec})=>{
-      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope,context_images,context_image_uploads,context_asset_ids,training_spec); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
+    async ({brand,branch,feedback,submitter_name,proposed_scope,context_images,context_asset_ids,training_spec})=>{
+      try { const upstream=await submitTrainingFeedback(brand,branch,feedback,submitter_name,proposed_scope,context_images,undefined,context_asset_ids,training_spec); return {content:[{type:"text",text:JSON.stringify(upstream.data,null,2)}],isError:!upstream.ok}; }
       catch(err:any){ return {content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to submit training feedback")})}],isError:true}; }
     }
   );
@@ -509,7 +527,7 @@ export function createMcpServer(): McpServer {
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: JSON.stringify(safeData, null, 2),
             },
           ],
@@ -520,7 +538,7 @@ export function createMcpServer(): McpServer {
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: JSON.stringify({ error: "Error listing Creative DNA routes" }),
             },
           ],
@@ -611,6 +629,33 @@ export function createApp(): express.Application {
     }
 
     next();
+  });
+
+  // Versioned backend-owned template: no Library session or datastore query required.
+  app.get("/api/onepage-ui-template/:version/:file", (req: Request, res: Response) => {
+    const file = getTemplateFile(String(req.params.version), String(req.params.file));
+    if (!file) return res.status(404).json({ error: "Unknown Onepage UI template version or file" });
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("ETag", `"${file.hash}"`);
+    if (req.header("if-none-match") === `"${file.hash}"`) return res.sendStatus(304);
+    if (req.params.file === "template.html") {
+      res.setHeader("Content-Disposition", 'attachment; filename="template.html"');
+      res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; font-src data:; img-src https: data:; base-uri 'none'; frame-ancestors 'none'");
+    }
+    return res.type(file.type).send(file.body);
+  });
+  app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
+    const input = req.body?.arguments || req.body || {};
+    try { return res.json(getOnepageUiTemplate(input.version, input.format)); }
+    catch { return res.status(400).json({ error: "Unknown Onepage UI template version or format" }); }
+  });
+  app.post("/api/tools/compile_onepage_job", async (req: Request, res: Response) => {
+    const input = req.body?.arguments || req.body || {};
+    try {
+      const parsed = z.object({ brand: z.string().trim().min(1).max(100), source_url: z.string().max(2000).optional(), source_type: z.enum(["auto", "product", "collection"]).optional(), theme: z.string().max(120).optional() }).parse(input);
+      const result = await compileOnepageJob(parsed.brand, parsed.source_url, parsed.source_type, parsed.theme);
+      return res.status(result.status).json(result.data);
+    } catch (err: any) { return res.status(err instanceof z.ZodError ? 400 : 502).json({ error: sanitizePublicError(err, "Unable to compile Onepage job") }); }
   });
 
   // Admin feedback review proxy. The browser supplies the authenticated Supabase JWT;
@@ -981,7 +1026,7 @@ export function createApp(): express.Application {
   });
 
   app.post("/api/feedback/context-image", async (req: Request, res: Response) => {
-    if (!feedbackUpstreamUrl) return res.status(503).json({ error:"Feedback service is not configured" });
+    if (!FEEDBACK_UPSTREAM_URL) return res.status(503).json({ error:"Feedback service is not configured" });
     try {
       const body = req.body || {};
       const sourceUrl = String(body.source_url || "").trim();
@@ -1086,6 +1131,7 @@ export function createApp(): express.Application {
         },
       ],
       paths: {
+        "/api/tools/get_onepage_ui_template": { post: { operationId: "get_onepage_ui_template", description: ONEPAGE_TEMPLATE_DESC, requestBody: { content: { "application/json": { schema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] } } } } } }, responses: { "200": { description: "Versioned UI template manifest or inline source" } } } },
         "/api/health": {
           get: {
             operationId: "get_health_status",
