@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import template from './templates/onepage-ui-v1.json';
+import template from './templates/onepage-ui-v1.json' with { type: 'json' };
 
 export const ONEPAGE_TEMPLATE_VERSION = template.version;
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://creative-dna-gateway.vercel.app';
