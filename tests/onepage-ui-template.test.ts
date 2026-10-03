@@ -28,6 +28,19 @@ test('complete versioned template includes matching hashes, fonts, slots and fix
   assert.throws(() => getOnepageUiTemplate('missing'));
 });
 
+test('new canvas spacing retains the immutable original template and internal structure', () => {
+  const old = getOnepageUiTemplate('2026-10-03.v1', 'source') as any;
+  const current = getOnepageUiTemplate(undefined, 'source') as any;
+  assert.equal(current.version, '2026-10-03.v2');
+  assert.deepEqual(current.canvas_gutter, { desktop_px: 32, mobile_px: 16, mobile_max_width_px: 798 });
+  assert.equal(current.html.replace('<body><div class="onepage-mapping-canvas">', '<body>').replace('</div></body>', '</body>'), old.html);
+  assert.ok(current.css.startsWith(old.css));
+  assert.equal(sha(old.html), old.sha256.html);
+  assert.equal(sha(old.css), old.sha256.css);
+  assert.equal(old.canvas_gutter, null);
+  assert.equal(getTemplateFile('2026-10-03.v1', 'template.html')!.hash, old.sha256.html);
+});
+
 test('template attaches only to successful supported Onepage routes without overwriting product rules', () => {
   for (const brand of ['PawfectHouse', 'GiftSoul', 'SoulPrise']) {
     const original = { instruction: 'Keep product truth', hard_gates: ['exact product'] };

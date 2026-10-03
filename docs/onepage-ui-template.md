@@ -20,3 +20,7 @@ Never overwrite an existing version. For a future approved layout change, add a 
 The old Library ZIP and four accepted feedback fragments remain historical evidence. The executable source is this backend registry and its returned URLs. No database migration, new secret or Member permission is required.
 
 Validation: `npm run lint`, `node --import tsx --test tests/onepage-ui-template.test.ts`, and `npm run build`.
+
+## Canvas spacing revision
+
+Active version `2026-10-03.v2` adds 32px gutters on desktop and 16px at widths up to 798px. The module is wrapped in a mapping canvas and its outer theme shell fits the available canvas width without the theme column margins doubling the gutter. Original Onepage DOM, inner layout CSS, fonts, slots and masks are retained. Version `2026-10-03.v1` remains available with its original hashes. This spacing change was explicitly requested by the owner on 2026-10-03.
