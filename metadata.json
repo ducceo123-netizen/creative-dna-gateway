@@ -1,8 +1,8 @@
 {
-  "name": "Creative DNA Gateway",
+  "name": "UID Brands",
   "description": "Live brand creative guidelines and production rules for ecommerce teams.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
-}
+}\n
