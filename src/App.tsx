@@ -298,8 +298,8 @@ export default function App() {
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-950 flex items-center justify-center p-1.5 border border-slate-800">
-              <img src="/icon.svg" alt="Creative DNA" className="w-full h-full" />
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-0.5 border border-slate-200 overflow-hidden shadow-sm">
+              <img src="/uid-brands-logo.svg?v=2" alt="UID Brands" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">
