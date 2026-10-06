@@ -28,6 +28,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [authLoading, setAuthLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [activeAction, setActiveAction] = useState<{ id:string; type:"accept"|"reject"|"merge" } | null>(null);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<Record<string,string>>({});
@@ -311,6 +312,30 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setActiveAction(null); }
   };
 
+  const deleteAllRejected = async () => {
+    const rejectedCount = proposals.filter(p => p.status === "rejected").length;
+    if (!rejectedCount) return;
+    if (!confirm(`Delete all ${rejectedCount} rejected feedback proposal${rejectedCount===1?"":"s"}? This only removes rejected proposal history and does not change canonical Creative DNA.`)) return;
+
+    setBulkDeleting(true); setMessage("");
+    try {
+      const res = await authFetch("/api/admin/feedback/delete-all", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({ status:"rejected" })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to delete rejected proposals");
+      const deleted = Number(data.deleted_count ?? data.deleted ?? rejectedCount);
+      setMessage(`Deleted ${deleted} rejected feedback proposal${deleted===1?"":"s"}. Canonical Creative DNA was not changed.`);
+      await load();
+    } catch(e:any) {
+      setMessage(e.message);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -359,7 +384,13 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         <button onClick={login} disabled={authLoading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-50"><LogIn className="w-4 h-4"/>{authLoading?"Signing in...":"Sign in"}</button>
       </div> : <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex gap-1">{["pending","merged","rejected","accepted","all"].map(x=><button key={x} onClick={()=>setFilter(x)} className={`px-3 py-2 text-xs font-semibold rounded-lg border ${filter===x?"bg-slate-900 text-white border-slate-900":"bg-white text-slate-600 border-slate-200"}`}>{x==="accepted"?"accepted (legacy)":x}</button>)}</div>
-        <button onClick={logout} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600"><LogOut className="w-3.5 h-3.5"/>Sign out</button>
+        <div className="flex items-center gap-2">
+          {filter==="rejected" && filtered.length>0 && <button onClick={deleteAllRejected} disabled={bulkDeleting || loading} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 disabled:opacity-50">
+            {bulkDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin"/> : <XCircle className="w-3.5 h-3.5"/>}
+            {bulkDeleting ? "Deleting..." : `Delete all rejected (${filtered.length})`}
+          </button>}
+          <button onClick={logout} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600"><LogOut className="w-3.5 h-3.5"/>Sign out</button>
+        </div>
       </div>}
       {message && <div className="text-xs p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">{message}</div>}
       {token && <div className="border-t border-slate-100 pt-4 space-y-3">
