@@ -201,7 +201,11 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   const normalizedImages=[...(context_images||[]),...persistedUploads,...persistedAssets].slice(0,12);
   const normalizedSpec=validateTrainingSpec(training_spec);
   const enrichedFeedback=normalizedSpec ? `${cleanFeedback}\n\n--- AI INTERPRETED TRAINING SPEC ---\nObserved issue: ${normalizedSpec.observed_issue}\nGeneralized rule: ${normalizedSpec.generalized_rule}\nExpected behavior: ${normalizedSpec.expected_behavior}\nReject conditions: ${normalizedSpec.reject_conditions.join(" | ") || "None specified"}\nScope: ${normalizedSpec.scope}\nRule class: ${normalizedSpec.rule_class}\nEvidence summary: ${normalizedSpec.evidence_summary}\nConfidence: ${normalizedSpec.confidence}` : cleanFeedback;
-  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:validated.branch,feedback:enrichedFeedback,submitter_name,proposed_scope:normalizedSpec?.scope||proposed_scope,context_images:normalizedImages,training_spec:normalizedSpec})});
+  const feedbackBranch = isPawfectHouseNicheProductCombo(validated.brand, validated.branch) ? "LDP" : validated.branch;
+  const routedFeedback = isPawfectHouseNicheProductCombo(validated.brand, validated.branch)
+    ? `[Gateway material: Niche Product Combo]\n${enrichedFeedback}`
+    : enrichedFeedback;
+  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:feedbackBranch,feedback:routedFeedback,submitter_name,proposed_scope:normalizedSpec?.scope||proposed_scope||"niche-product-combo",context_images:normalizedImages,training_spec:normalizedSpec})});
   return {status:response.status,ok:response.ok,data:await response.json()};
 }
 
@@ -231,8 +235,107 @@ export async function fetchUpstream(payload: { action: "resolve"; brand: string;
   };
 }
 
+const NICHE_PRODUCT_COMBO_SLUG = "niche-product-combo";
+const NICHE_PRODUCT_COMBO_ALIASES = new Set([
+  NICHE_PRODUCT_COMBO_SLUG,
+  "niche product combo",
+  "product combo",
+  "niche combo",
+]);
+
+function normalizeRouteKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[_\s]+/g, "-");
+}
+
+function isPawfectHouseNicheProductCombo(brand: string, branch: string): boolean {
+  const brandKey = normalizeRouteKey(brand);
+  const rawBranch = branch.trim().toLowerCase();
+  const branchKey = normalizeRouteKey(branch);
+  return brandKey === "pawfecthouse" && (
+    NICHE_PRODUCT_COMBO_ALIASES.has(rawBranch) ||
+    NICHE_PRODUCT_COMBO_ALIASES.has(branchKey)
+  );
+}
+
+const NICHE_PRODUCT_COMBO_OVERLAY = `
+## GATEWAY MATERIAL BRANCH — NICHE PRODUCT COMBO
+
+Purpose: create product-first multi-SKU combo imagery organized around a clear shopper niche. This material is distinct from Shop By Product: Shop By Product presents one hero product/product line per image, while Niche Product Combo intentionally combines 2–3 verified products in one coherent tile.
+
+### INPUTS
+- Collection / Product Pool: required source of verified products.
+- Theme: niche/campaign context.
+- Niche list: one or more shopper worlds such as Cozy Reading, Reading & Coffee, Bookish Home, Books & Pets.
+- Custom ratio: default 1:1 unless the brief overrides it.
+- Quantity: number of standalone combo images.
+- Custom Style: optional; "Studio Soft Shadow" is a supported clean product-first direction.
+
+### HARD EXECUTION GATES
+1. Verify every selected SKU from the supplied collection/PDP before generation. Preserve product silhouette, material, scale, printed artwork/personalization and physically plausible orientation.
+2. Each requested niche must use a meaningfully different product mix when the source assortment allows it. Do not make a multi-niche set feel like the same combo with props swapped.
+3. Use 2–3 products per combo by default. Group them tightly enough to read as one composition, but keep every product legible.
+4. Vary angle intentionally across products and across the requested image set. Flat accessories need believable support: lay them on a surface or visibly lean them against a real object; never make unsupported objects stand impossibly.
+5. Product cluster is the visual focus. Use one simple surface plus a quiet background; props are sparse and only clarify the niche or product use. Reject decorative clutter that competes with the products.
+6. Maintain comfortable edge spacing and natural overlap/depth. Avoid rigid grid/lineup staging, floating objects, clipped silhouettes, or products pressed against the frame.
+7. Theme should be evident first through the actual chosen products/designs, then through restrained context. Do not compensate for weak product selection with excessive props.
+8. Keep the image set coherent in lighting/background language while allowing different compositions and camera angles.
+9. For PawfectHouse, inherit canonical product-truth and human-realism rules from the parent LDP/brand DNA. People are optional and should not be added unless they improve the requested story.
+
+### READING / BOOK LOVER REFERENCE
+For reading-oriented combo tiles, the accepted balance is a warm, grounded reading context with minimal environmental detail. A single armchair edge, side table, ottoman, book or cup may be enough; avoid shelves/plants/decor stacks that make the product cluster hard to scan. Existing accepted LDP combo wisdom remains applicable.
+
+### OUTPUT EXPECTATION
+Return each requested niche as a separate standalone image/concept, with a distinct verified product allocation and intentional angle plan. Do not collapse multiple requested niches into one collage unless explicitly requested.
+`;
+
+function applyNicheProductComboOverlay(data: any, requestedBrand: string, requestedBranch: string): any {
+  const baseBranch = data?.branch || {};
+  return {
+    ...data,
+    requested: { brand: requestedBrand, branch: requestedBranch },
+    resolved: { brand: "pawfecthouse", branch: NICHE_PRODUCT_COMBO_SLUG },
+    instruction: "Gateway material route. Use the inherited canonical PawfectHouse LDP + Brand DNA together with the Niche Product Combo overlay below as source-of-truth instructions for this material.",
+    branch: {
+      ...baseBranch,
+      slug: NICHE_PRODUCT_COMBO_SLUG,
+      title: "PawfectHouse Niche Product Combo Material Recipe",
+      version: `${baseBranch.version || "0.1"}+gateway.1`,
+      metadata: {
+        ...(baseBranch.metadata || {}),
+        gateway_virtual_branch: true,
+        parent_branch: "ldp-system",
+        material_role: "NICHE_PRODUCT_COMBO",
+      },
+      node_type: "material",
+      content_md: `${baseBranch.content_md || ""}\n\n${NICHE_PRODUCT_COMBO_OVERLAY}`,
+      input_schema: {
+        collection_or_product_pool: { type: "string", required: true },
+        theme: { type: "string", required: false },
+        niches: { type: "array", items: { type: "string" }, required: true },
+        custom_ratio: { type: "string", default: "1:1" },
+        quantity: { type: "number", required: false },
+        custom_style: { type: "string", required: false },
+      },
+    },
+  };
+}
+
 export async function resolveCreativeDna(brand: string, branch: string) {
   const validated = validateResolveInput(brand, branch);
+
+  if (isPawfectHouseNicheProductCombo(validated.brand, validated.branch)) {
+    const parent = await fetchUpstream({
+      action: "resolve",
+      brand: "PawfectHouse",
+      branch: "LDP",
+    });
+    return {
+      ...parent,
+      data: parent.ok
+        ? applyNicheProductComboOverlay(parent.data, validated.brand, validated.branch)
+        : parent.data,
+    };
+  }
 
   const result = await fetchUpstream({
     action: "resolve",
@@ -243,9 +346,31 @@ export async function resolveCreativeDna(brand: string, branch: string) {
 }
 
 export async function listCreativeDnaRoutes() {
-  return fetchUpstream({
+  const result = await fetchUpstream({
     action: "routes",
   });
+
+  if (!result.ok || !Array.isArray(result.data?.routes)) return result;
+
+  const exists = result.data.routes.some((r: any) =>
+    normalizeRouteKey(String(r.brand || "")) === "pawfecthouse" &&
+    normalizeRouteKey(String(r.branch || "")) === NICHE_PRODUCT_COMBO_SLUG
+  );
+
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      routes: exists ? result.data.routes : [
+        ...result.data.routes,
+        {
+          brand: "pawfecthouse",
+          branch: NICHE_PRODUCT_COMBO_SLUG,
+          title: "PawfectHouse Niche Product Combo Material Recipe",
+        },
+      ],
+    },
+  };
 }
 
 /**
