@@ -34,11 +34,12 @@ const BRANCH_LABELS: Record<string,string> = {
   "seasonal-banner":"Seasonal Banner",
   "shop-by-product-image":"Shop By Product",
   "shop-by-categories":"Shop By Categories",
+  "niche-product-combo":"Niche Product Combo",
   "ugc-image":"UGC",
 };
 
 const FALLBACK_BRANDS = [
-  { name:"PawfectHouse", category:"Personalized Pet & Family Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Seasonal Banner","Shop By Product","Shop By Categories","UGC"] },
+  { name:"PawfectHouse", category:"Personalized Pet & Family Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Seasonal Banner","Shop By Product","Shop By Categories","Niche Product Combo","UGC"] },
   { name:"GiftSoul", category:"Custom Keepsakes & Emotional Gifts", branches:["Onepage","LDP","LDP Hero","Home Hero","Recipient Image","Seasonal Banner","Shop By Product","UGC"] },
   { name:"SoulPrise", category:"Modern Artisanal Gifting", branches:["Home Hero","Recipient Image","Seasonal Banner","Shop By Product","Onepage"] },
 ];
@@ -52,6 +53,7 @@ const DEFAULT_BRANCH_HELP: Record<string,{usage_badge:string;description_vi:stri
   "seasonal-banner": { usage_badge:"Seasonal Banner", description_vi:"Material cho banner theo mùa/campaign, thường nằm giữa hành trình browse hoặc trên collection/LDP.", output_note:"Banner ngang, ưu tiên scene + product + text runway." },
   "shop-by-product-image": { usage_badge:"Shop By Product", description_vi:"Material cho block Shop By Product, tập trung một sản phẩm chính, clean staging và product fidelity.", output_note:"Một image riêng cho từng product tile." },
   "shop-by-categories": { usage_badge:"Shop By Categories", description_vi:"Material cho block Shop By Categories, đại diện trực quan cho từng category/niche để user scan nhanh.", output_note:"Một image riêng cho từng category." },
+  "niche-product-combo": { usage_badge:"LDP · Product Combo", description_vi:"Material gom 2–3 SKU đã verify thành một cụm sản phẩm theo từng niche. Product là focus chính, background/props tiết chế, angle đa dạng và vật thể phải đứng/nằm hợp lý.", output_note:"Mỗi niche là một ảnh combo riêng với product mix khác nhau; không dùng như Shop By Product." },
   "ugc-image": { usage_badge:"UGC / Social Proof", description_vi:"Material UGC dùng cho social proof, lifestyle proof hoặc content creator-style trong LDP/PDP.", output_note:"Ảnh tự nhiên, đa angle, ưu tiên authenticity." },
 };
 
@@ -101,6 +103,14 @@ const TASK_PROMPT_FIELDS: Record<string,PromptField[]> = {
     { label:"Category / Niche", required:true, placeholder:"Reading / Crochet / Gardening /..." },
     { label:"Product pool", required:false, placeholder:"Collection URL hoặc danh sách sản phẩm" },
     { label:"Theme", required:false, placeholder:"Campaign / season nếu có" },
+  ],
+  "niche-product-combo": [
+    { label:"Collection / Product Pool", required:true, placeholder:"Collection URL hoặc danh sách SKU đã chọn" },
+    { label:"Theme", required:false, placeholder:"Book Lovers / Gardening / Crochet /..." },
+    { label:"Niche", required:true, placeholder:"1. Cozy Reading\n2. Reading & Coffee\n3. Books & Pets" },
+    { label:"Custom ratio", required:false, placeholder:"1:1 mặc định hoặc ratio cần override" },
+    { label:"Quantity", required:false, placeholder:"Số ảnh combo cần tạo" },
+    { label:"Custom Style", required:false, placeholder:"Studio Soft Shadow / lifestyle tối giản /..." },
   ],
   "ugc-image": [
     { label:"Product / Collection", required:true, placeholder:"PDP hoặc Collection URL" },
