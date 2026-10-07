@@ -195,7 +195,9 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   const validated = validateResolveInput(brand, branch);
   const cleanFeedback = String(feedback || "").trim();
   if (cleanFeedback.length < 3) throw new Error("feedback is required");
-  if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");\n  const cleanSubmitter = String(submitter_name || "").trim();\n  if (!cleanSubmitter || /^(team member|member|unknown|anonymous|n\\/a)$/i.test(cleanSubmitter)) throw new Error("submitter_name must be the exact member account/display name");
+  if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
+  const cleanSubmitter = String(submitter_name || "").trim();
+  if (!cleanSubmitter || /^(team member|member|unknown|anonymous|n\/a)$/i.test(cleanSubmitter)) throw new Error("submitter_name must be the exact member account/display name");
   const persistedUploads=context_image_uploads?.length ? await Promise.all(context_image_uploads.slice(0,12).map(persistFeedbackContextImage)) : [];
   const persistedAssets=(context_asset_ids||[]).slice(0,12).map(contextAssetToImage);
   const normalizedImages=[...(context_images||[]),...persistedUploads,...persistedAssets].slice(0,12);
