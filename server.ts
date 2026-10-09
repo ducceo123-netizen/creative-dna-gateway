@@ -586,7 +586,7 @@ export const TOOL_DEFINITIONS = [
 export function createMcpServer(): McpServer {
   const server = new McpServer(
     {
-      name: "UID Brands",
+      name: "Creative DNA",
       version: "1.0.0",
     },
     {
