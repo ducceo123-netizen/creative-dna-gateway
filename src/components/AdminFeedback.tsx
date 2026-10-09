@@ -1,3 +1,4 @@
+import { assessProposal } from "../knowledge-governance";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 
@@ -496,8 +497,24 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     </section>
     <section className="space-y-3">
       {!loading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
-      {filtered.map(p=>{ const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {filtered.map(p=>{ const governance=assessProposal(p,proposals); const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+ <div className="flex flex-wrap items-center justify-between gap-2">
+  <span className="text-xs font-semibold text-slate-800">Knowledge Governance · Advisory</span>
+  <span className="text-xs font-semibold text-slate-700">Evidence priority {governance.total}/100 · {governance.recommendation}</span>
+ </div>
+ <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] text-slate-600">
+  <span>Evidence {governance.scores.evidence}/30</span>
+  <span>Product Truth {governance.scores.productTruth}/25</span>
+  <span>Reusability {governance.scores.reusability}/20</span>
+  <span>Consistency {governance.scores.consistency}/15</span>
+  <span>Impact {governance.scores.outcomeImpact}/10</span>
+ </div>
+ {governance.issues.length>0 && <p className="text-xs text-slate-600">{governance.issues.join(" · ")}</p>}
+ {governance.similar.length>0 && <p className="text-xs text-slate-600">Potential duplicates: {governance.similar.map(x=>x.id.slice(0,8)).join(", ")}</p>}
+ <p className="text-[11px] text-slate-500">{governance.note}</p>
+ </div>
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span><span className="font-bold text-slate-700">Submitted by:</span> {p.submitted_by_name || "Missing member name"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
         </div>
