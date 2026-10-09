@@ -4,7 +4,6 @@ import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, ONEPAGE
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
-import { launcherHtml, LAUNCHER_MIME, LAUNCHER_URI } from "./task-launcher.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
 
@@ -511,7 +510,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: "get_uid_brands_native_workflow",
     title: "UID Brands Native Workflow",
-    description: "UID Brands workflow metadata for content approval, asset review, and packaging. For opening a new task, use launch_creative_dna instead: this schema-only tool cannot directly render the launcher form. The ChatGPT host decides whether to present native approval controls; otherwise offer conversational choices.",
+    description: "UID Brands structured workflow schema for launcher, content approval, asset review and packaging. ChatGPT may render native controls; otherwise offer conversational choices. No custom HTML UI.",
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: { type: "object", properties: { stage: { type: "string", enum: ["launcher", "content_approval", "asset_review", "packaging"] } } },
   },
@@ -521,11 +520,10 @@ export const TOOL_DEFINITIONS = [
   {
     name: "launch_creative_dna",
     title: "Open UID Brands Task Launcher",
-    description: "DEFAULT ENTRYPOINT for UID Brands creative tasks. Open the integrated in-chat brand/material/URL/theme launcher. Do not request the user to copy prompts. Keep canonical Creative DNA backend execution unchanged. Not for training, revision, or complete briefs.",
+    description: "UID Brands task metadata (no custom UI). Return Brand/Material routes and task fields to ChatGPT. Prefer native ChatGPT controls if the host supports them; otherwise collect the brief conversationally. Never render or link MCP HTML, iframe or dashboard. For complete briefs, use canonical Creative DNA execution tools.",
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: { type: "object", properties: {} },
     
-    _meta: { ui: { resourceUri: LAUNCHER_URI }, "openai/outputTemplate": LAUNCHER_URI },
   },
   {
     name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
@@ -592,19 +590,13 @@ export function createMcpServer(): McpServer {
         tools: { listChanged: false },
       },
       instructions:
-        "UID Brands connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. LAUNCHER-FIRST: for new tasks without a complete brief ALWAYS call launch_creative_dna to render its working interactive MCP App form in ChatGPT. Do NOT call get_uid_brands_native_workflow(stage=launcher) for new tasks: it provides only data and often yields plain text instead of a form. For content approval and asset review, get_uid_brands_native_workflow may supply approval choices, but the assistant must present those choices with interactive native controls when available or concise conversational options otherwise. Never claim the tool schema automatically renders controls. Do not ask the user to visit a dashboard, copy a template, or type a sample prompt. If the user has already supplied a complete brief, skip the launcher and run the appropriate canonical tools directly. Never open the launcher for review feedback, training, continuing an existing task, or resolving specific rules. Opening the plugin alone without a user turn does not invoke tools. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For every Train request, MUST create a self-contained training_spec from the member's feedback and all visible context before calling submit_training_feedback. Always include concise Vietnamese admin_summary_vi, admin_reason_vi, and admin_change_vi for the review UI. ALWAYS include submitter_name as the exact member account/display name for the person sending the feedback; never use Team member, Member, Unknown, Anonymous, or another generic placeholder. These three fields are mandatory. Write complete sentences in Vietnamese and preserve only necessary canonical/technical keywords in English. Never put English fallback prose in these fields. Keep generalized_rule/expected_behavior/reject_conditions as the canonical database payload language and do not let the Vietnamese admin overview replace or alter that payload. For image-related feedback, inspect the image in the conversation and describe the concrete visual evidence in training_spec.evidence_summary. ALSO attach the relevant visual context whenever a transferable URL, file/reference id, or Creative-DNA asset id exists. Prefer a compact evidence chain (problem/output -> target/reference -> corrected/approved outcome) with captions and stable Asset IDs when available. The training rule must make sense without access to the image. Image transfer is optional evidence, not a submission dependency: never send the member out of ChatGPT solely to upload an image. When transferable image evidence is already available, prefer Creative DNA-owned context_asset_ids returned by the upload surface. context_image_uploads remains supported when attachment bytes are directly available to the tool. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. For UI mapping, always download the backend-owned ui_mapping_template HTML/CSS from the returned URLs or get_onepage_ui_template. Never use libfile IDs as download URLs or reconstruct from the live page. Use list_creative_dna_routes to discover routes.",
+        "UID Brands connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. SCHEMA-ONLY: for new tasks without a complete brief, call get_uid_brands_native_workflow(stage=launcher) or launch_creative_dna to retrieve structured fields and routes. Present ChatGPT-native controls when supported; otherwise collect requirements conversationally. Neither tool has a custom UI resource or output template. For content approval and asset review retrieve the corresponding stage and offer approve/revise/regenerate choices. Never claim the returned schema automatically renders native controls. Do not ask the user to visit a dashboard, copy a template, or type a sample prompt. If the user has already supplied a complete brief, skip the launcher and run the appropriate canonical tools directly. Never open the launcher for review feedback, training, continuing an existing task, or resolving specific rules. Opening the plugin alone without a user turn does not invoke tools. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For every Train request, MUST create a self-contained training_spec from the member's feedback and all visible context before calling submit_training_feedback. Always include concise Vietnamese admin_summary_vi, admin_reason_vi, and admin_change_vi for the review UI. ALWAYS include submitter_name as the exact member account/display name for the person sending the feedback; never use Team member, Member, Unknown, Anonymous, or another generic placeholder. These three fields are mandatory. Write complete sentences in Vietnamese and preserve only necessary canonical/technical keywords in English. Never put English fallback prose in these fields. Keep generalized_rule/expected_behavior/reject_conditions as the canonical database payload language and do not let the Vietnamese admin overview replace or alter that payload. For image-related feedback, inspect the image in the conversation and describe the concrete visual evidence in training_spec.evidence_summary. ALSO attach the relevant visual context whenever a transferable URL, file/reference id, or Creative-DNA asset id exists. Prefer a compact evidence chain (problem/output -> target/reference -> corrected/approved outcome) with captions and stable Asset IDs when available. The training rule must make sense without access to the image. Image transfer is optional evidence, not a submission dependency: never send the member out of ChatGPT solely to upload an image. When transferable image evidence is already available, prefer Creative DNA-owned context_asset_ids returned by the upload surface. context_image_uploads remains supported when attachment bytes are directly available to the tool. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. For UI mapping, always download the backend-owned ui_mapping_template HTML/CSS from the returned URLs or get_onepage_ui_template. Never use libfile IDs as download URLs or reconstruct from the live page. Use list_creative_dna_routes to discover routes.",
     }
   );
 
-  // Non-destructive interactive task launcher. UI sends a normal chat follow-up;
-  // the existing canonical tools remain the sole source of creative rules.
-  server.registerResource("creative-dna-task-launcher", LAUNCHER_URI,
-    { mimeType: LAUNCHER_MIME, description: "Creative DNA brand and material task picker" },
-    async () => ({ contents: [{ uri: LAUNCHER_URI, mimeType: LAUNCHER_MIME, text: launcherHtml, _meta: { ui: { prefersBorder: true } } }] })
-  );
   server.registerTool("get_uid_brands_native_workflow", {
     title: "UID Brands Native Workflow",
-    description: "UID Brands workflow metadata for content approval, asset review, and packaging. For opening a new task, use launch_creative_dna instead: this schema-only tool cannot directly render the launcher form. The ChatGPT host decides whether to present native approval controls; otherwise offer conversational choices.",
+    description: "UID Brands structured workflow schema for launcher, content approval, asset review and packaging. ChatGPT may render native controls; otherwise offer conversational choices. No custom HTML UI.",
     inputSchema: { stage: z.enum(["launcher", "content_approval", "asset_review", "packaging"]).optional() },
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
   }, async ({ stage }) => {
@@ -624,16 +616,15 @@ export function createMcpServer(): McpServer {
 
   server.registerTool("launch_creative_dna", {
     title: "Open UID Brands Task Launcher",
-    description: "DEFAULT ENTRYPOINT for UID Brands creative tasks. Open the integrated in-chat brand/material/URL/theme launcher. Do not request the user to copy prompts. Keep canonical Creative DNA backend execution unchanged. Not for training, revision, or complete briefs.",
+    description: "UID Brands task metadata (no custom UI). Return Brand/Material routes and task fields to ChatGPT. Prefer native ChatGPT controls if the host supports them; otherwise collect the brief conversationally. Never render or link MCP HTML, iframe or dashboard. For complete briefs, use canonical Creative DNA execution tools.",
     inputSchema: {},
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
     
-  _meta: { ui: { resourceUri: LAUNCHER_URI }, "openai/outputTemplate": LAUNCHER_URI },
   }, async () => {
     try {
       const upstream = await listCreativeDnaRoutes();
       const safe = sanitizeRoutesData(upstream.data);
-      return { content: [{ type: "text" as const, text: "UID Brands launcher ready. Choose a brand, material, and product URL in the integrated form." }], structuredContent: { routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
+      return { content: [{ type: "text" as const, text: "UID Brands task fields and routes are available as structured data. Render native ChatGPT controls when supported, otherwise gather the brief conversationally." }], structuredContent: { routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
     } catch (err) {
       return { content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], structuredContent: { routes: [], error: "Routes temporarily unavailable" } };
     }
