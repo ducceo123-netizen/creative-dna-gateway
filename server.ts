@@ -4,6 +4,7 @@ import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, ONEPAGE
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
+import { validateRegressionAttestation } from "./src/governance-regression.ts";
 import { launcherHtml, LAUNCHER_MIME, LAUNCHER_URI } from "./uid-brands-workflow.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
@@ -1057,6 +1058,8 @@ export function createApp(): express.Application {
   });
 
   app.post("/api/admin/feedback/:id/merge", async (req: Request, res: Response) => {
+    const gate = validateRegressionAttestation(req.body?.regression);
+    if (!gate.ok) return res.status(422).json({ error: "Regression gate incomplete", issues: gate.issues });
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
@@ -1064,7 +1067,7 @@ export function createApp(): express.Application {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "merge", proposal_id: req.params.id }),
+        body: JSON.stringify({ mode: "merge", proposal_id: req.params.id, regression_attestation: gate.attestation }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to merge feedback" });
