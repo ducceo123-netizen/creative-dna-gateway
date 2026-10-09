@@ -1,0 +1,22 @@
+name: Governance Validation
+on:
+  pull_request:
+    paths:
+      - 'src/governance-*.ts'
+      - 'src/knowledge-governance.ts'
+      - 'src/components/AdminFeedback.tsx'
+      - 'src/components/GovernancePanel.tsx'
+      - 'supabase/**'
+      - 'tests/*governance*.ts'
+      - '.github/workflows/governance.yml'
+  push:
+    branches: [main]
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun test tests/governance-engine.test.ts tests/knowledge-governance.test.ts
