@@ -5,7 +5,7 @@
 export const LAUNCHER_URI = "ui://creative-dna/task-launcher-v1.html";
 export const LAUNCHER_MIME = "text/html;profile=mcp-app";
 
-export const launcherHtml = String.raw\`<!doctype html>
+export const launcherHtml = String.raw`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:light dark}
@@ -39,7 +39,7 @@ const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 let routes=[], selected=initial.branch||"";
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
-function readable(name){return name.replace(/\\b\\w/g,x=>x.toUpperCase()).replace(/-/g," ")}
+function readable(name){return name.replace(/\b\w/g,x=>x.toUpperCase()).replace(/-/g," ")}
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
@@ -70,7 +70,7 @@ $("run").onclick=async()=>{
  if(!route){$("error").textContent="Choose a material.";return;}
  try{const u=new URL(url);if(!/^https?:$/.test(u.protocol))throw new Error();}catch{$("error").textContent="Enter a valid PDP or collection URL.";return;}
  $("error").textContent="";save();
- const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\\nProduct / Collection: "+url+($("theme").value.trim()?"\\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\\nCustom content: "+$("custom").value.trim():"")+"\\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
+ const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
  const fn=window.openai?.sendFollowUpMessage;
  if(!fn){$("error").textContent="ChatGPT widget bridge is unavailable. Open this launcher inside ChatGPT.";return;}
  $("run").disabled=true;
@@ -79,4 +79,4 @@ $("run").onclick=async()=>{
 window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes)load(output);});
 load(window.openai?.toolOutput||{});
 })();
-</script></body></html>\`;
+</script></body></html>`;
