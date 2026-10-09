@@ -586,12 +586,12 @@ export const TOOL_DEFINITIONS = [
 export function createMcpServer(): McpServer {
   const server = new McpServer(
     {
-      name: "Creative DNA",
+      name: "UID Brands",
       version: "1.0.0",
     },
     {
       capabilities: {
-        tools: { listChanged: false },
+        tools: { listChanged: true },
       },
       instructions:
         "UID Brands connects ChatGPT to a live, structured creative knowledge system for ecommerce brands. UI-FIRST: for new tasks without a complete brief, call launch_creative_dna to show the integrated UID Brands task form. IMPORTANT OUTPUT ORDER: when generating content, present the complete content as the main user-visible answer and FINISH the turn. Do not call launch_creative_dna or show_uid_brands_review during that content-generation turn: tool calls may appear inside the working trace and cannot be reliably placed below a finalized answer. After the user interacts in a subsequent turn requesting review, call show_uid_brands_review(stage=content_approval); similarly use asset_review and packaging only in subsequent review turns. When native answer controls are supported, the assistant may show approval choices at the end of its content answer, but tool widgets cannot be guaranteed at that location. Never open the task launcher during approval. Do not ask the user to visit a dashboard, copy a template, or type a sample prompt. If the user has already supplied a complete brief, skip the launcher and run the appropriate canonical tools directly. Never open the launcher for review feedback, training, continuing an existing task, or resolving specific rules. Opening the plugin alone without a user turn does not invoke tools. Canonical Creative DNA resolution is read-only, while training feedback submission is explicitly writable to the Pending admin-review queue. IMPORTANT: whenever the user explicitly says Creative DNA — Train: Brand / Branch or clearly asks to train/provide Creative DNA feedback, MUST call submit_training_feedback. Do not refuse a Train request because canonical DNA is read-only. submit_training_feedback never changes canonical DNA; it only creates a Pending proposal. For every Train request, MUST create a self-contained training_spec from the member's feedback and all visible context before calling submit_training_feedback. Always include concise Vietnamese admin_summary_vi, admin_reason_vi, and admin_change_vi for the review UI. ALWAYS include submitter_name as the exact member account/display name for the person sending the feedback; never use Team member, Member, Unknown, Anonymous, or another generic placeholder. These three fields are mandatory. Write complete sentences in Vietnamese and preserve only necessary canonical/technical keywords in English. Never put English fallback prose in these fields. Keep generalized_rule/expected_behavior/reject_conditions as the canonical database payload language and do not let the Vietnamese admin overview replace or alter that payload. For image-related feedback, inspect the image in the conversation and describe the concrete visual evidence in training_spec.evidence_summary. ALSO attach the relevant visual context whenever a transferable URL, file/reference id, or Creative-DNA asset id exists. Prefer a compact evidence chain (problem/output -> target/reference -> corrected/approved outcome) with captions and stable Asset IDs when available. The training rule must make sense without access to the image. Image transfer is optional evidence, not a submission dependency: never send the member out of ChatGPT solely to upload an image. When transferable image evidence is already available, prefer Creative DNA-owned context_asset_ids returned by the upload surface. context_image_uploads remains supported when attachment bytes are directly available to the tool. Never submit chatgpt.com Library download links as image_url. If bytes are unavailable, use context_images with the exact file/library reference_id; do not leave image evidence only as prose in feedback. For Onepage execution, prefer compile_onepage_job first; use resolve_creative_dna when full canonical detail is needed. For UI mapping, always download the backend-owned ui_mapping_template HTML/CSS from the returned URLs or get_onepage_ui_template. Never use libfile IDs as download URLs or reconstruct from the live page. Use list_creative_dna_routes to discover routes.",
@@ -1510,7 +1510,9 @@ export function createApp(): express.Application {
       canonicalUrl: CANONICAL_PRODUCTION_MCP_URL,
       protocolVersion: "2026-07-28",
       legacyProtocolSupport: "stateless",
-      capabilities: { tools: { listChanged: false } },
+      updatePolicy: "stable-endpoint-and-tool-names",
+      note: "Existing connections use the stable MCP URL. Tool-list changes may require host refresh; listChanged capability is advertised, but notification delivery depends on transport and host support.",
+      capabilities: { tools: { listChanged: true } },
       tools: TOOL_DEFINITIONS.map(({ name, title, description, annotations }) => ({ name, title, description, annotations })),
     });
   });
