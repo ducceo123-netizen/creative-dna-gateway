@@ -306,7 +306,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-100">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-0.5 border border-slate-200 overflow-hidden shadow-sm">
               <img src="/uid-brands-logo.svg?v=2" alt="UID Brands" className="w-full h-full object-contain" />
@@ -319,7 +319,7 @@ export default function App() {
                   Live
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">Chọn brand & branch → copy câu lệnh → dùng ngay trong ChatGPT</p>
+              <p className="text-xs text-slate-500 hidden sm:block">Creative operations · Brand systems · Governance</p>
             </div>
           </div>
 
@@ -342,26 +342,26 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-7 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-7">
         <section className="space-y-2">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700">
             <Sparkles className="w-3.5 h-3.5" />
             Creative DNA Gateway
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            Gọi đúng Creative DNA trong ChatGPT
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+            Workspace cho Brand & Creative Materials
           </h1>
           <p className="text-sm text-slate-500 max-w-2xl">
-            Chọn đúng nhánh bạn muốn dùng. Dashboard sẽ tạo sẵn câu lệnh ngắn để copy vào ChatGPT.
+            Chọn Brand và Material để tra cứu quy tắc sáng tạo; quản lý feedback, evidence và quality review tại một nơi.
           </p>
         </section>
 
-        <div className="grid xl:grid-cols-[0.9fr_1.1fr] gap-5 items-start">
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="grid xl:grid-cols-[0.95fr_1.05fr] gap-6 items-start">
+          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Chọn Brand / Branch</h2>
+                <h2 className="text-sm font-semibold tracking-normal text-slate-900">Brand & Material</h2>
               </div>
               <span className="text-xs text-slate-400">{supportedBrands.length} brands</span>
             </div>
