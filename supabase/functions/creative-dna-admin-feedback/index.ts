@@ -151,7 +151,8 @@ export default {
       const latest=new Map<string,{before:any;after:any}>();
       for(const snap of snaps){
         const group=latest.get(snap.node_id)||{before:null,after:null};
-        if(!group[snap.checkpoint])group[snap.checkpoint]=snap;
+        const checkpoint=snap.checkpoint as "before"|"after";
+        if(!group[checkpoint])group[checkpoint]=snap;
         latest.set(snap.node_id,group);
       }
       const summary=[];
