@@ -1556,7 +1556,7 @@ export const app = createApp();
 export default app;
 
 export function startServer() {
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
   const distPath = path.join(process.cwd(), "dist");
 
   // Serve static assets from built Vite dist
