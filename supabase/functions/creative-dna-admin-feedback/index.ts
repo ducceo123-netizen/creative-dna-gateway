@@ -31,6 +31,78 @@ export default {
     const body = await req.json();
 
     // UID Brands governance: admin-only, fail-closed operations.
+    if (body.mode === "governance_evaluate") {
+      const proposalId=String(body.proposal_id||"").trim();
+      const runs=Array.isArray(body.candidate_runs)?body.candidate_runs:[];
+      const review=body.review||{};
+      if(!proposalId)return Response.json({error:"proposal_id required"},{status:400});
+      const {data:p,error:pe}=await adminDb.from("knowledge_proposals")
+        .select("id,knowledge_node_id,brand_id,proposed_scope,status")
+        .eq("id",proposalId).single();
+      if(pe||!p||p.status!=="pending")return Response.json({error:"Pending proposal required"},{status:409});
+      const {data:node}=await adminDb.from("knowledge_nodes")
+        .select("id,slug").eq("id",p.knowledge_node_id).single();
+      if(!node)return Response.json({error:"Source node unavailable"},{status:404});
+      const structural=node.slug==="onepage-system"&&!/brand[ _-]?style|vibe|mood/i.test(String(p.proposed_scope||""));
+      const q=adminDb.from("uid_governance_baselines").select("*").eq("branch_slug",node.slug).not("approved_at","is",null);
+      const {data:baselines,error:be}=await (structural?q:q.eq("brand_id",p.brand_id));
+      if(be)return Response.json({error:be.message},{status:500});
+      const cases=baselines||[];
+      const allIssues:string[]=[];
+      if(!cases.length)allIssues.push("No approved regression baseline cases");
+      if(structural){
+        const {data:nodes}=await adminDb.from("knowledge_nodes").select("brand_id").eq("slug","onepage-system").eq("status","active");
+        for(const target of nodes||[])
+          if(!cases.some((c:any)=>c.brand_id===target.brand_id))
+            allIssues.push("Missing approved baseline for an affected Onepage brand");
+      }
+      const results=cases.map((c:any)=>{
+        const issues:string[]=[];
+        const run=runs.find((r:any)=>String(r.baseline_id)===c.id);
+        if(!run||!run.output||typeof run.output!=="object"||!run.source_run_id||!/^https:\/\//.test(String(run.artifact_url||""))){
+          issues.push("Missing actual candidate run output, run ID, or artifact reference");
+        } else {
+          const content=JSON.stringify(run.output).toLowerCase();
+          const assertions=c.expected_assertions||{};
+          for(const required of assertions.required_text||[])
+            if(!content.includes(String(required).toLowerCase()))issues.push("Required statement missing");
+          for(const forbidden of assertions.forbidden_text||[])
+            if(content.includes(String(forbidden).toLowerCase()))issues.push("Forbidden statement found");
+          for(const key of assertions.required_keys||[])
+            if(!(key in run.output))issues.push("Required output field missing");
+          if(!Object.keys(assertions).length)issues.push("No approved assertions");
+        }
+        return {baseline_id:c.id,case_key:c.case_key,status:issues.length?"failed":"passed",
+          issues,source_run_id:run?.source_run_id||null,artifact_url:run?.artifact_url||null};
+      });
+      const declaredReview=review.product_truth_verified===true&&review.visual_reviewed===true
+        &&review.conflicts_reviewed===true&&review.critical_regressions===0
+        &&String(review.review_note||"").trim().length>=20;
+      if(!declaredReview)allIssues.push("Required Admin visual, product-truth and conflict attestations missing");
+      const failures=results.filter((x:any)=>x.status==="failed").length;
+      const status=allIssues.length?"blocked":failures?"failed":"passed";
+      const {data:hash,error:he}=await adminDb.rpc("uid_governance_candidate_hash",{p_proposal_id:proposalId});
+      if(he||!hash)return Response.json({error:"Unable to resolve candidate identity"},{status:500});
+      const {data:stored,error:se}=await adminDb.from("uid_governance_evaluations").insert({
+        proposal_id:proposalId,candidate_hash:hash,baseline_ids:cases.map((c:any)=>c.id),
+        test_results:results,conflict_results:[{note:String(review.review_note||"").slice(0,4000),
+          manually_reviewed:review.conflicts_reviewed===true}],
+        evaluation_status:status,critical_failures:failures+Math.max(0,Number(review.critical_regressions||0)),
+        evaluator_version:"mechanical-v1-plus-human-review",completed_at:new Date().toISOString()
+      }).select("id,evaluation_status,critical_failures,baseline_ids").single();
+      if(se)return Response.json({error:se.message},{status:500});
+      return Response.json({evaluation:stored,issues:allIssues,results,
+        limitation:"Tests verify supplied run artifacts and assertions; creative visual quality is admin-attested, not model-verified."});
+    }
+    if (body.mode === "governance_rollback_preview") {
+      const {data:snapshot,error:se}=await adminDb.from("uid_governance_snapshots")
+        .select("id,node_id,proposal_id,checkpoint,created_at").eq("id",body.snapshot_id).single();
+      if(se||!snapshot)return Response.json({error:"Snapshot not found"},{status:404});
+      const {data:hash,error:he}=await adminDb.rpc("uid_governance_node_hash",{p_node_id:snapshot.node_id});
+      if(he||!hash)return Response.json({error:"Cannot resolve current node hash"},{status:500});
+      return Response.json({snapshot,current_md5:hash,
+        note:"Use current_md5 for concurrency guarded rollback after administrator review."});
+    }
     if (body.mode === "governance_baseline_upsert") {
       const b=body.baseline||{};
       if(!b.brand_id||!b.branch_slug||!b.case_key||!b.source_brief||!b.approved_output||
@@ -272,96 +344,6 @@ export default {
     if (body.mode === "merge") {
       return Response.json({error:"Legacy merge is disabled pending governed migration; use verified evaluation flow."},{status:409});
     }
-    if (body.mode === "__disabled_legacy_merge") {
-      if (!body.proposal_id) return Response.json({ error: "proposal_id required" }, { status: 400 });
-
-      const { data: p, error: pe } = await adminDb
-        .from("knowledge_proposals")
-        .select("id,status,brand_id,knowledge_node_id,raw_feedback,proposed_content_md,proposed_scope,change_summary,merged_at,context_images")
-        .eq("id", body.proposal_id)
-        .maybeSingle();
-
-      if (pe) return Response.json({ error: pe.message }, { status: 500 });
-      if (!p || p.status !== "accepted" || p.merged_at) {
-        return Response.json({ error: "Accepted legacy proposal not found" }, { status: 409 });
-      }
-
-      const { data: sourceNode, error: ne } = await adminDb
-        .from("knowledge_nodes")
-        .select("id,slug,content_md,metadata,brand_id")
-        .eq("id", p.knowledge_node_id)
-        .single();
-
-      if (ne || !sourceNode) return Response.json({ error: ne?.message || "Knowledge node not found" }, { status: 500 });
-
-      const feedback = String(p.proposed_content_md || p.raw_feedback || "").trim();
-      if (!feedback) return Response.json({ error: "Proposal has no mergeable feedback" }, { status: 400 });
-
-      const structuralOnepage =
-        sourceNode.slug === "onepage-system" &&
-        !/brand[ _-]?style|vibe|mood/i.test(String(p.proposed_scope || ""));
-
-      let targets: any[] = [sourceNode];
-      if (structuralOnepage) {
-        const { data: nodes, error: te } = await adminDb
-          .from("knowledge_nodes")
-          .select("id,slug,content_md,metadata,brand_id")
-          .eq("slug", "onepage-system")
-          .eq("status", "active");
-        if (te) return Response.json({ error: te.message }, { status: 500 });
-        targets = nodes || [];
-      }
-
-      const now = new Date().toISOString();
-      const block = "\n\n## ACCEPTED ADMIN FEEDBACK — " + now.slice(0, 10) + "\n" + feedback + "\n";
-
-      for (const node of targets) {
-        const current = String(node.content_md || "");
-        if (!current.includes(feedback)) {
-          const { error: ue } = await adminDb
-            .from("knowledge_nodes")
-            .update({ content_md: current + block, updated_at: now })
-            .eq("id", node.id);
-          if (ue) return Response.json({ error: ue.message }, { status: 500 });
-        }
-
-        const { error: ee } = await adminDb.from("training_events").insert({
-          brand_id: node.brand_id || p.brand_id,
-          knowledge_node_id: node.id,
-          mode: "train",
-          input_text: feedback,
-          parsed_payload: {
-            proposal_id: p.id,
-            proposed_scope: p.proposed_scope,
-            cross_brand_sync: structuralOnepage,
-            context_images: p.context_images || [],
-          },
-          status: "accepted",
-          actor_user_id: user.id,
-          actor_role: "admin",
-          source_action: structuralOnepage ? "admin_merge_cross_brand_sync" : "admin_merge",
-        });
-        if (ee) return Response.json({ error: ee.message }, { status: 500 });
-      }
-
-      const { data: merged, error: me } = await adminDb
-        .from("knowledge_proposals")
-        .update({ status: "merged", merged_at: now, updated_at: now })
-        .eq("id", p.id)
-        .eq("status", "accepted")
-        .select("id,status,merged_at")
-        .single();
-
-      if (me) return Response.json({ error: me.message }, { status: 500 });
-
-      return Response.json({
-        proposal: merged,
-        merged_nodes: targets.length,
-        cross_brand_sync: structuralOnepage,
-        legacy_merge: true,
-      });
-    }
-
     if (body.mode === "review") {
       if (!body.proposal_id || !["accept", "reject"].includes(body.decision)) {
         return Response.json({ error: "proposal_id and valid decision required" }, { status: 400 });
