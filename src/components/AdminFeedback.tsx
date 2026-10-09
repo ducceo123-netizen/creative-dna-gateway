@@ -372,7 +372,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     };
   }, [token]);
 
-  return <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+  return <main className="max-w-[1440px] mx-auto px-4 sm:px-6 py-8 space-y-6">
     <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"><ArrowLeft className="w-4 h-4"/>Back to Creative DNA</button>
     <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
