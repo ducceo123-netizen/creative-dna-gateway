@@ -19,31 +19,17 @@ select,input,textarea,button{font:inherit;border-radius:10px}
 select,input,textarea{width:100%;padding:10px 12px;background:var(--input);color:var(--fg);border:1px solid var(--border);outline:none}
 select:focus-visible,input:focus-visible,textarea:focus-visible,.preview-toggle:focus-visible,.action:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}textarea{min-height:69px;resize:vertical}
-.preview{margin:15px 0 2px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-.preview-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.preview-title{font-size:13px;font-weight:650;color:var(--fg)}
-.preview-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
-.preview-img{margin-top:10px;max-height:240px;width:100%;object-fit:contain;border-radius:8px;background:var(--input);cursor:zoom-in}
-.preview-toggle{width:auto;flex-shrink:0;background:var(--input);border:1px solid var(--border);color:var(--fg);padding:6px 10px;font-size:12px;cursor:pointer}
-.preview-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:12px;font-weight:650}
-.preview-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10;display:none;place-items:center;padding:25px}
-.preview-modal.open{display:grid}.preview-modal img{max-width:95vw;max-height:82vh;object-fit:contain}
-.preview-close{position:absolute;right:12px;top:12px;width:auto;color:#fff;background:#383838;border:1px solid #999;cursor:pointer;padding:7px 11px}
 .action{width:100%;min-height:45px;margin-top:14px;padding:11px 14px;background:#5755d6;color:white;border:0;font-weight:650;cursor:pointer}
 .action:hover{background:#4846c4}.action:disabled{opacity:.55;cursor:not-allowed}
 .note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
 .error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
 [hidden]{display:none!important}
-@media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}.preview-top{align-items:flex-start}}
+@media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}}
 </style></head>
 <body><main class="wrap">
-<div class="header"><div class="logo">✦</div><div><h1>UID Brands</h1><p>Select a brand and material to begin</p></div></div>
+<div class="header"><div class="logo">✦</div><div><h1>UID Brands</h1><p>Choose a material and start your task</p></div></div>
 <label for="brand">Brand</label><select id="brand"></select>
 <label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
-<section class="preview" aria-label="Material preview">
-  <div class="preview-top"><div class="preview-title" id="previewTitle">Task preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="false">Show details</button></div>
-  <div id="previewBody" hidden><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
-</section>
-<div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
@@ -55,14 +41,13 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], guides=[], selected=initial.branch||"";
+let routes=[], selected=initial.branch||"";
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
-function readable(name){return name.replace(/\b\w/g,x=>x.toUpperCase()).replace(/-/g," ")}
+function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
  if(data.routes)routes=data.routes.filter(r=>r&&r.brand&&r.branch);
- if(Array.isArray(data.guides))guides=data.guides;
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
  const select=$("brand"); const current=initial.brand&&brands.includes(initial.brand)?initial.brand:(brands.includes("pawfecthouse")?"pawfecthouse":brands[0]);
@@ -77,31 +62,10 @@ function draw(){
  const shortNames={"onepage-system":"Onepage","ldp-system":"LDP","home-hero":"Home Hero","ldp-hero":"LDP Hero","ugc-image":"UGC","recipient-image":"Recipient Image","seasonal-banner":"Seasonal Banner","shop-by-product-image":"Shop By Product","shop-by-categories":"Shop By Categories","niche-product-combo":"Niche Product Combo"};
  select.replaceChildren(...options.map(r=>{const option=document.createElement("option");option.value=r.branch;option.textContent=shortNames[r.branch]||readable(r.branch);return option;}));
  select.value=selected;
- renderPreview();
+
 }
 function save(){try{window.openai?.setWidgetState?.({brand:$("brand").value,branch:selected,url:$("url").value,theme:$("theme").value,custom:$("custom").value});}catch{}}
-function renderPreview(){
- const guide=guides.find(g=>g.brand===$("brand").value&&g.branch===selected)||{};
- const route=routes.find(r=>r.brand===$("brand").value&&r.branch===selected);
- $("previewConfig").textContent="Source: "+($("url").value.trim()||"No URL entered")+" · Theme: "+($("theme").value.trim()||"Auto-detect from product")+( $("custom").value.trim()?" · Notes: "+$("custom").value.trim():"");
- $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
- $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
- const img=$("previewImage");img.hidden=!guide.imageUrl;
- if(guide.imageUrl){if(img.getAttribute("src")!==guide.imageUrl)img.src=guide.imageUrl;img.alt=guide.imageCaption||"UID Brands material reference";}else{img.removeAttribute("src");}
- const link=$("previewLink");
- // For live previews, only navigate to the user-visible original page. Never embed arbitrary HTML in the ChatGPT sandbox.
- const allowed=/^https:\/\/(?:[a-z0-9-]+\.)*(?:pawfecthouse\.com|giftsoul\.co|soulprise\.co)\//i;
- link.hidden=!guide.pageUrl||!allowed.test(guide.pageUrl);
- if(!link.hidden)link.href=guide.pageUrl;
-}
-$("previewToggle").onclick=()=>{
- const body=$("previewBody"),isOpen=body.hidden;body.hidden=!isOpen;
- $("previewToggle").textContent=isOpen?"Hide details":"Show details";$("previewToggle").setAttribute("aria-expanded",String(isOpen));
-};
-$("previewImage").onclick=()=>{if(!$("previewImage").src)return;$("previewLarge").src=$("previewImage").src;$("previewModal").classList.add("open");};
-$("previewClose").onclick=()=>{$("previewModal").classList.remove("open");};
-$("previewModal").onclick=e=>{if(e.target===$("previewModal"))$("previewModal").classList.remove("open");};
-$("brand").onchange=()=>{draw();save();}; $("branches").onchange=()=>{selected=$("branches").value;renderPreview();save();}; ["url","theme","custom"].forEach(id=>{ $(id).addEventListener("input",renderPreview); $(id).addEventListener("change",save); $(id).addEventListener("blur",save); });
+$("brand").onchange=()=>{draw();save();}; $("branches").onchange=()=>{selected=$("branches").value;save();}; ["url","theme","custom"].forEach(id=>{ $(id).addEventListener("change",save); $(id).addEventListener("blur",save); });
 $("run").onclick=async()=>{
  const url=$("url").value.trim(), brand=$("brand").value, route=routes.find(r=>r.brand===brand&&r.branch===selected);
  if(!route){$("error").textContent="Choose a material.";return;}
@@ -110,14 +74,10 @@ $("run").onclick=async()=>{
  const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
  const fn=window.openai?.sendFollowUpMessage;
  if(!fn){$("error").textContent="ChatGPT widget bridge is unavailable. Open this launcher inside ChatGPT.";return;}
- $("run").disabled=true;
- try{await fn({prompt});}catch(e){$("error").textContent="Could not start the task. Please try again.";}finally{$("run").disabled=false;}
+ $("run").disabled=true;$("run").textContent="Starting...";
+ try{await fn({prompt});}catch(e){$("error").textContent="Could not start the task. Please try again.";}finally{$("run").disabled=false;$("run").textContent="Run UID Brands";}
 };
-window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes) {
- const data=output.structuredContent||output;
- if(Array.isArray(data.guides)) guides=data.guides;
- if(routes.length===0||routes===fallback)load(output); else renderPreview();
-}});
+window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes&&routes.length===0)load(output);});
 load(window.openai?.toolOutput||{});
 })();
 </script></body></html>`;
