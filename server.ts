@@ -37,7 +37,7 @@ async function getPublicBranchPreviewGuides(): Promise<any[]> {
   })).filter((g:any) => g.brand && g.branch);
 }
 
-export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
+export const CANONICAL_PRODUCTION_ORIGIN = (process.env.UID_GATEWAY_ORIGIN || "https://uid-brands-gateway-preview.onrender.com").replace(/\/$/, "");
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
 
 export const APP_METADATA = {
