@@ -41,16 +41,16 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 <body><main class="wrap">
 <div class="header"><div class="logo">✦</div><div><h1>Creative DNA</h1><p>Select a brand and material to begin</p></div></div>
 <label for="brand">Brand</label><select id="brand"></select>
-<label>Material</label><div class="tiles" id="branches" role="group" aria-label="Select material"></div>
+<label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
 <section class="preview" aria-label="Material preview">
-  <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="false">Show preview</button></div>
-  <div id="previewBody" hidden><div class="preview-desc" id="previewDescription"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Preview image is not available for this material yet.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
+  <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="true">Hide preview</button></div>
+  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
 </section>
 <div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-<div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Generate</button>
+<div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run Creative DNA</button>
 <div class="note">Uses your current Creative DNA rules — no copy/paste needed.</div>
 </main>
 <script>
@@ -75,23 +75,20 @@ function load(output){
 function draw(){
  const brand=$("brand").value, options=routes.filter(r=>r.brand===brand);
  if(!options.some(r=>r.branch===selected))selected=options.find(r=>r.branch==="onepage-system")?.branch||options[0]?.branch||"";
- const container=$("branches");container.replaceChildren();
- options.forEach(r=>{
- const btn=document.createElement("button");btn.type="button";btn.className="tile"+(selected===r.branch?" active":"");
- const title=document.createElement("span");const shortNames={"onepage-system":"Onepage","ldp-system":"LDP","home-hero":"Home Hero","ldp-hero":"LDP Hero","ugc-image":"UGC Image","recipient-image":"Recipient Image","seasonal-banner":"Seasonal Banner","shop-by-product-image":"Shop By Product","shop-by-categories":"Shop By Categories","niche-product-combo":"Niche Product Combo"};title.textContent=shortNames[r.branch]||readable(r.branch);
- btn.appendChild(title);btn.setAttribute("aria-pressed",String(selected===r.branch));btn.onclick=()=>{selected=r.branch;draw();save();};
- container.appendChild(btn);
- });
- renderPreview();
- save();
+ const select=$("branches");
+ const shortNames={"onepage-system":"Onepage","ldp-system":"LDP","home-hero":"Home Hero","ldp-hero":"LDP Hero","ugc-image":"UGC","recipient-image":"Recipient Image","seasonal-banner":"Seasonal Banner","shop-by-product-image":"Shop By Product","shop-by-categories":"Shop By Categories","niche-product-combo":"Niche Product Combo"};
+ select.replaceChildren(...options.map(r=>{const option=document.createElement("option");option.value=r.branch;option.textContent=shortNames[r.branch]||readable(r.branch);return option;}));
+ select.value=selected;
+ renderPreview();save();
 }
 function save(){window.openai?.setWidgetState?.({brand:$("brand").value,branch:selected,url:$("url").value,theme:$("theme").value,custom:$("custom").value})}
 function renderPreview(){
  const guide=guides.find(g=>g.brand===$("brand").value&&g.branch===selected)||{};
  const route=routes.find(r=>r.brand===$("brand").value&&r.branch===selected);
+ $("previewConfig").textContent="Source: "+($("url").value.trim()||"No URL entered")+" · Theme: "+($("theme").value.trim()||"Auto-detect from product")+( $("custom").value.trim()?" · Notes: "+$("custom").value.trim():"");
  $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
  $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
- const img=$("previewImage");img.hidden=!guide.imageUrl;
+ const img=$("previewImage");img.hidden=!guide.imageUrl;img.removeAttribute("src");
  if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"Creative DNA material reference";}
  $("previewEmpty").hidden=!!guide.imageUrl;
  const link=$("previewLink");
@@ -107,11 +104,11 @@ $("previewToggle").onclick=()=>{
 $("previewImage").onclick=()=>{if(!$("previewImage").src)return;$("previewLarge").src=$("previewImage").src;$("previewModal").classList.add("open");};
 $("previewClose").onclick=()=>{$("previewModal").classList.remove("open");};
 $("previewModal").onclick=e=>{if(e.target===$("previewModal"))$("previewModal").classList.remove("open");};
-$("brand").onchange=draw; ["url","theme","custom"].forEach(id=>$(id).addEventListener("input",save));
+$("brand").onchange=draw; $("branches").onchange=()=>{selected=$("branches").value;renderPreview();save();}; ["url","theme","custom"].forEach(id=>$(id).addEventListener("input",()=>{renderPreview();save();}));
 $("run").onclick=async()=>{
  const url=$("url").value.trim(), brand=$("brand").value, route=routes.find(r=>r.brand===brand&&r.branch===selected);
  if(!route){$("error").textContent="Choose a material.";return;}
- try{const u=new URL(url);if(!/^https?:$/.test(u.protocol))throw new Error();}catch{$("error").textContent="Enter a valid PDP or collection URL.";return;}
+ try{const u=new URL(url);if(!/^https?:$/.test(u.protocol)||!u.hostname.includes("."))throw new Error();}catch{$("error").textContent="Enter a valid PDP or collection URL.";return;}
  $("error").textContent="";save();
  const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
  const fn=window.openai?.sendFollowUpMessage;
@@ -119,7 +116,7 @@ $("run").onclick=async()=>{
  $("run").disabled=true;
  try{await fn({prompt});}catch(e){$("error").textContent="Could not start the task. Please try again.";}finally{$("run").disabled=false;}
 };
-window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes)load(output);});
+window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes&&!routes.length)load(output);});
 load(window.openai?.toolOutput||{});
 })();
 </script></body></html>`;
