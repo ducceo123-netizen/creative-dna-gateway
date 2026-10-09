@@ -4,7 +4,7 @@ export type GovernanceProposal = {
  proposed_scope?:string; evidence_summary?:Record<string,unknown>;
  context_images?:Array<{role:string;image_url?:string|null;reference_id?:string|null}>;
 };
-const normalize=(v:string)=>v.toLowerCase().normalize("NFKC").replace(/[^\p{L}\\p{N}]+/gu," ").trim();
+const normalize=(v:string)=>v.toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu," ").trim();
 const tokens=(v:string)=>new Set(normalize(v).split(/\s+/).filter(x=>x.length>2));
 function similarity(a:string,b:string){
  const x=tokens(a),y=tokens(b);if(!x.size||!y.size)return 0;
