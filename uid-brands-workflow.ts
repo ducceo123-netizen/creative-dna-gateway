@@ -28,7 +28,7 @@ body.review-mode{padding:8px 10px 12px}body.review-mode .wrap{max-width:620px}bo
 body.review-mode .action{width:auto;min-height:36px;margin-top:12px;padding:8px 16px;font-size:13px;border-radius:9px}
 body.review-mode #reviewHelp{font-size:13px;margin:0;color:var(--muted)}
 body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
-.flow-state{font-size:12px;color:var(--muted);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:12px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.back-action{border:0;background:transparent;color:var(--muted);padding:8px 0;cursor:pointer;text-align:left;font-size:12px}#assetFeedbackFields label{margin-top:10px}@media(max-width:400px){.field-grid{grid-template-columns:1fr}}.error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
+.flow-state{font-size:12px;color:var(--muted);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:12px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.back-action{border:0;background:transparent;color:var(--muted);padding:8px 0;cursor:pointer;text-align:left;font-size:12px}#assetFeedbackFields label{margin-top:10px}@media(max-width:400px){.field-grid{grid-template-columns:1fr}}.mode-tabs{display:flex;gap:5px;border:1px solid var(--border);border-radius:10px;padding:3px;width:max-content}.mode-tab{border:0;background:transparent;color:var(--fg);padding:7px 18px;cursor:pointer;border-radius:7px}.mode-tab.active{background:var(--active);font-weight:600}.mode-info{font-size:12px;color:var(--muted);margin:9px 0}.variable-keys{display:flex;gap:6px;flex-wrap:wrap}.variable-key{border:1px solid var(--border);background:var(--input);border-radius:8px;padding:6px 10px;color:var(--fg);cursor:pointer;font-size:12px}.variable-key.selected{background:var(--active);border-color:var(--fg)}.variable-item{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px}.variable-item-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600}.variable-item-head button{border:0;color:var(--muted);background:transparent;cursor:pointer}.variable-item textarea{min-height:62px;margin-top:7px}.error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
 [hidden]{display:none!important}
 @media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}}
 </style></head>
@@ -39,7 +39,7 @@ body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted)
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><div id="assetFeedbackFields" hidden><div class="field-grid"><div><label for="feedbackElement">Element</label><select id="feedbackElement"></select></div><div><label for="feedbackPosition">Asset / Vị trí</label><select id="feedbackPosition"></select></div></div><label for="assetFeedbackText">Feedback</label><textarea id="assetFeedbackText" rows="3" placeholder="Điểm cần chỉnh sửa..."></textarea><button id="backToReview" type="button" class="back-action">← Quay lại lựa chọn</button></div></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
+</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><div id="assetFeedbackFields" hidden><div class="mode-tabs"><button type="button" id="modeFeedback" class="mode-tab">Feedback</button><button type="button" id="modeTrain" class="mode-tab">Train</button></div><p id="modeInfo" class="mode-info"></p><label>Chọn variables</label><div id="variableKeys" class="variable-keys"></div><div id="variableItems"></div><button id="backToReview" type="button" class="back-action">← Quay lại</button></div></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
 
 </main>
 <script>
@@ -47,24 +47,37 @@ body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted)
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[];
+let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[];
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
-const elementDefaults={"Overall":["Overall"],"Banner":["Overall"],"Why You'll Love It":["Overall"],"Product Details":["Overall"],"Good To Know":["Overall"],"FAQs":["Overall"],"UGC":["Overall"]};
-function assetOptions(){
- const groups={"Overall":["Overall"]};
- taskAssets.forEach(a=>{const el=String(a.element||"Overall"),id=String(a.id||a.asset_id||"").trim();if(!id)return;(groups[el]??=[]).push(id);});
- return taskAssets.length?groups:elementDefaults;
+function availableVariables(){
+ const ids=taskAssets.map(a=>String(a.id||a.asset_id||"").trim()).filter(Boolean);
+ return ["Overall",...new Set(ids)];
 }
-function renderFeedbackOptions(){
- const groups=assetOptions(), el=$("feedbackElement"),prev=el.value;
- el.replaceChildren(...Object.keys(groups).map(v=>{const opt=document.createElement("option");opt.value=v;opt.textContent=v;return opt}));
- el.value=groups[prev]?prev:Object.keys(groups)[0];
- const pos=$("feedbackPosition"),old=pos.value;const choices=groups[el.value]||["Overall"];
- pos.replaceChildren(...["Overall",...choices.filter(v=>v!=="Overall")].map(v=>{const opt=document.createElement("option");opt.value=v;opt.textContent=v;return opt}));
- pos.value=[...pos.options].some(o=>o.value===old)?old:"Overall";
+function renderVariables(){
+ $("modeFeedback").classList.toggle("active",feedbackMode==="feedback");
+ $("modeTrain").classList.toggle("active",feedbackMode==="train");
+ $("modeInfo").textContent=feedbackMode==="train"?"Gửi đề xuất training đến Admin duyệt; không cập nhật database tự động.":"Yêu cầu chỉnh sửa kết quả trong task hiện tại.";
+ const keys=$("variableKeys");keys.replaceChildren();
+ availableVariables().forEach(key=>{
+  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(variableItems.some(x=>x.key===key)?" selected":"");btn.textContent=key;
+  btn.onclick=()=>{if(!variableItems.some(x=>x.key===key))variableItems.push({key,text:""});renderVariables();};
+  keys.appendChild(btn);
+ });
+ const root=$("variableItems");root.replaceChildren();
+ variableItems.forEach(item=>{
+  const box=document.createElement("div");box.className="variable-item";
+  const head=document.createElement("div");head.className="variable-item-head";
+  const name=document.createElement("span");name.textContent="@"+item.key;
+  const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.setAttribute("aria-label","Bỏ "+item.key);
+  remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();};
+  head.append(name,remove);
+  const area=document.createElement("textarea");area.rows=2;area.placeholder="Feedback cho "+item.key+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
+  box.append(head,area);root.appendChild(box);
+ });
 }
-$("feedbackElement").onchange=renderFeedbackOptions;
+$("modeFeedback").onclick=()=>{feedbackMode="feedback";renderVariables();};
+$("modeTrain").onclick=()=>{feedbackMode="train";renderVariables();};
 $("backToReview").onclick=()=>{feedbackStep=false;decision="feedback";renderStage();};
 function renderStage(){
  const review=stage!=="launcher";document.body.classList.toggle("review-mode",review);
@@ -80,9 +93,9 @@ function renderStage(){
   choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent=label;b.onclick=()=>{decision=value;feedbackStep=stage==="asset_review"&&value==="feedback";renderStage();};$("reviewChoices").appendChild(b);});
   $("reviewChoices").hidden=feedbackStep; $("assetFeedbackFields").hidden=!feedbackStep;
   $("reviewFeedback").hidden=decision!=="revise";$("feedbackLabel").hidden=decision!=="revise";
-  if(feedbackStep)renderFeedbackOptions();
+  if(feedbackStep)renderVariables();
  }
- $("run").textContent=review?(feedbackStep?"Gửi feedback":(stage==="packaging"||stage==="asset_review"&&decision==="package")?"Đóng gói":"Tiếp tục"):"Bắt đầu";
+ $("run").textContent=review?(feedbackStep?(feedbackMode==="train"?"Gửi Train":"Gửi feedback"):(stage==="packaging"||stage==="asset_review"&&decision==="package")?"Đóng gói":"Tiếp tục"):"Bắt đầu";
 }
 function load(output){
  let data=output||{};
@@ -113,8 +126,15 @@ $("run").onclick=async()=>{
  if(submitting)return;
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
-  if(stage==="asset_review"&&feedbackStep&&!$("assetFeedbackText").value.trim()){$("error").textContent="Nhập feedback trước khi gửi.";return;}
-  const message=stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại."):stage==="asset_review"?(decision==="package"?"UID Brands: Đóng gói các assets hiện tại theo canonical rules.": "UID Brands: Chỉnh sửa asset của task hiện tại. Element: "+$("feedbackElement").value+"; Asset ID / Position: "+$("feedbackPosition").value+"; Feedback: "+$("assetFeedbackText").value.trim()+". Giữ các assets khác không liên quan. Sau khi sửa, hiển thị lại Asset Review với lựa chọn Gửi feedback hoặc Đóng gói."):"UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
+  if(stage==="asset_review"&&feedbackStep&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){$("error").textContent="Chọn variables và nhập feedback cho từng mục.";return;}
+  const payload=variableItems.map(x=>"@"+x.key+": "+x.text.trim()).join("\n");
+  const message=stage==="asset_review"&&feedbackStep
+    ? (feedbackMode==="train"
+      ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nPhân tích context, ảnh/asset liên quan và gửi từng feedback vào Pending Admin Review bằng submit_training_feedback, không tự sửa canonical rules."
+      : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\n"+payload+"\nChỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Sau khi sửa, cho chọn Feedback hoặc Đóng gói.")
+    : stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại.")
+    : stage==="asset_review"?"UID Brands: Đóng gói assets hiện tại theo canonical rules."
+    : "UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
   const fn=window.openai?.sendFollowUpMessage;if(!fn){$("error").textContent="Không kết nối được ChatGPT.";return;}
   submitting=true;$("run").disabled=true;$("flowState").textContent="Đang gửi lựa chọn sang ChatGPT…";try{await fn({prompt:message});$("flowState").textContent="Đã gửi lựa chọn · Chờ ChatGPT xử lý";}catch{$("error").textContent="Không gửi được lựa chọn, thử lại.";$("flowState").textContent="Chưa gửi được · Vui lòng thử lại";}finally{submitting=false;$("run").disabled=false;}return;
  }
