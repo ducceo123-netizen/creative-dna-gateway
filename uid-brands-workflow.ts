@@ -21,7 +21,13 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,.preview-toggle:
 input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}textarea{min-height:69px;resize:vertical}
 .action{width:100%;min-height:45px;margin-top:14px;padding:11px 14px;background:#5755d6;color:white;border:0;font-weight:650;cursor:pointer}
 .action:hover{background:#4846c4}.action:disabled{opacity:.55;cursor:not-allowed}
-.review-choice{display:block;width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;margin:8px 0;background:var(--surface);color:var(--fg);text-align:left;cursor:pointer}.review-choice.selected{border-color:var(--accent);background:var(--active)}.review-area{display:none}.review-area.visible{display:block}.note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
+.review-area{display:none}.review-area.visible{display:block}.review-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.review-choice{width:auto;flex:1 1 auto;min-height:38px;border:1px solid var(--border);border-radius:9px;padding:8px 12px;background:var(--input);color:var(--fg);text-align:center;font-size:13px;cursor:pointer}
+.review-choice.selected{border-color:var(--focus);background:var(--active);font-weight:600}.review-choice:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+body.review-mode{padding:8px 10px 12px}body.review-mode .wrap{max-width:620px}body.review-mode .header,body.review-mode .note{display:none}
+body.review-mode .action{width:auto;min-height:36px;margin-top:12px;padding:8px 16px;font-size:13px;border-radius:9px}
+body.review-mode #reviewHelp{font-size:13px;margin:0;color:var(--muted)}
+body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
 .error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
 [hidden]{display:none!important}
 @media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}}
@@ -33,7 +39,7 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
+</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
 <div class="note">Uses your current UID Brands rules — no copy/paste needed.</div>
 </main>
 <script>
@@ -45,7 +51,7 @@ let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function renderStage(){
- const review=stage!=="launcher";
+ const review=stage!=="launcher";document.body.classList.toggle("review-mode",review);
  $("launchFields").hidden=review;$("reviewFields").classList.toggle("visible",review);
  const labels={content_approval:"Content Approval",asset_review:"Asset Review",packaging:"Packaging"};
  $("reviewChoices").replaceChildren();
@@ -53,10 +59,10 @@ function renderStage(){
   $("reviewHelp").textContent=(labels[stage]||"Review")+" · Chọn bước tiếp theo";
   const choices=stage==="packaging"?[["package","Đóng gói"]]:[["approve",stage==="content_approval"?"Duyệt content":"Duyệt ảnh"],["revise","Yêu cầu chỉnh sửa"],["regenerate","Tạo phương án khác"]];
   if(!choices.some(x=>x[0]===decision))decision=choices[0][0];
-  choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.textContent=label;b.onclick=()=>{decision=value;renderStage();};$("reviewChoices").appendChild(b);});
+  choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent=label;b.onclick=()=>{decision=value;renderStage();};$("reviewChoices").appendChild(b);});
   $("reviewFeedback").hidden=decision!=="revise";$("feedbackLabel").hidden=decision!=="revise";
  }
- $("run").textContent=review?(stage==="packaging"?"Đóng gói":"Xác nhận lựa chọn"):"Run UID Brands";
+ $("run").textContent=review?(stage==="packaging"?"Đóng gói":"Tiếp tục"):"Run UID Brands";
 }
 function load(output){
  let data=output||{};
