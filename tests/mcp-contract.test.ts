@@ -7,7 +7,7 @@ const launcher = readFileSync(new URL("../task-launcher.ts", import.meta.url), "
 
 test("canonical and feedback tools retain their registered names", () => {
   for (const tool of ["resolve_creative_dna", "compile_onepage_job", "submit_training_feedback", "list_creative_dna_routes"]) {
-    assert.match(source, new RegExp('server\\.registerTool\\(["\\x27]' + tool + '["\\x27]'));
+    assert.match(source, new RegExp(String.raw`server\.registerTool\(\s*["']` + tool + String.raw`["']`));
   }
 });
 
