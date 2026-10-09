@@ -117,13 +117,14 @@ export default {
       return error?Response.json({error:error.message},{status:500}):Response.json({baseline:data});
     }
     if (body.mode === "governance_list") {
-      const [baselines,evaluations,snapshots]=await Promise.all([
+      const [baselines,evaluations,snapshots,brands]=await Promise.all([
         adminDb.from("uid_governance_baselines").select("*").order("created_at",{ascending:false}).limit(200),
         adminDb.from("uid_governance_evaluations").select("*").order("created_at",{ascending:false}).limit(200),
-        adminDb.from("uid_governance_snapshots").select("id,node_id,proposal_id,checkpoint,created_at").order("created_at",{ascending:false}).limit(200)
+        adminDb.from("uid_governance_snapshots").select("id,node_id,proposal_id,checkpoint,created_at").order("created_at",{ascending:false}).limit(200),
+        adminDb.from("brands").select("id,slug,name").order("name")
       ]);
-      if(baselines.error||evaluations.error||snapshots.error)return Response.json({error:"Unable to load governance registry"},{status:500});
-      return Response.json({baselines:baselines.data,evaluations:evaluations.data,snapshots:snapshots.data});
+      if(baselines.error||evaluations.error||snapshots.error||brands.error)return Response.json({error:"Unable to load governance registry"},{status:500});
+      return Response.json({baselines:baselines.data,evaluations:evaluations.data,snapshots:snapshots.data,brands:brands.data});
     }
     if (body.mode === "governance_rollback") {
       const {data,error}=await adminDb.rpc("uid_governance_rollback_snapshot",{
