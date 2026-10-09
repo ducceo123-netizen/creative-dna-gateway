@@ -25,7 +25,7 @@ create table if not exists public.uid_governance_evaluations (
  evaluator_version text not null,
  completed_at timestamptz,
  created_at timestamptz not null default now(),
- unique(proposal_id,candidate_hash)
+ -- Preserve every evaluation run for immutable review history.
 );
 create table if not exists public.uid_governance_snapshots (
  id uuid primary key default gen_random_uuid(),
