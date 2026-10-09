@@ -28,6 +28,14 @@ textarea{min-height:72px;resize:vertical}
 .tile.active{border:2px solid var(--active-border);background:var(--active);color:var(--fg);padding:12px}
 .tile.active::before{content:"✓ ";color:var(--active-border);font-weight:800}
 .tile span{display:inline;font-size:13px;font-weight:650;color:inherit}
+.preview{margin:14px 0 3px;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--tile)}
+.preview-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.preview-title{font-size:13px;font-weight:750}.preview-desc{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+.preview-img{margin-top:11px;max-height:225px;width:100%;object-fit:contain;border-radius:10px;background:var(--bg);cursor:zoom-in}
+.preview-toggle{width:auto;background:transparent;border:1px solid var(--border);color:var(--fg);padding:7px 10px;font-size:12px;cursor:pointer}
+.preview-link{display:inline-block;margin-top:8px;color:var(--active-border);font-size:12px;font-weight:650}
+.preview-modal{position:fixed;inset:0;background:rgba(0,0,0,.84);z-index:10;display:none;place-items:center;padding:30px}
+.preview-modal.open{display:grid}.preview-modal img{max-width:92vw;max-height:80vh;object-fit:contain}.preview-close{position:absolute;right:18px;top:16px;width:auto;color:#fff;background:#333;border:1px solid #888;cursor:pointer}
 .action{margin-top:16px;background:#6047ef;color:#fff;border:0;font-weight:700;cursor:pointer}
 .action:disabled{opacity:.5;cursor:not-allowed}
 .note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5}
@@ -39,6 +47,11 @@ textarea{min-height:72px;resize:vertical}
 <div class="header"><div class="logo">✦</div><div><h1>Creative DNA</h1><p>Choose a workflow and start inside ChatGPT</p></div></div>
 <label for="brand">Brand</label><select id="brand"></select>
 <label>Material</label><div class="tiles" id="branches" role="group" aria-label="Select material"></div>
+<section class="preview" aria-label="Material preview">
+  <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="false">Show preview</button></div>
+  <div id="previewBody" hidden><div class="preview-desc" id="previewDescription"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Preview image is not available for this material yet.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
+</section>
+<div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
@@ -49,13 +62,14 @@ textarea{min-height:72px;resize:vertical}
 (function(){
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
-let routes=[], selected=initial.branch||"";
+let routes=[], guides=[], selected=initial.branch||"";
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){return name.replace(/\b\w/g,x=>x.toUpperCase()).replace(/-/g," ")}
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
  if(data.routes)routes=data.routes.filter(r=>r&&r.brand&&r.branch);
+ if(Array.isArray(data.guides))guides=data.guides;
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
  const select=$("brand"); const current=initial.brand&&brands.includes(initial.brand)?initial.brand:brands[0];
@@ -73,9 +87,31 @@ function draw(){
  btn.appendChild(title);btn.setAttribute("aria-pressed",String(selected===r.branch));btn.onclick=()=>{selected=r.branch;draw();save();};
  container.appendChild(btn);
  });
+ renderPreview();
  save();
 }
 function save(){window.openai?.setWidgetState?.({brand:$("brand").value,branch:selected,url:$("url").value,theme:$("theme").value,custom:$("custom").value})}
+function renderPreview(){
+ const guide=guides.find(g=>g.brand===$("brand").value&&g.branch===selected)||{};
+ const route=routes.find(r=>r.brand===$("brand").value&&r.branch===selected);
+ $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
+ $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
+ const img=$("previewImage");img.hidden=!guide.imageUrl;
+ if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"Creative DNA material reference";}
+ $("previewEmpty").hidden=!!guide.imageUrl;
+ const link=$("previewLink");
+ // For live previews, only navigate to the user-visible original page. Never embed arbitrary HTML in the ChatGPT sandbox.
+ const allowed=/^https:\/\/(?:[a-z0-9-]+\.)*(?:pawfecthouse\.com|giftsoul\.co|soulprise\.co)\//i;
+ link.hidden=!guide.pageUrl||!allowed.test(guide.pageUrl);
+ if(!link.hidden)link.href=guide.pageUrl;
+}
+$("previewToggle").onclick=()=>{
+ const body=$("previewBody"),isOpen=body.hidden;body.hidden=!isOpen;
+ $("previewToggle").textContent=isOpen?"Hide preview":"Show preview";$("previewToggle").setAttribute("aria-expanded",String(isOpen));
+};
+$("previewImage").onclick=()=>{if(!$("previewImage").src)return;$("previewLarge").src=$("previewImage").src;$("previewModal").classList.add("open");};
+$("previewClose").onclick=()=>{$("previewModal").classList.remove("open");};
+$("previewModal").onclick=e=>{if(e.target===$("previewModal"))$("previewModal").classList.remove("open");};
 $("brand").onchange=draw; ["url","theme","custom"].forEach(id=>$(id).addEventListener("input",save));
 $("run").onclick=async()=>{
  const url=$("url").value.trim(), brand=$("brand").value, route=routes.find(r=>r.brand===brand&&r.branch===selected);
