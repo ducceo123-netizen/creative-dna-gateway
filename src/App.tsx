@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Copy,
@@ -232,6 +232,22 @@ export default function App() {
     return lines.join("\n");
   }, [useCommand, promptFields]);
 
+  const previewFrame = useRef<HTMLIFrameElement>(null);
+  const [previewHeight,setPreviewHeight] = useState(760);
+  const [previewExpanded,setPreviewExpanded] = useState(false);
+  useEffect(()=>{
+    setPreviewHeight(760);setPreviewExpanded(false);
+  },[brand,branch]);
+  useEffect(()=>{
+    const receive=(event:MessageEvent)=>{
+      if(event.origin!==window.location.origin || event.source!==previewFrame.current?.contentWindow)return;
+      if(event.data?.type!=="uid-branch-preview-height")return;
+      const h=Number(event.data.height);
+      if(Number.isFinite(h)&&h>80)setPreviewHeight(Math.min(12000,Math.max(360,Math.ceil(h)+24)));
+    };
+    window.addEventListener("message",receive);
+    return ()=>window.removeEventListener("message",receive);
+  },[]);
   const selectedGuide = useMemo(() => {
     const brandSlug = brand.toLowerCase();
     const stored = branchGuides.find((g:any) => g.brand_slug === brandSlug && g.branch_slug === selectedBranchSlug) || null;
@@ -409,12 +425,25 @@ export default function App() {
               </div>
 
               <div>
-                <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[260px]">
+                {selectedGuide.page_url && selectedGuide.css_selector && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <span className="text-xs text-slate-500">Live preview · Hiển thị theo chiều cao thực của section</span>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={()=>setPreviewExpanded(v=>!v)} className="border border-slate-200 px-4 py-2 text-xs font-semibold rounded-full">{previewExpanded?"Thu gọn":"Mở rộng"}</button>
+                      <a href={selectedGuide.page_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 border border-slate-200 text-xs font-semibold rounded-full">Mở trang gốc ↗</a>
+                    </div>
+                  </div>
+                )}
+                <div className={`rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[360px] ${previewExpanded?"w-full":"w-full"}`}>
                   {selectedGuide.page_url && selectedGuide.css_selector ? (
                     <iframe
+                      key={`${selectedGuide.page_url}:${selectedGuide.css_selector}`}
+                      ref={previewFrame}
                       src={`/api/branch-preview?url=${encodeURIComponent(selectedGuide.page_url)}&selector=${encodeURIComponent(selectedGuide.css_selector)}`}
                       title={`${brand} ${branch} live UI preview`}
-                      className="w-full h-[520px] bg-white"
+                      scrolling="auto"
+                      style={{height:previewExpanded?Math.max(previewHeight,1100):previewHeight}}
+                      className="w-full bg-white rounded-xl"
                     />
                   ) : (
                     <div className="text-center px-6">
