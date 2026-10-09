@@ -306,7 +306,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-100">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-0.5 border border-slate-200 overflow-hidden shadow-sm">
               <img src="/uid-brands-logo.svg?v=2" alt="UID Brands" className="w-full h-full object-contain" />
@@ -342,7 +342,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-7">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-7">
         <section className="space-y-2">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700">
             <Sparkles className="w-3.5 h-3.5" />
@@ -356,7 +356,7 @@ export default function App() {
           </p>
         </section>
 
-        <div className="grid xl:grid-cols-[0.95fr_1.05fr] gap-6 items-start">
+        <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-7 xl:gap-9 items-start">
           <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -475,50 +475,60 @@ export default function App() {
           </section>
         </div>
 
-        <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Plug className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">Cài Creative DNA vào ChatGPT</h2>
-              </div>
-              <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-                Flow cài đúng theo UI ChatGPT hiện tại: bật Chế độ nhà phát triển → vào Plugin → tạo server MCP tùy chỉnh → điền thông tin Creative DNA.
-              </p>
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-xs space-y-8" id="setup-guide">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="space-y-2 max-w-3xl">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700"><Plug className="w-4 h-4" /> KẾT NỐI CHATGPT</span>
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">Kết nối UID Brands trong ChatGPT</h2>
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Thiết lập một lần, sau đó gọi UID Brands ngay trong cuộc trò chuyện. Sử dụng endpoint Render mới ở bên dưới.</p>
+            </div>
+            <span className="self-start rounded-full bg-emerald-50 text-emerald-700 px-3 py-1.5 text-xs font-semibold whitespace-nowrap">5 bước · Khoảng 2 phút</span>
+          </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5 mt-4">
-                {[
-                  ["1", "Bật Chế độ nhà phát triển", "ChatGPT → Settings → Plugin → Chế độ nhà phát triển."],
-                  ["2", "Mở trang Plugin", "Vào Plugin ở sidebar → bấm dấu + góc phải."],
-                  ["3", "Tạo MCP tùy chỉnh", "Chọn “Tạo server MCP tùy chỉnh”."],
-                  ["4", "Điền thông tin", "Tên: Creative DNA · URL máy chủ: MCP endpoint bên cạnh · Xác thực: Không có tính năng xác thực."],
-                  ["5", "Xác nhận & Tạo", "Tick “Tôi hiểu và muốn tiếp tục” → bấm Tạo. Sau đó Creative DNA sẽ xuất hiện trong Plugin."],
-                ].map(([n,title,desc])=>(
-                  <div key={n} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold flex items-center justify-center">{n}</div>
-                    <div className="text-xs font-bold text-slate-900 mt-2">{title}</div>
-                    <div className="text-[11px] leading-relaxed text-slate-500 mt-1">{desc}</div>
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.8fr)] gap-8 xl:gap-12 items-start">
+            <div className="space-y-0 min-w-0">
+              {[
+                ["Mở Plugins trong ChatGPT", "Vào Settings → Plugins. Nếu tài khoản yêu cầu, hãy bật Developer mode trước."],
+                ["Tạo kết nối MCP tùy chỉnh", "Trong Plugins, chọn thêm plugin hoặc server MCP tùy chỉnh (tên nút có thể khác theo phiên bản)."],
+                ["Nhập thông tin kết nối", "Đặt tên UID Brands, dán URL MCP bên cạnh và chọn không xác thực nếu được hỏi."],
+                ["Xác nhận kết nối", "Kiểm tra URL, đọc cảnh báo quyền truy cập và xác nhận tạo kết nối."],
+                ["Bắt đầu sử dụng", "Mở cuộc chat, chọn UID Brands trong Plugins và chạy Task Launcher. Nếu đã kết nối URL cũ, hãy cập nhật endpoint."],
+              ].map(([title,desc],index)=>(
+                <div key={title} className="flex gap-4 sm:gap-5">
+                  <div className="flex flex-col items-center shrink-0">
+                    <span className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-semibold">{index+1}</span>
+                    {index<4&&<span className="w-px flex-1 bg-slate-200 my-2 min-h-5" />}
                   </div>
-                ))}
-              </div>
+                  <div className="pb-7 sm:pb-8 min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900 leading-snug pt-2">{title}</h3>
+                    <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <div className="lg:w-[390px] shrink-0 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">MCP endpoint</div>
-              <div className="mt-2 rounded-lg bg-slate-950 px-3 py-3 font-mono text-[11px] text-emerald-300 break-all">{PRODUCTION_MCP_URL}</div>
-              <button
-                type="button"
-                onClick={() => handleCopy(PRODUCTION_MCP_URL, "install-mcp-url")}
-                className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-indigo-600 text-white text-xs font-bold"
-              >
-                {copiedKey === "install-mcp-url" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedKey === "install-mcp-url" ? "Đã copy endpoint" : "Copy MCP endpoint"}
-              </button>
-              <div className="mt-3 rounded-lg border border-indigo-100 bg-white px-3 py-2.5 text-[11px] leading-relaxed text-slate-600">
-                <div><span className="font-bold text-slate-800">Tên:</span> Creative DNA</div>
-                <div className="mt-1"><span className="font-bold text-slate-800">URL máy chủ:</span> {PRODUCTION_MCP_URL}</div>
-                <div className="mt-1"><span className="font-bold text-slate-800">Xác thực:</span> Không có tính năng xác thực</div>
+            <div className="min-w-0 lg:sticky lg:top-24 rounded-2xl bg-slate-50 border border-slate-200 p-5 sm:p-6 space-y-5">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-base font-semibold text-slate-900">Thông tin kết nối</h3>
+                <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Render Free</span>
               </div>
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-slate-500">MCP SERVER URL</div>
+                <div className="rounded-xl bg-slate-900 text-emerald-200 p-4 text-sm font-mono leading-relaxed break-all select-all">{PRODUCTION_MCP_URL}</div>
+                <button type="button" onClick={()=>handleCopy(PRODUCTION_MCP_URL,"install-mcp-url")}
+                  className="w-full min-h-12 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
+                  {copiedKey==="install-mcp-url"?<Check className="w-4 h-4"/>:<Copy className="w-4 h-4"/>}
+                  {copiedKey==="install-mcp-url"?"Đã copy URL":"Copy MCP endpoint"}
+                </button>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-xl p-4 text-sm space-y-3">
+                <div className="flex gap-4 justify-between"><span className="text-slate-500">Tên</span><strong className="font-semibold text-slate-900">UID Brands</strong></div>
+                <div className="border-t border-slate-100" />
+                <div className="flex gap-4 justify-between"><span className="text-slate-500">Xác thực</span><strong className="font-semibold text-slate-900">None / Không</strong></div>
+                <div className="border-t border-slate-100" />
+                <div className="flex gap-4 justify-between"><span className="text-slate-500">Hosting</span><strong className="font-semibold text-slate-900">Render</strong></div>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">Render Free có thể khởi động chậm sau khi không hoạt động. Nếu kết nối báo timeout, thử lại sau một lúc. Kết nối ChatGPT cũ không tự chuyển URL.</p>
             </div>
           </div>
         </section>
@@ -581,7 +591,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-slate-200 bg-white mt-10 py-6">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <span>Creative DNA · ChatGPT creative knowledge gateway</span>
           <div className="flex items-center gap-4">
             <button type="button" onClick={() => navigateTo("privacy")} className="hover:text-slate-700">Privacy</button>
