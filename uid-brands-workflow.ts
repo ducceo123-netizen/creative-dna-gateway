@@ -28,7 +28,7 @@ body.review-mode{padding:8px 10px 12px}body.review-mode .wrap{max-width:620px}bo
 body.review-mode .action{width:auto;min-height:36px;margin-top:12px;padding:8px 16px;font-size:13px;border-radius:9px}
 body.review-mode #reviewHelp{font-size:13px;margin:0;color:var(--muted)}
 body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
-.flow-state{font-size:12px;color:var(--muted);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:12px}.error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
+.flow-state{font-size:12px;color:var(--muted);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:12px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.back-action{border:0;background:transparent;color:var(--muted);padding:8px 0;cursor:pointer;text-align:left;font-size:12px}#assetFeedbackFields label{margin-top:10px}@media(max-width:400px){.field-grid{grid-template-columns:1fr}}.error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
 [hidden]{display:none!important}
 @media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}}
 </style></head>
@@ -39,7 +39,7 @@ body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted)
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
+</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><div id="assetFeedbackFields" hidden><div class="field-grid"><div><label for="feedbackElement">Element</label><select id="feedbackElement"></select></div><div><label for="feedbackPosition">Asset / Vị trí</label><select id="feedbackPosition"></select></div></div><label for="assetFeedbackText">Feedback</label><textarea id="assetFeedbackText" rows="3" placeholder="Điểm cần chỉnh sửa..."></textarea><button id="backToReview" type="button" class="back-action">← Quay lại lựa chọn</button></div></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
 
 </main>
 <script>
@@ -47,9 +47,25 @@ body.review-mode label{margin-top:10px}.note{font-size:11.5px;color:var(--muted)
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false;
+let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[];
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
+const elementDefaults={"Overall":["Overall"],"Banner":["Overall"],"Why You'll Love It":["Overall"],"Product Details":["Overall"],"Good To Know":["Overall"],"FAQs":["Overall"],"UGC":["Overall"]};
+function assetOptions(){
+ const groups={"Overall":["Overall"]};
+ taskAssets.forEach(a=>{const el=String(a.element||"Overall"),id=String(a.id||a.asset_id||"").trim();if(!id)return;(groups[el]??=[]).push(id);});
+ return taskAssets.length?groups:elementDefaults;
+}
+function renderFeedbackOptions(){
+ const groups=assetOptions(), el=$("feedbackElement"),prev=el.value;
+ el.replaceChildren(...Object.keys(groups).map(v=>{const opt=document.createElement("option");opt.value=v;opt.textContent=v;return opt}));
+ el.value=groups[prev]?prev:Object.keys(groups)[0];
+ const pos=$("feedbackPosition"),old=pos.value;const choices=groups[el.value]||["Overall"];
+ pos.replaceChildren(...["Overall",...choices.filter(v=>v!=="Overall")].map(v=>{const opt=document.createElement("option");opt.value=v;opt.textContent=v;return opt}));
+ pos.value=[...pos.options].some(o=>o.value===old)?old:"Overall";
+}
+$("feedbackElement").onchange=renderFeedbackOptions;
+$("backToReview").onclick=()=>{feedbackStep=false;decision="feedback";renderStage();};
 function renderStage(){
  const review=stage!=="launcher";document.body.classList.toggle("review-mode",review);
  const statuses={launcher:"Bước 1/4 · Chuẩn bị brief",content_approval:"Bước 2/4 · Chờ duyệt nội dung",asset_review:"Bước 3/4 · Chờ duyệt hình ảnh",packaging:"Bước 4/4 · Sẵn sàng đóng gói"};
@@ -59,17 +75,21 @@ function renderStage(){
  $("reviewChoices").replaceChildren();
  if(review){
   $("reviewHelp").textContent=(labels[stage]||"Review")+" · Chọn bước tiếp theo";
-  const choices=stage==="packaging"?[["package","Đóng gói"]]:[["approve",stage==="content_approval"?"Duyệt content":"Duyệt ảnh"],["revise","Yêu cầu chỉnh sửa"],["regenerate","Tạo phương án khác"]];
+  const choices=stage==="packaging"?[["package","Đóng gói"]]:stage==="asset_review"?[["package","Đóng gói"],["feedback","Gửi feedback"]]:[["approve","Duyệt content"],["revise","Yêu cầu chỉnh sửa"],["regenerate","Tạo phương án khác"]];
   if(!choices.some(x=>x[0]===decision))decision=choices[0][0];
-  choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent=label;b.onclick=()=>{decision=value;renderStage();};$("reviewChoices").appendChild(b);});
+  choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent=label;b.onclick=()=>{decision=value;feedbackStep=stage==="asset_review"&&value==="feedback";renderStage();};$("reviewChoices").appendChild(b);});
+  $("reviewChoices").hidden=feedbackStep; $("assetFeedbackFields").hidden=!feedbackStep;
   $("reviewFeedback").hidden=decision!=="revise";$("feedbackLabel").hidden=decision!=="revise";
+  if(feedbackStep)renderFeedbackOptions();
  }
- $("run").textContent=review?(stage==="packaging"?"Đóng gói":"Xác nhận"):"Bắt đầu";
+ $("run").textContent=review?(feedbackStep?"Gửi feedback":(stage==="packaging"||stage==="asset_review"&&decision==="package")?"Đóng gói":"Tiếp tục"):"Bắt đầu";
 }
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
  if(["launcher","content_approval","asset_review","packaging"].includes(data.stage))stage=data.stage;
+ if(Array.isArray(data.assets))taskAssets=data.assets.filter(a=>a&&typeof a==="object").slice(0,100);
+ if(stage==="asset_review"&&decision!=="feedback"&&decision!=="package")decision="package";
  if(Array.isArray(data.routes)&&data.routes.length){routes=data.routes.filter(r=>r&&r.brand&&r.branch);fallbackActive=false;}
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
@@ -93,7 +113,8 @@ $("run").onclick=async()=>{
  if(submitting)return;
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
-  const message=stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại."):stage==="asset_review"?(decision==="approve"?"UID Brands: Duyệt assets hiện tại và chuyển sang đóng gói.":decision==="revise"?"UID Brands: Chỉnh sửa assets theo feedback: "+feedback:"UID Brands: Tạo phương án assets khác theo brief đã duyệt."):"UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
+  if(stage==="asset_review"&&feedbackStep&&!$("assetFeedbackText").value.trim()){$("error").textContent="Nhập feedback trước khi gửi.";return;}
+  const message=stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại."):stage==="asset_review"?(decision==="package"?"UID Brands: Đóng gói các assets hiện tại theo canonical rules.": "UID Brands: Chỉnh sửa asset của task hiện tại. Element: "+$("feedbackElement").value+"; Asset ID / Position: "+$("feedbackPosition").value+"; Feedback: "+$("assetFeedbackText").value.trim()+". Giữ các assets khác không liên quan. Sau khi sửa, hiển thị lại Asset Review với lựa chọn Gửi feedback hoặc Đóng gói."):"UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
   const fn=window.openai?.sendFollowUpMessage;if(!fn){$("error").textContent="Không kết nối được ChatGPT.";return;}
   submitting=true;$("run").disabled=true;$("flowState").textContent="Đang gửi lựa chọn sang ChatGPT…";try{await fn({prompt:message});$("flowState").textContent="Đã gửi lựa chọn · Chờ ChatGPT xử lý";}catch{$("error").textContent="Không gửi được lựa chọn, thử lại.";$("flowState").textContent="Chưa gửi được · Vui lòng thử lại";}finally{submitting=false;$("run").disabled=false;}return;
  }
