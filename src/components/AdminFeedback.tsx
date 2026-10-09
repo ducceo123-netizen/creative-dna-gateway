@@ -32,6 +32,8 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [activeAction, setActiveAction] = useState<{ id:string; type:"accept"|"reject"|"merge" } | null>(null);
   const [message, setMessage] = useState("");
+  const [gateInputs, setGateInputs] = useState<Record<string,{evidence:string;baselines:string;note:string;checks:boolean}>>({});
+  const gateFor=(id:string)=>{const v=gateInputs[id]||{evidence:"",baselines:"",note:"",checks:false};return {evidence_urls:v.evidence.split("\n").map(x=>x.trim()).filter(Boolean),baseline_ids:v.baselines.split("\n").map(x=>x.trim()).filter(Boolean),scope_checked:v.checks,canonical_conflicts_checked:v.checks,product_truth_verified:v.checks,before_after_reviewed:v.checks,severe_regressions:v.checks?0:-1,review_note:v.note};};
   const [notes, setNotes] = useState<Record<string,string>>({});
   const [filter, setFilter] = useState("pending");
   const [expanded, setExpanded] = useState<Record<string,boolean>>({});
@@ -285,10 +287,10 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   };
 
   const merge = async (id:string) => {
-    if (!confirm("Merge this accepted feedback into canonical Creative DNA? Structural Onepage feedback will sync across brands.")) return;
+    if (!confirm("Confirm the evidence and regression checks are complete. Merge into canonical?")) return;
     setLoading(true); setActiveAction({ id, type:"merge" }); setMessage("");
     try {
-      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" } });
+      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({regression:gateFor(id)}) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Merge failed");
       setMessage(`Merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).`);
@@ -303,11 +305,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       const res = await authFetch(`/api/admin/feedback/${id}/review`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({ decision, review_note:notes[id] || "" })
+        body:JSON.stringify({ decision, review_note:notes[id] || "", ...(decision==="accept"?{regression:gateFor(id)}:{}) })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Review failed");
-      setMessage(decision === "accept" ? `Accepted & merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).` : "Rejected. Canonical DNA was not changed.");
+      setMessage(decision === "accept" ? `Accepted (upstream response): canonical change reported (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).` : "Rejected. Canonical DNA was not changed.");
       await load();
     } catch(e:any){ setMessage(e.message); setLoading(false); }
     finally { setActiveAction(null); }
@@ -514,7 +516,17 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
  {governance.similar.length>0 && <p className="text-xs text-slate-600">Potential duplicates: {governance.similar.map(x=>x.id.slice(0,8)).join(", ")}</p>}
  <p className="text-[11px] text-slate-500">{governance.note}</p>
  </div>
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+ <div className="rounded-xl border border-slate-200 p-3 space-y-2">
+ <p className="text-xs font-semibold text-slate-800">Regression gate · Bắt buộc trước Accept / Merge</p>
+ <div className="grid sm:grid-cols-2 gap-2">
+  <textarea aria-label="Evidence links or IDs" placeholder="Evidence URLs / IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.evidence||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{baselines:"",note:"",checks:false}),evidence:e.target.value}}))}/>
+  <textarea aria-label="Regression baseline IDs" placeholder="Baseline case IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.baselines||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",note:"",checks:false}),baselines:e.target.value}}))}/>
+ </div>
+ <textarea aria-label="Regression review notes" placeholder="Kết quả so sánh before/after, xung đột và kiểm tra fidelity..." rows={2} className="border border-slate-300 rounded-lg p-2 text-xs w-full" value={gateInputs[p.id]?.note||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",checks:false}),note:e.target.value}}))}/>
+ <label className="flex gap-2 items-start text-xs text-slate-700"><input type="checkbox" checked={!!gateInputs[p.id]?.checks} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",note:""}),checks:e.target.checked}}))}/><span>Tôi đã kiểm tra Product Truth, scope, xung đột canonical và so sánh before/after trên baseline; không có regression nghiêm trọng</span></label>
+ <p className="text-[11px] text-slate-500">Xác nhận thủ công có dẫn chứng; hệ thống chưa tự chạy generator regression. Gate chặn khi thiếu thông tin.</p>
+ </div>
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span><span className="font-bold text-slate-700">Submitted by:</span> {p.submitted_by_name || "Missing member name"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
         </div>
