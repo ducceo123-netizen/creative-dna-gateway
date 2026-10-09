@@ -48,6 +48,6 @@ revoke all on public.uid_governance_snapshots from public,anon,authenticated;
 comment on table public.uid_governance_evaluations is 'Automated evidence outcomes. Only status passed after actual controlled regression execution; gateway scores or manual checkboxes cannot mark passed.';
 
 -- Edge Function uses service_role only after validating authenticated admin JWT.
-grant select,insert,update on public.uid_governance_baselines to service_role;
-grant select,insert,update on public.uid_governance_evaluations to service_role;
+grant select,insert on public.uid_governance_baselines to service_role;
+grant select,insert on public.uid_governance_evaluations to service_role;
 grant select,insert on public.uid_governance_snapshots to service_role;
