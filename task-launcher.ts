@@ -8,20 +8,32 @@ export const LAUNCHER_MIME = "text/html;profile=mcp-app";
 export const launcherHtml = String.raw`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:light dark}
-*{box-sizing:border-box}body{margin:0;padding:16px;color:var(--color-text-primary,#202536);background:var(--color-background-primary,transparent)}
-.wrap{max-width:640px;margin:auto}.header{display:flex;align-items:center;gap:10px;margin-bottom:20px}.logo{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#ebe9ff;color:#4c36db;font-weight:800;font-size:21px}
-h1{font-size:20px;line-height:1.3;margin:0}p{margin:3px 0 0;font-size:12px;color:var(--color-text-secondary,#697587)}
-label{font-weight:600;font-size:13px;display:block;margin:14px 0 6px}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:light;--fg:#182133;--muted:#596579;--bg:#ffffff;--input:#ffffff;--tile:#f7f8fc;--border:#d6dce7;--active:#eeeaff;--active-border:#6349e9;--placeholder:#788399}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--fg:#f5f5f7;--muted:#afb5c4;--bg:#171717;--input:#252525;--tile:#242424;--border:#494949;--active:#342b55;--active-border:#aa98ff;--placeholder:#a3a3ad}}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;color:var(--fg);background:var(--bg)}
+.wrap{max-width:640px;margin:auto}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.logo{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#eeeaff;color:#573cde;font-weight:800;font-size:21px}
+h1{font-size:21px;line-height:1.3;margin:0;color:var(--fg)}
+p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+label{font-weight:650;font-size:13px;color:var(--fg);display:block;margin:18px 0 8px}
 select,input,textarea,button{font:inherit;width:100%;border-radius:10px;padding:11px 12px}
-select,input,textarea{background:var(--color-background-secondary,#f8fafc);color:inherit;border:1px solid var(--color-border-light,#dbe1ed)}
-textarea{min-height:74px;resize:vertical}.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.tile{border:1px solid var(--color-border-light,#dbe1ed);background:var(--color-background-secondary,#f8fafc);color:inherit;text-align:left;cursor:pointer;padding:11px;min-height:60px;overflow-wrap:anywhere}
-.tile.active{border:2px solid #6550f2;background:rgba(101,80,242,.09);padding:10px}
-.tile span{display:block;font-size:13px;font-weight:650}.tile small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:4px}
-.action{margin-top:18px;background:#5942f0;color:white;border:0;font-weight:700;cursor:pointer}.action:disabled{opacity:.5;cursor:not-allowed}
-.note{font-size:12px;color:var(--color-text-secondary,#697587);margin-top:10px;line-height:1.5}
-.error{color:#b42318;font-size:12px;min-height:16px}.optional{font-weight:400;opacity:.6}
+select,input,textarea{background:var(--input);color:var(--fg);border:1px solid var(--border);outline-offset:2px}
+input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}
+textarea{min-height:72px;resize:vertical}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.tile{border:1px solid var(--border);background:var(--tile);color:var(--fg);text-align:left;cursor:pointer;padding:13px;min-height:55px;overflow-wrap:anywhere}
+.tile:hover{border-color:var(--active-border)}
+.tile.active{border:2px solid var(--active-border);background:var(--active);color:var(--fg);padding:12px}
+.tile.active::before{content:"✓ ";color:var(--active-border);font-weight:800}
+.tile span{display:inline;font-size:13px;font-weight:650;color:inherit}
+.action{margin-top:16px;background:#6047ef;color:#fff;border:0;font-weight:700;cursor:pointer}
+.action:disabled{opacity:.5;cursor:not-allowed}
+.note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5}
+.error{color:#e24848;font-size:12px;min-height:16px}
+.optional{font-weight:400;color:var(--muted)}
+@media(max-width:400px){body{padding:12px}.tiles{grid-template-columns:1fr}}
 </style></head>
 <body><main class="wrap">
 <div class="header"><div class="logo">✦</div><div><h1>Creative DNA</h1><p>Choose a workflow and start inside ChatGPT</p></div></div>
@@ -57,7 +69,7 @@ function draw(){
  const container=$("branches");container.replaceChildren();
  options.forEach(r=>{
  const btn=document.createElement("button");btn.type="button";btn.className="tile"+(selected===r.branch?" active":"");
- const title=document.createElement("span");title.textContent=r.branch==="onepage-system"?"Onepage":r.title||readable(r.branch);
+ const title=document.createElement("span");const shortNames={"onepage-system":"Onepage","ldp-system":"LDP","home-hero":"Home Hero","ldp-hero":"LDP Hero","ugc-image":"UGC Image","recipient-image":"Recipient Image","seasonal-banner":"Seasonal Banner","shop-by-product-image":"Shop By Product","shop-by-categories":"Shop By Categories","niche-product-combo":"Niche Product Combo"};title.textContent=shortNames[r.branch]||readable(r.branch);
  btn.appendChild(title);btn.setAttribute("aria-pressed",String(selected===r.branch));btn.onclick=()=>{selected=r.branch;draw();save();};
  container.appendChild(btn);
  });
