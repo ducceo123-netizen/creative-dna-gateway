@@ -17,17 +17,11 @@ h1{font-size:18px;line-height:1.3;margin:0;color:var(--fg);font-weight:700}p{mar
 label{font-size:13px;font-weight:650;color:var(--fg);display:block;margin:14px 0 6px}
 select,input,textarea,button{font:inherit;border-radius:10px}
 select,input,textarea{width:100%;padding:10px 12px;background:var(--input);color:var(--fg);border:1px solid var(--border);outline:none}
-select:focus-visible,input:focus-visible,textarea:focus-visible,.tile:focus-visible,.preview-toggle:focus-visible,.action:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+select:focus-visible,input:focus-visible,textarea:focus-visible,.preview-toggle:focus-visible,.action:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}textarea{min-height:69px;resize:vertical}
-.tiles{display:flex;flex-wrap:wrap;gap:7px}.tile{width:auto;min-height:38px;border:1px solid var(--border);background:var(--tile);color:var(--fg);text-align:center;cursor:pointer;padding:8px 12px;overflow-wrap:anywhere}
-.tile:hover{border-color:var(--accent);background:var(--surface)}.tile.active{border-color:var(--accent);background:var(--active);color:var(--fg)}
-.tile.active::before{content:"✓";color:var(--accent);font-weight:750;margin-right:6px}.tile span{font-size:12.5px;font-weight:550;color:inherit}
 .preview{margin:15px 0 2px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .preview-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.preview-title{font-size:13px;font-weight:650;color:var(--fg)}
 .preview-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
-.live-preview{margin-top:10px;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#fff}
-.live-preview iframe{display:block;width:100%;height:360px;border:0;background:white}
-.live-status{font-size:11px;color:var(--muted);padding:8px 10px}
 .preview-img{margin-top:10px;max-height:240px;width:100%;object-fit:contain;border-radius:8px;background:var(--input);cursor:zoom-in}
 .preview-toggle{width:auto;flex-shrink:0;background:var(--input);border:1px solid var(--border);color:var(--fg);padding:6px 10px;font-size:12px;cursor:pointer}
 .preview-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:12px;font-weight:650}
@@ -46,8 +40,8 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 <label for="brand">Brand</label><select id="brand"></select>
 <label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
 <section class="preview" aria-label="Material preview">
-  <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="true">Hide preview</button></div>
-  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
+  <div class="preview-top"><div class="preview-title" id="previewTitle">Task preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="false">Show details</button></div>
+  <div id="previewBody" hidden><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
 </section>
 <div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
@@ -60,6 +54,7 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 (function(){
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
+// Keep typing local: setWidgetState can trigger host updates and input focus loss.
 let routes=[], guides=[], selected=initial.branch||"";
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){return name.replace(/\b\w/g,x=>x.toUpperCase()).replace(/-/g," ")}
@@ -70,7 +65,7 @@ function load(output){
  if(Array.isArray(data.guides))guides=data.guides;
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
- const select=$("brand"); const current=initial.brand&&brands.includes(initial.brand)?initial.brand:brands[0];
+ const select=$("brand"); const current=initial.brand&&brands.includes(initial.brand)?initial.brand:(brands.includes("pawfecthouse")?"pawfecthouse":brands[0]);
  select.replaceChildren(...brands.map(b=>{const o=document.createElement("option");o.value=b;o.textContent=readable(b);return o;}));select.value=current;
  $("url").value=initial.url||"";$("theme").value=initial.theme||"";$("custom").value=initial.custom||"";
  draw();
@@ -82,18 +77,17 @@ function draw(){
  const shortNames={"onepage-system":"Onepage","ldp-system":"LDP","home-hero":"Home Hero","ldp-hero":"LDP Hero","ugc-image":"UGC","recipient-image":"Recipient Image","seasonal-banner":"Seasonal Banner","shop-by-product-image":"Shop By Product","shop-by-categories":"Shop By Categories","niche-product-combo":"Niche Product Combo"};
  select.replaceChildren(...options.map(r=>{const option=document.createElement("option");option.value=r.branch;option.textContent=shortNames[r.branch]||readable(r.branch);return option;}));
  select.value=selected;
- renderPreview();save();
+ renderPreview();
 }
-function save(){window.openai?.setWidgetState?.({brand:$("brand").value,branch:selected,url:$("url").value,theme:$("theme").value,custom:$("custom").value})}
+function save(){try{window.openai?.setWidgetState?.({brand:$("brand").value,branch:selected,url:$("url").value,theme:$("theme").value,custom:$("custom").value});}catch{}}
 function renderPreview(){
  const guide=guides.find(g=>g.brand===$("brand").value&&g.branch===selected)||{};
  const route=routes.find(r=>r.brand===$("brand").value&&r.branch===selected);
  $("previewConfig").textContent="Source: "+($("url").value.trim()||"No URL entered")+" · Theme: "+($("theme").value.trim()||"Auto-detect from product")+( $("custom").value.trim()?" · Notes: "+$("custom").value.trim():"");
  $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
  $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
- const img=$("previewImage");img.hidden=!guide.imageUrl;img.removeAttribute("src");
- if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"UID Brands material reference";}
- $("previewEmpty").hidden=!!guide.imageUrl;
+ const img=$("previewImage");img.hidden=!guide.imageUrl;
+ if(guide.imageUrl){if(img.getAttribute("src")!==guide.imageUrl)img.src=guide.imageUrl;img.alt=guide.imageCaption||"UID Brands material reference";}else{img.removeAttribute("src");}
  const link=$("previewLink");
  // For live previews, only navigate to the user-visible original page. Never embed arbitrary HTML in the ChatGPT sandbox.
  const allowed=/^https:\/\/(?:[a-z0-9-]+\.)*(?:pawfecthouse\.com|giftsoul\.co|soulprise\.co)\//i;
@@ -102,18 +96,18 @@ function renderPreview(){
 }
 $("previewToggle").onclick=()=>{
  const body=$("previewBody"),isOpen=body.hidden;body.hidden=!isOpen;
- $("previewToggle").textContent=isOpen?"Hide preview":"Show preview";$("previewToggle").setAttribute("aria-expanded",String(isOpen));
+ $("previewToggle").textContent=isOpen?"Hide details":"Show details";$("previewToggle").setAttribute("aria-expanded",String(isOpen));
 };
 $("previewImage").onclick=()=>{if(!$("previewImage").src)return;$("previewLarge").src=$("previewImage").src;$("previewModal").classList.add("open");};
 $("previewClose").onclick=()=>{$("previewModal").classList.remove("open");};
 $("previewModal").onclick=e=>{if(e.target===$("previewModal"))$("previewModal").classList.remove("open");};
-$("brand").onchange=draw; $("branches").onchange=()=>{selected=$("branches").value;renderPreview();save();}; ["url","theme","custom"].forEach(id=>$(id).addEventListener("input",()=>{renderPreview();save();}));
+$("brand").onchange=()=>{draw();save();}; $("branches").onchange=()=>{selected=$("branches").value;renderPreview();save();}; ["url","theme","custom"].forEach(id=>{ $(id).addEventListener("input",renderPreview); $(id).addEventListener("change",save); $(id).addEventListener("blur",save); });
 $("run").onclick=async()=>{
  const url=$("url").value.trim(), brand=$("brand").value, route=routes.find(r=>r.brand===brand&&r.branch===selected);
  if(!route){$("error").textContent="Choose a material.";return;}
  try{const u=new URL(url);if(!/^https?:$/.test(u.protocol)||!u.hostname.includes("."))throw new Error();}catch{$("error").textContent="Enter a valid PDP or collection URL.";return;}
  $("error").textContent="";save();
- const prompt="UID Brands — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical UID Brands rules. For Onepage, compile_onepage_job first; do not invent product facts.";
+ const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
  const fn=window.openai?.sendFollowUpMessage;
  if(!fn){$("error").textContent="ChatGPT widget bridge is unavailable. Open this launcher inside ChatGPT.";return;}
  $("run").disabled=true;
