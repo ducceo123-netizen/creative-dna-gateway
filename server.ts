@@ -1078,6 +1078,10 @@ export function createApp(): express.Application {
   });
 
   app.post("/api/admin/feedback/:id/review", async (req: Request, res: Response) => {
+    if (req.body?.decision === "accept") {
+      const gate = validateRegressionAttestation(req.body?.regression);
+      if (!gate.ok) return res.status(422).json({ error: "Regression gate incomplete", issues: gate.issues });
+    }
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin feedback upstream is not configured" });
     const authorization = req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
@@ -1087,7 +1091,7 @@ export function createApp(): express.Application {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, review_note: req.body?.review_note || "" }),
+        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, review_note: req.body?.review_note || "", regression_attestation: decision === "accept" ? validateRegressionAttestation(req.body?.regression).attestation : undefined }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to review feedback" });
