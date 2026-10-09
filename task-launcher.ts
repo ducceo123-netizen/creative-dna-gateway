@@ -10,8 +10,8 @@ export const launcherHtml = String.raw`<!doctype html>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light;--fg:#202123;--muted:#656b73;--bg:#fff;--surface:#f8f9fa;--input:#fff;--tile:#fff;--border:#d9dde3;--active:#f3f2ff;--accent:#5955d8;--placeholder:#777e89;--focus:#6e68d9}
 @media(prefers-color-scheme:dark){:root{color-scheme:dark;--fg:#ececec;--muted:#b6bac3;--bg:#212121;--surface:#292929;--input:#2b2b2b;--tile:#292929;--border:#505050;--active:#343044;--accent:#b3a8ff;--placeholder:#a1a1aa;--focus:#b3a8ff}}
-*{box-sizing:border-box}body{margin:0;padding:14px;color:var(--fg);background:var(--bg);font-size:14px;line-height:1.4}
-.wrap{max-width:620px;margin:auto}.header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+*{box-sizing:border-box}body{margin:0;padding:28px 22px 26px;color:var(--fg);background:var(--bg);font-size:14px;line-height:1.4}
+.wrap{max-width:620px;margin:auto}.header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
 .logo{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--accent);font-weight:750;font-size:18px}
 h1{font-size:18px;line-height:1.3;margin:0;color:var(--fg);font-weight:700}p{margin:2px 0 0;font-size:12px;color:var(--muted)}
 label{font-size:13px;font-weight:650;color:var(--fg);display:block;margin:14px 0 6px}
@@ -19,12 +19,12 @@ select,input,textarea,button{font:inherit;border-radius:10px}
 select,input,textarea{width:100%;padding:10px 12px;background:var(--input);color:var(--fg);border:1px solid var(--border);outline:none}
 select:focus-visible,input:focus-visible,textarea:focus-visible,.preview-toggle:focus-visible,.action:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}textarea{min-height:69px;resize:vertical}
-.action{width:100%;min-height:45px;margin-top:14px;padding:11px 14px;background:#5755d6;color:white;border:0;font-weight:650;cursor:pointer}
+.action{width:100%;min-height:45px;margin-top:20px;padding:11px 14px;background:#5755d6;color:white;border:0;font-weight:650;cursor:pointer}
 .action:hover{background:#4846c4}.action:disabled{opacity:.55;cursor:not-allowed}
-.note{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
+.note{font-size:11.5px;color:var(--muted);margin-top:16px;padding-bottom:8px;line-height:1.5;text-align:center}
 .error{color:#e5484d;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}
 [hidden]{display:none!important}
-@media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}}
+@media(max-width:420px){body{padding:20px 16px 22px}.header{margin-bottom:18px}}
 </style></head>
 <body><main class="wrap">
 <div class="header"><div class="logo">✦</div><div><h1>UID Brands</h1><p>Choose a material and start your task</p></div></div>
