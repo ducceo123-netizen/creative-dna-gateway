@@ -508,7 +508,7 @@ const UID_NATIVE_WORKFLOW = {
 } as const;
 
 export const TOOL_DEFINITIONS = [
-  { name: "show_uid_brands_review", title: "UID Brands Review", description: "Display UID Brands in-chat approval UI in a separate review turn after content or asset generation. stage must match the completed step. Shows interactive choices for approve, revise, regenerate or package, not a list of text choices.", annotations: READ_ONLY_TOOL_ANNOTATIONS, inputSchema: {type:"object",properties:{stage:{type:"string",enum:["content_approval","asset_review","packaging"]}},required:["stage"]},_meta:{ui:{resourceUri:LAUNCHER_URI},"openai/outputTemplate":LAUNCHER_URI} },
+  { name: "show_uid_brands_review", title: "UID Brands Review", description: "Display UID Brands in-chat approval UI in a separate review turn after content or asset generation. stage must match the completed step. Shows interactive choices for approve, revise, regenerate or package, not a list of text choices.", annotations: READ_ONLY_TOOL_ANNOTATIONS, inputSchema: {type:"object",properties:{stage:{type:"string",enum:["content_approval","asset_review","packaging"]},assets:{type:"array",items:{type:"object",properties:{id:{type:"string"},asset_id:{type:"string"},element:{type:"string"}}}}},required:["stage"]},_meta:{ui:{resourceUri:LAUNCHER_URI},"openai/outputTemplate":LAUNCHER_URI} },
 
   {
     name: "get_uid_brands_native_workflow",
@@ -601,11 +601,11 @@ export function createMcpServer(): McpServer {
   server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"UID Brands task and review UI"},async()=>({contents:[{uri:LAUNCHER_URI,mimeType:LAUNCHER_MIME,text:launcherHtml}]}));
   server.registerTool("show_uid_brands_review",{
     title:"UID Brands Review",
-    description:"Display UID Brands approval UI ONLY when the user explicitly requests review or approval in a new turn, not while generating the content or assets in the current turn. Use content_approval, asset_review, or packaging as appropriate.",
-    inputSchema:{stage:z.enum(["content_approval","asset_review","packaging"])},
+    description:"Display UID Brands approval UI ONLY when the user explicitly requests review or approval in a new turn, not while generating the content or assets in the current turn. Use content_approval, asset_review, or packaging as appropriate. For asset_review, pass generated assets with their real IDs and element names when available; default choices are Đóng gói or Gửi feedback. Feedback opens an in-app element and asset selector; never invent asset IDs.",
+    inputSchema:{stage:z.enum(["content_approval","asset_review","packaging"]),assets:z.array(z.object({id:z.string().optional(),asset_id:z.string().optional(),element:z.string()})).max(100).optional()},
     annotations:READ_ONLY_TOOL_ANNOTATIONS,
     _meta:{ui:{resourceUri:LAUNCHER_URI},"openai/outputTemplate":LAUNCHER_URI},
-  },async({stage})=>({content:[{type:"text" as const,text:"UID Brands review ready. Choose an option in the form."}],structuredContent:{stage}}));
+  },async({stage,assets})=>({content:[{type:"text" as const,text:"UID Brands review ready. Choose an option in the form."}],structuredContent:{stage,assets:assets||[]}}));
   server.registerTool("get_uid_brands_native_workflow", {
     title: "UID Brands Native Workflow",
     description: "UID Brands structured workflow schema for launcher, content approval, asset review and packaging. ChatGPT may render native controls; otherwise offer conversational choices. No custom HTML UI.",
