@@ -17,6 +17,8 @@ export function GovernancePanel({request}:{request:Http}) {
  const [reviewNotes,setReviewNotes]=useState("");
  const [confirmReview,setConfirmReview]=useState(false);
  const [snapshotId,setSnapshotId]=useState("");
+ const [rollbackProposalId,setRollbackProposalId]=useState("");
+ const [proposalPreview,setProposalPreview]=useState<any>(null);
  const [rollbackPreview,setRollbackPreview]=useState<any>(null);
  const refresh=async()=>{
   setLoading(true);
@@ -73,6 +75,15 @@ export function GovernancePanel({request}:{request:Http}) {
    </div>
   </details>
   <details><summary className="cursor-pointer text-sm font-semibold">3. Rollback an earlier node snapshot</summary>
+   <div className="mt-3 space-y-2 border-b pb-3">
+    <p className="text-xs text-slate-500">Recommended: rollback an entire merged proposal across all affected brands as one transaction.</p>
+    <input value={rollbackProposalId} onChange={e=>{setRollbackProposalId(e.target.value);setProposalPreview(null);}} placeholder="Merged proposal ID" className="border p-2 rounded-lg text-sm w-full"/>
+    <button disabled={!rollbackProposalId||loading} onClick={async()=>{try{const r=await request("/api/admin/governance/governance_rollback_proposal_preview",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({proposal_id:rollbackProposalId})});const d=await r.json();if(!r.ok)throw Error(d.error);setProposalPreview(d);}catch(e:any){setMessage(e.message);}}} className="border rounded-lg px-3 py-2 text-sm">Preview all affected nodes</button>
+    {proposalPreview&&<div className="text-xs space-y-2"><p>{proposalPreview.affected_nodes?.length||0} affected node(s)</p>
+      <p>{proposalPreview.affected_nodes?.map((x:any)=>x.slug).join(", ")}</p>
+      <button disabled={loading} className="border border-red-300 rounded-lg px-3 py-2" onClick={()=>{if(confirm("Restore ALL affected nodes to pre-merge state? This cannot overwrite newer changes."))act("governance_rollback_proposal",{proposal_id:rollbackProposalId});}}>Rollback entire proposal</button>
+    </div>}
+   </div>
    <div className="mt-3 space-y-2">
     <p className="text-xs text-slate-500">Rollback is guarded by current-node fingerprint. Inspect impact before confirming; newer changes must not be overwritten.</p>
     <input value={snapshotId} onChange={e=>{setSnapshotId(e.target.value);setRollbackPreview(null);}} placeholder="Before snapshot ID" className="border p-2 rounded-lg text-sm w-full"/>
