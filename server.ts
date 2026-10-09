@@ -486,10 +486,10 @@ export const TOOL_DEFINITIONS = [
   {
     name: "launch_creative_dna",
     title: "Open Creative DNA Task Launcher",
-    description: "Open the interactive Creative DNA task launcher for a new creative brief. Select brand, material, URL and optional theme inside ChatGPT.",
+    description: "DEFAULT START ENTRYPOINT for new Creative DNA tasks. Return available brands/materials as structured data for ChatGPT to render a NATIVE in-chat form with Brand select, Material select, Product/Collection URL, optional Theme and Additional requirements, and Run Creative DNA action. Never render an MCP HTML widget, iframe or dashboard, and never require copying prompts. ChatGPT should use its own native interactive controls; if unavailable, ask conversationally. Do not call for revisions, training, or complete briefs.",
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: { type: "object", properties: {} },
-    _meta: { ui: { resourceUri: LAUNCHER_URI }, "openai/outputTemplate": LAUNCHER_URI },
+    
   },
   {
     name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
@@ -568,15 +568,15 @@ export function createMcpServer(): McpServer {
   );
   server.registerTool("launch_creative_dna", {
     title: "Open Creative DNA Task Launcher",
-    description: "DEFAULT START ENTRYPOINT for Creative DNA. Open the in-chat brand, material, product URL and theme form whenever a user asks to start/choose a new creative task but has not supplied a complete brief. No prompt copying or dashboard. Do not use for training, revisions, or already-complete briefs. The form sends a follow-up to run canonical tools.",
+    description: "DEFAULT START ENTRYPOINT for new Creative DNA tasks. Return available brands/materials as structured data for ChatGPT to render a NATIVE in-chat form with Brand select, Material select, Product/Collection URL, optional Theme and Additional requirements, and Run Creative DNA action. Never render an MCP HTML widget, iframe or dashboard, and never require copying prompts. ChatGPT should use its own native interactive controls; if unavailable, ask conversationally. Do not call for revisions, training, or complete briefs.",
     inputSchema: {},
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
-    _meta: { ui: { resourceUri: LAUNCHER_URI }, "openai/outputTemplate": LAUNCHER_URI },
+    
   }, async () => {
     try {
       const upstream = await listCreativeDnaRoutes();
       const safe = sanitizeRoutesData(upstream.data);
-      return { content: [{ type: "text" as const, text: "Creative DNA task launcher ready. Choose a brand, material and URL in the form." }], structuredContent: { routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
+      return { content: [{ type: "text" as const, text: "Creative DNA routes loaded. Render a native ChatGPT form using routes for Brand and Material, a Product/Collection URL input, optional Theme and Additional requirements, and a Run Creative DNA button. Do not show a custom HTML widget or external dashboard. On submit, execute the canonical Creative DNA workflow." }], structuredContent: { routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
     } catch (err) {
       return { content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], structuredContent: { routes: [], error: "Routes temporarily unavailable" } };
     }
