@@ -127,11 +127,11 @@ $("run").onclick=async()=>{
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
   if(stage==="asset_review"&&feedbackStep&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){$("error").textContent="Chọn variables và nhập feedback cho từng mục.";return;}
-  const payload=variableItems.map(x=>"@"+x.key+": "+x.text.trim()).join("\\n");
+  const payload=variableItems.map(x=>"@"+x.key+": "+x.text.trim()).join("\n");
   const message=stage==="asset_review"&&feedbackStep
     ? (feedbackMode==="train"
-      ? "UID Brands — Train cho material của task hiện tại.\\n"+payload+"\\nPhân tích context, ảnh/asset liên quan và gửi từng feedback vào Pending Admin Review bằng submit_training_feedback, không tự sửa canonical rules."
-      : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\\n"+payload+"\\nChỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Sau khi sửa, cho chọn Feedback hoặc Đóng gói.")
+      ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nPhân tích context, ảnh/asset liên quan và gửi từng feedback vào Pending Admin Review bằng submit_training_feedback, không tự sửa canonical rules."
+      : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\n"+payload+"\nChỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Sau khi sửa, cho chọn Feedback hoặc Đóng gói.")
     : stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại.")
     : stage==="asset_review"?"UID Brands: Đóng gói assets hiện tại theo canonical rules."
     : "UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
