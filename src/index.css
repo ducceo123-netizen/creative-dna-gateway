@@ -1,1 +1,100 @@
 @import "tailwindcss";
+
+/* UID Brands | commerce-admin design system inspired by the supplied Shopify guide.
+   Transactional canvas, deliberately not the cinematic marketing track. */
+@theme {
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-slate-50: #fbfbf5;
+  --color-slate-100: #f5f6f1;
+  --color-slate-200: #e4e4e7;
+  --color-slate-300: #d4d4d8;
+  --color-slate-400: #a1a1aa;
+  --color-slate-500: #71717a;
+  --color-slate-600: #52525b;
+  --color-slate-700: #3f3f46;
+  --color-slate-800: #27272a;
+  --color-slate-900: #0b0b0b;
+  --color-indigo-50: #f0fbf3;
+  --color-indigo-100: #e5f9eb;
+  --color-indigo-200: #d4f9e0;
+  --color-indigo-300: #c1fbd4;
+  --color-indigo-600: #151515;
+  --color-indigo-700: #171717;
+  --color-emerald-50: #edfaef;
+  --color-emerald-100: #def6e5;
+  --color-emerald-200: #c1fbd4;
+  --color-emerald-500: #289568;
+  --color-emerald-700: #1b654b;
+}
+:root {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "ss03" 1;
+  color: #101010;
+  background: #fbfbf5;
+  font-synthesis: none;
+  --uid-canvas: #fbfbf5;
+  --uid-surface: #fff;
+  --uid-ink: #101010;
+  --uid-muted: #71717a;
+  --uid-border: #e4e4e7;
+  --uid-mint: #c1fbd4;
+  --uid-radius: 12px;
+}
+html { background: var(--uid-canvas); }
+body { margin:0; min-width:320px; }
+button, input, select, textarea { font:inherit; font-feature-settings:"ss03" 1; }
+button { transition:background-color .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #277956;
+  outline-offset: 2px;
+}
+button:not(:disabled) { cursor:pointer; }
+button:disabled { cursor:not-allowed; }
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  border-radius:8px;
+  min-height:42px;
+  border-color:var(--uid-border);
+  background:var(--uid-surface);
+  color:var(--uid-ink);
+}
+textarea { min-height:70px; }
+input::placeholder, textarea::placeholder { color:#88888e; }
+.rounded-lg, .rounded-xl, .rounded-2xl { border-radius:var(--uid-radius); }
+.rounded-full { border-radius:9999px; }
+.shadow-xs, .shadow-sm { box-shadow:0 1px 2px rgba(0,0,0,.035); }
+.bg-white { background-color:var(--uid-surface); }
+.bg-slate-50 { background-color:var(--uid-canvas); }
+.border-slate-200 { border-color:var(--uid-border); }
+.bg-indigo-600, .bg-slate-900 { background-color:#101010; }
+.hover\:bg-indigo-700:hover, .hover\:bg-indigo-600:hover { background-color:#303030; }
+.text-indigo-600, .text-indigo-700 { color:#222; }
+.border-indigo-200 { border-color:#addfbe; }
+.bg-indigo-50 { background-color:#edfaef; }
+.bg-indigo-50\/30 { background-color:#f5fcf6; }
+/* The Shopify-supplied UI button vocabulary is consistently pill shaped. */
+button[class*="rounded-"], a[class*="rounded-"][class*="bg-"] { border-radius:9999px; }
+input[type="checkbox"] { accent-color:#175c40; }
+::selection { background:#c1fbd4;color:#0b0b0b; }
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important; }
+}
+
+/* Commerce admin tables, navigation and review surfaces */
+header.sticky { background:#fff; border-bottom:1px solid #e4e4e7; box-shadow:none; }
+header nav button { min-height:38px; padding-inline:16px; }
+main > section h1 { letter-spacing:-.035em; }
+article { border-color:#e4e4e7; }
+table { border-collapse:separate; border-spacing:0; }
+thead { background:#f7f8f4; }
+th { color:#52525b; font-size:12px; font-weight:600; letter-spacing:.01em; }
+td { color:#27272a; }
+tr + tr td { border-top:1px solid #ececee; }
+details { border-color:var(--uid-border); }
+details > summary { color:var(--uid-ink); }
+summary:focus-visible { outline:2px solid #277956; outline-offset:3px; }
+[role="alert"] { color:#b42318; }
+@media(max-width:768px) {
+ header nav { gap:4px; }
+ header nav button { padding-inline:10px; }
+ main { overflow-wrap:anywhere; }
+}
