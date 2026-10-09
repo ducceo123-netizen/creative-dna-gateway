@@ -41,18 +41,18 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], selected=initial.branch||"";
+let routes=[], selected=initial.branch||"", fallbackActive=true;
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
- if(data.routes)routes=data.routes.filter(r=>r&&r.brand&&r.branch);
+ if(Array.isArray(data.routes)&&data.routes.length){routes=data.routes.filter(r=>r&&r.brand&&r.branch);fallbackActive=false;}
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
  const select=$("brand"); const current=initial.brand&&brands.includes(initial.brand)?initial.brand:(brands.includes("pawfecthouse")?"pawfecthouse":brands[0]);
  select.replaceChildren(...brands.map(b=>{const o=document.createElement("option");o.value=b;o.textContent=readable(b);return o;}));select.value=current;
- $("url").value=initial.url||"";$("theme").value=initial.theme||"";$("custom").value=initial.custom||"";
+ $("url").value=$("url").value||initial.url||"";$("theme").value=$("theme").value||initial.theme||"";$("custom").value=$("custom").value||initial.custom||"";
  draw();
 }
 function draw(){
@@ -77,7 +77,7 @@ $("run").onclick=async()=>{
  $("run").disabled=true;$("run").textContent="Starting...";
  try{await fn({prompt});}catch(e){$("error").textContent="Could not start the task. Please try again.";}finally{$("run").disabled=false;$("run").textContent="Run UID Brands";}
 };
-window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes&&routes.length===0)load(output);});
+window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes&&fallbackActive)load(output);});
 load(window.openai?.toolOutput||{});
 })();
 </script></body></html>`;
