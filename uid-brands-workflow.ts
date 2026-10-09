@@ -50,7 +50,7 @@ const initial=(window.openai&&window.openai.widgetState)||{};
 let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[];
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
-const elementDefaults={"Banner":["Desktop","Mobile"],"Why You'll Love It":["WYL-01","WYL-02","WYL-03"],"Product Details":["PD-01","PD-02","PD-03"],"Good To Know":["GTK-01","GTK-02","GTK-03"],"FAQs":["FAQ-01","FAQ-02","FAQ-03"],"UGC":["UGC-01","UGC-02","UGC-03"],"Overall":["Overall"]};
+const elementDefaults={"Overall":["Overall"],"Banner":["Overall"],"Why You'll Love It":["Overall"],"Product Details":["Overall"],"Good To Know":["Overall"],"FAQs":["Overall"],"UGC":["Overall"]};
 function assetOptions(){
  const groups={"Overall":["Overall"]};
  taskAssets.forEach(a=>{const el=String(a.element||"Overall"),id=String(a.id||a.asset_id||"").trim();if(!id)return;(groups[el]??=[]).push(id);});
