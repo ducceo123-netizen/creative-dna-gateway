@@ -458,6 +458,17 @@ export function getClientIp(req: Request): string {
 
 // Tool definitions for OpenAPI / ChatGPT Actions / Discovery documentation
 export const TOOL_DEFINITIONS = [
+  // Discovery metadata mirrors the already registered launcher tool.
+  // Keep the public tool name/schema stable so backend wisdom and UI changes
+  // do not require member-side MCP tool rediscovery.
+  {
+    name: "launch_creative_dna",
+    title: "Open Creative DNA Task Launcher",
+    description: "Open the interactive Creative DNA task launcher for a new creative brief. Select brand, material, URL and optional theme inside ChatGPT.",
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: { type: "object", properties: {} },
+    _meta: { ui: { resourceUri: LAUNCHER_URI }, "openai/outputTemplate": LAUNCHER_URI },
+  },
   {
     name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] } } },
