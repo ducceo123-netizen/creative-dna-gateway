@@ -24,3 +24,5 @@ begin
  return jsonb_build_object('node_id',n.id,'snapshot_id',s.id,'rolled_back',true);
 end $$;
 revoke all on function public.uid_governance_rollback_snapshot(uuid,uuid,text) from public,anon,authenticated;
+
+grant execute on function public.uid_governance_rollback_snapshot(uuid,uuid,text) to service_role;
