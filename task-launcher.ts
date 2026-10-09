@@ -25,6 +25,9 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 .preview{margin:15px 0 2px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .preview-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.preview-title{font-size:13px;font-weight:650;color:var(--fg)}
 .preview-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+.live-preview{margin-top:10px;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#fff}
+.live-preview iframe{display:block;width:100%;height:360px;border:0;background:white}
+.live-status{font-size:11px;color:var(--muted);padding:8px 10px}
 .preview-img{margin-top:10px;max-height:240px;width:100%;object-fit:contain;border-radius:8px;background:var(--input);cursor:zoom-in}
 .preview-toggle{width:auto;flex-shrink:0;background:var(--input);border:1px solid var(--border);color:var(--fg);padding:6px 10px;font-size:12px;cursor:pointer}
 .preview-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:12px;font-weight:650}
@@ -44,7 +47,7 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 <label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
 <section class="preview" aria-label="Material preview">
   <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="true">Hide preview</button></div>
-  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
+  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><div class="live-preview" id="livePreview" hidden><iframe id="previewFrame" title="Live material reference" loading="lazy" referrerpolicy="no-referrer" sandbox=""></iframe><div id="liveStatus" class="live-status">Live preview from Creative DNA Gateway · scroll inside to explore</div></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
 </section>
 <div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
@@ -88,9 +91,21 @@ function renderPreview(){
  $("previewConfig").textContent="Source: "+($("url").value.trim()||"No URL entered")+" · Theme: "+($("theme").value.trim()||"Auto-detect from product")+( $("custom").value.trim()?" · Notes: "+$("custom").value.trim():"");
  $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
  $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
- const img=$("previewImage");img.hidden=!guide.imageUrl;img.removeAttribute("src");
+ const frameBox=$("livePreview"),frame=$("previewFrame");
+ const allowedHosts=new Set(["pawfecthouse.com","www.pawfecthouse.com","giftsoul.co","www.giftsoul.co","soulprise.co","www.soulprise.co"]);
+ let liveUrl="";
+ try{
+   const page=new URL(guide.pageUrl||"");
+   if(page.protocol==="https:"&&allowedHosts.has(page.hostname)&&guide.selector&&guide.selector.length<200)
+     liveUrl="https://creative-dna-gateway.vercel.app/api/branch-preview?url="+encodeURIComponent(page.href)+"&selector="+encodeURIComponent(guide.selector);
+ }catch{}
+ frameBox.hidden=!liveUrl;
+ if(liveUrl&&frame.dataset.url!==liveUrl){frame.dataset.url=liveUrl;frame.src=liveUrl;}
+ if(!liveUrl){frame.removeAttribute("src");delete frame.dataset.url;}
+ $("liveStatus").textContent=liveUrl?"Live UI from Gateway · Scroll within the preview to view the full material":"";
+ const img=$("previewImage");img.hidden=!!liveUrl||!guide.imageUrl;img.removeAttribute("src");
  if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"Creative DNA material reference";}
- $("previewEmpty").hidden=!!guide.imageUrl;
+ $("previewEmpty").hidden=!!liveUrl||!!guide.imageUrl;
  const link=$("previewLink");
  // For live previews, only navigate to the user-visible original page. Never embed arbitrary HTML in the ChatGPT sandbox.
  const allowed=/^https:\/\/(?:[a-z0-9-]+\.)*(?:pawfecthouse\.com|giftsoul\.co|soulprise\.co)\//i;
@@ -116,7 +131,11 @@ $("run").onclick=async()=>{
  $("run").disabled=true;
  try{await fn({prompt});}catch(e){$("error").textContent="Could not start the task. Please try again.";}finally{$("run").disabled=false;}
 };
-window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes&&!routes.length)load(output);});
+window.addEventListener("openai:set_globals",event=>{const output=event.detail?.globals?.toolOutput;if(output?.routes) {
+ const data=output.structuredContent||output;
+ if(Array.isArray(data.guides)) guides=data.guides;
+ if(routes.length===0||routes===fallback)load(output); else renderPreview();
+}});
 load(window.openai?.toolOutput||{});
 })();
 </script></body></html>`;
