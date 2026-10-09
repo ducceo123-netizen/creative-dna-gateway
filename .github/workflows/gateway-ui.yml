@@ -1,0 +1,19 @@
+name: Gateway UI Validation
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'uid-brands-workflow.ts'
+      - '.github/workflows/gateway-ui.yml'
+  push:
+    branches: [main]
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run lint
+      - run: bun run build
+      - run: bun test tests/mcp-contract.test.ts tests/governance-engine.test.ts tests/knowledge-governance.test.ts
