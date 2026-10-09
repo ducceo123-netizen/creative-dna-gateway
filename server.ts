@@ -1057,6 +1057,24 @@ export function createApp(): express.Application {
     }
   });
 
+  app.post("/api/admin/governance/:mode", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
+    const allowed=new Set(["governance_baseline_upsert","governance_list","governance_evaluate","governance_rollback_preview","governance_rollback","governance_rollback_proposal_preview","governance_rollback_proposal"]);
+    const mode=String(req.params.mode||"");
+    if (!allowed.has(mode)) return res.status(400).json({error:"Unsupported governance action"});
+    const authorization=req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{
+        method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode,...(req.body||{})})
+      });
+      const data=await upstream.json();
+      if(!upstream.ok)return res.status(upstream.status).json({error:data?.error||"Governance action failed"});
+      return res.json(data);
+    } catch(err:any) {return res.status(502).json({error:sanitizePublicError(err,"Governance upstream unavailable")});}
+  });
+
   app.post("/api/admin/feedback/:id/merge", async (req: Request, res: Response) => {
     const gate = validateRegressionAttestation(req.body?.regression);
     if (!gate.ok) return res.status(422).json({ error: "Regression gate incomplete", issues: gate.issues });
@@ -1086,12 +1104,13 @@ export function createApp(): express.Application {
     const authorization = req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
     const decision = req.body?.decision;
+    if (decision === "accept" && !req.body?.evaluation_id) return res.status(422).json({error:"Passed governance evaluation ID required"});
     if (decision !== "accept" && decision !== "reject") return res.status(400).json({ error: "decision must be accept or reject" });
     try {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, review_note: req.body?.review_note || "", regression_attestation: decision === "accept" ? validateRegressionAttestation(req.body?.regression).attestation : undefined }),
+        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, evaluation_id: req.body?.evaluation_id || null, review_note: req.body?.review_note || "", regression_attestation: decision === "accept" ? validateRegressionAttestation(req.body?.regression).attestation : undefined }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to review feedback" });
