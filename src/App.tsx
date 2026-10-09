@@ -17,7 +17,7 @@ import { AdminFeedback } from "./components/AdminFeedback";
 import { FeedbackUpload } from "./components/FeedbackUpload";
 import { QueryMeta } from "./types";
 
-const PRODUCTION_MCP_URL = "https://creative-dna-gateway.vercel.app/api/mcp";
+const PRODUCTION_MCP_URL = "https://uid-brands-gateway-preview.onrender.com/api/mcp";
 
 const BRAND_META: Record<string, { name:string; category:string }> = {
   pawfecthouse: { name:"PawfectHouse", category:"Personalized Pet & Family Gifts" },
