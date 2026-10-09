@@ -1,3 +1,4 @@
+import { GovernancePanel } from "./GovernancePanel";
 import { assessProposal } from "../knowledge-governance";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
@@ -33,6 +34,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [activeAction, setActiveAction] = useState<{ id:string; type:"accept"|"reject"|"merge" } | null>(null);
   const [message, setMessage] = useState("");
   const [gateInputs, setGateInputs] = useState<Record<string,{evidence:string;baselines:string;note:string;checks:boolean}>>({});
+  const [evaluationIds,setEvaluationIds] = useState<Record<string,string>>({});
   const gateFor=(id:string)=>{const v=gateInputs[id]||{evidence:"",baselines:"",note:"",checks:false};return {evidence_urls:v.evidence.split("\n").map(x=>x.trim()).filter(Boolean),baseline_ids:v.baselines.split("\n").map(x=>x.trim()).filter(Boolean),scope_checked:v.checks,canonical_conflicts_checked:v.checks,product_truth_verified:v.checks,before_after_reviewed:v.checks,severe_regressions:v.checks?0:-1,review_note:v.note};};
   const [notes, setNotes] = useState<Record<string,string>>({});
   const [filter, setFilter] = useState("pending");
@@ -290,7 +292,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     if (!confirm("Confirm the evidence and regression checks are complete. Merge into canonical?")) return;
     setLoading(true); setActiveAction({ id, type:"merge" }); setMessage("");
     try {
-      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({regression:gateFor(id)}) });
+      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({regression:gateFor(id),evaluation_id:evaluationIds[id]||""}) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Merge failed");
       setMessage(`Merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).`);
@@ -305,7 +307,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       const res = await authFetch(`/api/admin/feedback/${id}/review`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({ decision, review_note:notes[id] || "", ...(decision==="accept"?{regression:gateFor(id)}:{}) })
+        body:JSON.stringify({ decision, review_note:notes[id] || "", ...(decision==="accept"?{regression:gateFor(id),evaluation_id:evaluationIds[id]||""}:{}) })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Review failed");
@@ -497,6 +499,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>
       </div>}
     </section>
+    <GovernancePanel request={authFetch}/>
     <section className="space-y-3">
       {!loading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
       {filtered.map(p=>{ const governance=assessProposal(p,proposals); const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
@@ -518,6 +521,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
  </div>
  <div className="rounded-xl border border-slate-200 p-3 space-y-2">
  <p className="text-xs font-semibold text-slate-800">Regression gate · Bắt buộc trước Accept / Merge</p>
+ <input className="w-full border border-slate-300 rounded-lg p-2 text-xs" placeholder="Passed evaluation ID (from Knowledge Governance)" value={evaluationIds[p.id]||""} onChange={e=>setEvaluationIds(x=>({...x,[p.id]:e.target.value}))}/>
  <div className="grid sm:grid-cols-2 gap-2">
   <textarea aria-label="Evidence links or IDs" placeholder="Evidence URLs / IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.evidence||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{baselines:"",note:"",checks:false}),evidence:e.target.value}}))}/>
   <textarea aria-label="Regression baseline IDs" placeholder="Baseline case IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.baselines||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",note:"",checks:false}),baselines:e.target.value}}))}/>
