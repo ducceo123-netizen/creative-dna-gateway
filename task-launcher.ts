@@ -1,5 +1,5 @@
 /**
- * Creative DNA task launcher embedded as an MCP Apps resource.
+ * UID Brands task launcher embedded as an MCP Apps resource.
  * UI only prepares a brief; canonical resolution stays on the existing server.
  */
 export const LAUNCHER_URI = "ui://creative-dna/task-launcher-v1.html";
@@ -42,19 +42,19 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 @media(max-width:420px){body{padding:10px}.tile{padding:7px 10px}.preview-top{align-items:flex-start}}
 </style></head>
 <body><main class="wrap">
-<div class="header"><div class="logo">✦</div><div><h1>Creative DNA</h1><p>Select a brand and material to begin</p></div></div>
+<div class="header"><div class="logo">✦</div><div><h1>UID Brands</h1><p>Select a brand and material to begin</p></div></div>
 <label for="brand">Brand</label><select id="brand"></select>
 <label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
 <section class="preview" aria-label="Material preview">
   <div class="preview-top"><div class="preview-title" id="previewTitle">Material preview</div><button class="preview-toggle" id="previewToggle" type="button" aria-expanded="true">Hide preview</button></div>
-  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><div class="live-preview" id="livePreview" hidden><iframe id="previewFrame" title="Live material reference" loading="lazy" referrerpolicy="no-referrer" sandbox=""></iframe><div id="liveStatus" class="live-status">Live preview from Creative DNA Gateway · scroll inside to explore</div></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
+  <div id="previewBody"><div class="preview-desc" id="previewDescription"></div><div class="preview-desc" id="previewConfig"></div><img id="previewImage" class="preview-img" alt="Selected material preview" hidden /><div class="preview-desc" id="previewEmpty" hidden>Material reference image is not available yet. The task summary above remains available in ChatGPT.</div><a id="previewLink" class="preview-link" target="_blank" rel="noopener noreferrer" hidden>Open live preview ↗</a></div>
 </section>
 <div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="Full preview"><button id="previewClose" class="preview-close" type="button">Close ✕</button><img id="previewLarge" alt="Full material preview" /></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-<div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run Creative DNA</button>
-<div class="note">Uses your current Creative DNA rules — no copy/paste needed.</div>
+<div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
+<div class="note">Uses your current UID Brands rules — no copy/paste needed.</div>
 </main>
 <script>
 (function(){
@@ -91,21 +91,9 @@ function renderPreview(){
  $("previewConfig").textContent="Source: "+($("url").value.trim()||"No URL entered")+" · Theme: "+($("theme").value.trim()||"Auto-detect from product")+( $("custom").value.trim()?" · Notes: "+$("custom").value.trim():"");
  $("previewTitle").textContent=(route?.branch==="onepage-system"?"Onepage":route?.title||readable(selected))+" · Preview";
  $("previewDescription").textContent=guide.description||"Visual reference for the selected material.";
- const frameBox=$("livePreview"),frame=$("previewFrame");
- const allowedHosts=new Set(["pawfecthouse.com","www.pawfecthouse.com","giftsoul.co","www.giftsoul.co","soulprise.co","www.soulprise.co"]);
- let liveUrl="";
- try{
-   const page=new URL(guide.pageUrl||"");
-   if(page.protocol==="https:"&&allowedHosts.has(page.hostname)&&guide.selector&&guide.selector.length<200)
-     liveUrl="https://creative-dna-gateway.vercel.app/api/branch-preview?url="+encodeURIComponent(page.href)+"&selector="+encodeURIComponent(guide.selector);
- }catch{}
- frameBox.hidden=!liveUrl;
- if(liveUrl&&frame.dataset.url!==liveUrl){frame.dataset.url=liveUrl;frame.src=liveUrl;}
- if(!liveUrl){frame.removeAttribute("src");delete frame.dataset.url;}
- $("liveStatus").textContent=liveUrl?"Live UI from Gateway · Scroll within the preview to view the full material":"";
- const img=$("previewImage");img.hidden=!!liveUrl||!guide.imageUrl;img.removeAttribute("src");
- if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"Creative DNA material reference";}
- $("previewEmpty").hidden=!!liveUrl||!!guide.imageUrl;
+ const img=$("previewImage");img.hidden=!guide.imageUrl;img.removeAttribute("src");
+ if(guide.imageUrl){img.src=guide.imageUrl;img.alt=guide.imageCaption||"UID Brands material reference";}
+ $("previewEmpty").hidden=!!guide.imageUrl;
  const link=$("previewLink");
  // For live previews, only navigate to the user-visible original page. Never embed arbitrary HTML in the ChatGPT sandbox.
  const allowed=/^https:\/\/(?:[a-z0-9-]+\.)*(?:pawfecthouse\.com|giftsoul\.co|soulprise\.co)\//i;
@@ -125,7 +113,7 @@ $("run").onclick=async()=>{
  if(!route){$("error").textContent="Choose a material.";return;}
  try{const u=new URL(url);if(!/^https?:$/.test(u.protocol)||!u.hostname.includes("."))throw new Error();}catch{$("error").textContent="Enter a valid PDP or collection URL.";return;}
  $("error").textContent="";save();
- const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
+ const prompt="UID Brands — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+"\nExecute this task using the current canonical UID Brands rules. For Onepage, compile_onepage_job first; do not invent product facts.";
  const fn=window.openai?.sendFollowUpMessage;
  if(!fn){$("error").textContent="ChatGPT widget bridge is unavailable. Open this launcher inside ChatGPT.";return;}
  $("run").disabled=true;
