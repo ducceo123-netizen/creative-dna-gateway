@@ -1059,7 +1059,7 @@ export function createApp(): express.Application {
 
   app.post("/api/admin/governance/:mode", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
-    const allowed=new Set(["governance_baseline_upsert","governance_list","governance_evaluate","governance_rollback_preview","governance_rollback"]);
+    const allowed=new Set(["governance_baseline_upsert","governance_list","governance_evaluate","governance_rollback_preview","governance_rollback","governance_rollback_proposal_preview","governance_rollback_proposal"]);
     const mode=String(req.params.mode||"");
     if (!allowed.has(mode)) return res.status(400).json({error:"Unsupported governance action"});
     const authorization=req.header("authorization");
