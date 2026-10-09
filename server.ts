@@ -14,6 +14,28 @@ const UPSTREAM_URL = process.env.CREATIVE_DNA_UPSTREAM_URL || DEFAULT_UPSTREAM_U
 const FEEDBACK_UPSTREAM_URL = process.env.CREATIVE_DNA_FEEDBACK_UPSTREAM_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-feedback-submit";
 const COMPILE_ONEPAGE_URL = process.env.CREATIVE_DNA_COMPILE_ONEPAGE_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-compile-onepage";
 
+// Read-only material preview metadata, matching the existing dashboard source.
+async function getPublicBranchPreviewGuides(): Promise<any[]> {
+  const key = "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_";
+  const endpoint = "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,image_url,image_caption,page_url,css_selector,preview_mode&order=brand_slug.asc,branch_slug.asc";
+  const response = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" });
+  if (!response.ok) return [];
+  const raw: any = await response.json();
+  if (!Array.isArray(raw)) return [];
+  return raw.map((g: any) => ({
+    brand: String(g.brand_slug || "").toLowerCase(),
+    branch: String(g.branch_slug || "").toLowerCase(),
+    title: String(g.title_vi || "").slice(0, 140),
+    description: String(g.description_vi || "").slice(0, 500),
+    usageBadge: String(g.usage_badge || "").slice(0, 100),
+    ratio: String(g.ratio_note || "").slice(0, 100),
+    imageUrl: /^https:\/\//.test(String(g.image_url || "")) ? String(g.image_url) : "",
+    imageCaption: String(g.image_caption || "").slice(0, 250),
+    pageUrl: /^https:\/\//.test(String(g.page_url || "")) ? String(g.page_url) : "",
+    selector: String(g.css_selector || "").slice(0, 200),
+  })).filter((g:any) => g.brand && g.branch);
+}
+
 export const CANONICAL_PRODUCTION_ORIGIN = "https://creative-dna-gateway.vercel.app";
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
 
@@ -554,7 +576,7 @@ export function createMcpServer(): McpServer {
     try {
       const upstream = await listCreativeDnaRoutes();
       const safe = sanitizeRoutesData(upstream.data);
-      return { content: [{ type: "text" as const, text: "Creative DNA task launcher ready. Choose a brand, material and URL in the form." }], structuredContent: { routes: safe.routes } };
+      return { content: [{ type: "text" as const, text: "Creative DNA task launcher ready. Choose a brand, material and URL in the form." }], structuredContent: { routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
     } catch (err) {
       return { content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], structuredContent: { routes: [], error: "Routes temporarily unavailable" } };
     }
