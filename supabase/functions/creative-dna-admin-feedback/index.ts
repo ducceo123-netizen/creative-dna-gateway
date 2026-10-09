@@ -37,7 +37,7 @@ export default {
       const review=body.review||{};
       if(!proposalId)return Response.json({error:"proposal_id required"},{status:400});
       const {data:p,error:pe}=await adminDb.from("knowledge_proposals")
-        .select("id,knowledge_node_id,brand_id,proposed_scope,status")
+        .select("id,knowledge_node_id,brand_id,proposed_scope,status,proposed_content_md,raw_feedback")
         .eq("id",proposalId).single();
       if(pe||!p||p.status!=="pending")return Response.json({error:"Pending proposal required"},{status:409});
       const {data:node}=await adminDb.from("knowledge_nodes")
@@ -70,11 +70,27 @@ export default {
             if(content.includes(String(forbidden).toLowerCase()))issues.push("Forbidden statement found");
           for(const key of assertions.required_keys||[])
             if(!(key in run.output))issues.push("Required output field missing");
-          if(!Object.keys(assertions).length)issues.push("No approved assertions");
+          for(const key of assertions.immutable_fields||[])
+            if(JSON.stringify(run.output[key])!==JSON.stringify(c.approved_output?.[key]))
+              issues.push("Approved immutable field changed: "+key);
+          if(!["required_text","forbidden_text","required_keys","immutable_fields"].some(k=>Array.isArray(assertions[k])&&assertions[k].length))
+            issues.push("No enforceable assertions");
         }
         return {baseline_id:c.id,case_key:c.case_key,status:issues.length?"failed":"passed",
           issues,source_run_id:run?.source_run_id||null,artifact_url:run?.artifact_url||null};
       });
+      // Lexical similarity is only a conflict-review candidate, not a semantic contradiction verdict.
+      const {data:currentNodes}=await adminDb.from("knowledge_nodes")
+        .select("id,content_md,slug").eq("status","active").limit(200);
+      const proposalText=String(p.proposed_content_md||p.raw_feedback||"").toLowerCase();
+      const words=(v:string)=>new Set(v.match(/[a-z0-9À-ỹ]+/gu)||[]);
+      const referenceWords=words(proposalText);
+      const conflicts=(currentNodes||[]).map((n:any)=>{
+        const source=words(String(n.content_md||"").toLowerCase());
+        const overlap=[...referenceWords].filter(w=>source.has(w)).length;
+        return {node_id:n.id,lexical_overlap:referenceWords.size?overlap/referenceWords.size:0,
+          interpretation:"requires_human_review"};
+      }).filter((x:any)=>x.lexical_overlap>=0.6).slice(0,10);
       const declaredReview=review.product_truth_verified===true&&review.visual_reviewed===true
         &&review.conflicts_reviewed===true&&review.critical_regressions===0
         &&String(review.review_note||"").trim().length>=20;
@@ -85,7 +101,7 @@ export default {
       if(he||!hash)return Response.json({error:"Unable to resolve candidate identity"},{status:500});
       const {data:stored,error:se}=await adminDb.from("uid_governance_evaluations").insert({
         proposal_id:proposalId,candidate_hash:hash,baseline_ids:cases.map((c:any)=>c.id),
-        test_results:results,conflict_results:[{note:String(review.review_note||"").slice(0,4000),
+        test_results:results,conflict_results:[...conflicts,{note:String(review.review_note||"").slice(0,4000),
           manually_reviewed:review.conflicts_reviewed===true}],
         evaluation_status:status,critical_failures:failures+Math.max(0,Number(review.critical_regressions||0)),
         evaluator_version:"mechanical-v1-plus-human-review",completed_at:new Date().toISOString()
@@ -106,7 +122,7 @@ export default {
     if (body.mode === "governance_baseline_upsert") {
       const b=body.baseline||{};
       if(!b.brand_id||!b.branch_slug||!b.case_key||!b.source_brief||!b.approved_output||
-        !b.expected_assertions||!Object.keys(b.expected_assertions).length)
+        !b.expected_assertions||!["required_text","forbidden_text","required_keys","immutable_fields"].some(k=>Array.isArray(b.expected_assertions?.[k])&&b.expected_assertions[k].length))
         return Response.json({error:"Approved brief, expected assertions and output are required"},{status:422});
       const {data,error}=await adminDb.from("uid_governance_baselines").upsert({
         brand_id:b.brand_id,branch_slug:b.branch_slug,case_key:b.case_key,
