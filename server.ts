@@ -1227,6 +1227,32 @@ export function createApp(): express.Application {
         ${cssSelector}{display:block!important;margin:0!important}
       </style>`;
 
+      // Preview is same-origin iframe: report the real selected section height to the parent.
+      // Observe images/fonts and late layout changes so long materials never clip at 520px.
+      const sizingScript = `<script>
+      (function(){
+        const selector=${JSON.stringify(cssSelector)};
+        let last=-1;
+        function report(){
+          let el;try{el=document.querySelector(selector)}catch{return}
+          if(!el)return;
+          const box=el.getBoundingClientRect();
+          const height=Math.ceil(Math.max(el.scrollHeight,box.height,box.bottom));
+          if(height>0&&height!==last){last=height;parent.postMessage({type:"uid-branch-preview-height",height:height},"*")}
+        }
+        document.addEventListener("DOMContentLoaded",function(){
+          report();
+          const target=document.querySelector(selector);
+          if(target&&typeof ResizeObserver!=="undefined")new ResizeObserver(report).observe(target);
+          document.querySelectorAll("img").forEach(function(im){im.addEventListener("load",report,{once:true})});
+          if(document.fonts&&document.fonts.ready)document.fonts.ready.then(report);
+          setTimeout(report,400);setTimeout(report,1400);
+        });
+        window.addEventListener("load",report);
+      })();
+      <\/script>`;
+      html = html.replace(/<\/body\s*>/i, sizingScript+"</body>");
+      if (!html.includes("uid-branch-preview-height")) html += sizingScript;
       if (/<head[^>]*>/i.test(html)) html = html.replace(/<head([^>]*)>/i, `<head$1>${injected}`);
       else html = `<head>${injected}</head>${html}`;
 
