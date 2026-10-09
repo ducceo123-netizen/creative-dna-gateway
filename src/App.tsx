@@ -427,22 +427,22 @@ export default function App() {
               <div>
                 {selectedGuide.page_url && selectedGuide.css_selector && (
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <span className="text-xs text-slate-500">Live preview · Hiển thị theo chiều cao thực của section</span>
+                    <span className="text-xs text-slate-500">Xem nhanh material · Bấm “Xem đầy đủ” khi cần</span>
                     <div className="flex gap-2">
-                      <button type="button" onClick={()=>setPreviewExpanded(v=>!v)} className="border border-slate-200 px-4 py-2 text-xs font-semibold rounded-full">{previewExpanded?"Thu gọn":"Mở rộng"}</button>
+                      <button type="button" onClick={()=>setPreviewExpanded(v=>!v)} className="border border-slate-200 px-4 py-2 text-xs font-semibold rounded-full">{previewExpanded?"Thu gọn":"Xem đầy đủ"}</button>
                       <a href={selectedGuide.page_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 border border-slate-200 text-xs font-semibold rounded-full">Mở trang gốc ↗</a>
                     </div>
                   </div>
                 )}
-                <div className={`rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[360px] ${previewExpanded?"w-full":"w-full"}`}>
+                <div className="relative rounded-xl border border-slate-200 bg-slate-100 overflow-hidden">
                   {selectedGuide.page_url && selectedGuide.css_selector ? (
                     <iframe
                       key={`${selectedGuide.page_url}:${selectedGuide.css_selector}`}
                       ref={previewFrame}
                       src={`/api/branch-preview?url=${encodeURIComponent(selectedGuide.page_url)}&selector=${encodeURIComponent(selectedGuide.css_selector)}`}
                       title={`${brand} ${branch} live UI preview`}
-                      scrolling="auto"
-                      style={{height:previewExpanded?Math.max(previewHeight,1100):previewHeight}}
+                      scrolling={previewExpanded?"auto":"no"}
+                      style={{height:previewExpanded?previewHeight:(["onepage-system","ldp-system"].includes(selectedBranchSlug)?620:["seasonal-banner","home-hero","ldp-hero"].includes(selectedBranchSlug)?440:520)}}
                       className="w-full bg-white rounded-xl"
                     />
                   ) : (
@@ -451,6 +451,9 @@ export default function App() {
                       <div className="text-xs font-bold text-slate-500">Chưa có Live UI preview</div>
                       <div className="text-[11px] text-slate-400 mt-1">Admin lưu Page URL + CSS selector để nhúng section thật.</div>
                     </div>
+                  )}
+                  {!previewExpanded && selectedGuide.page_url && selectedGuide.css_selector && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent" aria-hidden="true" />
                   )}
                 </div>
               </div>
