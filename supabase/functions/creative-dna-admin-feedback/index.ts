@@ -142,6 +142,35 @@ export default {
       if(baselines.error||evaluations.error||snapshots.error||brands.error)return Response.json({error:"Unable to load governance registry"},{status:500});
       return Response.json({baselines:baselines.data,evaluations:evaluations.data,snapshots:snapshots.data,brands:brands.data});
     }
+    if (body.mode === "governance_rollback_proposal_preview") {
+      const proposalId=String(body.proposal_id||"");
+      const {data:snaps,error:se}=await adminDb.from("uid_governance_snapshots")
+        .select("id,node_id,checkpoint,content_md,metadata,node_version,created_at")
+        .eq("proposal_id",proposalId).in("checkpoint",["before","after"]).order("created_at",{ascending:false});
+      if(se||!snaps?.length)return Response.json({error:"Snapshots not available"},{status:404});
+      const latest=new Map<string,{before:any;after:any}>();
+      for(const snap of snaps){
+        const group=latest.get(snap.node_id)||{before:null,after:null};
+        if(!group[snap.checkpoint])group[snap.checkpoint]=snap;
+        latest.set(snap.node_id,group);
+      }
+      const summary=[];
+      for(const [nodeId,states] of latest){
+        const {data:node}=await adminDb.from("knowledge_nodes")
+          .select("id,slug,content_md,metadata,version").eq("id",nodeId).single();
+        const {data:currentHash}=await adminDb.rpc("uid_governance_node_hash",{p_node_id:nodeId});
+        summary.push({node_id:nodeId,slug:node?.slug,ready:Boolean(states.before&&states.after),
+          current_md5:currentHash,after_checkpoint_id:states.after?.id||null});
+      }
+      return Response.json({proposal_id:proposalId,affected_nodes:summary,
+        note:"Rollback is atomic; RPC will reject all nodes if any node has changed since this merge."});
+    }
+    if (body.mode === "governance_rollback_proposal") {
+      const {data,error}=await adminDb.rpc("uid_governance_rollback_proposal",{
+        p_proposal_id:body.proposal_id,p_actor_user_id:user.id
+      });
+      return error?Response.json({error:error.message},{status:409}):Response.json({result:data});
+    }
     if (body.mode === "governance_rollback") {
       const {data,error}=await adminDb.rpc("uid_governance_rollback_snapshot",{
         p_snapshot_id:body.snapshot_id,p_actor_user_id:user.id,
