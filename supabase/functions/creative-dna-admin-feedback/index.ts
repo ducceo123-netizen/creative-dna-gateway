@@ -124,12 +124,12 @@ export default {
       if(!b.brand_id||!b.branch_slug||!b.case_key||!b.source_brief||!b.approved_output||
         !b.expected_assertions||!["required_text","forbidden_text","required_keys","immutable_fields"].some(k=>Array.isArray(b.expected_assertions?.[k])&&b.expected_assertions[k].length))
         return Response.json({error:"Approved brief, expected assertions and output are required"},{status:422});
-      const {data,error}=await adminDb.from("uid_governance_baselines").upsert({
+      const {data,error}=await adminDb.from("uid_governance_baselines").insert({
         brand_id:b.brand_id,branch_slug:b.branch_slug,case_key:b.case_key,
         source_brief:b.source_brief,approved_output:b.approved_output,
         expected_assertions:b.expected_assertions,approved_by:user.id,
         approved_at:new Date().toISOString()
-      },{onConflict:"brand_id,branch_slug,case_key"}).select().single();
+      }).select().single();
       return error?Response.json({error:error.message},{status:500}):Response.json({baseline:data});
     }
     if (body.mode === "governance_list") {
