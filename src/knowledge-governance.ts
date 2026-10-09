@@ -25,7 +25,7 @@ export function assessProposal(p:GovernanceProposal,peers:GovernanceProposal[]){
   .filter(x=>x.score>=0.72).sort((a,b)=>b.score-a.score).slice(0,3);
  const scores={
   evidence:(images.length?20:0)+(Object.keys(summary).length?10:0),
-  productTruth:productTruth?15:0,
+  productTruth:productTruth?25:0,
   reusability:scope?20:0,
   consistency:near.length?0:15,
   outcomeImpact:(impact?5:0)+(detail?5:0)
