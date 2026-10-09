@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
-const launcher = readFileSync(new URL("../task-launcher.ts", import.meta.url), "utf8");
+const launcher = readFileSync(new URL("../uid-brands-workflow.ts", import.meta.url), "utf8");
 
 test("canonical and feedback tools retain their registered names", () => {
   for (const tool of ["resolve_creative_dna", "compile_onepage_job", "submit_training_feedback", "list_creative_dna_routes"]) {
@@ -13,7 +13,7 @@ test("canonical and feedback tools retain their registered names", () => {
 
 test("launcher tool and resource remain registered", () => {
   assert.match(source, /server\.registerTool\("launch_creative_dna"/);
-  assert.match(source, /server\.registerResource\("creative-dna-task-launcher"/);
+  assert.match(source, /server\.registerResource\("uid-brands-workflow-ui"/);
   assert.match(source, /name: "launch_creative_dna"/);
   assert.match(launcher, /sendFollowUpMessage/);
 });
