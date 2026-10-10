@@ -35,7 +35,7 @@ body.review-mode label{margin-top:10px}
 .mode-tab{border:0;background:transparent;color:var(--fg);padding:8px 18px;cursor:pointer;border-radius:9999px}
 .mode-tab.active{background:var(--input);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
 .mode-info{font-size:12px;color:var(--muted);margin:10px 0}
-.variable-keys{display:flex;gap:6px;flex-wrap:wrap}
+.variable-keys{display:flex;gap:6px;flex-wrap:wrap}.variable-section{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:8px}.variable-section-title{margin-bottom:8px}#groupActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#groupActions button{padding:9px 14px;border-radius:9999px;background:var(--input);color:var(--fg);border:1px solid var(--border);cursor:pointer}#groupActions button:disabled{opacity:.45;cursor:not-allowed}#groupActions button:first-child{background:var(--fg);color:var(--bg)}.group-targets{font-size:12px;line-height:1.5;color:var(--muted);margin:8px 0}
 .variable-key{border:1px solid var(--border);background:var(--input);border-radius:9999px;padding:7px 12px;color:var(--fg);cursor:pointer;font-size:12px}
 .variable-key.selected{background:var(--active);border-color:var(--fg)}
 .variable-item{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;background:var(--bg)}
@@ -178,7 +178,7 @@ $("run").onclick=async()=>{
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
   if(stage==="asset_review"&&feedbackStep&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){$("error").textContent="Chọn variables và nhập feedback cho từng mục.";return;}
-  const payload=variableItems.map(x=>{const target=availableVariables().find(v=>v.key===x.key);return "@"+(target?.label||"Asset")+" [asset_id="+x.key+"]: "+x.text.trim();}).join("\n");
+  const payload=variableItems.map((x,i)=>{const ids=x.targets||[x.key];const targets=ids.map(k=>{const v=availableVariables().find(t=>t.key===k);return (v?.label||"Asset")+" [asset_id="+k+"]";});return "Feedback "+(i+1)+" — áp dụng chung cho: "+targets.join("; ")+"\n"+x.text.trim();}).join("\n\n");
   const message=stage==="asset_review"&&feedbackStep
     ? (feedbackMode==="train"
       ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nThực hiện Train NGAY bằng submit_training_feedback, không hỏi user xác nhận lại; chờ kết quả tool rồi báo trạng thái thực, không tự sửa canonical rules. Kèm action tiếp theo ngay trong câu trả lời."
