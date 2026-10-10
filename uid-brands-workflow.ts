@@ -66,18 +66,20 @@ let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function availableVariables(){
- const seen=new Set(), result=[{key:"Overall",label:"Overall · Toàn bộ outcome",element:"Overall"}];
- const counters={};
+ const seen=new Set(),result=[{key:"Overall",label:"Overall",element:"Overall",detail:"Toàn bộ outcome"}],counters={};
+ const shortName={"Why You'll Love It":"WYL","Why You’ll Love It":"WYL","Good To Know":"GTK","Product Details":"PD","Perfect for Every Occasion":"Occasion","Banner":"Banner","FAQ":"FAQ","FAQs":"FAQ"};
  taskAssets.forEach(a=>{
   const id=String(a.id||a.asset_id||"").trim();if(!id||seen.has(id))return;seen.add(id);
-  const element=String(a.element||a.section||"").trim();
-  const explicit=String(a.label||a.asset_name||a.name||a.position||"").trim();
-  const section=element||"Chưa xác định section";
-  counters[section]=(counters[section]||0)+1;
-  const index=String(counters[section]).padStart(2,"0");
-  // A missing section MUST NOT be guessed from the opaque libfile ID.
-  const label=explicit?(element?element+" · "+explicit:explicit):(element?element+" · Asset "+index:"Asset "+String(result.length).padStart(2,"0")+" · Chưa định danh");
-  result.push({key:id,label,element:section});
+  const element=String(a.element||a.section||"").trim()||"Chưa định danh";
+  counters[element]=(counters[element]||0)+1;
+  const index=String(counters[element]).padStart(2,"0");
+  const raw=String(a.position||a.label||a.asset_name||a.name||"").trim();
+  const selector=raw.split(/\\s*[—–]\\s*/)[0].trim();
+  // Only selector/slot may be displayed. Never show creative headlines or description.
+  const known=/^(?:desktop|mobile|main|hero|story\\s*\\d+|icon\\s*\\d+|asset\\s*\\d+|\\d{1,2})$/i.test(selector);
+  const slot=known?selector:index;
+  const label=(shortName[element]||element)+" · "+slot;
+  result.push({key:id,label,element,detail:raw});
  });
  return result;
 }
