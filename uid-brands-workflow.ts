@@ -62,7 +62,7 @@ body.review-mode label{margin-top:10px}
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[];
+let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[], selectedTargets=new Set();
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function availableVariables(){
