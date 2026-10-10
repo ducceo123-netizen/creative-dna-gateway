@@ -66,16 +66,28 @@ let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function availableVariables(){
- const ids=taskAssets.map(a=>String(a.id||a.asset_id||"").trim()).filter(Boolean);
- return ["Overall",...new Set(ids)];
+ const seen=new Set(), result=[{key:"Overall",label:"Overall · Toàn bộ outcome",element:"Overall"}];
+ const counters={};
+ taskAssets.forEach(a=>{
+  const id=String(a.id||a.asset_id||"").trim();if(!id||seen.has(id))return;seen.add(id);
+  const element=String(a.element||a.section||"").trim();
+  const explicit=String(a.label||a.asset_name||a.name||a.position||"").trim();
+  const section=element||"Chưa xác định section";
+  counters[section]=(counters[section]||0)+1;
+  const index=String(counters[section]).padStart(2,"0");
+  // A missing section MUST NOT be guessed from the opaque libfile ID.
+  const label=explicit?(element?element+" · "+explicit:explicit):(element?element+" · Asset "+index:"Asset "+String(result.length).padStart(2,"0")+" · Chưa định danh");
+  result.push({key:id,label,element:section});
+ });
+ return result;
 }
 function renderVariables(){
  $("modeFeedback").classList.toggle("active",feedbackMode==="feedback");
  $("modeTrain").classList.toggle("active",feedbackMode==="train");
  $("modeInfo").textContent=feedbackMode==="train"?"Gửi đề xuất training đến Admin duyệt; không cập nhật database tự động.":"Yêu cầu chỉnh sửa kết quả trong task hiện tại.";
  const keys=$("variableKeys");keys.replaceChildren();
- availableVariables().forEach(key=>{
-  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(variableItems.some(x=>x.key===key)?" selected":"");btn.textContent=key;
+ availableVariables().forEach(variable=>{const key=variable.key;
+  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(variableItems.some(x=>x.key===key)?" selected":"");btn.textContent=variable.label;btn.title=variable.label+" | "+key;
   btn.onclick=()=>{if(!variableItems.some(x=>x.key===key))variableItems.push({key,text:""});renderVariables();};
   keys.appendChild(btn);
  });
@@ -83,11 +95,11 @@ function renderVariables(){
  variableItems.forEach(item=>{
   const box=document.createElement("div");box.className="variable-item";
   const head=document.createElement("div");head.className="variable-item-head";
-  const name=document.createElement("span");name.textContent="@"+item.key;
+  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=display?display.label:"Asset không còn trong danh sách";
   const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.setAttribute("aria-label","Bỏ "+item.key);
   remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();};
   head.append(name,remove);
-  const area=document.createElement("textarea");area.rows=2;area.placeholder="Feedback cho "+item.key+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
+  const area=document.createElement("textarea");area.rows=2;area.placeholder="Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
   box.append(head,area);root.appendChild(box);
  });
 }
@@ -142,7 +154,7 @@ $("run").onclick=async()=>{
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
   if(stage==="asset_review"&&feedbackStep&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){$("error").textContent="Chọn variables và nhập feedback cho từng mục.";return;}
-  const payload=variableItems.map(x=>"@"+x.key+": "+x.text.trim()).join("\n");
+  const payload=variableItems.map(x=>{const target=availableVariables().find(v=>v.key===x.key);return "@"+(target?.label||"Asset")+" [asset_id="+x.key+"]: "+x.text.trim();}).join("\n");
   const message=stage==="asset_review"&&feedbackStep
     ? (feedbackMode==="train"
       ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nPhân tích context, ảnh/asset liên quan và gửi từng feedback vào Pending Admin Review bằng submit_training_feedback, không tự sửa canonical rules."
