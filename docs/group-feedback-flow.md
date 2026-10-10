@@ -1,0 +1,1 @@
+UID Brands feedback supports one comment shared across multiple selected asset IDs or a full section. The original IDs must be preserved. Implementation pending.
