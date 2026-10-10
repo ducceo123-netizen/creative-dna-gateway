@@ -117,14 +117,16 @@ function renderVariables(){
  variableItems.forEach(item=>{
   const box=document.createElement("div");box.className="variable-item";
   const head=document.createElement("div");head.className="variable-item-head";
-  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=display?display.label:"Asset không còn trong danh sách";
+  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=item.targets?("Feedback chung · "+item.targets.length+" targets"):(display?display.label:"Asset không còn trong danh sách");
   const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.setAttribute("aria-label","Bỏ "+item.key);
   remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();};
   head.append(name,remove);
-  const area=document.createElement("textarea");area.rows=2;area.placeholder="Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
-  box.append(head,area);root.appendChild(box);
+  const area=document.createElement("textarea");area.rows=2;area.placeholder=item.targets?"Feedback chung cho tất cả targets đã chọn…":"Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
+  box.appendChild(head);if(item.targets){const names=document.createElement("p");names.className="group-targets";names.textContent=item.targets.map(k=>availableVariables().find(v=>v.key===k)?.label||"Asset").join(" · ");box.appendChild(names);}box.appendChild(area);root.appendChild(box);
  });
 }
+$("createSharedFeedback").onclick=()=>{const targets=[...selectedTargets];if(!targets.length)return;variableItems.push({key:"group-"+variableItems.length,targets,text:""});selectedTargets.clear();renderVariables();};
+$("clearTargets").onclick=()=>{selectedTargets.clear();renderVariables();};
 $("modeFeedback").onclick=()=>{feedbackMode="feedback";renderVariables();};
 $("modeTrain").onclick=()=>{feedbackMode="train";renderVariables();};
 $("backToReview").onclick=()=>{feedbackStep=false;decision="feedback";renderStage();};
