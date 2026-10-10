@@ -35,7 +35,7 @@ body.review-mode label{margin-top:10px}
 .mode-tab{border:0;background:transparent;color:var(--fg);padding:8px 18px;cursor:pointer;border-radius:9999px}
 .mode-tab.active{background:var(--input);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
 .mode-info{font-size:12px;color:var(--muted);margin:10px 0}
-.variable-keys{display:flex;gap:6px;flex-wrap:wrap}
+.variable-keys{display:flex;gap:6px;flex-wrap:wrap}.variable-section{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:8px}.variable-section-title{margin-bottom:8px}#groupActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#groupActions button{padding:9px 14px;border-radius:9999px;background:var(--input);color:var(--fg);border:1px solid var(--border);cursor:pointer}#groupActions button:disabled{opacity:.45;cursor:not-allowed}#groupActions button:first-child{background:var(--fg);color:var(--bg)}.group-targets{font-size:12px;line-height:1.5;color:var(--muted);margin:8px 0}
 .variable-key{border:1px solid var(--border);background:var(--input);border-radius:9999px;padding:7px 12px;color:var(--fg);cursor:pointer;font-size:12px}
 .variable-key.selected{background:var(--active);border-color:var(--fg)}
 .variable-item{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;background:var(--bg)}
@@ -54,7 +54,7 @@ body.review-mode label{margin-top:10px}
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
 <label for="theme">Theme <span class="optional">(optional)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Custom requirements <span class="optional">(optional)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea>
-</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><div id="assetFeedbackFields" hidden><div class="mode-tabs"><button type="button" id="modeFeedback" class="mode-tab">Feedback</button><button type="button" id="modeTrain" class="mode-tab">Train</button></div><p id="modeInfo" class="mode-info"></p><label>Chọn variables</label><div id="variableKeys" class="variable-keys"></div><div id="variableItems"></div><button id="backToReview" type="button" class="back-action">← Quay lại</button></div></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
+</section><section id="reviewFields" class="review-area"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><div id="assetFeedbackFields" hidden><div class="mode-tabs"><button type="button" id="modeFeedback" class="mode-tab">Feedback</button><button type="button" id="modeTrain" class="mode-tab">Train</button></div><p id="modeInfo" class="mode-info"></p><label>Chọn variables / section</label><div id="variableKeys" class="variable-keys"></div><div id="groupActions"><button id="createSharedFeedback" type="button">+ Feedback chung cho mục đã chọn</button><button id="clearTargets" type="button">Bỏ chọn</button></div><div id="variableItems"></div><button id="backToReview" type="button" class="back-action">← Quay lại</button></div></section><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button>
 
 </main>
 <script>
@@ -62,22 +62,24 @@ body.review-mode label{margin-top:10px}
 const $=id=>document.getElementById(id);
 const initial=(window.openai&&window.openai.widgetState)||{};
 // Keep typing local: setWidgetState can trigger host updates and input focus loss.
-let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[];
+let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[], selectedTargets=new Set();
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
 function availableVariables(){
- const seen=new Set(), result=[{key:"Overall",label:"Overall · Toàn bộ outcome",element:"Overall"}];
- const counters={};
+ const seen=new Set(),result=[{key:"Overall",label:"Overall",element:"Overall",detail:"Toàn bộ outcome"}],counters={};
+ const shortName={"Why You'll Love It":"WYL","Why You’ll Love It":"WYL","Good To Know":"GTK","Product Details":"PD","Perfect for Every Occasion":"Occasion","Banner":"Banner","FAQ":"FAQ","FAQs":"FAQ"};
  taskAssets.forEach(a=>{
   const id=String(a.id||a.asset_id||"").trim();if(!id||seen.has(id))return;seen.add(id);
-  const element=String(a.element||a.section||"").trim();
-  const explicit=String(a.label||a.asset_name||a.name||a.position||"").trim();
-  const section=element||"Chưa xác định section";
-  counters[section]=(counters[section]||0)+1;
-  const index=String(counters[section]).padStart(2,"0");
-  // A missing section MUST NOT be guessed from the opaque libfile ID.
-  const label=explicit?(element?element+" · "+explicit:explicit):(element?element+" · Asset "+index:"Asset "+String(result.length).padStart(2,"0")+" · Chưa định danh");
-  result.push({key:id,label,element:section});
+  const element=String(a.element||a.section||"").trim()||"Chưa định danh";
+  counters[element]=(counters[element]||0)+1;
+  const index=String(counters[element]).padStart(2,"0");
+  const raw=String(a.position||a.label||a.asset_name||a.name||"").trim();
+  const selector=raw.split(/\s*[—–]\s*/)[0].trim();
+  // Only selector/slot may be displayed. Never show creative headlines or description.
+  const known=/^(?:desktop|mobile|main|hero|story\s*\d+|icon\s*\d+|asset\s*\d+|\d{1,2})$/i.test(selector);
+  const slot=known?selector:index;
+  const label=(shortName[element]||element)+" · "+slot;
+  result.push({key:id,label,element,detail:raw});
  });
  return result;
 }
@@ -86,23 +88,47 @@ function renderVariables(){
  $("modeTrain").classList.toggle("active",feedbackMode==="train");
  $("modeInfo").textContent=feedbackMode==="train"?"Gửi đề xuất training đến Admin duyệt; không cập nhật database tự động.":"Yêu cầu chỉnh sửa kết quả trong task hiện tại.";
  const keys=$("variableKeys");keys.replaceChildren();
- availableVariables().forEach(variable=>{const key=variable.key;
-  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(variableItems.some(x=>x.key===key)?" selected":"");btn.textContent=variable.label;btn.title=variable.label+" | "+key;
-  btn.onclick=()=>{if(!variableItems.some(x=>x.key===key))variableItems.push({key,text:""});renderVariables();};
-  keys.appendChild(btn);
+ const variables=availableVariables(), groups={};
+ variables.slice(1).forEach(v=>(groups[v.element]??=[]).push(v));
+ function targetButton(variable,where){
+  const key=variable.key,selected=selectedTargets.has(key);
+  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(selected?" selected":"");
+  btn.textContent=(selected?"✓ ":"")+variable.label;btn.title=variable.label;
+  btn.setAttribute("aria-pressed",String(selected));
+  btn.onclick=()=>{
+   if(selected)selectedTargets.delete(key);
+   else {if(key==="Overall")selectedTargets.clear();else selectedTargets.delete("Overall");selectedTargets.add(key);}
+   renderVariables();
+  };
+  where.appendChild(btn);
+ }
+ targetButton(variables[0],keys);
+ Object.entries(groups).forEach(([name,items])=>{
+  const section=document.createElement("div");section.className="variable-section";
+  const header=document.createElement("div");header.className="variable-section-title";
+  const all=items.every(v=>selectedTargets.has(v.key));
+  const select=document.createElement("button");select.type="button";select.className="variable-key"+(all?" selected":"");
+  select.textContent=(all?"✓ ":"")+"Chọn cả nhóm: "+name+" ("+items.length+")";
+  select.onclick=()=>{selectedTargets.delete("Overall");items.forEach(v=>all?selectedTargets.delete(v.key):selectedTargets.add(v.key));renderVariables();};
+  header.appendChild(select);section.appendChild(header);
+  const wrap=document.createElement("div");wrap.className="variable-keys";
+  items.forEach(v=>targetButton(v,wrap));section.appendChild(wrap);keys.appendChild(section);
  });
+ $("createSharedFeedback").disabled=!selectedTargets.size;
  const root=$("variableItems");root.replaceChildren();
  variableItems.forEach(item=>{
   const box=document.createElement("div");box.className="variable-item";
   const head=document.createElement("div");head.className="variable-item-head";
-  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=display?display.label:"Asset không còn trong danh sách";
+  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=item.targets?("Feedback chung · "+item.targets.length+" targets"):(display?display.label:"Asset không còn trong danh sách");
   const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.setAttribute("aria-label","Bỏ "+item.key);
   remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();};
   head.append(name,remove);
-  const area=document.createElement("textarea");area.rows=2;area.placeholder="Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
-  box.append(head,area);root.appendChild(box);
+  const area=document.createElement("textarea");area.rows=2;area.placeholder=item.targets?"Feedback chung cho tất cả targets đã chọn…":"Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;};
+  box.appendChild(head);if(item.targets){const names=document.createElement("p");names.className="group-targets";names.textContent=item.targets.map(k=>availableVariables().find(v=>v.key===k)?.label||"Asset").join(" · ");box.appendChild(names);}box.appendChild(area);root.appendChild(box);
  });
 }
+$("createSharedFeedback").onclick=()=>{const targets=[...selectedTargets];if(!targets.length)return;variableItems.push({key:"group-"+variableItems.length,targets,text:""});selectedTargets.clear();renderVariables();};
+$("clearTargets").onclick=()=>{selectedTargets.clear();renderVariables();};
 $("modeFeedback").onclick=()=>{feedbackMode="feedback";renderVariables();};
 $("modeTrain").onclick=()=>{feedbackMode="train";renderVariables();};
 $("backToReview").onclick=()=>{feedbackStep=false;decision="feedback";renderStage();};
@@ -154,7 +180,7 @@ $("run").onclick=async()=>{
  if(stage!=="launcher"){
   const feedback=$("reviewFeedback").value.trim();if(decision==="revise"&&!feedback){$("error").textContent="Vui lòng nhập nội dung cần chỉnh sửa.";return;}
   if(stage==="asset_review"&&feedbackStep&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){$("error").textContent="Chọn variables và nhập feedback cho từng mục.";return;}
-  const payload=variableItems.map(x=>{const target=availableVariables().find(v=>v.key===x.key);return "@"+(target?.label||"Asset")+" [asset_id="+x.key+"]: "+x.text.trim();}).join("\n");
+  const payload=variableItems.map((x,i)=>{const ids=x.targets||[x.key];const targets=ids.map(k=>{const v=availableVariables().find(t=>t.key===k);return (v?.label||"Asset")+" [asset_id="+k+"]";});return "Feedback "+(i+1)+" — áp dụng chung cho: "+targets.join("; ")+"\n"+x.text.trim();}).join("\n\n");
   const message=stage==="asset_review"&&feedbackStep
     ? (feedbackMode==="train"
       ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nThực hiện Train NGAY bằng submit_training_feedback, không hỏi user xác nhận lại; chờ kết quả tool rồi báo trạng thái thực, không tự sửa canonical rules. Kèm action tiếp theo ngay trong câu trả lời."
