@@ -86,11 +86,33 @@ function renderVariables(){
  $("modeTrain").classList.toggle("active",feedbackMode==="train");
  $("modeInfo").textContent=feedbackMode==="train"?"Gửi đề xuất training đến Admin duyệt; không cập nhật database tự động.":"Yêu cầu chỉnh sửa kết quả trong task hiện tại.";
  const keys=$("variableKeys");keys.replaceChildren();
- availableVariables().forEach(variable=>{const key=variable.key;
-  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(variableItems.some(x=>x.key===key)?" selected":"");btn.textContent=variable.label;btn.title=variable.label+" | "+key;
-  btn.onclick=()=>{if(!variableItems.some(x=>x.key===key))variableItems.push({key,text:""});renderVariables();};
-  keys.appendChild(btn);
+ const variables=availableVariables(), groups={};
+ variables.slice(1).forEach(v=>(groups[v.element]??=[]).push(v));
+ function targetButton(variable,where){
+  const key=variable.key,selected=selectedTargets.has(key);
+  const btn=document.createElement("button");btn.type="button";btn.className="variable-key"+(selected?" selected":"");
+  btn.textContent=(selected?"✓ ":"")+variable.label;btn.title=variable.label;
+  btn.setAttribute("aria-pressed",String(selected));
+  btn.onclick=()=>{
+   if(selected)selectedTargets.delete(key);
+   else {if(key==="Overall")selectedTargets.clear();else selectedTargets.delete("Overall");selectedTargets.add(key);}
+   renderVariables();
+  };
+  where.appendChild(btn);
+ }
+ targetButton(variables[0],keys);
+ Object.entries(groups).forEach(([name,items])=>{
+  const section=document.createElement("div");section.className="variable-section";
+  const header=document.createElement("div");header.className="variable-section-title";
+  const all=items.every(v=>selectedTargets.has(v.key));
+  const select=document.createElement("button");select.type="button";select.className="variable-key"+(all?" selected":"");
+  select.textContent=(all?"✓ ":"")+"Chọn cả nhóm: "+name+" ("+items.length+")";
+  select.onclick=()=>{selectedTargets.delete("Overall");items.forEach(v=>all?selectedTargets.delete(v.key):selectedTargets.add(v.key));renderVariables();};
+  header.appendChild(select);section.appendChild(header);
+  const wrap=document.createElement("div");wrap.className="variable-keys";
+  items.forEach(v=>targetButton(v,wrap));section.appendChild(wrap);keys.appendChild(section);
  });
+ $("createSharedFeedback").disabled=!selectedTargets.size;
  const root=$("variableItems");root.replaceChildren();
  variableItems.forEach(item=>{
   const box=document.createElement("div");box.className="variable-item";
