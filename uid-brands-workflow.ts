@@ -11,8 +11,8 @@ export const launcherHtml = String.raw`<!doctype html>
 :root{color-scheme:light;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-feature-settings:"ss03" 1;
 --fg:#101010;--muted:#71717a;--bg:#fff;--surface:#fbfbf5;--input:#fff;--border:#e4e4e7;--active:#d4f9e0;--accent:#101010;--placeholder:#a1a1aa;--focus:#217d54}
 @media(prefers-color-scheme:dark){:root{color-scheme:dark;--fg:#f7f7f7;--muted:#a1a1aa;--bg:#1c1c1c;--surface:#272727;--input:#222;--border:#454545;--active:#284a37;--accent:#f7f7f7;--placeholder:#98989b;--focus:#9bdab5}}
-*{box-sizing:border-box}html{font-size:14px}body{margin:0;padding:20px 20px 24px;color:var(--fg);background:var(--bg);font-size:14px;line-height:1.45}
-.wrap{max-width:600px;margin:auto}.header{display:flex;align-items:center;gap:10px;margin:0 0 20px}
+*{box-sizing:border-box}html{font-size:14px}body{margin:0;padding:28px 24px 36px;color:var(--fg);background:var(--bg);font-size:14px;line-height:1.45}
+.wrap{max-width:600px;margin:0 auto;padding:4px 2px 12px}.header{display:flex;align-items:center;gap:10px;margin:0 0 20px}
 .logo{display:none}h1{font-size:19px;line-height:1.3;margin:0;color:var(--fg);font-weight:630;letter-spacing:-.02em}
 p{margin:3px 0 0;font-size:12px;color:var(--muted)}
 label{font-size:12.5px;font-weight:600;color:var(--fg);display:block;margin:14px 0 6px}
@@ -26,7 +26,7 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 .review-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .review-choice{flex:1 1 120px;min-height:40px;border:1px solid var(--border);border-radius:9999px;padding:9px 13px;background:var(--input);color:var(--fg);text-align:center;font-size:13px;cursor:pointer}
 .review-choice.selected{border-color:var(--fg);background:var(--active);font-weight:600}
-body.review-mode{padding:10px 12px 14px}body.review-mode .wrap{max-width:600px}body.review-mode .header,body.review-mode .note{display:none}
+body.review-mode{padding:24px 20px 32px}body.review-mode .wrap{max-width:600px}body.review-mode .header,body.review-mode .note{display:none}
 body.review-mode .action{width:auto;min-height:38px;margin-top:12px;padding:8px 19px;font-size:13px}
 body.review-mode #reviewHelp{font-size:13px;margin:0;color:var(--muted)}
 body.review-mode label{margin-top:10px}
@@ -45,7 +45,7 @@ body.review-mode label{margin-top:10px}
 .back-action{border:0;background:transparent;color:var(--muted);padding:10px 0;cursor:pointer;text-align:left;font-size:12px}
 .error{color:#b42318;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}.note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5;text-align:center}
 [hidden]{display:none!important}
-@media(max-width:420px){body{padding:15px 14px 20px}.review-choice{flex:1 1 100%}}
+@media(max-width:420px){body{padding:22px 16px 30px}body.review-mode{padding:20px 16px 28px}.review-choice{flex:1 1 100%}}
 </style></head>
 <body><main class="wrap">
 <div class="header"><div><h1>UID Brands</h1><p>Chọn nội dung cần thực hiện</p></div></div>
