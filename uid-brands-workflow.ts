@@ -159,11 +159,11 @@ $("run").onclick=async()=>{
     ? (feedbackMode==="train"
       ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nThực hiện Train NGAY bằng submit_training_feedback, không hỏi user xác nhận lại; chờ kết quả tool rồi báo trạng thái thực, không tự sửa canonical rules. Kèm action tiếp theo ngay trong câu trả lời."
       : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\n"+payload+"\nTHỰC HIỆN NGAY feedback đã gửi, không hỏi xác nhận lần nữa. Chỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Trả outcome mới kèm action Gửi feedback / Đóng gói ngay trong cùng câu trả lời.")
-    : stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại và luôn có action Chốt content / Gửi feedback ngay trong câu trả lời.")
-    : stage==="asset_review"?"UID Brands: Đóng gói assets hiện tại theo canonical rules."
-    : "UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
+    : stage==="content_approval"?(decision==="approve"?"UID Brands: Chốt content hiện tại và tạo assets NGAY theo canonical rules, không hỏi lại. Trả assets kèm action Gửi feedback / Train / Đóng gói.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới NGAY theo brief hiện tại, trả content và action Chốt content / Gửi feedback / Tạo lại trong cùng câu trả lời.")
+    : stage==="asset_review"?"UID Brands: Đóng gói assets hiện tại ngay theo canonical rules. Trả link/file đã tạo và action Sửa tiếp / Task mới; nếu không tạo được file, báo lỗi thật và action Thử lại, không im lặng."
+    : "UID Brands: Đóng gói ngay kết quả task hiện tại; trả deliverables và action Sửa tiếp / Task mới.";
   const fn=window.openai?.sendFollowUpMessage;if(!fn){$("error").textContent="Không kết nối được ChatGPT.";return;}
-  submitting=true;$("run").disabled=true;$("flowState").textContent="Đang gửi lựa chọn sang ChatGPT…";try{await fn({prompt:message});$("flowState").textContent="Đã gửi lựa chọn · Chờ ChatGPT xử lý";}catch{$("error").textContent="Không gửi được lựa chọn, thử lại.";$("flowState").textContent="Chưa gửi được · Vui lòng thử lại";}finally{submitting=false;$("run").disabled=false;}return;
+  submitting=true;$("run").disabled=true;$("flowState").textContent="Đang gửi lựa chọn sang ChatGPT…";try{await fn({prompt:message});$("flowState").textContent="Đã gửi lựa chọn · Chờ ChatGPT xử lý";}catch{$("error").textContent="Gửi thất bại — bấm lại nút để thử; nội dung feedback vẫn được giữ.";$("flowState").textContent="Chưa gửi được · Vui lòng thử lại";}finally{submitting=false;$("run").disabled=false;}return;
  }
  const url=$("url").value.trim(), brand=$("brand").value, route=routes.find(r=>r.brand===brand&&r.branch===selected);
  if(!route){$("error").textContent="Choose a material.";return;}
