@@ -115,14 +115,14 @@ function renderStage(){
  $("reviewChoices").replaceChildren();
  if(review){
   $("reviewHelp").textContent=(labels[stage]||"Review")+" · Chọn bước tiếp theo";
-  const choices=stage==="packaging"?[["package","Đóng gói"]]:stage==="asset_review"?[["package","Đóng gói"],["feedback","Gửi feedback"]]:[["approve","Duyệt content"],["revise","Yêu cầu chỉnh sửa"],["regenerate","Tạo phương án khác"]];
+  const choices=stage==="packaging"?[["package","Đóng gói"]]:stage==="asset_review"?[["package","Đóng gói"],["feedback","Gửi feedback"]]:[["approve","Chốt content"],["revise","Yêu cầu chỉnh sửa"],["regenerate","Tạo phương án khác"]];
   if(!choices.some(x=>x[0]===decision))decision=choices[0][0];
   choices.forEach(([value,label])=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent=label;b.onclick=()=>{decision=value;feedbackStep=stage==="asset_review"&&value==="feedback";renderStage();};$("reviewChoices").appendChild(b);});
   $("reviewChoices").hidden=feedbackStep; $("assetFeedbackFields").hidden=!feedbackStep;
   $("reviewFeedback").hidden=decision!=="revise";$("feedbackLabel").hidden=decision!=="revise";
   if(feedbackStep)renderVariables();
  }
- $("run").textContent=review?(feedbackStep?(feedbackMode==="train"?"Gửi Train":"Gửi feedback"):(stage==="packaging"||stage==="asset_review"&&decision==="package")?"Đóng gói":"Tiếp tục"):"Bắt đầu";
+ $("run").textContent=review?(feedbackStep?(feedbackMode==="train"?"Gửi Train":"Gửi feedback"):(stage==="packaging"||stage==="asset_review"&&decision==="package")?"Đóng gói":stage==="content_approval"&&decision==="approve"?"Chốt content":"Tiếp tục"):"Bắt đầu";
 }
 function load(output){
  let data=output||{};
@@ -157,9 +157,9 @@ $("run").onclick=async()=>{
   const payload=variableItems.map(x=>{const target=availableVariables().find(v=>v.key===x.key);return "@"+(target?.label||"Asset")+" [asset_id="+x.key+"]: "+x.text.trim();}).join("\n");
   const message=stage==="asset_review"&&feedbackStep
     ? (feedbackMode==="train"
-      ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nPhân tích context, ảnh/asset liên quan và gửi từng feedback vào Pending Admin Review bằng submit_training_feedback, không tự sửa canonical rules."
-      : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\n"+payload+"\nChỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Sau khi sửa, cho chọn Feedback hoặc Đóng gói.")
-    : stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại.")
+      ? "UID Brands — Train cho material của task hiện tại.\n"+payload+"\nThực hiện Train NGAY bằng submit_training_feedback, không hỏi user xác nhận lại; chờ kết quả tool rồi báo trạng thái thực, không tự sửa canonical rules. Kèm action tiếp theo ngay trong câu trả lời."
+      : "UID Brands — Feedback chỉnh sửa assets của task hiện tại.\n"+payload+"\nTHỰC HIỆN NGAY feedback đã gửi, không hỏi xác nhận lần nữa. Chỉ chỉnh sửa các variable được chọn; giữ nguyên phần còn lại. Trả outcome mới kèm action Gửi feedback / Đóng gói ngay trong cùng câu trả lời.")
+    : stage==="content_approval"?(decision==="approve"?"UID Brands: Duyệt content hiện tại, tiếp tục bước tạo assets.":decision==="revise"?"UID Brands: Chỉnh sửa content hiện tại theo feedback: "+feedback:"UID Brands: Tạo phương án content mới theo brief hiện tại và luôn có action Chốt content / Gửi feedback ngay trong câu trả lời.")
     : stage==="asset_review"?"UID Brands: Đóng gói assets hiện tại theo canonical rules."
     : "UID Brands: Đóng gói kết quả task hiện tại theo canonical rules.";
   const fn=window.openai?.sendFollowUpMessage;if(!fn){$("error").textContent="Không kết nối được ChatGPT.";return;}
