@@ -74,9 +74,9 @@ function availableVariables(){
   counters[element]=(counters[element]||0)+1;
   const index=String(counters[element]).padStart(2,"0");
   const raw=String(a.position||a.label||a.asset_name||a.name||"").trim();
-  const selector=raw.split(/\\s*[—–]\\s*/)[0].trim();
+  const selector=raw.split(/\s*[—–]\s*/)[0].trim();
   // Only selector/slot may be displayed. Never show creative headlines or description.
-  const known=/^(?:desktop|mobile|main|hero|story\\s*\\d+|icon\\s*\\d+|asset\\s*\\d+|\\d{1,2})$/i.test(selector);
+  const known=/^(?:desktop|mobile|main|hero|story\s*\d+|icon\s*\d+|asset\s*\d+|\d{1,2})$/i.test(selector);
   const slot=known?selector:index;
   const label=(shortName[element]||element)+" · "+slot;
   result.push({key:id,label,element,detail:raw});
