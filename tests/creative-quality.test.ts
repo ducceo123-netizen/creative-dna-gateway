@@ -148,3 +148,16 @@ test('shared brand-scope guidance cannot substitute for the resolved local brand
   dna.brand.slug='giftsoul';
   assert.ok((await compileCreativeQuality(dna)).errors.includes('BRAND_STYLE_NOT_COMPILED'));
 });
+test('existing master-mirrored catalog chooses the exact brand bundle without local-style fallback', async () => {
+  const ph=await fixture('pawfecthouse'),gs=await fixture('giftsoul'),sp=await fixture('soulprise');
+  const catalog={schema_version:'uid-creative-quality-catalog/1',contracts:{pawfecthouse:ph.bundle,giftsoul:gs.bundle,soulprise:sp.bundle}};
+  for(const {dna} of [ph,gs,sp]) {
+    dna.branch.metadata.creative_quality_contract=catalog;
+    const result=await compileCreativeQuality(dna);assert.equal(result.status,'COMPILED');
+    assert.equal(result.rules.find(r=>r.key==='brand.active_expression')?.scope.brands[0],dna.brand.slug);
+  }
+  delete (catalog.contracts as any).giftsoul;
+  const missing=await compileCreativeQuality(gs.dna);assert.ok(missing.errors.includes('BRAND_CONTRACT_MISSING'));assert.equal(missing.gates.content_authoring,'BLOCKED');
+  (catalog as any).contracts=null;
+  assert.ok((await compileCreativeQuality(ph.dna)).errors.includes('BRAND_CONTRACT_MISSING'));
+});

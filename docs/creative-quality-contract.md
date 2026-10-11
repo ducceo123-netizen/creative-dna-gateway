@@ -4,7 +4,7 @@ The Onepage compiler and public resolver now use the same pure compiler in `supa
 
 ## Canonical data
 
-Each active Onepage node has one additive `metadata.creative_quality_contract` object:
+The existing PawfectHouse-master database trigger mirrors Onepage metadata to GiftSoul and SoulPrise. Therefore one additive `metadata.creative_quality_contract` catalog is stored on the master, with `schema_version: uid-creative-quality-catalog/1` and `contracts` keyed by exact brand slug. The existing trigger propagates that same catalog; the compiler selects only the active brand, never a fallback. Each selected contract contains:
 
 - `schema_version`, `revision`, and source SHA-256 hashes for branch and brand DNA
 - Reviewed rules with stable IDs, category, constraint key/value, concise instruction, source locator and optional exact source excerpt
@@ -52,12 +52,12 @@ No database schema, permissions, membership, credentials, storage visibility or 
 Order:
 
 1. Save exact old source/node snapshots; validate the approved bundles locally.
-2. Apply the reviewed atomic data-only sync with branch and latest brand-DNA content/version/metadata guards. Confirm three active contract revisions and both GiftSoul aliases.
+2. Validate all three branches and latest brand-DNA content/version/slug/metadata guards before writing; then update only the existing PawfectHouse master so its normal trigger fans the catalog out atomically. Confirm three active contract revisions and both GiftSoul aliases.
 3. Deploy `creative-dna-public` and `creative-dna-compile-onepage` with the shared source files. Retain their existing `verify_jwt=false` public read-only behavior. Do not expose private image URLs.
 4. Publish the reviewed gateway change, verify CI for the exact commit, then deploy the existing verified Render service.
 5. Check three brands using human aliases and exact slugs, compare compiler/resolver hashes, verify expected missing-reference gates, template metadata/layout hashes and health. Check error logs.
 
-Backend rollback snapshots are in `docs/quality-rollout/rollback-compiler-v2.ts.txt` and `rollback-public-v3.ts.txt`. Redeploy those exact prior function sources with their prior settings, then restore the prior gateway commit. Metadata-only rollback removes only the exact installed contract object; it must abort rather than overwrite a newer bundle. The additive valid GiftSoul aliases may remain. An old gateway/edge rollback reintroduces the known quality-propagation limitation and must be reported as such.
+Backend rollback snapshots are in `docs/quality-rollout/rollback-compiler-v2.ts.txt` and `rollback-public-v3.ts.txt`. Redeploy those exact prior function sources with their prior settings, then restore the prior gateway commit. Metadata-only rollback removes only the exact installed catalog object from the master and verifies the existing mirror fanout; it must abort rather than overwrite a newer bundle. The additive valid GiftSoul aliases may remain. An old gateway/edge rollback reintroduces the known quality-propagation limitation and must be reported as such.
 
 ## Verification
 

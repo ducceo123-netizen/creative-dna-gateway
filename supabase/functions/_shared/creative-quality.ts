@@ -1,6 +1,7 @@
 /** Deterministic, account-independent quality policy. No model, credentials, network or writes. */
 export const QUALITY_SCHEMA = 'uid-creative-quality/1';
 export const QUALITY_COMPILER = '2026-10-11-v1';
+export const QUALITY_CATALOG_SCHEMA = 'uid-creative-quality-catalog/1';
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Scope = { brands: string[]; branches: string[]; product_urls?: string[] };
 export type RuleSource = { node: 'branch' | 'brand_dna'; locator: string; excerpt?: string };
@@ -82,8 +83,14 @@ function usableAssetUrl(value?: string) {
 export async function compileCreativeQuality(dna: ResolvedDna, context: QualityContext = {}) {
   const brand = String(dna.brand?.slug || ''), branch = String(dna.branch?.slug || '');
   const hashes = await sourceHashes(dna);
-  const raw = dna.branch?.metadata?.creative_quality_contract;
+  const stored = dna.branch?.metadata?.creative_quality_contract;
   const errors: string[] = [];
+  // Onepage's existing master trigger mirrors all metadata. Keep an explicit brand-keyed
+  // catalog on that master instead of fighting the trigger with overwritten local writes.
+  const isCatalog = object(stored) && stored.schema_version === QUALITY_CATALOG_SCHEMA;
+  const catalogValid = isCatalog && object(stored.contracts) && Object.keys(stored.contracts).length <= 16;
+  const raw = isCatalog ? catalogValid && Object.hasOwn(stored.contracts,brand) ? stored.contracts[brand] : undefined : stored;
+  if (isCatalog && (!catalogValid || !Object.hasOwn(stored.contracts,brand))) errors.push('BRAND_CONTRACT_MISSING');
   let bundle: QualityBundle | null = null;
   if (!object(raw)) errors.push('QUALITY_CONTRACT_MISSING');
   else if (raw.schema_version !== QUALITY_SCHEMA || !text(raw.revision,120) || !object(raw.source_hashes) ||
