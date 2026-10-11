@@ -1,4 +1,5 @@
 import { GovernancePanel } from "./GovernancePanel";
+import { PrivateReferencePanel } from "./PrivateReferencePanel";
 import { assessProposal } from "../knowledge-governance";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
@@ -118,15 +119,17 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     setMessage("Signed out.");
   };
 
-  const refreshSession = async () => {
-    const currentRefresh = sessionStorage.getItem("creative_dna_admin_refresh_token") || refreshToken;
-    if (!currentRefresh) return "";
+  const refreshSession = async (signal?: AbortSignal | null) => {
+    const currentRefresh = sessionStorage.getItem("creative_dna_admin_refresh_token");
+    if (!currentRefresh || signal?.aborted) return "";
     const res = await fetch("/api/admin/refresh", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ refresh_token:currentRefresh })
+      body:JSON.stringify({ refresh_token:currentRefresh }), signal:signal || undefined
     });
     const data = await res.json();
+    // A completed refresh must never restore a session after logout/unmount or another session change.
+    if (signal?.aborted || sessionStorage.getItem("creative_dna_admin_refresh_token") !== currentRefresh) return "";
     if (!res.ok || !data.access_token) {
       logout();
       setMessage(data.error || "Phiên admin đã hết hạn. Vui lòng đăng nhập lại.");
@@ -146,9 +149,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       headers:{ ...(init.headers || {}), Authorization:`Bearer ${t}` }
     });
     let res = await run(access);
-    if (res.status === 401) {
-      const fresh = await refreshSession();
-      if (fresh) res = await run(fresh);
+    if (res.status === 401 && !init.signal?.aborted) {
+      const fresh = await refreshSession(init.signal);
+      if (fresh && !init.signal?.aborted) res = await run(fresh);
     }
     return res;
   };
@@ -499,6 +502,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>
       </div>}
     </section>
+    {token && <PrivateReferencePanel request={authFetch}/>}
     <GovernancePanel request={authFetch}/>
     <section className="space-y-3">
       {!loading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
