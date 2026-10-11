@@ -1,0 +1,83 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const out=(x:unknown,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{...cors,"Content-Type":"application/json","Cache-Control":"public, max-age=60"}});
+const url=Deno.env.get("SUPABASE_URL")!; const legacy=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+let modern:string|undefined; try{modern=JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")||"{}")["default"]}catch{}
+const key=modern||legacy; const admin=key?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}}):null;
+const assets=[
+ {slot:"banner_desktop",size:"2560x960",role:"story_banner"},
+ {slot:"banner_mobile",size:"720x700",role:"story_banner_responsive_pair"},
+ {slot:"wyl_01",size:"732x480",role:"benefit_proof"},{slot:"wyl_02",size:"732x480",role:"benefit_proof"},{slot:"wyl_03",size:"732x480",role:"benefit_proof"},
+ {slot:"detail_main",size:"950x950",role:"product_function"},
+ {slot:"detail_01",size:"240x240",role:"detail_evidence"},{slot:"detail_02",size:"240x240",role:"detail_evidence"},{slot:"detail_03",size:"240x240",role:"detail_evidence"},
+ {slot:"occasion_01",size:"1280x720",role:"gifting_moment"},{slot:"occasion_02",size:"1280x720",role:"gifting_moment"},
+ {slot:"gtk_01",size:"300x300",role:"practical_tip"},{slot:"gtk_02",size:"300x300",role:"practical_tip"},{slot:"gtk_03",size:"300x300",role:"practical_tip"},
+ {slot:"ui_mapping_preview",size:"full_page",role:"assembly_guide"}
+];
+Deno.serve(async(req)=>{
+ if(req.method==="OPTIONS")return new Response("ok",{headers:cors}); if(req.method!=="POST")return out({error:"POST required"},405); if(!admin)return out({error:"Server configuration unavailable"},500);
+ let b:any={};try{b=await req.json()}catch{return out({error:"Invalid JSON"},400)}
+ const brand=String(b.brand||"").trim(), sourceUrl=String(b.source_url||"").trim(), sourceType=String(b.source_type||"auto").trim().toLowerCase(), theme=String(b.theme||"").trim();
+ if(!brand)return out({error:"brand is required"},400);
+ const {data:r,error}=await admin.rpc("resolve_creative_dna_alias",{p_brand:brand,p_branch:"onepage-system"}); if(error)return out({error:"Resolver unavailable"},500); if(!r?.brand||!r?.branch)return out({error:"Onepage route not found"},404);
+ const m=r.branch.metadata||{}; const inferred=sourceType==="auto"?(sourceUrl.includes("/collections/")||sourceUrl.includes("search-results")?"collection":"product"):sourceType;
+ const singleProduct=inferred==="product";
+ return out({
+  api_version:"2.1",mode:"compiled_job",compiler_version:"2026-09-21-v2",
+  resolved:{brand:r.brand.slug,branch:r.branch.slug,dna_version:r.branch.version,creative_execution_revision:m.onepage_creative_execution_revision||null},
+  dynamic_job:{source_url:sourceUrl||null,source_type:inferred,theme:theme||null,user_content_lock:"HARD_EXACT_PRESERVATION",single_product_mode:singleProduct},
+  acquisition_contract:{
+   source_acquisition:"HARD",inspect_actual_matching_pdps:inferred==="collection",
+   verified_product_pool_required:true,
+   min_verified_designs:inferred==="collection"?Number(m.collection_min_verified_designs||4):1,
+   rule:singleProduct?"Exact PDP is merchandise source of truth. Product pool=1. Do not drift to neighboring products. PDP thumbnail people/pets are NOT casting references.":"If fewer valid designs exist, use all. Never invent designs. Fidelity outranks diversity.",
+   diversity_gate:inferred==="collection"?"BLOCK_GENERATION_UNTIL_PASS":"N/A_BY_SINGLE_PDP",
+   required_state:["matching_pdps_inspected","verified_design_count","product_pool","product_to_asset_allocation","diversity_gate"]
+  },
+  hard_gates:{
+   product_physical_truth:"HARD_MULTI_SOURCE",content_approval:"HARD",content_to_visual_proof:"HARD",
+   product_asset_allocation:"HARD",responsive_banner_pair:"HARD_SAME_CREATIVE",
+   exact_dimensions:"HARD",standalone_assets:"HARD",ui_mapping_preview:"HARD",
+   thumbnail_casting_bias:"FORBIDDEN_HARD",american_cast_diversity:"HARD",
+   moment_story_interaction:"HARD",moment_product_causality:"HARD"
+  },
+  main_banner_contract:{
+   full_rule_inheritance:"HARD_FULL",
+   desktop_size:"2560x960",mobile_size:"720x700",
+   same_campaign_creative:true,mobile_intentional_recompose:true,
+   typography_required:true,typography_placement:"FOLLOW_APPROVED_DATABASE_REFERENCE_GRAMMAR",
+   mobile_pretext:"FORBIDDEN_HARD",
+   ui_annotations:"FORBIDDEN_HARD",
+   story_mode:"LIVED_UGC_MOMENT_WITH_SOUL",
+   direct_or_lifeless_product_showcase:"REJECT_HARD",
+   product_focus:"HARD",
+   moment_requirements:["readable_micro_story","product_linked_action","subject_interaction","natural_emotional_consequence","believable_relationship_geometry"]
+  },
+  casting_contract:{
+   pdp_thumbnail_humans:"PRODUCT_CONTEXT_ONLY_NEVER_CASTING_REFERENCE",
+   pdp_thumbnail_pets:"PRODUCT_CONTEXT_ONLY_NEVER_DEFAULT_CASTING_REFERENCE",
+   cross_asset_cast_diversity:"HARD",
+   american_customer_realism:"HARD",
+   thumbnail_cast_reuse:"FORBIDDEN_HARD",
+   rule:"Deliberately vary believable American people across assets. Vary age, face, hair, body build, styling and relationship role. Reuse only for intentional story continuity, never because the PDP thumbnail used that person."
+  },
+  single_pdp_contract:singleProduct?{
+   exact_product_only:"HARD",
+   visual_diversity:"HARD",
+   diversify:["camera_angle","distance_crop","people_cast","pose_action","environment","pets_when_relevant"],
+   verified_variant_color_diversity:"HARD_WHEN_MULTIPLE_VERIFIED",
+   variant_priority:"FEATURED_THUMBNAIL_THEN_EARLY_GALLERY_THEN_VARIANT_ORDER",
+   explicit_variant_lock_overrides_diversity:true,
+   upload_photo_subject_diversity:"HARD_WHEN_VERIFIED",
+   subject_to_design_continuity:"HARD",
+   rule:"Keep exact product/design grammar while varying creative subjects and verified PDP variants. Thumbnail subject identity is never a lock."
+  }:null,
+  execution:["ACQUIRE_SOURCE","BUILD_VERIFIED_PRODUCT_POOL","CHECK_DIVERSITY_GATE","BUILD_CONTENT_MAP","CONTENT_APPROVAL_GATE","BUILD_ASSET_MANIFEST","ALLOCATE_PRODUCTS_VARIANTS_CAST_TO_ASSETS","GENERATE_SLOT_BY_SLOT","QA_EACH_SLOT","BUILD_UI_MAPPING_PREVIEW"],
+  assets,
+  context_policy:{static_dynamic_split:true,reuse_product_pool:true,reuse_product_asset_allocation:true,do_not_repeat_full_dna_per_slot:true,load_slot_relevant_rules_only:true,never_drop_hard_gates_for_token_savings:true},
+  brand_expression:{inherit_brand_dna:true,differences_scope:"STYLE_MOOD_BRAND_DNA_ONLY"},
+  angle_policy:{mode:"FEEDBACK_PROGRESSIVE",avoid_duplicate_angles:true,follow_content_and_product_geometry:true},
+  instruction:"Use this packet as the Onepage execution contract. HARD: banner typography is required; mobile has no pretext; PDP thumbnail humans/pets are merchandise context only and must not seed repeated casting; banner must be a lived product-linked UGC story, not a lifeless showcase. Resolve full DNA only for missing/ambiguous details."
+ });
+});

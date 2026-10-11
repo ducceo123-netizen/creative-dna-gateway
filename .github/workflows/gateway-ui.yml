@@ -9,6 +9,11 @@ on:
       - 'uid-brands-attachment-ui.ts'
       - 'uid-brands-attachments.ts'
       - 'server.ts'
+      - 'onepage-ui-template.ts'
+      - 'supabase/functions/_shared/creative-quality.ts'
+      - 'supabase/functions/_shared/onepage-packet.ts'
+      - 'supabase/functions/creative-dna-public/**'
+      - 'supabase/functions/creative-dna-compile-onepage/**'
       - 'tests/**'
       - '.github/workflows/gateway-ui.yml'
   push:

@@ -31,7 +31,12 @@ test('complete versioned template includes matching hashes, fonts, slots and fix
 test('new canvas spacing retains the immutable original template and internal structure', () => {
   const old = getOnepageUiTemplate('2026-10-03.v1', 'source') as any;
   const current = getOnepageUiTemplate(undefined, 'source') as any;
-  assert.equal(current.version, '2026-10-03.v2');
+  assert.equal(current.version, '2026-10-11.v3');
+  const previous = getOnepageUiTemplate('2026-10-03.v2', 'source') as any;
+  assert.equal(current.html, previous.html);
+  assert.equal(current.css, previous.css);
+  assert.match(current.qa, /onepage_\{product_slug\}-overall\.png/);
+  assert.match(previous.qa, /WebP mapping/);
   assert.deepEqual(current.canvas_gutter, { desktop_px: 32, mobile_px: 16, mobile_max_width_px: 798 });
   assert.equal(current.html.replace('<body><div class="onepage-mapping-canvas">', '<body>').replace('</div></body>', '</body>'), old.html);
   assert.ok(current.css.startsWith(old.css));
@@ -65,6 +70,7 @@ test('compiler and resolver include executable template; upstream errors stay er
     const compiled = await compileOnepageJob('PawfectHouse', 'https://example.com/product', 'product', 'Christmas');
     assert.equal(compiled.data.ui_mapping_template.version, ONEPAGE_TEMPLATE_VERSION);
     assert.equal(requests[0].source_type, 'product');
+    assert.equal(compiled.data.quality_execution_guard.reason, 'UPSTREAM_QUALITY_CONTRACT_MISSING');
     const resolved = await resolveCreativeDna('PawfectHouse', 'Onepage');
     assert.equal(resolved.data.ui_mapping_template.version, ONEPAGE_TEMPLATE_VERSION);
     globalThis.fetch = async () => new Response(JSON.stringify({ error: 'upstream unavailable' }), { status: 503 });
@@ -110,4 +116,25 @@ test('anonymous member HTTP and MCP template paths work without Library access o
     const invalid = await fetch(`${origin}/api/tools/get_onepage_ui_template`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"format":"invalid"}' });
     assert.equal(invalid.status, 400);
   } finally { await new Promise<void>((resolve, reject) => server.close(err => err ? reject(err) : resolve())); }
+});
+
+test('future changed delivery policy cannot silently conflict with immutable current template metadata', () => {
+  const data={resolved:{brand:'pawfecthouse',branch:'onepage-system'},creative_quality_contract:{schema_version:'uid-creative-quality/1',compiler_version:'2026-10-11-v1',revision:'test',route:{brand:'pawfecthouse',branch:'onepage-system'},contract_hash:'a'.repeat(64),status:'COMPILED',rules:[{id:'delivery',key:'delivery.mapping_format',instruction:'approved',value:'WEBP'}],errors:[],gates:{content_authoring:'READY_WITH_SOURCE_RESEARCH',asset_generation:'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION',human_artistic_review:'REQUIRED',identical_pixels_guaranteed:false},reference_gate:{status:'NO_REQUIRED_STYLE_REFERENCES'}}};
+  const attached=attachOnepageUiTemplate(data,'PawfectHouse','Onepage');
+  assert.equal(attached.template_policy_compatibility.status,'BLOCKED_POLICY_TEMPLATE_MISMATCH');
+  assert.equal(attached.template_policy_compatibility.stage,'mapping');
+});
+
+test('gateway blocks malformed, partial, unsupported and wrong-route quality envelopes', () => {
+  for (const contract of [
+    {schema_version:'uid-creative-quality/1',contract_hash:''},
+    {schema_version:'uid-creative-quality/1',contract_hash:'a'.repeat(64),status:'COMPILED'},
+    {schema_version:'uid-creative-quality/next',contract_hash:'a'.repeat(64),status:'COMPILED'},
+    {schema_version:'uid-creative-quality/1',rules:{}},
+    {schema_version:'uid-creative-quality/1',rules:'bad'},
+    {schema_version:'uid-creative-quality/1',rules:[null]},
+  ]) {
+    const attached=attachOnepageUiTemplate({creative_quality_contract:contract},'PawfectHouse','Onepage');
+    assert.equal(attached.quality_execution_guard.status,'BLOCKED');assert.equal(attached.quality_execution_guard.reason,'UPSTREAM_QUALITY_CONTRACT_INVALID');
+  }
 });
