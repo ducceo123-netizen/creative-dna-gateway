@@ -1,42 +1,34 @@
-# Private reference access
+# Private Reference Library
 
-This repository contains generic code and synthetic tests only. Actual filenames, Library identifiers, storage object locations and content hashes must remain in the private deployment catalog. Do not commit that catalog or image payloads.
+The existing UID admin panel contains a flexible private Reference Library. Active admins can add their own good-outcome case images, with optional case title, brand, material type, caption, and a short note about what works. No fixed seed set is required. A library with zero images is valid.
 
-## Private configuration
+References provide supplementary inspiration. They do not establish a universal style, alter canonical brand or product rules, or block creation when absent. Explicit per-task required product evidence remains separate. The public MCP has no member session transport and therefore cannot claim to have read library images automatically.
 
-`supabase/functions/_shared/private-reference-catalog.ts` is intentionally empty in source control and fails closed. The approved catalog is injected at this path only while packaging the private Edge deployment. Preserve the catalog's provenance outside this repository. The catalog is not a credential and does not grant access by itself.
+## Existing access boundary
 
-Use the supported Library materialization flow for known approved originals. Keep the unchanged resolved identifiers and verify consumer-local bytes. Never guess a Library download URL or use public feedback storage. If a viewing derivative is necessary, retain source and derivative hashes privately and visually verify the conversion.
+- Every catalog, image read, and upload verifies the user through Auth and checks the current active UID membership using that user's self-read RLS policy.
+- Existing active viewer/contributor/admin members may read. Only existing active admins may upload.
+- The same private bucket and existing Edge-only credentials are reused. There are no new credentials, tables, RLS grants, members, public bucket flags, or signed URLs.
+- The gateway only forwards the member bearer token to fixed project endpoints. It never holds the Storage service credential.
+- Object destinations are server-built `library/v1/<validated UUID>` paths. Client-supplied URLs, buckets, paths, and arbitrary metadata fields are rejected.
+- The public repository contains only generic code and synthetic fixtures. User filenames, actual hashes, private notes, asset identifiers, image bytes, and production snapshots must not be committed.
 
-## Boundaries
+## Upload and recovery contract
 
-Both Edge functions require `verify_jwt=true`, authoritative Auth user verification, and current active membership from the existing self-read RLS policy. Do not authorize from display names, supplied IDs or editable user metadata.
+PNG, JPEG, and static WebP are supported, with a 5 MiB limit per image and at most 10 selected images per UI batch. The shared structural validator bounds every encoded dimension to 12,000 pixels and 40 million total pixels, checks PNG chunk CRC/layout, JPEG frame/table/scan structure, and WebP frame/canvas consistency. Animated formats, malformed containers, spoofed MIME, SVG, and HTML are rejected. This is structural validation, not full server-side decompression. The browser also decodes each image before transmission and verifies decoded dimensions.
 
-- Member GET: with no query, returns minimal catalog metadata only after membership validation; with an approved reference ID, returns bounded, hash-verified image bytes.
-- Admin POST: accepts raw bytes only for an approved catalog ID, exact MIME, length and SHA-256. It writes a fixed private object with no upsert, then reads and verifies the stored bytes.
+The UI stages local previews first. Optional metadata is bounded and normalized as plain text. Uploads use a single immutable Storage object with documented `x-metadata` custom metadata, not a separately writable index. Neither replacement nor deletion is supported. The stored object is read back and SHA-256 verified before success is reported. An uncertain write is checked by reading instead of an automatic mutation replay. A user-triggered retry retains its operation UUID and its original metadata, avoiding duplicate uploads.
 
-The bucket must remain private. Ingestion checks existing bytes for idempotency and never overwrites a conflicting object. An uncertain write is established through a read rather than replayed automatically. No anonymous bootstrap, arbitrary source URL, bucket update, account creation or general uploader exists.
+Catalog results are paginated in pages of 20, with newest items first. The UI merges pages by ID and groups loaded images by the optional case title. Search is explicitly within loaded images. Member previews are fetched on demand, verified again, and rendered from revocable in-memory object URLs. No image is persisted in browser storage. Leaving the panel aborts requests and releases object URLs; late session refresh cannot restore a logged-out session.
 
-Only the fixed Supabase project receives the existing server-side Storage credential. Modern secret keys stay in `apikey`; legacy service JWTs can use Authorization. User tokens and credentials never enter logs or source. The audit includes bounded request/actor/reference identifiers and result codes only.
+## Preview isolation
 
-The gateway is a fixed-target bearer-forwarding proxy. It has no private catalog or service credential, validates the authenticated catalog schema, bounds image streams, independently checks hashes, and redacts upstream errors. The admin panel obtains catalog metadata dynamically through authenticated access, validates every selected file before uploading any, aborts on unmount/logout, and revokes browser-local preview URLs.
+Existing external page previews are isolated from the UID session even when opened directly. Their response uses an opaque-origin CSP sandbox, scripts are limited to the server's nonce-authorized resizing script, and frames/forms/connections are blocked. The app iframe also uses `sandbox="allow-scripts"` without `allow-same-origin`, and no referrer is sent. Preview fetches reject redirects and credential-bearing/nonstandard-port URLs. External styles, fonts, and images can still render. This is a protective change to the existing preview surface; deployment requires the user's explicit security-setting approval.
 
-## Public MCP limitation
+## Deployment and verification
 
-The existing public MCP/resolver/compiler does not carry a member session. It must never return signed URLs, private image bytes or private asset URLs. Admin storage/read success does not establish cross-account generating access. Reference-dependent image stages remain blocked until the actual generating account has an authenticated member transport and has inspected the pixels. A future OAuth/member integration needs separate scoped security review and approval.
+Deploy the matching gateway and all four affected existing Edge functions: private read, admin ingestion, public resolver, and onepage compiler. Preserve their existing JWT gateway settings (private endpoints enabled, public rule endpoints disabled). No bucket configuration or access-policy update is needed.
 
-## Verification
+Run lint, build, aggregate tests, and exact-commit CI. Test unauthenticated private endpoints, empty-library state, active-member reads, admin-only writes, nonmember/inactive denial, malformed payloads, repeated/uncertain uploads, and navigation/logout cancellation. The automated suite uses synthetic data and mocked Auth/Storage boundaries. Actual signed-in browser upload/read must be verified separately; do not claim a live positive test if it has not run. Never create a test member or bypass a credential handoff restriction for QA.
 
-Run `npm run lint`, `npm test`, and `npm run build`. Focused tests use synthetic identities, bytes and metadata. They cover denial, active-member reads, revocation, exact-hash admin ingestion, no-overwrite/idempotency, uncertain writes, bounded streams, fixed proxy targets, redaction, catalog privacy, parser ordering and logout races.
-
-Before claiming live usability:
-
-1. Verify current bucket privacy, Storage RLS and absence of broad granting policies.
-2. Deploy reviewed functions with JWT checking and the privately injected catalog.
-3. Verify unauthenticated requests fail. Do not disable auth or create users/tokens for testing.
-4. Deploy the reviewed gateway; use the existing admin's supported secure browser login, never token extraction or chat credentials.
-5. Select only the approved original/verified derivative files; verify every upload receipt and authenticated read/hash.
-6. Verify direct unauthenticated Storage reads stay denied. Use an existing explicitly authorized nonmember session if available; otherwise disclose that live nonmember-token testing was not performed.
-7. Keep the public-generation reference gate honest.
-
-References: [Supabase authorization headers](https://supabase.com/docs/guides/functions/auth-headers), [private Storage buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals), [API keys](https://supabase.com/docs/guides/getting-started/api-keys).
+Historical exact-seed functions remain as non-routed compatibility code and tests; the active Edge entrypoints use the flexible library handlers. Old stored objects are not deleted or made public. The previously required exact-seed manual upload step is superseded.

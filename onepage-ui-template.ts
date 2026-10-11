@@ -67,12 +67,12 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
   const branchSlug = String(data.resolved?.branch || branch).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (!['pawfecthouse', 'giftsoul', 'soulprise'].includes(brandSlug) || !['onepage', 'onepagesystem'].includes(branchSlug)) return data;
   const quality = data.creative_quality_contract;
-  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && quality.compiler_version === '2026-10-11-v1' &&
+  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && quality.compiler_version === '2026-10-11-v2' &&
     /^[a-f0-9]{64}$/.test(String(quality.contract_hash || '')) && ['COMPILED','BLOCKED'].includes(quality.status) &&
     (quality.status === 'BLOCKED' || (typeof quality.revision === 'string' && !!quality.revision.trim())) &&
     quality.route?.brand === brandSlug && quality.route?.branch === 'onepage-system' &&
     quality.gates && ['READY_WITH_SOURCE_RESEARCH','BLOCKED'].includes(quality.gates.content_authoring) &&
-    ['BLOCKED','REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION'].includes(quality.gates.asset_generation) &&
+    ['BLOCKED','REQUIRES_PRODUCT_PIXEL_INSPECTION','REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION'].includes(quality.gates.asset_generation) &&
     quality.gates.human_artistic_review === 'REQUIRED' && quality.gates.identical_pixels_guaranteed === false &&
     quality.reference_gate && ['BLOCKED_MISSING_REFERENCES','PIXEL_INSPECTION_REQUIRED','NO_REQUIRED_STYLE_REFERENCES'].includes(quality.reference_gate.status) &&
     Array.isArray(quality.rules) && quality.rules.every((rule: any) => rule && typeof rule === 'object' && typeof rule.id === 'string' && typeof rule.key === 'string' && typeof rule.instruction === 'string') && Array.isArray(quality.errors);
