@@ -4,6 +4,12 @@ on:
     paths:
       - 'src/**'
       - 'uid-brands-workflow.ts'
+      - 'uid-brands-actions.ts'
+      - 'uid-brands-review-contract.ts'
+      - 'uid-brands-attachment-ui.ts'
+      - 'uid-brands-attachments.ts'
+      - 'server.ts'
+      - 'tests/**'
       - '.github/workflows/gateway-ui.yml'
   push:
     branches: [main]
@@ -16,4 +22,4 @@ jobs:
       - run: bun install
       - run: bun run lint
       - run: bun run build
-      - run: bun test tests/mcp-contract.test.ts tests/governance-engine.test.ts tests/knowledge-governance.test.ts
+      - run: bun test tests/*.test.ts
