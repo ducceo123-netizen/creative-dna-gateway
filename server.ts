@@ -10,6 +10,7 @@ import { launcherHtml, LAUNCHER_MIME, LAUNCHER_URI } from "./uid-brands-workflow
 import { UID_NATIVE_WORKFLOW, REVIEW_TOOL_DESCRIPTION, NATIVE_WORKFLOW_DESCRIPTION, NATIVE_FALLBACK_TEXT } from "./uid-brands-actions.ts";
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA, discoverySchema, createReviewContext } from "./uid-brands-review-contract.ts";
 import { registerPrivateReferenceRoutes } from "./uid-private-reference-proxy.ts";
+import { readBoundedReferenceBytes } from "./supabase/functions/_shared/private-reference-access.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
 
@@ -1187,13 +1188,18 @@ export function createApp(): express.Application {
   });
 
   app.get("/api/branch-preview", async (req: Request, res: Response) => {
+    // Isolate every response, including direct navigation, from UID member sessions.
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    res.setHeader("Content-Security-Policy", `sandbox allow-scripts; default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; base-uri https:; form-action 'none'; frame-src 'none'; object-src 'none'; connect-src 'none'; frame-ancestors 'self'`);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
     const pageUrl = String(req.query.url || "").trim();
     const selector = String(req.query.selector || "").trim();
-    if (!pageUrl || !selector) return res.status(400).send("Missing url or selector");
+    if (!pageUrl || !selector || pageUrl.length > 2048 || selector.length > 512) return res.status(400).send("Missing url or selector");
 
     let parsed: URL;
     try { parsed = new URL(pageUrl); } catch { return res.status(400).send("Invalid URL"); }
-    if (parsed.protocol !== "https:") return res.status(400).send("HTTPS required");
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || (parsed.port && parsed.port !== "443")) return res.status(400).send("HTTPS required");
 
     const host = parsed.hostname.toLowerCase();
     const allowed =
@@ -1206,10 +1212,13 @@ export function createApp(): express.Application {
     try {
       const upstream = await fetch(pageUrl, {
         headers: { "User-Agent": "Mozilla/5.0 CreativeDNA-Preview/1.0", Accept: "text/html" },
-        redirect: "follow",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
       });
       if (!upstream.ok) return res.status(502).send("Unable to fetch preview page");
-      let html = await upstream.text();
+      const body = await readBoundedReferenceBytes(upstream.body, 2 * 1024 * 1024);
+      if (!body) return res.status(502).send("Unable to fetch preview page");
+      let html = new TextDecoder().decode(body);
 
       html = html
         .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -1222,9 +1231,9 @@ export function createApp(): express.Application {
         ${cssSelector}{display:block!important;margin:0!important}
       </style>`;
 
-      // Preview is same-origin iframe: report the real selected section height to the parent.
+      // Preview has an opaque sandbox origin; only this nonce-authorized sizing script runs.
       // Observe images/fonts and late layout changes so long materials never clip at 520px.
-      const sizingScript = `<script>
+      const sizingScript = `<script nonce="${nonce}">
       (function(){
         const selector=${JSON.stringify(cssSelector)};
         let last=-1;

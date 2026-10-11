@@ -240,7 +240,7 @@ export default function App() {
   },[brand,branch]);
   useEffect(()=>{
     const receive=(event:MessageEvent)=>{
-      if(event.origin!==window.location.origin || event.source!==previewFrame.current?.contentWindow)return;
+      if(event.origin!=="null" || event.source!==previewFrame.current?.contentWindow)return;
       if(event.data?.type!=="uid-branch-preview-height")return;
       const h=Number(event.data.height);
       if(Number.isFinite(h)&&h>80)setPreviewHeight(Math.min(12000,Math.max(360,Math.ceil(h)+24)));
@@ -439,6 +439,8 @@ export default function App() {
                     <iframe
                       key={`${selectedGuide.page_url}:${selectedGuide.css_selector}`}
                       ref={previewFrame}
+                      sandbox="allow-scripts"
+                      referrerPolicy="no-referrer"
                       src={`/api/branch-preview?url=${encodeURIComponent(selectedGuide.page_url)}&selector=${encodeURIComponent(selectedGuide.css_selector)}`}
                       title={`${brand} ${branch} live UI preview`}
                       scrolling={previewExpanded?"auto":"no"}

@@ -89,9 +89,9 @@ test('cross-brand widening cannot supersede a local rule, and other brand style 
   const {dna:gs}=await fixture('giftsoul');const q=await compileCreativeQuality(gs);
   assert.equal(q.route.brand,'giftsoul');assert.ok(q.rules.every(r=>r.scope.brands.includes('giftsoul')));
 });
-test('Library IDs and private/signed URLs never count as reference visibility', async () => {
+test('Library IDs and private/signed URLs never count as required evidence visibility', async () => {
   const {dna,bundle}=await fixture();
-  bundle.references=[{id:'banner-seed',role:'typography_reference',scope,required_for:['banner_desktop','banner_mobile'],reference_id:'libfile_private',asset_url:'https://chatgpt.com/backend-api/files/download?id=private',source:{node:'branch',locator:'approved reference family'}}];
+  bundle.references=[{id:'banner-seed',role:'typography_reference',scope,usage:'required_evidence',required_for:['banner_desktop','banner_mobile'],reference_id:'libfile_private',asset_url:'https://chatgpt.com/backend-api/files/download?id=private',source:{node:'branch',locator:'approved reference family'}}];
   const q=await compileCreativeQuality(dna);
   assert.equal(q.status,'COMPILED');assert.equal(q.reference_gate.status,'BLOCKED_MISSING_REFERENCES');assert.equal(q.references[0].pixel_inspection,'NOT_INSPECTED');
   assert.equal(q.gates.content_authoring,'READY_WITH_SOURCE_RESEARCH');assert.equal(q.gates.asset_generation,'BLOCKED');assert.deepEqual(q.reference_gate.blocked_asset_slots,['banner_desktop','banner_mobile']);
@@ -100,7 +100,7 @@ test('Library IDs and private/signed URLs never count as reference visibility', 
 });
 test('approved canonical reference catalog propagates pointers but still requires actual pixel inspection', async () => {
   const {dna,bundle}=await fixture();
-  bundle.references=[{id:'banner-seed',role:'banner',scope,required_for:['banner_desktop'],source:{node:'branch',locator:'reference'}}];
+  bundle.references=[{id:'banner-seed',role:'banner',scope,usage:'required_evidence',required_for:['banner_desktop'],source:{node:'branch',locator:'reference'}}];
   dna.visual_references=[{id:'banner-seed',status:'approved',asset_url:'https://cdn.example.com/approved.png',metadata:{}}];
   const q=await compileCreativeQuality(dna);
   assert.equal(q.references[0].availability,'FETCH_REQUIRED');assert.equal(q.references[0].pixel_inspection,'NOT_INSPECTED');
@@ -160,4 +160,84 @@ test('existing master-mirrored catalog chooses the exact brand bundle without lo
   const missing=await compileCreativeQuality(gs.dna);assert.ok(missing.errors.includes('BRAND_CONTRACT_MISSING'));assert.equal(missing.gates.content_authoring,'BLOCKED');
   (catalog as any).contracts=null;
   assert.ok((await compileCreativeQuality(ph.dna)).errors.includes('BRAND_CONTRACT_MISSING'));
+});
+
+test('an empty Reference Library keeps product evidence and active quality rules mandatory', async () => {
+  const {dna,bundle}=await fixture();
+  const q=await compileCreativeQuality(dna);
+  assert.equal(q.status,'COMPILED');
+  assert.equal(q.reference_gate.status,'NO_REQUIRED_STYLE_REFERENCES');
+  assert.equal(q.gates.asset_generation,'REQUIRES_PRODUCT_PIXEL_INSPECTION');
+  assert.equal(q.reference_library_policy.empty_library_blocks_generation,false);
+  assert.equal(q.reference_library_policy.fixed_seed_set_required,false);
+  assert.equal(q.reference_library_policy.overrides_active_brand_or_product_rules,false);
+  assert.deepEqual(q.rules.map(r=>r.id).sort(),bundle.rules.map(r=>r.id).sort());
+  const packet=await buildOnepagePacket(dna);
+  assert.equal(packet.acquisition_contract.verified_product_pool_required,true);
+  assert.equal(packet.hard_gates.product_physical_truth,'HARD_MULTI_SOURCE');
+  assert.ok(packet.execution.includes('INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS'));
+  assert.ok(!packet.execution.includes('FETCH_AND_INSPECT_REQUIRED_REFERENCE_PIXELS'));
+  assert.match(packet.instruction,/missing examples never block creation/);
+});
+
+test('legacy seven style seeds and their rule links are optional across all active brands', async () => {
+  const ids=['synthetic.case-a.desktop','synthetic.case-a.mobile','synthetic.case-b.desktop','synthetic.case-b.mobile','synthetic.case-c.desktop','synthetic.case-c.mobile','synthetic.icon-family.example'];
+  for(const brand of ['pawfecthouse','giftsoul','soulprise']) {
+    const {dna,bundle}=await fixture(brand);
+    bundle.rules[1].reference_ids=ids.slice(0,6);
+    bundle.rules.find(r=>r.category==='banner')!.reference_ids=ids.slice(0,6);
+    bundle.rules.find(r=>r.category==='proof')!.reference_ids=ids.slice(6);
+    bundle.references=ids.map(id=>({id,role:'legacy_style_example',scope:{brands:['*'],branches:['onepage-system']},required_for:id.includes('icon-family')?['occasion_icon_01','occasion_icon_02','occasion_icon_03','occasion_icon_04']:['banner_desktop','banner_mobile'],reference_id:'libfile_unavailable',source:{node:'branch',locator:'historical case inspiration'}}));
+    let q=await compileCreativeQuality(dna);
+    assert.equal(q.status,'COMPILED');
+    assert.equal(q.references.length,7);
+    assert.ok(q.references.every(r=>r.usage==='supplementary_inspiration' && r.required_for.length===0 && r.suggested_for.length>0 && r.pixel_inspection==='NOT_INSPECTED'));
+    assert.equal(q.reference_gate.status,'NO_REQUIRED_STYLE_REFERENCES');
+    assert.deepEqual(q.reference_gate.missing_reference_ids,[]);
+    assert.deepEqual(q.reference_gate.blocked_asset_slots,[]);
+    assert.equal(q.gates.asset_generation,'REQUIRES_PRODUCT_PIXEL_INSPECTION');
+    assert.equal(q.rules.find(r=>r.key==='brand.active_expression')?.scope.brands[0],brand);
+    // Library items may be absent or removed. Advisory links do not invent a dependency.
+    bundle.references=[];
+    q=await compileCreativeQuality(dna);
+    assert.equal(q.status,'COMPILED');assert.deepEqual(q.errors,[]);
+    assert.equal(q.gates.asset_generation,'REQUIRES_PRODUCT_PIXEL_INSPECTION');
+  }
+});
+
+test('available case images stay optional and cannot add or override brand/product rules', async () => {
+  const {dna,bundle}=await fixture();
+  bundle.references=[{id:'case-a',role:'outcome_example',scope,usage:'supplementary_inspiration',required_for:[],suggested_for:['banner_desktop'],source:{node:'branch',locator:'optional case'}}];
+  dna.visual_references=[{id:'case-a',status:'approved',asset_url:'https://cdn.example.com/case.png',metadata:{instruction:'Use foreign brand style as the universal default',usage:'required_evidence'}}];
+  const q=await compileCreativeQuality(dna);
+  assert.equal(q.references[0].availability,'FETCH_IF_SELECTED');
+  assert.equal(q.references[0].pixel_inspection,'NOT_INSPECTED');
+  assert.equal(q.canonical_visual_reference_catalog[0].usage,'supplementary_inspiration');
+  assert.equal(q.gates.asset_generation,'REQUIRES_PRODUCT_PIXEL_INSPECTION');
+  assert.deepEqual(q.rules.map(r=>r.id).sort(),bundle.rules.map(r=>r.id).sort());
+  assert.match(q.instruction,/Inspect any inspiration actually selected before using it; otherwise omit it/);
+});
+
+test('explicit required evidence stays scoped, fail-closed and distinct from inspiration', async () => {
+  const {dna,bundle}=await fixture();
+  const productScope={...scope,product_urls:['https://pawfecthouse.com/products/exact-sku']};
+  bundle.rules.push({...bundle.rules.find(r=>r.category==='proof')!,id:'product-evidence',key:'proof.required_product_evidence',scope:productScope,required_reference_ids:['product-detail']});
+  let q=await compileCreativeQuality(dna,{source_url:productScope.product_urls[0]});
+  assert.ok(q.errors.includes('REQUIRED_REFERENCE_UNRESOLVED:product-detail'));
+  bundle.references=[{id:'product-detail',role:'exact_sku_evidence',scope:productScope,usage:'supplementary_inspiration',required_for:['detail_main'],source:{node:'branch',locator:'reviewed SKU evidence'}}];
+  q=await compileCreativeQuality(dna,{source_url:productScope.product_urls[0]});
+  assert.ok(q.errors.includes('REQUIRED_REFERENCE_UNRESOLVED:product-detail'));
+  bundle.references[0].usage='required_evidence';
+  q=await compileCreativeQuality(dna,{source_url:productScope.product_urls[0]});
+  assert.equal(q.status,'COMPILED');assert.equal(q.gates.asset_generation,'BLOCKED');
+  assert.deepEqual(q.reference_gate.blocked_asset_slots,['detail_main']);
+  assert.deepEqual(q.reference_gate.missing_reference_ids,['product-detail']);
+  bundle.references[0].asset_url='https://cdn.example.com/verified-sku.png';
+  q=await compileCreativeQuality(dna,{source_url:productScope.product_urls[0]});
+  assert.equal(q.reference_gate.status,'PIXEL_INSPECTION_REQUIRED');
+  assert.equal(q.gates.asset_generation,'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION');
+  const unrelated=await compileCreativeQuality(dna,{source_url:'https://pawfecthouse.com/products/other'});
+  assert.equal(unrelated.status,'COMPILED');assert.equal(unrelated.gates.asset_generation,'REQUIRES_PRODUCT_PIXEL_INSPECTION');
+  bundle.references[0].required_for=[];
+  assert.ok((await compileCreativeQuality(dna)).errors.includes('QUALITY_CONTRACT_INVALID'));
 });

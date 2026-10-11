@@ -1,5 +1,5 @@
-import { createPrivateReferenceHandler } from '../_shared/private-reference-access.ts';
-import { privateReferenceRuntime } from '../_shared/private-reference-runtime.ts';
+import { createReferenceLibraryHandler } from '../_shared/reference-library.ts';
+import { referenceLibraryRuntime } from '../_shared/reference-library-runtime.ts';
 
 function envKey(name: string) {
   try { return JSON.parse(Deno.env.get(name) || '{}').default || ''; } catch { return ''; }
@@ -10,7 +10,7 @@ const config = {
   serviceKey: envKey('SUPABASE_SECRET_KEYS') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
 };
 let handler: ((request: Request) => Promise<Response>) | undefined;
-try { handler = createPrivateReferenceHandler(privateReferenceRuntime(config)); } catch { /* Fail closed. */ }
+try { handler = createReferenceLibraryHandler(referenceLibraryRuntime(config), false); } catch { /* Fail closed. */ }
 export default {
   fetch: (request: Request) => handler ? handler(request) : Response.json({ error: 'PRIVATE_REFERENCE_SERVICE_UNAVAILABLE' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }),
 };

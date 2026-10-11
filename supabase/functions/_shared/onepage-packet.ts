@@ -69,7 +69,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
   brand_expression:{inherit_brand_dna:true,differences_scope:"STYLE_MOOD_BRAND_DNA_ONLY"},
   post_story_section: {decision:ruleValue("content.post_story_section"),rule_ids:ruleIds("content.post_story_section","content.gtk_insights"),faq_template_status:"REQUIRED_NOT_YET_DEPLOYED",faq_mapping_gate:"BLOCK_MAPPING_UNTIL_VERIFIED_FAQ_VARIANT_AVAILABLE",faq_answers:"ALL_EXPANDED_FOR_REVIEW",gtk_assets:"ONLY_WHEN_GTK_SELECTED",rule:"Select using verified buyer questions, not keyword or brand defaults. Never generate placeholder GTK assets for FAQ mode."},
   angle_policy:{mode:"FEEDBACK_PROGRESSIVE",avoid_duplicate_angles:true,follow_content_and_product_geometry:true},
-  instruction:"Use creative_quality_contract active scoped rules as the creative execution authority. Do not substitute account memory or superseded historical metadata. Content/typography/banner/proof quality gates are mandatory alongside technical dimensions. Missing visual references block the affected asset stage. Human artistic review is still required."
+  instruction:"Use creative_quality_contract active scoped rules as the creative execution authority. Do not substitute account memory or superseded historical metadata. Content/typography/banner/proof quality gates are mandatory alongside technical dimensions. Reference Library examples are optional supplementary inspiration; missing examples never block creation or override active brand/product rules. Inspect any selected example before using it. Only explicit required evidence can block the affected asset stage. Human artistic review is still required."
  };
 
  return { ...packet, creative_quality_contract,
@@ -80,7 +80,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    visual_proof_contract: creative_quality_contract.rules.filter(r => r.category === 'proof' || r.category === 'banner').map(r => r.id),
    delivery_contract: creative_quality_contract.rules.filter(r => r.category === 'delivery').map(r => r.id),
    brand_expression: { ...packet.brand_expression, rule_ids: creative_quality_contract.rules.filter(r => r.category === 'brand_style').map(r => r.id) },
-   execution: ['VALIDATE_QUALITY_CONTRACT', ...packet.execution.slice(0,7), 'FETCH_AND_INSPECT_REQUIRED_REFERENCE_PIXELS', ...packet.execution.slice(7)],
+   execution: ['VALIDATE_QUALITY_CONTRACT', ...packet.execution.slice(0,7), 'INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS', ...packet.execution.slice(7)],
    readiness: creative_quality_contract.gates,
  };
 }

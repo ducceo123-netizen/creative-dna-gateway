@@ -1,6 +1,6 @@
 /** Deterministic, account-independent quality policy. No model, credentials, network or writes. */
 export const QUALITY_SCHEMA = 'uid-creative-quality/1';
-export const QUALITY_COMPILER = '2026-10-11-v1';
+export const QUALITY_COMPILER = '2026-10-11-v2';
 export const QUALITY_CATALOG_SCHEMA = 'uid-creative-quality-catalog/1';
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Scope = { brands: string[]; branches: string[]; product_urls?: string[] };
@@ -8,10 +8,11 @@ export type RuleSource = { node: 'branch' | 'brand_dna'; locator: string; excerp
 export type QualityRule = {
   id: string; key: string; value: Json; instruction: string;
   category: 'content' | 'typography' | 'banner' | 'proof' | 'brand_style' | 'delivery' | 'workflow';
-  scope: Scope; sources: RuleSource[]; supersedes?: string[]; reference_ids?: string[];
+  scope: Scope; sources: RuleSource[]; supersedes?: string[]; reference_ids?: string[]; required_reference_ids?: string[];
 };
 export type QualityReference = {
   id: string; role: string; scope: Scope; required_for: string[];
+  usage?: 'supplementary_inspiration' | 'required_evidence'; suggested_for?: string[];
   asset_url?: string; reference_id?: string; source: RuleSource;
 };
 export type QualityBundle = {
@@ -69,10 +70,14 @@ function ruleValid(r: unknown, dna: ResolvedDna): r is QualityRule {
   return object(r) && text(r.id,120) && text(r.key,120) && text(r.instruction) && r.value !== undefined &&
     stableJson(r.value).length <= 2000 && ['content','typography','banner','proof','brand_style','delivery','workflow'].includes(r.category) &&
     scopeValid(r.scope) && Array.isArray(r.sources) && r.sources.length > 0 && r.sources.length <= 8 && r.sources.every(s => sourceValid(s,dna)) &&
-    (r.supersedes === undefined || strings(r.supersedes)) && (r.reference_ids === undefined || strings(r.reference_ids));
+    (r.supersedes === undefined || strings(r.supersedes)) && (r.reference_ids === undefined || strings(r.reference_ids)) &&
+    (r.required_reference_ids === undefined || strings(r.required_reference_ids));
 }
 function referenceValid(r: unknown, dna: ResolvedDna): r is QualityReference {
   return object(r) && text(r.id,120) && text(r.role,120) && scopeValid(r.scope) && strings(r.required_for) &&
+    (r.usage === undefined || ['supplementary_inspiration','required_evidence'].includes(r.usage)) &&
+    (r.usage !== 'required_evidence' || r.required_for.length > 0) &&
+    (r.suggested_for === undefined || strings(r.suggested_for)) &&
     sourceValid(r.source,dna) && (r.asset_url === undefined || text(r.asset_url,2000)) && (r.reference_id === undefined || text(r.reference_id,500));
 }
 function usableAssetUrl(value?: string) {
@@ -132,24 +137,35 @@ export async function compileCreativeQuality(dna: ResolvedDna, context: QualityC
     const canonical = allCanonicalReferences.find(e => e.id === r.id || (!!r.reference_id && (e.id === r.reference_id || e.metadata?.reference_id === r.reference_id)));
     const revoked = canonical && !['approved','reference'].includes(canonical.status);
     const asset_url = revoked ? null : usableAssetUrl(canonical?.asset_url) || usableAssetUrl(r.asset_url);
-    return { ...r, asset_url, availability: asset_url ? 'FETCH_REQUIRED' : 'UNAVAILABLE', pixel_inspection: 'NOT_INSPECTED' as const };
+    // Legacy case examples used required_for as a fixed-seed gate. They are now
+    // supplementary by default; only explicitly reviewed evidence can be mandatory.
+    const usage = r.usage ?? 'supplementary_inspiration';
+    return { ...r, usage, required_for: usage === 'required_evidence' ? r.required_for : [],
+      suggested_for: [...new Set([...(r.suggested_for || []), ...(usage === 'supplementary_inspiration' ? r.required_for : [])])].sort(),
+      asset_url, availability: asset_url ? usage === 'required_evidence' ? 'FETCH_REQUIRED' : 'FETCH_IF_SELECTED' : 'UNAVAILABLE', pixel_inspection: 'NOT_INSPECTED' as const };
   });
-  for (const r of rules) for (const id of r.reference_ids || []) if (!references.some(ref => ref.id === id)) errors.push(`REQUIRED_REFERENCE_UNRESOLVED:${id}`);
-  const unresolved = references.filter(r => r.required_for.length && r.availability === 'UNAVAILABLE').map(r => r.id);
+  // reference_ids are optional inspiration links, including historical fixed seeds.
+  // An evidence dependency must be explicit and cannot be fulfilled by inspiration.
+  for (const r of rules) for (const id of r.required_reference_ids || [])
+    if (!references.some(ref => ref.id === id && ref.usage === 'required_evidence')) errors.push(`REQUIRED_REFERENCE_UNRESOLVED:${id}`);
+  const requiredReferences = references.filter(r => r.usage === 'required_evidence');
+  const unresolved = requiredReferences.filter(r => r.availability === 'UNAVAILABLE').map(r => r.id);
   const contentReady = errors.length === 0;
   const contract = {
     schema_version: QUALITY_SCHEMA, compiler_version: QUALITY_COMPILER, revision: bundle?.revision ?? null,
     route: { brand, branch }, source_hashes: hashes,
     status: contentReady ? 'COMPILED' : 'BLOCKED', errors: [...new Set(errors)].sort(),
     rules: contentReady ? rules : [], superseded_rule_ids: [...superseded].sort(), references,
-    canonical_visual_reference_catalog: canonicalReferences.map((r: any) => ({ id: r.id, material_type: r.material_type, status: r.status, asset_url: usableAssetUrl(r.asset_url), pixel_inspection: 'NOT_INSPECTED' })),
-    reference_gate: { status: unresolved.length ? 'BLOCKED_MISSING_REFERENCES' : references.some(r => r.required_for.length) ? 'PIXEL_INSPECTION_REQUIRED' : 'NO_REQUIRED_STYLE_REFERENCES', missing_reference_ids: unresolved, blocked_asset_slots: [...new Set(references.filter(r => unresolved.includes(r.id)).flatMap(r => r.required_for))].sort() },
-    gates: { content_authoring: contentReady ? 'READY_WITH_SOURCE_RESEARCH' : 'BLOCKED', asset_generation: !contentReady || unresolved.length ? 'BLOCKED' : 'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION',
+    canonical_visual_reference_catalog: canonicalReferences.map((r: any) => ({ id: r.id, material_type: r.material_type, status: r.status, usage: 'supplementary_inspiration', asset_url: usableAssetUrl(r.asset_url), pixel_inspection: 'NOT_INSPECTED' })),
+    reference_library_policy: { usage: 'OPTIONAL_SUPPLEMENTARY_INSPIRATION', fixed_seed_set_required: false, empty_library_blocks_generation: false,
+      overrides_active_brand_or_product_rules: false, inspect_selected_images_before_use: true },
+    reference_gate: { status: unresolved.length ? 'BLOCKED_MISSING_REFERENCES' : requiredReferences.length ? 'PIXEL_INSPECTION_REQUIRED' : 'NO_REQUIRED_STYLE_REFERENCES', missing_reference_ids: unresolved, blocked_asset_slots: [...new Set(references.filter(r => unresolved.includes(r.id)).flatMap(r => r.required_for))].sort() },
+    gates: { content_authoring: contentReady ? 'READY_WITH_SOURCE_RESEARCH' : 'BLOCKED', asset_generation: !contentReady || unresolved.length ? 'BLOCKED' : requiredReferences.length ? 'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION' : 'REQUIRES_PRODUCT_PIXEL_INSPECTION',
       human_artistic_review: 'REQUIRED', identical_pixels_guaranteed: false },
     provenance: { source: 'approved_canonical_metadata', account_independent: true, canonical_branch_version: dna.branch?.version ?? null, canonical_brand_version: dna.brand_dna?.version ?? null,
       legacy_library_pointer_count: new Set((String(dna.branch?.content_md || '') + String(dna.brand_dna?.content_md || '')).match(/libfile_[a-zA-Z0-9]+/g) || []).size,
       visual_reference_set_hash: await sha256(stableJson(dna.visual_references || [])) },
-    instruction: 'Apply active scoped rules only. Superseded historical prose and metadata do not override this contract. Verify current PDP facts before content. Fetch and inspect required reference pixels on the generating account before assets; URLs/IDs alone are not visual verification. Stop the affected stage and name missing evidence, stale contract or rule conflict. No silent fallback to account memory. Human review is required for artistic quality; a matching policy hash is not an identical-output guarantee.',
+    instruction: 'Apply active scoped rules only. Superseded historical prose and metadata do not override this contract. Verify current PDP facts before content. Reference Library images and legacy reference_ids are optional supplementary inspiration, never fixed seeds, universal style or product evidence. An empty library or unavailable inspiration does not block creation. Follow active brand/product rules and inspect current product evidence before assets. Inspect any inspiration actually selected before using it; otherwise omit it. Only explicitly scoped required_evidence references and required_reference_ids may add an evidence gate; fetch and inspect their pixels. URLs/IDs alone are not visual verification. Stop the affected stage and name missing evidence, stale contract or rule conflict. No silent fallback to account memory. Human review is required for artistic quality; a matching policy hash is not an identical-output guarantee.',
   };
   return { ...contract, contract_hash: await sha256(stableJson(contract)) };
 }

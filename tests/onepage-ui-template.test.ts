@@ -119,7 +119,7 @@ test('anonymous member HTTP and MCP template paths work without Library access o
 });
 
 test('future changed delivery policy cannot silently conflict with immutable current template metadata', () => {
-  const data={resolved:{brand:'pawfecthouse',branch:'onepage-system'},creative_quality_contract:{schema_version:'uid-creative-quality/1',compiler_version:'2026-10-11-v1',revision:'test',route:{brand:'pawfecthouse',branch:'onepage-system'},contract_hash:'a'.repeat(64),status:'COMPILED',rules:[{id:'delivery',key:'delivery.mapping_format',instruction:'approved',value:'WEBP'}],errors:[],gates:{content_authoring:'READY_WITH_SOURCE_RESEARCH',asset_generation:'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION',human_artistic_review:'REQUIRED',identical_pixels_guaranteed:false},reference_gate:{status:'NO_REQUIRED_STYLE_REFERENCES'}}};
+  const data={resolved:{brand:'pawfecthouse',branch:'onepage-system'},creative_quality_contract:{schema_version:'uid-creative-quality/1',compiler_version:'2026-10-11-v2',revision:'test',route:{brand:'pawfecthouse',branch:'onepage-system'},contract_hash:'a'.repeat(64),status:'COMPILED',rules:[{id:'delivery',key:'delivery.mapping_format',instruction:'approved',value:'WEBP'}],errors:[],gates:{content_authoring:'READY_WITH_SOURCE_RESEARCH',asset_generation:'REQUIRES_PRODUCT_AND_REFERENCE_PIXEL_INSPECTION',human_artistic_review:'REQUIRED',identical_pixels_guaranteed:false},reference_gate:{status:'NO_REQUIRED_STYLE_REFERENCES'}}};
   const attached=attachOnepageUiTemplate(data,'PawfectHouse','Onepage');
   assert.equal(attached.template_policy_compatibility.status,'BLOCKED_POLICY_TEMPLATE_MISMATCH');
   assert.equal(attached.template_policy_compatibility.stage,'mapping');
