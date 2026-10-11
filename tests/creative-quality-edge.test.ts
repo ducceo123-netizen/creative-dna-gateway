@@ -37,3 +37,10 @@ test('packet has an explicit binding for every current template image slot, incl
   for(const slot of getOnepageUiTemplate().asset_slots) assert.ok(slots.has(slot)||slots.has(aliases[slot]),slot);
   assert.equal(aliases.occasion_story_01_mobile,'detail_main');
 });
+test('resolver leaves non-Onepage routes without a curated contract unchanged', async()=>{
+  const dna={api_version:'1.1',brand:{slug:'pawfecthouse'},branch:{slug:'ldp-system',content_md:'Existing LDP rules',metadata:{}},brand_dna:{slug:'brand-dna',content_md:'brand',metadata:{}}};
+  const result=await invoke('creative-dna-public',{brand:'PawfectHouse',branch:'LDP'},dna);
+  assert.equal(result.response.status,200);assert.equal(result.body.api_version,'1.1');
+  assert.equal(result.body.creative_quality_contract,undefined);assert.equal(result.body.branch.content_md,'Existing LDP rules');
+  assert.equal(result.body.resolved.branch,'ldp-system');
+});

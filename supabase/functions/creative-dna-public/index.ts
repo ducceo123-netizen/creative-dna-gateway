@@ -18,6 +18,8 @@ Deno.serve(async(req)=>{
  if(!brand||!branch)return out({error:"brand and branch are required",examples:["PawfectHouse / Onepage","GiftSoul / LDP Hero","SoulPrise / Onepage"]},400);
  const {data,error}=await admin.rpc("resolve_creative_dna_alias",{p_brand:String(brand),p_branch:String(branch)});
  if(error)return out({error:"Resolver unavailable"},500);if(!data?.brand||!data?.branch)return out({error:"Creative DNA route not found"},404);
+ // Preserve legacy behavior for branches outside this reviewed Onepage rollout.
+ if(data.branch.slug!=="onepage-system" && !data.branch.metadata?.creative_quality_contract) return out({api_version:"1.1",mode:"read_only",generate:false,requested:{brand,branch},resolved:{brand:data.brand?.slug,branch:data.branch?.slug},instruction:"Current Creative DNA runtime context. Read-only: never train, approve, update, or delete.",...data});
  const quality = await compileCreativeQuality(data);
  return out({...data,api_version:"1.2",mode:"read_only",generate:false,requested:{brand,branch},resolved:{brand:data.brand?.slug,branch:data.branch?.slug,quality_revision:quality.revision,quality_contract_hash:quality.contract_hash},creative_quality_contract:quality,instruction:"Current Creative DNA runtime context. Read-only. For compiled routes use active scoped creative_quality_contract rules. Historical prose remains evidence, not authority over superseded rules. A BLOCKED quality contract or missing reference must be surfaced; do not silently fall back to account memory. Uncompiled routes require source review before claiming quality consistency."});
 });
