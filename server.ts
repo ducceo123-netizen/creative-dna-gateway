@@ -9,6 +9,7 @@ import { validateRegressionAttestation } from "./src/governance-regression.ts";
 import { launcherHtml, LAUNCHER_MIME, LAUNCHER_URI } from "./uid-brands-workflow.ts";
 import { UID_NATIVE_WORKFLOW, REVIEW_TOOL_DESCRIPTION, NATIVE_WORKFLOW_DESCRIPTION, NATIVE_FALLBACK_TEXT } from "./uid-brands-actions.ts";
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA, discoverySchema, createReviewContext } from "./uid-brands-review-contract.ts";
+import { registerPrivateReferenceRoutes } from "./uid-private-reference-proxy.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
 
@@ -866,6 +867,9 @@ export function createApp(): express.Application {
 
     next();
   });
+
+  // Separate authenticated image boundary; public MCP/resolver calls never use this route.
+  registerPrivateReferenceRoutes(app);
 
   // Versioned backend-owned template: no Library session or datastore query required.
   app.get("/api/onepage-ui-template/:version/:file", (req: Request, res: Response) => {
