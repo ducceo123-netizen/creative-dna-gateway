@@ -31,6 +31,16 @@ test("review input stays backward compatible and accepts the complete asset meta
   assert.equal(REVIEW_INPUT_SCHEMA.safeParse({ stage: "content_approval", content_version: " " }).success, false);
 });
 
+test("review outcome fields preserve full text, host image IDs and HTTPS links without accepting executable URLs", () => {
+  const input = { stage: "content_approval", result_content: "Full outcome\n<script>untrusted text</script>".repeat(300), result_links: [{ label: "Deliverable", url: "https://example.com/result" }], result_images: [{ file_id: "file_actual-image-1", label: "Banner desktop" }] };
+  assert.deepEqual(REVIEW_INPUT_SCHEMA.parse(input), input);
+  for (const url of ["javascript:alert(1)", "data:text/html,hi", "http://example.com", "https://user:secret@example.com/file"]) {
+    assert.equal(REVIEW_INPUT_SCHEMA.safeParse({ ...input, result_links: [{ label: "Unsafe", url }] }).success, false);
+  }
+  assert.equal(REVIEW_INPUT_SCHEMA.safeParse({ ...input, result_content: "x".repeat(120001) }).success, false);
+  assert.equal(REVIEW_INPUT_SCHEMA.safeParse({ ...input, result_images: [{ file_id: "https://example.com/image.png", label: "Not a host ID" }] }).success, false);
+});
+
 test("live local MCP advertises and executes matching review/native contracts, metadata and resource", async () => {
   const server = createApp().listen(0, "127.0.0.1");
   await new Promise<void>(resolve => server.once("listening", resolve));
@@ -48,7 +58,7 @@ test("live local MCP advertises and executes matching review/native contracts, m
     assert.doesNotMatch(initialize.instructions, /only for explicit requests in a later turn|WIDGET ACTION IS AUTHORITATIVE|REAL USER ACTION/);
     assert.match(initialize.instructions, /does not itself prove authenticated user approval/);
     const { tools } = await rpc("tools/list", {});
-    for (const name of ["show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
+    for (const name of ["launch_creative_dna", "show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
       const runtime = tools.find((tool: any) => tool.name === name);
       const discovery = TOOL_DEFINITIONS.find(tool => tool.name === name)!;
       const { $schema, ...runtimeSchema } = runtime.inputSchema;
@@ -69,17 +79,24 @@ test("live local MCP advertises and executes matching review/native contracts, m
     const reviewTool = tools.find((tool: any) => tool.name === "show_uid_brands_review");
     assert.equal(reviewTool._meta.ui.resourceUri, LAUNCHER_URI);
     assert.equal(reviewTool._meta["openai/outputTemplate"], LAUNCHER_URI);
+    assert.equal(reviewTool._meta["openai/widgetAccessible"], true);
+    assert.deepEqual(reviewTool._meta.ui.visibility, ["model", "app"]);
+    assert.deepEqual(tools.find((tool: any) => tool.name === "launch_creative_dna")._meta, reviewTool._meta);
     const resource = await rpc("resources/read", { uri: LAUNCHER_URI });
     assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
     assert.equal(resource.contents[0].text, launcherHtml);
     for (const stage of REVIEW_STAGES) {
-      const args = { stage, task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
+      const args = { stage, task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });
       const native = await rpc("tools/call", { name: "get_uid_brands_native_workflow", arguments: args });
       assert.equal(review.isError, undefined); assert.equal(native.isError, undefined);
       assert.deepEqual(review.structuredContent.assets, args.assets);
       assert.equal(review.structuredContent.result_summary, args.result_summary);
       assert.equal(native.structuredContent.result_summary, args.result_summary);
+      for (const key of ["result_content", "result_links", "result_images"] as const) {
+        assert.deepEqual(review.structuredContent[key], args[key]);
+        assert.deepEqual(native.structuredContent[key], args[key]);
+      }
       assert.deepEqual(native.structuredContent.form, REVIEW_STEPS[stage]);
       assert.deepEqual(native.structuredContent.review_context, review.structuredContent.review_context);
       assert.equal(native.content[0].text, NATIVE_FALLBACK_TEXT);
@@ -87,6 +104,9 @@ test("live local MCP advertises and executes matching review/native contracts, m
     }
     const legacy = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "content_approval" } });
     assert.equal(legacy.structuredContent.review_context.binding, "unbound");
+    const navigation = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "asset_review", task_id: "task-A", content_version: "v1", navigation_id: "navigation-local-rpc" } });
+    assert.equal(navigation.structuredContent.navigation_id, "navigation-local-rpc");
+    assert.equal(navigation.structuredContent.stage, "asset_review");
     const invalid = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "launcher" } });
     assert.equal(invalid.isError, true);
   } finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }

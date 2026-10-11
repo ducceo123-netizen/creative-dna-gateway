@@ -29,7 +29,7 @@ input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}text
 .review-area{display:none}.review-area.visible{display:block}
 .review-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .review-choice{flex:1 1 120px;min-height:40px;border:1px solid var(--border);border-radius:9999px;padding:9px 13px;background:var(--input);color:var(--fg);text-align:center;font-size:13px;cursor:pointer}
-.review-choice.selected{border-color:var(--fg);background:var(--active);font-weight:600}
+.review-choice.selected{border-color:var(--fg);background:var(--active);font-weight:600}.review-choice:disabled{opacity:.5;cursor:not-allowed}
 body.review-mode{padding:24px 20px 32px}body.review-mode .wrap{max-width:600px}body.review-mode .note{display:none}
 body.review-mode .action{width:auto;min-height:38px;margin-top:12px;padding:8px 19px;font-size:13px}
 body.review-mode #reviewHelp{font-size:13px;margin:0;color:var(--muted)}
@@ -50,13 +50,14 @@ body.review-mode label{margin-top:10px}
 .error{color:#b42318;font-size:12px;min-height:12px}.optional{font-weight:400;color:var(--muted)}.note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5;text-align:center}
 .workflow-steps{list-style:none;display:flex;gap:6px;padding:0;margin:0 0 14px}.workflow-step{flex:1;padding:8px 4px;border-bottom:3px solid var(--border);font-size:12px;color:var(--muted);text-align:center}.workflow-step.current{border-color:var(--focus);color:var(--fg);font-weight:650}.workflow-step.past{border-color:var(--active)}.guidance{padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}.guidance h2{font-size:16px;margin:0 0 5px}.guidance p{line-height:1.6}.guidance .next{color:var(--fg);font-weight:550;margin-top:7px}.task-context{font-size:11px;overflow-wrap:anywhere;margin:5px 0 10px;color:var(--muted)}.result-summary{padding:12px;border:1px solid var(--border);border-radius:10px;margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}.attachment-wrap{margin-top:16px}.selection-count{margin:8px 0;color:var(--muted);font-size:12px}.error:not(:empty){padding:10px;margin-top:12px;border:1px solid #c76b62;border-radius:8px}.draft-note{font-size:11px;margin-top:10px;color:var(--muted)}
 [hidden]{display:none!important}
+.outcome{margin:18px 0 22px;padding-bottom:18px;border-bottom:1px solid var(--border)}.outcome h2{font-size:16px;margin:0 0 12px}.outcome-content{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7}.outcome-links{padding-left:20px;line-height:1.8;overflow-wrap:anywhere}.outcome-links a{color:var(--focus)}.outcome-images{display:grid;gap:16px;margin:16px 0}.outcome-images figure{margin:0}.outcome-images img{display:block;max-width:100%;height:auto;border-radius:8px}.outcome-images figcaption{font-size:12px;color:var(--muted);margin-top:6px}.outcome-note{font-size:12px;color:var(--muted);margin-top:12px}.result-summary{max-height:none;overflow:visible}
 @media(max-width:420px){body{padding:22px 16px 30px}body.review-mode{padding:20px 16px 28px}.review-choice{flex:1 1 100%}}
 </style></head>
 <body><main class="wrap">
 <div class="header"><div><h1>UID Brands</h1><p>Chọn nội dung cần thực hiện</p></div></div>
 <ol class="workflow-steps" id="workflowSteps" aria-label="Tiến trình công việc"></ol>
 <section class="guidance" aria-labelledby="stageTitle"><h2 id="stageTitle"></h2><p id="stageHint"></p><p id="missingInputs"></p><p class="next" id="nextAction"></p></section>
-<div class="task-context" id="taskContext"></div><div class="result-summary" id="resultSummary" hidden></div>
+<div class="task-context" id="taskContext"></div><section class="outcome" id="reviewOutcome" aria-labelledby="outcomeTitle" hidden><h2 id="outcomeTitle">Kết quả để duyệt</h2><div class="outcome-content" id="resultContent" hidden></div><div class="result-summary" id="resultSummary" hidden></div><div class="outcome-images" id="resultImages"></div><ul class="outcome-links" id="resultLinks" hidden></ul><p class="outcome-note" id="outcomeNote"></p></section>
 <div class="flow-state" id="flowState" role="status" aria-live="polite"></div><section id="launchFields"><label for="brand">Brand</label><select id="brand"></select>
 <label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select>
 <label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
@@ -74,7 +75,7 @@ ${ATTACHMENT_UI_SCRIPT}
 let attachments;
 const reviewDrafts=Object.assign(Object.create(null),initial.reviewDrafts||{});
 let fieldsInitialized=false;
-let lastError="", resultSummary="";
+let lastError="", resultSummary="", resultContent="", resultLinks=[], resultImages=[], outcomeEpoch=0;
 // Persist each meaningful edit without rebuilding the focused textarea.
 const reviewSteps=${JSON.stringify(REVIEW_STEPS)};
 const submittedRequests=new Set(Array.isArray(initial.submittedRequests)?initial.submittedRequests.filter(x=>typeof x==="string"):[]);
@@ -94,11 +95,27 @@ function currentRequestKey(){const key=[reviewKey,decision,reviewDetail()];const
 function actionAttachments(){return stage==="launcher"||currentAction()?.requiresFeedback?attachments?.getReadyAttachments()||[]:[];}
 function briefRequestKey(){return JSON.stringify(["brief",briefId,$("brand").value,selected,$("url").value.trim(),$("theme").value.trim(),$("custom").value.trim(),actionAttachments().map(x=>[x.fileId,x.text||""])]);}
 function showError(message){lastError=message;$("error").textContent=message;renderGuidance();}
+function safeResultUrl(value){try{const url=new URL(value);return url.protocol==="https:"&&!url.username&&!url.password?url.href:"";}catch{return "";}}
+function renderOutcome(){
+ const epoch=++outcomeEpoch,review=stage!=="launcher";
+ $("reviewOutcome").hidden=!review;
+ $("resultContent").textContent=resultContent;$("resultContent").hidden=!resultContent;
+ $("resultSummary").textContent=resultSummary;$("resultSummary").hidden=!!resultContent||!resultSummary;
+ $("resultLinks").replaceChildren();$("resultImages").replaceChildren();
+ if(!review)return;
+ resultLinks.forEach(link=>{const href=safeResultUrl(link.url);if(!href)return;const li=document.createElement("li"),a=document.createElement("a");a.textContent=link.label;a.href=href;a.target="_blank";a.rel="noopener noreferrer";a.onclick=event=>{if(typeof window.openai?.openExternal==="function"){event.preventDefault();try{const opened=window.openai.openExternal({href});opened?.catch?.(()=>showError("Host chưa mở được liên kết. Hãy mở tệp gốc trong cuộc trò chuyện."));}catch{showError("Host chưa mở được liên kết. Hãy mở tệp gốc trong cuộc trò chuyện.");}}};li.appendChild(a);$("resultLinks").appendChild(li);});
+ $("resultLinks").hidden=!$("resultLinks").children.length;
+ $("outcomeNote").textContent=resultContent?"Ảnh và tệp gốc vẫn được đính kèm trong cuộc trò chuyện.":"Panel này chưa nhận được toàn bộ nội dung. Xem kết quả và tệp gốc trong cuộc trò chuyện trước khi chọn hành động.";
+ resultImages.forEach(item=>{const figure=document.createElement("figure"),caption=document.createElement("figcaption");caption.textContent=item.label+" · Xem ảnh gốc trong cuộc trò chuyện.";figure.appendChild(caption);$("resultImages").appendChild(figure);
+  const fn=window.openai?.getFileDownloadUrl;if(typeof fn!=="function")return;
+  Promise.resolve().then(()=>fn.call(window.openai,{fileId:item.file_id})).then(result=>{if(epoch!==outcomeEpoch)return;const src=safeResultUrl(result?.downloadUrl);if(!src)return;const img=document.createElement("img");img.alt=item.label;img.referrerPolicy="no-referrer";img.onload=()=>{if(epoch===outcomeEpoch)caption.textContent=item.label;};img.onerror=()=>{img.hidden=true;caption.textContent=item.label+" · Không tải được ảnh xem trước; xem ảnh gốc trong cuộc trò chuyện.";};img.src=src;figure.replaceChildren(img,caption);}).catch(()=>{/* A missing preview never consumes or hides the original attachment. */});
+ });
+}
 function renderGuidance(){
  const stages=["launcher","content_approval","asset_review","packaging"],labels=["Brief","Content","Assets","Đóng gói"],index=stage==="complete"?3:Math.max(0,stages.indexOf(stage));
  $("workflowSteps").replaceChildren(...labels.map((label,i)=>{const li=document.createElement("li");li.className="workflow-step"+(i===index?" current":i<index?" past":"");li.textContent=(i+1)+". "+label;if(i===index)li.setAttribute("aria-current","step");return li;}));
  const titles={launcher:"Chuẩn bị brief",content_approval:"Duyệt content",asset_review:feedbackStep?(feedbackMode==="train"?"Gửi đề xuất Train":"Góp ý cho assets"):"Duyệt assets",packaging:"Đóng gói kết quả",complete:"Kết quả đóng gói"};
- const hints={launcher:"Chọn brand, material và URL sản phẩm hoặc collection. Thêm yêu cầu và tệp tham khảo nếu cần.",content_approval:"Kiểm tra content trong phản hồi ChatGPT. Chốt content để chuyển sang làm assets, hoặc gửi góp ý.",asset_review:feedbackStep?"Chọn mục cần áp dụng, tạo nhóm feedback rồi mô tả điều cần thay đổi.":"Kiểm tra assets trong phản hồi ChatGPT. Bạn có thể chỉnh sửa, gửi Train hoặc đóng gói.",packaging:"Gửi yêu cầu đóng gói. Link/file chỉ có sau khi ChatGPT thực sự tạo xong.",complete:"Kiểm tra file/link đã trả trong cuộc trò chuyện. Bạn có thể mở lại góp ý cho kết quả hoặc bắt đầu brief mới."};
+ const hints={launcher:"Chọn brand, material và URL sản phẩm hoặc collection. Thêm yêu cầu và tệp tham khảo nếu cần.",content_approval:"Đọc kết quả bên dưới rồi chọn hành động. Chốt content gửi ngay yêu cầu tạo assets.",asset_review:feedbackStep?"Chọn mục cần áp dụng, tạo nhóm feedback rồi mô tả điều cần thay đổi.":"Kiểm tra kết quả bên dưới và ảnh gốc trong cuộc trò chuyện, rồi chọn chỉnh sửa, Train hoặc đóng gói.",packaging:"Kiểm tra kết quả rồi bấm Đóng gói. Link/file chỉ có sau khi thực sự tạo xong.",complete:"Kiểm tra file/link đã trả. Bạn có thể mở lại góp ý cho kết quả hoặc bắt đầu brief mới."};
  $("stageTitle").textContent=titles[stage];$("stageHint").textContent=hints[stage];
  const needs=[];
  if(stage==="launcher"){if(!$("brand").value)needs.push("brand");if(!selected)needs.push("material");if(!$("url").value.trim())needs.push("URL sản phẩm / collection");}
@@ -107,12 +124,13 @@ function renderGuidance(){
  if(stage==="launcher"||currentAction()?.requiresFeedback){try{attachments?.validateReady();}catch{needs.push("tệp chưa sẵn sàng (xem trạng thái bên dưới)");}}
  $("missingInputs").textContent=needs.length?"Còn thiếu: "+needs.join(", ")+".":"Đã đủ thông tin chính. Kiểm tra tệp đính kèm trước khi gửi.";
  const waiting=stage==="launcher"?submittedRequests.has(briefRequestKey()):submittedRequests.has(currentRequestKey());
- $("nextAction").textContent=waiting?"Tiếp theo: xem phản hồi mới từ ChatGPT. Chưa có xác nhận công việc đã chạy hoặc hoàn tất.":lastError?"Tiếp theo: "+lastError:needs.length?"Tiếp theo: bổ sung thông tin còn thiếu ở dưới.":"Tiếp theo: "+(stage==="launcher"?"bấm Bắt đầu để gửi brief.":(currentAction()?.submitLabel||"gửi lựa chọn")+".");
+ $("nextAction").textContent=waiting?"Tiếp theo: xem phản hồi mới từ ChatGPT.":lastError?"Tiếp theo: "+lastError:needs.length?"Tiếp theo: bổ sung thông tin còn thiếu ở dưới.":"Tiếp theo: "+(stage==="launcher"?"bấm Bắt đầu để gửi brief.":currentAction()?.requiresFeedback?(currentAction()?.submitLabel||"gửi lựa chọn")+".":"bấm hành động bên dưới để gửi ngay.");
  $("taskContext").textContent=reviewContext&&stage!=="launcher"?"Task: "+(reviewContext.task_id||"chưa có ID")+" · Phiên bản: "+(reviewContext.content_version||"chưa xác định")+" · Đối chiếu đúng kết quả trước khi gửi.":"Bước 1/4 · Brief mới";
- $("resultSummary").hidden=!resultSummary;$("resultSummary").textContent=resultSummary;
 }
 function currentAction(){return reviewSteps[stage]?.choices.find(x=>x.value===decision);}
 function renderSubmissionState(){
+ $("run").hidden=stage!=="launcher"&&!currentAction()?.requiresFeedback;
+ $("draftNote").hidden=stage!=="launcher"&&!currentAction()?.requiresFeedback;
  if(stage==="launcher"){
  const sent=submittedRequests.has(briefRequestKey());$("newBrief").hidden=!sent;attachments?.setDisabled(submitting);$("launchFields").querySelectorAll("input,select,textarea").forEach(node=>{node.disabled=submitting;});$("run").disabled=submitting||sent;$("run").textContent=submitting?"Đang gửi…":sent?"Đã gửi brief":"Bắt đầu";
  $("flowState").textContent=submitting?"Đang gửi brief sang ChatGPT…":sent?"Đã gửi brief · Chờ phản hồi từ ChatGPT":"Bước 1/4 · Chuẩn bị brief";renderGuidance();return;
@@ -122,6 +140,7 @@ function renderSubmissionState(){
  attachments?.setDisabled(pending);$("run").disabled=locked;
  $("run").textContent=sent?"Đã gửi lựa chọn":pending?"Đang gửi…":currentAction()?.submitLabel||"Gửi lựa chọn";
  $("reviewFields").querySelectorAll("button, textarea").forEach(node=>{node.disabled=pending;});
+ Array.from($("reviewChoices").children).forEach((node,index)=>{const action=reviewSteps[stage].choices[index];if(!action)return;const done=!action.requiresFeedback&&submittedRequests.has(JSON.stringify([reviewKey,action.value,""]));node.disabled=pending||done;node.textContent=done?"Đã gửi: "+action.label:action.label;});
  if(!pending&&feedbackStep)$("createSharedFeedback").disabled=!selectedTargets.size;
  if(pending)$("flowState").textContent="Đang gửi lựa chọn sang ChatGPT…";
  if(sent)$("flowState").textContent="Đã gửi lựa chọn · Chờ kết quả mới từ ChatGPT";
@@ -211,10 +230,10 @@ function renderStage(){
  const labels={content_approval:"Content Approval",asset_review:"Asset Review",packaging:"Packaging",complete:"Delivery"};
  $("reviewChoices").replaceChildren();
  if(review){
-  $("reviewHelp").textContent=(labels[stage]||"Review")+" · Chọn hành động, sau đó bấm nút Gửi bên dưới.";
+  $("reviewHelp").textContent=(labels[stage]||"Review")+" · Bấm hành động để gửi ngay. Feedback / Train sẽ mở ô nhập góp ý.";
   const choices=reviewSteps[stage].choices;
   if(!choices.some(x=>x.value===decision))decision=choices[0].value;
-  choices.forEach(({value,label})=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(decision===value?" selected":"");b.setAttribute("aria-pressed",String(decision===value));b.textContent="Chọn: "+label;b.onclick=()=>{if(reviewLocked())return;decision=value;feedbackStep=stage==="asset_review"&&(value==="feedback"||value==="train");if(feedbackStep)feedbackMode=value;save();renderStage();};$("reviewChoices").appendChild(b);});
+  choices.forEach(({value,label,requiresFeedback})=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(requiresFeedback&&decision===value?" selected":"");if(requiresFeedback)b.setAttribute("aria-expanded",String(decision===value));b.textContent=label;b.onclick=()=>{if(reviewLocked())return;decision=value;feedbackStep=stage==="asset_review"&&(value==="feedback"||value==="train");if(feedbackStep)feedbackMode=value;save();renderStage();if(!requiresFeedback)return submitCurrentAction();};$("reviewChoices").appendChild(b);});
   $("reviewChoices").hidden=feedbackStep; $("assetFeedbackFields").hidden=!feedbackStep;
   $("reviewFeedback").hidden=stage!=="content_approval"||decision!=="revise";$("feedbackLabel").hidden=stage!=="content_approval"||decision!=="revise";
   if(feedbackStep)renderVariables();
@@ -234,7 +253,7 @@ function load(output){
   const context=data.review_context;
   const nextKey=context&&typeof context.review_id==="string"?context.review_id:(reviewKey&&previousStage===stage?reviewKey:legacyReviewId+":"+stage);
   if(nextKey!==reviewKey){
-   lastError="";resultSummary="";taskAssets=[];
+   lastError="";resultSummary="";resultContent="";resultLinks=[];resultImages=[];taskAssets=[];
    reviewKey=nextKey;reviewContext=context||{review_id:nextKey,stage,binding:"unbound"};
    feedbackStep=false;decision=reviewSteps[stage].choices[0].value;variableItems=[];selectedTargets.clear();$("reviewFeedback").value="";$("error").textContent="";
    if(initial.reviewSelection?.review_id===reviewKey&&reviewSteps[stage].choices.some(x=>x.value===initial.reviewSelection.decision)){
@@ -245,6 +264,9 @@ function load(output){
   }
  }
  if(typeof data.result_summary==="string")resultSummary=data.result_summary.slice(0,12000);else if(previousStage!==stage)resultSummary="";
+ if(typeof data.result_content==="string")resultContent=data.result_content.slice(0,120000);else if(previousStage!==stage)resultContent="";
+ if(Array.isArray(data.result_links))resultLinks=data.result_links.filter(x=>x&&typeof x.label==="string"&&typeof x.url==="string"&&safeResultUrl(x.url)).slice(0,40).map(x=>({label:x.label.slice(0,200),url:x.url}));else if(previousStage!==stage)resultLinks=[];
+ if(Array.isArray(data.result_images))resultImages=data.result_images.filter(x=>x&&typeof x.label==="string"&&typeof x.file_id==="string"&&/^[A-Za-z0-9_-]{1,200}$/.test(x.file_id)).slice(0,24).map(x=>({label:x.label.slice(0,200),file_id:x.file_id}));else if(previousStage!==stage)resultImages=[];
  if(Array.isArray(data.assets))taskAssets=data.assets.filter(a=>a&&typeof a==="object").slice(0,100);
  if(stage==="asset_review"&&!["feedback","train","package"].includes(decision))decision="package";
  if(Array.isArray(data.routes)&&data.routes.length){routes=data.routes.filter(r=>r&&r.brand&&r.branch);fallbackActive=false;}
@@ -253,7 +275,7 @@ function load(output){
  const select=$("brand"); const current=brands.includes(select.value)?select.value:initial.brand&&brands.includes(initial.brand)?initial.brand:(brands.includes("pawfecthouse")?"pawfecthouse":brands[0]);
  select.replaceChildren(...brands.map(b=>{const o=document.createElement("option");o.value=b;o.textContent=readable(b);return o;}));select.value=current;
  if(!fieldsInitialized){$("url").value=initial.url||"";$("theme").value=initial.theme||"";$("custom").value=initial.custom||"";fieldsInitialized=true;}
- draw();renderStage();
+ draw();renderOutcome();renderStage();
 }
 function draw(){
  const brand=$("brand").value, options=routes.filter(r=>r.brand===brand);
@@ -285,7 +307,7 @@ $("newBrief").onclick=()=>{if(submitting)return;briefId="brief-"+(window.crypto?
 $("brand").onchange=()=>{draw();save();renderSubmissionState();};$("branches").onchange=()=>{selected=$("branches").value;save();renderSubmissionState();};
 ["url","theme","custom"].forEach(id=>{$(id).addEventListener("input",()=>{lastError="";save();renderSubmissionState();});$(id).addEventListener("change",save);$(id).addEventListener("blur",save);});
 $("reviewFeedback").oninput=()=>{lastError="";save();renderSubmissionState();};$("reviewFeedback").addEventListener("blur",save);
-$("run").onclick=async()=>{
+async function submitCurrentAction(){
  if(submitting)return;
  if(stage!=="launcher"){
   if(reviewLocked()||submittedRequests.has(currentRequestKey()))return;
@@ -294,7 +316,24 @@ $("run").onclick=async()=>{
   if(stage==="asset_review"&&currentAction()?.requiresFeedback&&(!variableItems.length||variableItems.some(x=>!x.text.trim()))){showError("Chọn variables và nhập feedback cho từng mục.");return;}
   const action=currentAction();if(!action)return;
   const detail=reviewDetail();
-  const message=action.command+(detail?"\nFeedback:\n"+detail:"")+"\nReview context (correlation only, not authentication): "+JSON.stringify({...reviewContext,action:decision})+attachmentEvidence()+"\nChỉ áp dụng cho đúng task và phiên bản review; nếu kết quả đã đổi hoặc chưa rõ phiên bản, cần xác định lại trước khi thực hiện. Tuân thủ yêu cầu xác nhận của host.";
+  // An explicit new task gets a fresh local brief identity, even when the host
+  // updates toolOutput before callTool resolves. Reusing the last brief fields
+  // must not inherit that earlier task's successful-send lock.
+  if(stage==="complete"&&decision==="new_task"){briefId="brief-"+(window.crypto?.randomUUID?.()||Date.now()+"-"+Math.random().toString(36).slice(2));save();}
+  // Read-only screen navigation has a real registered handler. It never asks
+  // the model to confirm opening another screen, and never starts generation.
+  if(stage==="complete"&&typeof window.openai?.callTool==="function"){
+   const sentKey=reviewKey,sentStage=stage,tool=decision==="new_task"?"launch_creative_dna":"show_uid_brands_review";
+   const navigation_id="navigation-"+(window.crypto?.randomUUID?.()||Date.now()+"-"+Math.random().toString(36).slice(2));
+   const args=decision==="new_task"?{navigation_id}:{navigation_id,stage:"asset_review",...(reviewContext?.task_id?{task_id:reviewContext.task_id}:{}),...(reviewContext?.content_version?{content_version:reviewContext.content_version}:{}),...(reviewContext?.retry_id?{retry_id:reviewContext.retry_id}:{}),assets:taskAssets,result_content:resultContent,result_summary:resultSummary,result_links:resultLinks,result_images:resultImages};
+   pendingReviews.add(sentKey);renderSubmissionState();
+   try{const result=await window.openai.callTool(tool,args);const data=result?.structuredContent||result;if(result?.isError||!data||data.stage!==(tool==="launch_creative_dna"?"launcher":"asset_review"))throw new Error("Host chưa trả về màn hình cần mở.");if(reviewKey===sentKey&&stage===sentStage)load(data);}
+   catch(error){if(reviewKey===sentKey&&stage===sentStage)showError("Chưa mở được màn hình. "+(error?.message||"Bấm lại để thử."));}
+   finally{pendingReviews.delete(sentKey);renderSubmissionState();}
+   return;
+  }
+  const context={review_id:reviewContext?.review_id,task_id:reviewContext?.task_id,content_version:reviewContext?.content_version,retry_id:reviewContext?.retry_id,stage,action:decision};
+  const message=action.command+(detail?"\nFeedback:\n"+detail:"")+"\nTask / phiên bản: "+JSON.stringify(context)+attachmentEvidence();
   const fn=window.openai?.sendFollowUpMessage;if(!fn){showError("Không kết nối được ChatGPT. Lựa chọn chưa được gửi.");return;}
   const sentKey=reviewKey,requestKey=currentRequestKey();
   pendingReviews.add(sentKey);renderSubmissionState();
@@ -320,9 +359,10 @@ $("run").onclick=async()=>{
  if(!fn){showError("Chưa kết nối được ChatGPT. Mở panel trong ChatGPT rồi thử lại; brief vẫn được giữ.");return;}
  submitting=true;renderSubmissionState();
  try{await publishAttachments();await fn.call(window.openai,{prompt});rememberSubmission(requestKey);}catch(error){showError("Không gửi được brief. "+(error?.message||"Vui lòng thử lại; brief vẫn được giữ."));}finally{submitting=false;renderSubmissionState();}
-};
+}
+$("run").onclick=submitCurrentAction;
 window.addEventListener("pagehide",save);
-window.addEventListener("openai:set_globals",event=>{attachments.refreshCapabilities();const output=event.detail?.globals?.toolOutput;const data=output?.structuredContent||output;if(data&&(data.routes||data.stage)){if(fallbackActive||data.stage)load(data);}});
+window.addEventListener("openai:set_globals",event=>{attachments.refreshCapabilities();const output=event.detail?.globals?.toolOutput;const data=output?.structuredContent||output;if(data?.navigation_id)return;/* App navigation is applied from its guarded callTool promise, never an uncorrelated late globals event. */if(data&&(data.routes||data.stage)){if(fallbackActive||data.stage)load(data);}});
 load(window.openai?.toolOutput||{});renderStage();
 })();
 </script></body></html>`;
