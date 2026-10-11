@@ -4,13 +4,13 @@
 
 This patch builds on the approval-flow patch. The Render endpoint, canonical resolver, Onepage compiler, training proposal semantics, UI resource URI (`ui://uid-brands/workflow-v2.html`), MIME, and existing tool names stay unchanged. No database migration, credentials, deployment settings, public uploads, or persistence service were added.
 
-The visible path is Brief → Content → Assets → Đóng gói. Each view shows the current step, missing information, the primary next action, and task/version when available. An optional plain-text `result_summary` shows the outcome supplied by the caller; the full deliverables remain in the conversation. The additive `complete` review stage belongs to the fourth visual step and offers Sửa tiếp / Task mới. It must only be invoked after real packaging artifacts were successfully returned.
+The visible path is Brief → Content → Assets → Đóng gói. Each view shows the current step, missing information, the primary next action, and task/version when available. The current review contract prefers complete plain-text `result_content` above the actions, plus optional accessible result links and plugin-authorized image previews; `result_summary` remains a legacy fallback. Original files and images remain attached in the conversation. See result-action-continuation.md. The additive `complete` review stage belongs to the fourth visual step and offers Sửa tiếp / Task mới. It must only be invoked after real packaging artifacts were successfully returned.
 
 The new `ingest_uid_brands_attachment` tool, optional review field, and stage enum addition can require a ChatGPT metadata Refresh. A previously mounted/cached widget is not guaranteed to update immediately. No publication or refresh was performed by this implementation.
 
 ## Truthful state and drafts
 
-- Selecting a choice does not send it. The primary submit performs the host call.
+- Actions without additional input send on one click. Feedback/Train open their editor and send only on its explicit submit.
 - A pending host send is “Đang gửi…”. An accepted send is “Chờ phản hồi / Chờ kết quả mới từ ChatGPT”. Neither claims generation has started or finished.
 - Per-file uploading/reading/ready/error labels correspond to actual upload, parsing, or validation promises. There are no simulated percentages, execution timers, or server-job statuses.
 - Exact successful requests are suppressed locally, including attachments. Failed sends keep inputs. A downstream failure needs the existing explicit `retry_id` flow, never automatic replay.

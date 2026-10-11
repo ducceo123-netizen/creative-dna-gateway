@@ -3,6 +3,8 @@ import { z } from "zod";
 import { REVIEW_STAGES, WORKFLOW_STAGES } from "./uid-brands-actions.ts";
 
 const identity = z.string().trim().min(1).max(200);
+const navigationIdentity = identity.optional().describe("UI-only navigation correlation, echoed in the result so late app-initiated updates cannot replace a newer review. Omit for model-initiated calls. This is not authorization.");
+export const LAUNCHER_INPUT_SCHEMA = z.object({ navigation_id: navigationIdentity });
 export const REVIEW_ASSET_SCHEMA = z.object({
   id: z.string().optional(), asset_id: z.string().optional(),
   element: z.string().optional(), section: z.string().optional(),
@@ -10,13 +12,22 @@ export const REVIEW_ASSET_SCHEMA = z.object({
   name: z.string().optional(), position: z.string().optional(),
 });
 const contextShape = {
-  result_summary: z.string().max(12000).optional().describe("Optional plain-text summary of the outcome actually returned. Do not invent execution/progress. Full content and deliverables stay in the conversation."),
+  result_content: z.string().max(120000).optional().describe("Complete text of the actual outcome under review, displayed before its actions in the same widget. Include the full content, not a teaser or summary. Keep generated images and downloadable files attached in the conversation. Never invent results."),
+  result_links: z.array(z.object({
+    label: z.string().trim().min(1).max(200),
+    url: z.url().max(4000).refine(value => { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; }, "Use a verified HTTPS delivery URL without embedded credentials."),
+  })).max(40).optional().describe("Optional verified, user-accessible HTTPS links to the actual result. Never invent URLs or substitute private Library download URLs or sandbox paths for native conversation attachments."),
+  result_images: z.array(z.object({
+    file_id: z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9_-]+$/),
+    label: z.string().trim().min(1).max(200),
+  })).max(24).optional().describe("Optional plugin-authorized host image file IDs and labels for previews above actions. Use real IDs already authorized through host file params, tool file references, upload or selection, never Library IDs, URLs or invented values. Images remain attached in the conversation; mentioning an ID alone does not grant preview access."),
+  result_summary: z.string().max(12000).optional().describe("Legacy plain-text summary. Prefer result_content with the complete outcome so results precede actions. Do not invent execution/progress. Full files and images stay attached in the conversation."),
   task_id: identity.optional().describe("Stable task ID. Supply with content_version for a version-bound review."),
   content_version: identity.optional().describe("Exact outcome revision or content hash. Change after every content or asset revision."),
   retry_id: identity.optional().describe("New explicit attempt after a verified operation failure or a user-requested retry. Keep stable on ordinary reopens; never use to replay automatically."),
   assets: z.array(REVIEW_ASSET_SCHEMA).max(100).optional(),
 };
-export const REVIEW_INPUT_SCHEMA = z.object({ stage: z.enum(REVIEW_STAGES), ...contextShape });
+export const REVIEW_INPUT_SCHEMA = z.object({ stage: z.enum(REVIEW_STAGES), navigation_id: navigationIdentity, ...contextShape });
 export const NATIVE_INPUT_SCHEMA = z.object({ stage: z.enum(WORKFLOW_STAGES).optional(), ...contextShape });
 
 export function discoverySchema(schema: z.ZodType) {

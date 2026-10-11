@@ -2,7 +2,7 @@
 
 ## Actions and fallback
 
-`uid-brands-actions.ts` supplies the same choices, labels and commands to the native workflow and embedded review UI. Choices select an action; the separate submit button sends it. Asset review supports packaging, task feedback and Pending Admin Review training. The guided-interface extension adds a complete delivery stage with Sửa tiếp / Task mới; invoke it only after actual packaging deliverables exist. See guided-ui-attachments.md for attachment routing and release gates.
+`uid-brands-actions.ts` supplies the same choices, labels and commands to the native workflow and embedded review UI. Actions without additional input send on one click. Feedback/Train open their editor and send only on its explicit submit. Asset review supports packaging, task feedback and Pending Admin Review training. The guided-interface extension adds a complete delivery stage with Sửa tiếp / Task mới; invoke it only after actual packaging deliverables exist. See guided-ui-attachments.md for attachment routing and release gates.
 
 Prefer functional host-native controls. If unavailable, call the registered `show_uid_brands_review` during the same outcome turn. Use actionable text only if that UI fails. A new incomplete brief uses `launch_creative_dna`.
 
@@ -29,9 +29,9 @@ Run `npm test`, `npm run lint` and `npm run build`. CI runs the full test set un
 Before release, verify in a real ChatGPT host:
 
 1. Initial content and every rewrite expose a functional approval path.
-2. Choice selection alone sends nothing; submit sends once, with the exact outcome context.
+2. Chốt content / Tạo lại / Đóng gói send once on one click, with the exact outcome context. Feedback/Train selection only opens the editor; its submit sends once.
 3. Native-unavailable fallback opens the registered panel in the same outcome turn.
 4. Feedback, Train, packaging after Train and a failed-operation retry all work with real host authorization.
 5. Reload/dismiss/reopen, a new task, and later revisions do not revive stale approvals or leave controls disabled.
 
-Local tests cannot establish ChatGPT rendering placement, message provenance, approval policy, or actual image generation/training/packaging success.
+See result-action-continuation.md for the complete result-in-widget contract and read-only navigation. Local tests cannot establish ChatGPT outer-message rendering placement, message provenance, approval policy, or actual image generation/training/packaging success.

@@ -52,20 +52,19 @@ function deferred() { let resolve!: () => void; let reject!: (error: Error) => v
 
 for (const stage of REVIEW_STAGES) test(`embedded ${stage} choices match the native action contract`, () => {
   const ui = setup(output(stage));
-  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), REVIEW_STEPS[stage].choices.map(x => `Chọn: ${x.label}`));
+  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), REVIEW_STEPS[stage].choices.map(x => x.label));
   assert.equal(ui.$("run").textContent, REVIEW_STEPS[stage].choices[0].submitLabel);
 });
 
-test("selecting a choice does not submit; explicit submit sends the exact version and action", async () => {
+test("a non-feedback action sends on one click with the exact version and action", async () => {
   const data = output(); const ui = setup(data);
-  ui.choose("approve"); assert.equal(ui.messages.length, 0);
-  assert.notEqual(ui.$("reviewChoices").children[0].textContent, ui.$("run").textContent);
-  await ui.submit(); assert.equal(ui.messages.length, 1);
+  assert.equal(ui.$("run").hidden, true);
+  await ui.choose("approve"); assert.equal(ui.messages.length, 1);
   const message = ui.messages[0].prompt;
   assert.ok(message.includes('"task_id":"task-A"'));
   assert.ok(message.includes('"content_version":"v1"'));
   assert.ok(message.includes('"action":"approve"'));
-  assert.ok(message.includes("not authentication"));
+  assert.doesNotMatch(message, /authentication|Tuân thủ yêu cầu xác nhận|REAL USER ACTION|WIDGET ACTION IS AUTHORITATIVE/);
   assert.equal(ui.$("run").disabled, true);
   assert.match(ui.$("flowState").textContent, /Chờ kết quả mới/);
 });
@@ -136,8 +135,8 @@ test("Train deduplicates its exact payload without blocking later packaging or c
   ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").onclick!();
   let textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Clean edges"; textarea.oninput!();
   await ui.submit(); await ui.submit(); assert.equal(ui.messages.length, 1);
-  ui.$("backToReview").onclick!(); ui.choose("package");
-  assert.equal(ui.$("run").disabled, false); await ui.submit(); assert.equal(ui.messages.length, 2);
+  ui.$("backToReview").onclick!(); await ui.choose("package");
+  assert.equal(ui.messages.length, 2); assert.equal(ui.$("reviewChoices").children[0].disabled, true);
   ui.choose("train"); assert.equal(ui.$("run").disabled, true); await ui.submit(); assert.equal(ui.messages.length, 2);
   textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Use softer lighting"; textarea.oninput!();
   assert.equal(ui.$("run").disabled, false); await ui.submit(); assert.equal(ui.messages.length, 3);
@@ -248,7 +247,7 @@ test("image evidence uses documented structured state before a prompt-only follo
   assert.ok(events.includes("send")); assert.ok(events.indexOf("image-state") < events.indexOf("send"));
   assert.deepEqual(Array.from(ui.openai.widgetState.imageIds), ["file-image-1"]);
   assert.match(ui.openai.widgetState.modelContent.instruction, /untrusted/);
-  ui.choose("approve"); ui.choose("revise");
+  await ui.choose("approve"); ui.choose("revise");
   assert.deepEqual(Array.from(ui.openai.widgetState.imageIds), ["file-image-1"]);
 });
 
@@ -312,8 +311,8 @@ test("confirmed delivery keeps the fourth step and exposes revise/new-task witho
   const ui = setup({ ...output("complete"), result_summary: "Delivered assets.zip in the conversation" });
   assert.equal(ui.$("workflowSteps").children[3].attributes["aria-current"], "step");
   assert.match(ui.$("stageHint").textContent, /file\/link/);
-  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), ["Chọn: Sửa tiếp", "Chọn: Task mới"]);
-  ui.choose("new_task"); assert.equal(ui.messages.length, 0); await ui.submit();
+  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), ["Sửa tiếp", "Task mới"]);
+  await ui.choose("new_task");
   assert.equal(ui.messages.length, 1); assert.match(ui.messages[0].prompt, /launch_creative_dna/);
   assert.match(ui.$("flowState").textContent, /Chờ kết quả mới/);
 });
@@ -323,4 +322,140 @@ test("delivery revise opens asset feedback without requiring an invisible feedba
   assert.equal(ui.$("reviewFeedback").hidden, true);
   await ui.submit(); assert.equal(ui.messages.length, 1);
   assert.match(ui.messages[0].prompt, /stage=asset_review/);
+});
+
+test("the complete outcome is before actions, is never interpreted as HTML, and clears on revision", () => {
+  const content = "Full content section\n<script>alert('untrusted')</script>\n".repeat(400);
+  const ui = setup({ ...output(), result_content: content, result_summary: "Short summary", result_links: [
+    { label: "Actual delivery", url: "https://example.com/result" }, { label: "Unsafe", url: "javascript:alert(1)" }, { label: "Credentials", url: "https://user:secret@example.com/result" },
+  ] });
+  assert.ok(launcherHtml.indexOf('id="resultContent"') < launcherHtml.indexOf('id="reviewFields"'));
+  assert.equal(ui.$("resultContent").textContent, content);
+  assert.equal(ui.$("resultContent").children.length, 0);
+  assert.equal(ui.$("resultSummary").hidden, true);
+  assert.equal(ui.$("resultLinks").children.length, 1);
+  const anchor = ui.$("resultLinks").children[0].children[0] as any;
+  assert.equal(anchor.href, "https://example.com/result"); assert.equal(anchor.rel, "noopener noreferrer");
+  ui.update(output("content_approval", "v2"));
+  assert.equal(ui.$("resultContent").textContent, ""); assert.equal(ui.$("resultLinks").children.length, 0);
+  assert.match(ui.$("outcomeNote").textContent, /chưa nhận được toàn bộ/);
+  ui.update({ stage: "launcher" }); assert.equal(ui.$("reviewOutcome").hidden, true);
+});
+
+test("real action-button double clicks and remounts send once; feedback selection does not submit", async () => {
+  const wait = deferred(); const data = output(); const ui = setup(data, { send: () => wait.promise });
+  const first = ui.choose("approve"); await ui.choose("approve");
+  assert.equal(ui.$("reviewChoices").children.every(x => x.disabled), true);
+  await Promise.resolve(); assert.equal(ui.messages.length, 1);
+  wait.resolve(); await first;
+  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
+  assert.match(ui.$("reviewChoices").children[0].textContent, /Đã gửi/);
+  ui.choose("revise"); assert.equal(ui.messages.length, 1); assert.equal(ui.$("run").hidden, false);
+  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
+  const restored = setup(data, { state: ui.openai.widgetState }); await restored.choose("approve"); assert.equal(restored.messages.length, 0);
+});
+
+test("one-click failed send remains retryable without claiming execution", async () => {
+  let fail = true; const ui = setup(output(), { send: async () => { if (fail) throw Error("host denied"); } });
+  await ui.choose("approve"); assert.equal(ui.$("reviewChoices").children[0].disabled, false);
+  assert.match(ui.$("error").textContent, /host denied/); assert.doesNotMatch(ui.$("flowState").textContent, /hoàn tất|đang tạo/i);
+  fail = false; await ui.choose("approve"); assert.equal(ui.messages.length, 2);
+  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
+});
+
+test("delivery navigation directly calls registered read-only tools and preserves the outcome", async () => {
+  for (const action of ["revise", "new_task"]) {
+    const calls: any[] = [];
+    const result = { ...output("complete"), result_content: "Complete outcome", result_links: [{ label: "Delivery", url: "https://example.com/result" }], result_images: [{ file_id: "file-image-1", label: "Banner" }] };
+    const ui = setup(result, { host: { callTool: async (name: string, args: any) => {
+      calls.push({ name, args }); return { structuredContent: name === "launch_creative_dna" ? { stage: "launcher", routes: [] } : { ...args, review_context: createReviewContext(args) } };
+    } } });
+    await ui.choose(action); assert.equal(calls.length, 1); assert.equal(ui.messages.length, 0);
+    if (action === "revise") {
+      assert.equal(calls[0].name, "show_uid_brands_review"); assert.equal(calls[0].args.stage, "asset_review");
+      assert.equal(calls[0].args.task_id, "task-A"); assert.equal(calls[0].args.content_version, "v1");
+      assert.deepEqual(JSON.parse(JSON.stringify(calls[0].args.result_images)), result.result_images);
+      assert.equal(ui.$("resultContent").textContent, result.result_content); assert.equal(ui.$("resultLinks").children.length, 1);
+    } else {
+      assert.equal(calls[0].name, "launch_creative_dna"); assert.deepEqual(Object.keys(calls[0].args), ["navigation_id"]); assert.match(calls[0].args.navigation_id, /^navigation-/);
+      assert.equal(ui.$("reviewOutcome").hidden, true); assert.equal(ui.$("run").textContent, "Bắt đầu");
+    }
+  }
+});
+
+test("direct navigation is pending-deduplicated; late results cannot replace a newer outcome", async () => {
+  const wait = deferred(); let calls = 0;
+  const ui = setup(output("complete"), { host: { callTool: async () => { calls++; await wait.promise; return { structuredContent: { stage: "launcher" } }; } } });
+  const first = ui.choose("new_task"); await ui.choose("new_task"); assert.equal(calls, 1);
+  ui.update({ ...output("asset_review", "v2"), result_content: "Newer outcome" });
+  wait.resolve(); await first;
+  assert.equal(ui.$("resultContent").textContent, "Newer outcome"); assert.equal(ui.$("reviewOutcome").hidden, false);
+  assert.equal(ui.messages.length, 0);
+});
+
+test("denied or malformed direct navigation preserves outcome and never falls back to a model prompt", async () => {
+  for (const callTool of [async () => { throw Error("permission denied"); }, async () => ({ isError: true }), async () => ({ structuredContent: {} })]) {
+    const ui = setup({ ...output("complete"), result_content: "Keep this outcome" }, { host: { callTool } });
+    await ui.choose("new_task"); assert.equal(ui.messages.length, 0);
+    assert.equal(ui.$("resultContent").textContent, "Keep this outcome"); assert.equal(ui.$("reviewChoices").children[1].disabled, false);
+    assert.match(ui.$("error").textContent, /Chưa mở được/);
+  }
+});
+
+test("image previews use fresh host URLs, never persist signed URLs, and ignore late stale previews", async () => {
+  const wait = deferred(); const calls: any[] = [];
+  const signedUrl = "https://cdn.example.com/image.png?signature=ephemeral";
+  const data = { ...output("asset_review"), result_images: [{ file_id: "file-image-1", label: "Banner" }] };
+  const ui = setup(data, { host: { getFileDownloadUrl: async (args: any) => { calls.push(args); await wait.promise; return { downloadUrl: signedUrl }; } } });
+  await Promise.resolve(); assert.equal(calls.length, 1); assert.equal(calls[0].fileId, "file-image-1");
+  ui.update(output("asset_review", "v2")); wait.resolve(); await flushAttachmentWork();
+  assert.equal(ui.$("resultImages").children.length, 0);
+  assert.doesNotMatch(JSON.stringify(ui.openai.widgetState), /signature=ephemeral/);
+  const loaded = setup(data, { host: { getFileDownloadUrl: async () => ({ downloadUrl: signedUrl }) } });
+  await flushAttachmentWork(); const img = loaded.$("resultImages").children[0].children[0] as any;
+  assert.equal(img.tag, "img"); assert.equal(img.src, signedUrl); assert.equal(img.referrerPolicy, "no-referrer");
+  loaded.choose("feedback"); assert.doesNotMatch(JSON.stringify(loaded.openai.widgetState), /signature=ephemeral/);
+});
+
+test("unavailable or unsafe image previews retain attachment labels and never add arbitrary image URLs", async () => {
+  const data = { ...output("asset_review"), result_images: [{ file_id: "file-image-1", label: "Banner" }] };
+  for (const host of [{}, { getFileDownloadUrl: async () => ({ downloadUrl: "javascript:alert(1)" }) }, { getFileDownloadUrl: async () => { throw Error("unavailable"); } }]) {
+    const ui = setup(data, { host }); await flushAttachmentWork();
+    const figure = ui.$("resultImages").children[0]; assert.equal(figure.children.length, 1);
+    assert.equal(figure.children[0].tag, "figcaption"); assert.match(figure.children[0].textContent, /ảnh gốc/);
+  }
+});
+
+test("Task mới starts a fresh brief after an earlier brief was submitted in the same widget", async () => {
+  const ui = setup({ stage: "launcher" }, { host: { callTool: async () => ({ structuredContent: { stage: "launcher" } }) } });
+  ui.$("url").value = "https://example.com/product"; await ui.submit();
+  const oldBriefId = ui.openai.widgetState.privateContent.briefId;
+  assert.equal(ui.$("run").disabled, true);
+  ui.update(output("complete")); await ui.choose("new_task");
+  assert.notEqual(ui.openai.widgetState.privateContent.briefId, oldBriefId);
+  assert.equal(ui.$("url").value, "https://example.com/product");
+  assert.equal(ui.$("run").disabled, false); assert.equal(ui.$("run").textContent, "Bắt đầu");
+  await ui.submit(); assert.equal(ui.messages.length, 2);
+});
+
+test("late app-navigation globals events cannot replace a newer review before or after the promise", async () => {
+  const wait = deferred(); let navigationId = "";
+  const ui = setup(output("complete"), { host: { callTool: async (_name: string, args: any) => { navigationId = args.navigation_id; await wait.promise; return { structuredContent: { stage: "launcher", navigation_id: navigationId } }; } } });
+  const request = ui.choose("new_task");
+  ui.update({ ...output("asset_review", "v2"), result_content: "Newer outcome" });
+  ui.update({ stage: "launcher", navigation_id: navigationId });
+  assert.equal(ui.$("resultContent").textContent, "Newer outcome");
+  wait.resolve(); await request;
+  ui.update({ stage: "launcher", navigation_id: navigationId });
+  assert.equal(ui.$("resultContent").textContent, "Newer outcome"); assert.equal(ui.$("reviewOutcome").hidden, false);
+  // Normal model-driven tool outputs still navigate.
+  ui.update({ stage: "launcher" }); assert.equal(ui.$("reviewOutcome").hidden, true);
+});
+
+test("external link denial is reported without silently bypassing the host", async () => {
+  const ui = setup({ ...output(), result_links: [{ label: "Delivery", url: "https://example.com/result" }] }, { host: { openExternal: () => { throw Error("denied"); } } });
+  let prevented = false;
+  const anchor = ui.$("resultLinks").children[0].children[0] as any;
+  anchor.onclick({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true); assert.match(ui.$("error").textContent, /Host chưa mở được liên kết/);
 });
