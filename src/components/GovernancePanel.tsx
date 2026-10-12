@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EvaluationDetails } from "./FeedbackReviewPanel";
 
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
 export function GovernancePanel({request}:{request:Http}) {
@@ -7,17 +8,13 @@ export function GovernancePanel({request}:{request:Http}) {
  const [refreshing,setRefreshing]=useState(true);
  const [loadError,setLoadError]=useState("");
  const [message,setMessage]=useState("");
+ const [latestEvaluation,setLatestEvaluation]=useState<any>(null);
  const [brand,setBrand]=useState("");
  const [branch,setBranch]=useState("onepage-system");
  const [caseKey,setCaseKey]=useState("");
  const [source,setSource]=useState("{}");
  const [expected,setExpected]=useState('{"required_text":[],"forbidden_text":[],"required_keys":[]}');
  const [approved,setApproved]=useState("{}");
- const [proposalId,setProposalId]=useState("");
- const [runs,setRuns]=useState("[]");
- const [evaluationId,setEvaluationId]=useState("");
- const [reviewNotes,setReviewNotes]=useState("");
- const [confirmReview,setConfirmReview]=useState(false);
  const [snapshotId,setSnapshotId]=useState("");
  const [rollbackProposalId,setRollbackProposalId]=useState("");
  const [proposalPreview,setProposalPreview]=useState<any>(null);
@@ -36,8 +33,9 @@ export function GovernancePanel({request}:{request:Http}) {
   setLoading(true);setMessage("");
   try{
    const r=await request("/api/admin/governance/"+mode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-   const data=await r.json();if(!r.ok)throw Error(data.error||"Governance request failed");
-   if(data.evaluation?.id)setEvaluationId(data.evaluation.id);
+   const data=await r.json();
+   if(data.evaluation)setLatestEvaluation({evaluation:data.evaluation,issues:data.issues||[],results:data.results||[]});
+   if(!r.ok)throw Error([data.error||"Governance request failed",...(Array.isArray(data.issues)?data.issues:[])].join(" · "));
    if(data.current_md5)setRollbackPreview(data);
    setMessage(mode+" completed: "+(data.evaluation?.evaluation_status||"OK"));
    if(mode!=="governance_rollback_preview")await refresh();
@@ -68,15 +66,12 @@ export function GovernancePanel({request}:{request:Http}) {
    <label className="block text-xs mt-2">Approved outcome JSON<textarea value={approved} onChange={e=>setApproved(e.target.value)} className="w-full border p-2 rounded-lg font-mono text-xs" rows={3}/></label>
    <button disabled={loading||!brand||!caseKey} onClick={()=>{try{act("governance_baseline_upsert",{baseline:{brand_id:brand,branch_slug:branch,case_key:caseKey,source_brief:parse(source),expected_assertions:parse(expected),approved_output:parse(approved)}})}catch{setMessage("Invalid JSON");}}} className="border rounded-lg px-3 py-2 text-sm mt-2">Save approved baseline</button>
   </details>
-  <details><summary className="cursor-pointer text-sm font-semibold">2. Evaluate proposal against baselines</summary>
-   <div className="mt-3 space-y-2">
-    <input value={proposalId} onChange={e=>setProposalId(e.target.value)} placeholder="Pending proposal ID" className="border p-2 rounded-lg w-full text-sm"/>
-    <p className="text-xs text-slate-500">Provide generated candidate_runs JSON with baseline_id, output, source_run_id and artifact_url. Cases without traceable output are blocked.</p>
-    <textarea value={runs} onChange={e=>setRuns(e.target.value)} rows={4} className="border p-2 rounded-lg font-mono text-xs w-full"/>
-    <textarea value={reviewNotes} onChange={e=>setReviewNotes(e.target.value)} rows={2} placeholder="Explain product fidelity, visual quality and canonical conflict findings" className="border p-2 rounded-lg text-sm w-full"/>
-    <label className="flex gap-2 text-xs"><input type="checkbox" checked={confirmReview} onChange={e=>setConfirmReview(e.target.checked)}/>I verified Product Truth, visual quality, conflicts and zero severe regressions against the supplied output</label>
-    <button disabled={loading||!proposalId} className="border rounded-lg px-3 py-2 text-sm" onClick={()=>{try{act("governance_evaluate",{proposal_id:proposalId,candidate_runs:parse(runs),review:{product_truth_verified:confirmReview,visual_reviewed:confirmReview,conflicts_reviewed:confirmReview,critical_regressions:confirmReview?0:-1,review_note:reviewNotes}})}catch{setMessage("Invalid candidate JSON");}}}>Run regression assessment</button>
-    {evaluationId&&<p className="text-xs break-all">Latest evaluation ID: <strong>{evaluationId}</strong></p>}
+  <details><summary className="cursor-pointer text-sm font-semibold">2. Evaluation history · Kết quả chi tiết</summary>
+   <div className="mt-3 space-y-3">
+    <p className="text-xs text-slate-600">Dùng Review &amp; Merge ngay trên card feedback để xem canonical, chọn candidate thật và liên kết đúng phiên bản nội dung. Không cần sao chép evaluation ID.</p>
+    {latestEvaluation&&<EvaluationDetails {...latestEvaluation} baselines={registry?.baselines||[]}/>}
+    {(registry?.evaluations||[]).slice(0,10).map((evaluation:any)=><div key={evaluation.id} className="space-y-2"><EvaluationDetails evaluation={evaluation} baselines={(registry?.baselines||[]).map((baseline:any)=>({...baseline,brand_name:baseline.brand_name||registry?.brands?.find((brand:any)=>brand.id===baseline.brand_id)?.name}))}/><details><summary className="text-xs cursor-pointer">Advanced · Evaluation IDs và dữ liệu đầy đủ</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-[11px]">{JSON.stringify(evaluation,null,2)}</pre></details></div>)}
+    {registry&&!registry.evaluations.length&&<p className="text-xs text-slate-500">Chưa có evaluation. Thiếu kết quả không có nghĩa là đã đạt.</p>}
    </div>
   </details>
   <details><summary className="cursor-pointer text-sm font-semibold">3. Rollback an earlier node snapshot</summary>
