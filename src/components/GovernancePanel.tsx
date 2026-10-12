@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
 export function GovernancePanel({request}:{request:Http}) {
- const [registry,setRegistry]=useState<any>({});
- const [loading,setLoading]=useState(false);
+ const [registry,setRegistry]=useState<any>(null);
+ const [loading,setLoading]=useState(true);
+ const [refreshing,setRefreshing]=useState(true);
+ const [loadError,setLoadError]=useState("");
  const [message,setMessage]=useState("");
  const [brand,setBrand]=useState("");
  const [branch,setBranch]=useState("onepage-system");
@@ -21,12 +23,13 @@ export function GovernancePanel({request}:{request:Http}) {
  const [proposalPreview,setProposalPreview]=useState<any>(null);
  const [rollbackPreview,setRollbackPreview]=useState<any>(null);
  const refresh=async()=>{
-  setLoading(true);
+  setLoading(true);setRefreshing(true);
   try {
    const r=await request("/api/admin/governance/governance_list",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-   const data=await r.json();if(!r.ok)throw Error(data.error||"Unable to load");
-   setRegistry(data);if(!brand&&data.brands?.length)setBrand(data.brands[0].id);
-  }catch(e:any){setMessage(e.message);}finally{setLoading(false);}
+   const data=await r.json();if(!r.ok)throw Error(data?.error||"Unable to load");
+   if(!["baselines","evaluations","snapshots","brands"].every(key=>Array.isArray(data?.[key])))throw Error("Incomplete governance registry response");
+   setRegistry(data);setLoadError("");if(!brand&&data.brands?.length)setBrand(data.brands[0].id);
+  }catch(e:any){setLoadError(e?.message||"Unable to load governance data");}finally{setLoading(false);setRefreshing(false);}
  };
  useEffect(()=>{refresh();},[]);
  const act=async(mode:string,payload:object)=>{
@@ -45,16 +48,18 @@ export function GovernancePanel({request}:{request:Http}) {
   <div className="flex items-center justify-between">
    <div><h2 className="font-bold text-sm text-slate-900">Knowledge Governance</h2>
     <p className="text-xs text-slate-500">Baseline · Regression · Version & rollback</p></div>
-   <button type="button" onClick={refresh} disabled={loading} className="text-xs border rounded-lg px-3 py-2">Refresh</button>
+   <button type="button" onClick={refresh} disabled={loading} className="text-xs border rounded-lg px-3 py-2">{refreshing?"Loading…":loadError?"Retry":"Refresh"}</button>
   </div>
+  {refreshing&&<p role="status" className="text-xs text-slate-500">{registry?"Refreshing governance data… Previously loaded counts remain visible.":"Loading governance data… Counts are not yet available."}</p>}
+  {!!loadError&&<p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">{registry?"Refresh failed. Showing previously loaded governance data, which may be out of date.":"Unable to load governance data. Counts are unavailable."} {loadError}</p>}
   <div className="grid grid-cols-3 gap-2 text-center text-xs">
-   <div className="bg-slate-50 p-2 rounded-lg">Baselines <strong className="block">{registry.baselines?.length||0}</strong></div>
-   <div className="bg-slate-50 p-2 rounded-lg">Evaluations <strong className="block">{registry.evaluations?.length||0}</strong></div>
-   <div className="bg-slate-50 p-2 rounded-lg">Snapshots <strong className="block">{registry.snapshots?.length||0}</strong></div>
+   <div className="bg-slate-50 p-2 rounded-lg">Baselines <strong className="block">{registry?.baselines?.length??"—"}</strong></div>
+   <div className="bg-slate-50 p-2 rounded-lg">Evaluations <strong className="block">{registry?.evaluations?.length??"—"}</strong></div>
+   <div className="bg-slate-50 p-2 rounded-lg">Snapshots <strong className="block">{registry?.snapshots?.length??"—"}</strong></div>
   </div>
   <details><summary className="cursor-pointer text-sm font-semibold">1. Register approved baseline</summary>
    <div className="mt-3 grid sm:grid-cols-2 gap-2">
-    <select value={brand} onChange={e=>setBrand(e.target.value)} className="border p-2 rounded-lg text-sm"><option value="">Select brand</option>{(registry.brands||[]).map((b:any)=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
+    <select value={brand} onChange={e=>setBrand(e.target.value)} className="border p-2 rounded-lg text-sm"><option value="">Select brand</option>{(registry?.brands||[]).map((b:any)=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
     <input value={branch} onChange={e=>setBranch(e.target.value)} className="border p-2 rounded-lg text-sm" placeholder="Material / branch slug"/>
     <input value={caseKey} onChange={e=>setCaseKey(e.target.value)} className="border p-2 rounded-lg text-sm sm:col-span-2" placeholder="Stable baseline case key"/>
    </div>
