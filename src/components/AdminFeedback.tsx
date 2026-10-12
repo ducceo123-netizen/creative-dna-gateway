@@ -1,7 +1,7 @@
 import { GovernancePanel } from "./GovernancePanel";
 import { PrivateReferencePanel } from "./PrivateReferencePanel";
 import { assessProposal } from "../knowledge-governance";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 
 type Proposal = {
@@ -31,9 +31,15 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [authLoading, setAuthLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueLoaded, setQueueLoaded] = useState(false);
+  const [queueError, setQueueError] = useState("");
+  const queueRequest = useRef<AbortController | null>(null);
+  const [advancedLoaded, setAdvancedLoaded] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [activeAction, setActiveAction] = useState<{ id:string; type:"accept"|"reject"|"merge" } | null>(null);
   const [message, setMessage] = useState("");
+  const [actionErrors, setActionErrors] = useState<Record<string,string>>({});
   const [gateInputs, setGateInputs] = useState<Record<string,{evidence:string;baselines:string;note:string;checks:boolean}>>({});
   const [evaluationIds,setEvaluationIds] = useState<Record<string,string>>({});
   const gateFor=(id:string)=>{const v=gateInputs[id]||{evidence:"",baselines:"",note:"",checks:false};return {evidence_urls:v.evidence.split("\n").map(x=>x.trim()).filter(Boolean),baseline_ids:v.baselines.split("\n").map(x=>x.trim()).filter(Boolean),scope_checked:v.checks,canonical_conflicts_checked:v.checks,product_truth_verified:v.checks,before_after_reviewed:v.checks,severe_regressions:v.checks?0:-1,review_note:v.note};};
@@ -104,12 +110,18 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       setToken(data.access_token);
       if (data.refresh_token) setRefreshToken(data.refresh_token);
       setPassword("");
-      await load(data.access_token);
-      await loadTeam(data.access_token);
+      // The authenticated-session effect loads the queue and team once.
     } catch(e:any) { setMessage(e.message); } finally { setAuthLoading(false); }
   };
 
   const logout = () => {
+    queueRequest.current?.abort();
+    queueRequest.current = null;
+    setQueueLoading(false);
+    setQueueLoaded(false);
+    setQueueError("");
+    setAdvancedLoaded(false);
+    setActionErrors({});
     sessionStorage.removeItem("creative_dna_admin_token");
     sessionStorage.removeItem("creative_dna_admin_refresh_token");
     setToken("");
@@ -279,33 +291,49 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     finally { setTeamLoading(false); }
   };
 
-  const load = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token, silent = false) => {
-    if (!authToken.trim()) return;
-    if (!silent) { setLoading(true); setMessage(""); }
+  const load = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token, silent = false, force = false) => {
+    if (!authToken.trim() || (queueRequest.current && !force)) return;
+    if (force) queueRequest.current?.abort();
+    const controller = new AbortController();
+    queueRequest.current = controller;
+    const current = () => !controller.signal.aborted && queueRequest.current === controller;
+    setQueueLoading(true);
+    if (!silent) setMessage("");
     try {
-      const res = await authFetch("/api/admin/feedback", {}, authToken.trim());
+      const res = await authFetch("/api/admin/feedback", { signal: controller.signal }, authToken.trim());
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load feedback queue");
-      setProposals(data.proposals || []);
-    } catch (e:any) { if (!silent) setMessage(e.message); }
-    finally { if (!silent) setLoading(false); }
+      if (!current()) return;
+      if (!res.ok) throw new Error(res.status === 401 ? "Phiên admin đã hết hạn. Vui lòng đăng nhập lại." : res.status === 403 ? "Tài khoản chưa có quyền admin đang hoạt động." : data?.error || "Không tải được danh sách feedback.");
+      if (!Array.isArray(data?.proposals) || data.proposals.some((p:any) => !p || typeof p.id !== "string" || typeof p.status !== "string")) {
+        throw new Error("Dữ liệu feedback trả về không hợp lệ. Vui lòng thử lại.");
+      }
+      setProposals(data.proposals);
+      setQueueLoaded(true);
+      setQueueError("");
+    } catch (e:any) {
+      if (current()) setQueueError(e.message || "Không tải được danh sách feedback.");
+    } finally {
+      if (current()) { queueRequest.current = null; setQueueLoading(false); }
+    }
   };
 
   const merge = async (id:string) => {
     if (!confirm("Confirm the evidence and regression checks are complete. Merge into canonical?")) return;
     setLoading(true); setActiveAction({ id, type:"merge" }); setMessage("");
+    setActionErrors(previous => ({ ...previous, [id]: "" }));
     try {
       const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({regression:gateFor(id),evaluation_id:evaluationIds[id]||""}) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Merge failed");
+      if (!res.ok) throw new Error([data.error || "Merge failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
       setMessage(`Merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).`);
-      await load();
-    } catch(e:any){ setMessage(e.message); setLoading(false); }
-    finally { setActiveAction(null); }
+      await load(undefined, true, true);
+    } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); setLoading(false); }
+    finally { setLoading(false); setActiveAction(null); }
   };
 
   const decide = async (id:string, decision:"accept"|"reject") => {
     setLoading(true); setActiveAction({ id, type:decision }); setMessage("");
+    setActionErrors(previous => ({ ...previous, [id]: "" }));
     try {
       const res = await authFetch(`/api/admin/feedback/${id}/review`, {
         method:"POST",
@@ -313,11 +341,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         body:JSON.stringify({ decision, review_note:notes[id] || "", ...(decision==="accept"?{regression:gateFor(id),evaluation_id:evaluationIds[id]||""}:{}) })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Review failed");
+      if (!res.ok) throw new Error([data.error || "Review failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
       setMessage(decision === "accept" ? `Accepted (upstream response): canonical change reported (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).` : "Rejected. Canonical DNA was not changed.");
-      await load();
-    } catch(e:any){ setMessage(e.message); setLoading(false); }
-    finally { setActiveAction(null); }
+      await load(undefined, true, true);
+    } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); setLoading(false); }
+    finally { setLoading(false); setActiveAction(null); }
   };
 
   const deleteAllRejected = async () => {
@@ -336,7 +364,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       if (!res.ok) throw new Error(data.error || "Unable to delete rejected proposals");
       const deleted = Number(data.deleted_count ?? data.deleted ?? rejectedCount);
       setMessage(`Deleted ${deleted} rejected feedback proposal${deleted===1?"":"s"}. Canonical Creative DNA was not changed.`);
-      await load();
+      await load(undefined, true, true);
     } catch(e:any) {
       setMessage(e.message);
     } finally {
@@ -368,6 +396,8 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     window.addEventListener("focus", onFocus);
 
     return () => {
+      queueRequest.current?.abort();
+      queueRequest.current = null;
       window.clearInterval(poll);
       window.clearInterval(refresh);
       document.removeEventListener("visibilitychange", sync);
@@ -384,7 +414,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           <p className="text-sm text-slate-500 mt-1">Visual-first review: scan context, problem, reusable rule and scope. Accept now merges directly into canonical DNA in one action.</p>
           {token && <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>Auto-sync mỗi 10 giây · tự refresh session</div>}
         </div>
-        <button onClick={() => load()} disabled={loading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${loading?"animate-spin":""}`}/>Refresh</button>
+        <button onClick={() => load()} disabled={!token || loading || queueLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${queueLoading?"animate-spin":""}`}/>Refresh</button>
       </div>
       {!token ? <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3">
         <input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Admin email" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
@@ -503,9 +533,21 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       </div>}
     </section>
     {token && <PrivateReferencePanel request={authFetch}/>}
-    <GovernancePanel request={authFetch}/>
-    <section className="space-y-3">
-      {!loading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
+    {token && <details className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setAdvancedLoaded(true); }}>
+      <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>
+      <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách bên dưới. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Baseline và đánh giá regression chỉ cần trước khi Accept / Merge vào canonical DNA.</p>
+      {advancedLoaded && <div className="mt-4"><GovernancePanel request={authFetch}/></div>}
+    </details>}
+    <section className="space-y-3" aria-label="Feedback proposals" aria-busy={queueLoading}>
+      {!token && <p className="text-sm text-slate-500">Đăng nhập bằng tài khoản admin để xem feedback.</p>}
+      {token && !queueLoaded && !queueError && <div role="status" className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Đang tải feedback…</div>}
+      {token && queueLoaded && queueLoading && <p role="status" className="text-xs text-slate-500">Đang cập nhật feedback…</p>}
+      {token && queueError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="font-semibold">{queueLoaded ? "Chưa cập nhật được feedback. Đang giữ kết quả lần tải thành công gần nhất." : "Chưa tải được feedback. Chưa thể xác nhận danh sách có trống hay không."}</p>
+        <p className="mt-1 text-xs">{queueError}</p>
+        <button onClick={() => load()} disabled={queueLoading} className="mt-3 rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">{queueLoading ? "Đang thử lại…" : "Thử lại"}</button>
+      </div>}
+      {token && queueLoaded && !queueError && !queueLoading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
       {filtered.map(p=>{ const governance=assessProposal(p,proposals); const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
  <div className="flex flex-wrap items-center justify-between gap-2">
@@ -532,7 +574,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
  </div>
  <textarea aria-label="Regression review notes" placeholder="Kết quả so sánh before/after, xung đột và kiểm tra fidelity..." rows={2} className="border border-slate-300 rounded-lg p-2 text-xs w-full" value={gateInputs[p.id]?.note||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",checks:false}),note:e.target.value}}))}/>
  <label className="flex gap-2 items-start text-xs text-slate-700"><input type="checkbox" checked={!!gateInputs[p.id]?.checks} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",note:""}),checks:e.target.checked}}))}/><span>Tôi đã kiểm tra Product Truth, scope, xung đột canonical và so sánh before/after trên baseline; không có regression nghiêm trọng</span></label>
- <p className="text-[11px] text-slate-500">Xác nhận thủ công có dẫn chứng; hệ thống chưa tự chạy generator regression. Gate chặn khi thiếu thông tin.</p>
+ <p className="text-[11px] text-slate-500">Chỉ cần phần này khi Accept / Merge, không cần để đọc feedback. Nếu chưa có baseline đã duyệt hoặc evaluation đạt, hãy mở Nâng cao để chuẩn bị trước; hệ thống sẽ chặn merge khi thiếu các điều kiện an toàn.</p>
  </div>
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span><span className="font-bold text-slate-700">Submitted by:</span> {p.submitted_by_name || "Missing member name"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
@@ -605,6 +647,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs text-slate-500"><span>Scope:</span><span className="font-bold text-slate-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span></div><button onClick={()=>setExpanded({...expanded,[p.id]:!isOpen})} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 bg-white"><Eye className="w-3 h-3"/>{isOpen?"Hide details":"View details"}{isOpen?<ChevronUp className="w-3 h-3"/>:<ChevronDown className="w-3 h-3"/>}</button></div>
         {isOpen && <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"><div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Original member feedback</div><div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{parsed.memberFeedback || p.raw_feedback}</div></div>{Array.isArray(spec?.reject_conditions) && spec.reject_conditions.length>0 && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 mb-1">Reject when</div><div className="flex flex-wrap gap-1.5">{spec.reject_conditions.map((x:any,i:number)=><span key={i} className="px-2 py-1 rounded-md bg-white border border-rose-100 text-[11px] text-rose-700">{String(x)}</span>)}</div></div>}{!!p.context_images?.filter(x=>!x.image_url).length && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Unrendered image references</div><div className="text-[10px] text-slate-400 break-all">{p.context_images?.filter(x=>!x.image_url).map(x=>x.reference_id).filter(Boolean).join(" · ")}</div></div>}</div>}
+        {actionErrors[p.id] && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Chưa hoàn tất thao tác: {actionErrors[p.id]}</p>}
         {p.status==="pending" && <div className="grid lg:grid-cols-[1fr_auto] gap-3 items-end border-t border-slate-100 pt-4"><textarea value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin note..." className="w-full min-h-16 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/><div className="flex gap-2"><button onClick={()=>decide(p.id,"reject")} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg border border-rose-200 text-rose-700 bg-rose-50 disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="reject" && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id && activeAction.type==="reject" ? "Rejecting..." : "Reject"}</button><button onClick={()=>decide(p.id,"accept")} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg bg-emerald-600 text-white disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="accept" ? <RefreshCw className="w-3.5 h-3.5 animate-spin"/> : <Sparkles className="w-3.5 h-3.5"/>}{activeAction?.id===p.id && activeAction.type==="accept" ? "Accepting & Merging..." : "Accept & Merge"}</button></div></div>}
         {p.status==="accepted" && <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4"><div className="text-xs text-indigo-700">Legacy accepted proposal from the old flow. New Accept actions merge automatically.</div><button onClick={()=>merge(p.id)} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 text-white disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="merge" && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id && activeAction.type==="merge" ? "Merging..." : "Finish legacy merge"}</button></div>}
         {p.merged_at && <div className="text-xs text-emerald-700 font-semibold">Merged {new Date(p.merged_at).toLocaleString()}</div>}{p.review_note && <div className="text-xs text-slate-500">Admin note: {p.review_note}</div>}
