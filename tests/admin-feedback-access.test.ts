@@ -23,7 +23,7 @@ for (const scenario of [
       from: (table: string) => { tables.push(table); assert.equal(table, 'creative_dna_team_members'); return chain; },
     }) };
     vm.runInNewContext(edgeCode, context);
-    for (const mode of ['list', 'governance_list']) {
+    for (const mode of ['list', 'governance_list', 'review_preflight', 'resolve_covered', 'governance_evaluate']) {
       const response = await context.handler.fetch(new Request('https://example.test/admin', { method: 'POST', body: JSON.stringify({ mode }) }));
       assert.equal(response.status, scenario.status);
     }

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { assessReviewCandidates, reviewReadiness, REVIEW_EVALUATOR_VERSION } from "../_shared/feedback-review.ts";
 
 export default {
   fetch: async (req: Request) => {
@@ -30,85 +31,54 @@ export default {
 
     const body = await req.json();
 
-    // UID Brands governance: admin-only, fail-closed operations.
-    if (body.mode === "governance_evaluate") {
-      const proposalId=String(body.proposal_id||"").trim();
-      const runs=Array.isArray(body.candidate_runs)?body.candidate_runs:[];
-      const review=body.review||{};
-      if(!proposalId)return Response.json({error:"proposal_id required"},{status:400});
-      const {data:p,error:pe}=await adminDb.from("knowledge_proposals")
-        .select("id,knowledge_node_id,brand_id,proposed_scope,status,proposed_content_md,raw_feedback")
-        .eq("id",proposalId).single();
-      if(pe||!p||p.status!=="pending")return Response.json({error:"Pending proposal required"},{status:409});
-      const {data:node}=await adminDb.from("knowledge_nodes")
-        .select("id,slug").eq("id",p.knowledge_node_id).single();
-      if(!node)return Response.json({error:"Source node unavailable"},{status:404});
-      const structural=node.slug==="onepage-system"&&!/brand[ _-]?style|vibe|mood/i.test(String(p.proposed_scope||""));
-      const q=adminDb.from("uid_governance_baselines").select("*").eq("branch_slug",node.slug).not("approved_at","is",null);
-      const {data:baselines,error:be}=await (structural?q:q.eq("brand_id",p.brand_id));
-      if(be)return Response.json({error:be.message},{status:500});
-      const cases=baselines||[];
-      const allIssues:string[]=[];
-      if(!cases.length)allIssues.push("No approved regression baseline cases");
-      if(structural){
-        const {data:nodes}=await adminDb.from("knowledge_nodes").select("brand_id").eq("slug","onepage-system").eq("status","active");
-        for(const target of nodes||[])
-          if(!cases.some((c:any)=>c.brand_id===target.brand_id))
-            allIssues.push("Missing approved baseline for an affected Onepage brand");
+    // Read-only review snapshot; SQL is the authority for targets, scope and fingerprints.
+    if (body.mode === "review_preflight") {
+      const { data, error } = await adminDb.rpc("uid_governance_review_context", { p_proposal_id: body.proposal_id });
+      if (error) return Response.json({ error: error.message }, { status: 409 });
+      if (!data?.proposal?.id) return Response.json({ error: "Proposal not found" }, { status: 404 });
+      return Response.json(reviewReadiness(data), { headers: { "Cache-Control": "no-store" } });
+    }
+    if (body.mode === "resolve_covered") {
+      if (!body.proposal_id || !body.covered_proposal_id || !body.candidate_hash || !body.covered_hash
+        || typeof body.review_note !== "string" || body.review_note.trim().length < 20) {
+        return Response.json({ error: "Review the current matching rule, affected brands and scope, and add a note of at least 20 characters." }, { status: 422 });
       }
-      const results=cases.map((c:any)=>{
-        const issues:string[]=[];
-        const run=runs.find((r:any)=>String(r.baseline_id)===c.id);
-        if(!run||!run.output||typeof run.output!=="object"||!run.source_run_id||!/^https:\/\//.test(String(run.artifact_url||""))){
-          issues.push("Missing actual candidate run output, run ID, or artifact reference");
-        } else {
-          const content=JSON.stringify(run.output).toLowerCase();
-          const assertions=c.expected_assertions||{};
-          for(const required of assertions.required_text||[])
-            if(!content.includes(String(required).toLowerCase()))issues.push("Required statement missing");
-          for(const forbidden of assertions.forbidden_text||[])
-            if(content.includes(String(forbidden).toLowerCase()))issues.push("Forbidden statement found");
-          for(const key of assertions.required_keys||[])
-            if(!(key in run.output))issues.push("Required output field missing");
-          for(const key of assertions.immutable_fields||[])
-            if(JSON.stringify(run.output[key])!==JSON.stringify(c.approved_output?.[key]))
-              issues.push("Approved immutable field changed: "+key);
-          if(!["required_text","forbidden_text","required_keys","immutable_fields"].some(k=>Array.isArray(assertions[k])&&assertions[k].length))
-            issues.push("No enforceable assertions");
-        }
-        return {baseline_id:c.id,case_key:c.case_key,status:issues.length?"failed":"passed",
-          issues,source_run_id:run?.source_run_id||null,artifact_url:run?.artifact_url||null};
+      const { data, error } = await adminDb.rpc("uid_governance_resolve_covered", {
+        p_proposal_id: body.proposal_id, p_actor_user_id: user.id,
+        p_expected_candidate_hash: body.candidate_hash, p_covered_proposal_id: body.covered_proposal_id,
+        p_expected_covered_hash: body.covered_hash, p_review_note: body.review_note.trim().slice(0, 4000),
       });
-      // Lexical similarity is only a conflict-review candidate, not a semantic contradiction verdict.
-      const {data:currentNodes}=await adminDb.from("knowledge_nodes")
-        .select("id,content_md,slug").eq("status","active").limit(200);
-      const proposalText=String(p.proposed_content_md||p.raw_feedback||"").toLowerCase();
-      const words=(v:string)=>new Set(v.match(/[a-z0-9À-ỹ]+/gu)||[]);
-      const referenceWords=words(proposalText);
-      const conflicts=(currentNodes||[]).map((n:any)=>{
-        const source=words(String(n.content_md||"").toLowerCase());
-        const overlap=[...referenceWords].filter(w=>source.has(w)).length;
-        return {node_id:n.id,lexical_overlap:referenceWords.size?overlap/referenceWords.size:0,
-          interpretation:"requires_human_review"};
-      }).filter((x:any)=>x.lexical_overlap>=0.6).slice(0,10);
-      const declaredReview=review.product_truth_verified===true&&review.visual_reviewed===true
-        &&review.conflicts_reviewed===true&&review.critical_regressions===0
-        &&String(review.review_note||"").trim().length>=20;
-      if(!declaredReview)allIssues.push("Required Admin visual, product-truth and conflict attestations missing");
-      const failures=results.filter((x:any)=>x.status==="failed").length;
-      const status=allIssues.length?"blocked":failures?"failed":"passed";
-      const {data:hash,error:he}=await adminDb.rpc("uid_governance_candidate_hash",{p_proposal_id:proposalId});
-      if(he||!hash)return Response.json({error:"Unable to resolve candidate identity"},{status:500});
-      const {data:stored,error:se}=await adminDb.from("uid_governance_evaluations").insert({
-        proposal_id:proposalId,candidate_hash:hash,baseline_ids:cases.map((c:any)=>c.id),
-        test_results:results,conflict_results:[...conflicts,{note:String(review.review_note||"").slice(0,4000),
-          manually_reviewed:review.conflicts_reviewed===true}],
-        evaluation_status:status,critical_failures:failures+Math.max(0,Number(review.critical_regressions||0)),
-        evaluator_version:"mechanical-v1-plus-human-review",completed_at:new Date().toISOString()
-      }).select("id,evaluation_status,critical_failures,baseline_ids").single();
-      if(se)return Response.json({error:se.message},{status:500});
-      return Response.json({evaluation:stored,issues:allIssues,results,
-        limitation:"Tests verify supplied run artifacts and assertions; creative visual quality is admin-attested, not model-verified."});
+      if (error) return Response.json({ error: error.message, retry_guidance: "Refresh this card and review the current matching rule before trying again." }, { status: 409 });
+      return Response.json({ ...data, canonical_changed: false });
+    }
+    // Tests use actual supplied candidate artifacts; no generation or automatic visual QC.
+    if (body.mode === "governance_evaluate") {
+      const proposalId = String(body.proposal_id || "").trim();
+      if (!proposalId) return Response.json({ error: "proposal_id required" }, { status: 400 });
+      const { data: context, error: contextError } = await adminDb.rpc("uid_governance_review_context", { p_proposal_id: proposalId });
+      if (contextError || context?.proposal?.status !== "pending") return Response.json({ error: contextError?.message || "Pending proposal required" }, { status: 409 });
+      if (typeof body.candidate_hash !== "string" || body.candidate_hash !== context.candidate_hash) {
+        return Response.json({ error: "The reviewed proposal, scope, canonical rules or baselines changed. Refresh the card and review again before evaluating." }, { status: 409 });
+      }
+      const review = body.review || {};
+      const assessment = assessReviewCandidates(context, body.candidate_runs, review);
+      // The snapshot is captured before reading/evaluating case output, and checked again after.
+      const { data: freshHash, error: hashError } = await adminDb.rpc("uid_governance_candidate_hash", { p_proposal_id: proposalId });
+      if (hashError || !freshHash || freshHash !== context.candidate_hash) {
+        return Response.json({ error: "Proposal, scope, canonical rules or baselines changed during evaluation. Refresh and reassess." }, { status: 409 });
+      }
+      const { data: stored, error: storageError } = await adminDb.from("uid_governance_evaluations").insert({
+        proposal_id: proposalId, candidate_hash: context.candidate_hash,
+        baseline_ids: assessment.cases.map((c: any) => c.id), test_results: assessment.results,
+        conflict_results: [{ note: String(review.review_note || "").slice(0, 4000), manually_reviewed: review.conflicts_reviewed === true,
+          actor_user_id: user.id, product_truth_verified: review.product_truth_verified === true, visual_reviewed: review.visual_reviewed === true,
+          scope_targets: context.targets.map((n: any) => ({ node_id: n.id, brand_name: n.brand_name, node_hash: n.node_hash })), issues: assessment.issues }],
+        evaluation_status: assessment.status, critical_failures: assessment.critical_failures,
+        evaluator_version: REVIEW_EVALUATOR_VERSION, completed_at: new Date().toISOString(),
+      }).select("*").single();
+      if (storageError) return Response.json({ error: storageError.message }, { status: 500 });
+      return Response.json({ evaluation: stored, issues: assessment.issues, results: assessment.results,
+        limitation: "Mechanical checks cover supplied output only. Artifact authenticity and creative visual quality require explicit Admin review; reference corpora alone cannot approve a change." });
     }
     if (body.mode === "governance_rollback_preview") {
       const {data:snapshot,error:se}=await adminDb.from("uid_governance_snapshots")
@@ -359,7 +329,7 @@ export default {
     if (body.mode === "list") {
       const { data, error } = await adminDb
         .from("knowledge_proposals")
-        .select("id,status,raw_feedback,proposed_content_md,proposed_scope,change_summary,evidence_summary,submitted_by_name,created_at,reviewed_at,review_note,merged_at,context_images,brands(name),knowledge_nodes(title,slug)")
+        .select("id,status,raw_feedback,proposed_content_md,proposed_scope,change_summary,evidence_summary,submitted_by_name,created_at,reviewed_at,review_note,merged_at,resolution,context_images,brands(name),knowledge_nodes(title,slug)")
         .order("created_at", { ascending: false })
         .limit(300);
 
@@ -379,6 +349,7 @@ export default {
           reviewed_at: p.reviewed_at,
           review_note: p.review_note,
           merged_at: p.merged_at,
+          resolution: p.resolution,
           context_images: p.context_images || [],
           brand_name: p.brands?.name,
           branch_title: p.knowledge_nodes?.title,
@@ -387,7 +358,7 @@ export default {
       });
     }
 
-    // Legacy manual merge remains supported only for proposals accepted before auto-merge was enabled.
+    // Legacy manual merge is deliberately disabled until governed migration is supported.
     if (body.mode === "merge") {
       return Response.json({error:"Legacy merge is disabled pending governed migration; use verified evaluation flow."},{status:409});
     }
@@ -397,6 +368,9 @@ export default {
       }
 
       if (body.decision === "accept") {
+        const { data: currentHash, error: hashError } = await adminDb.rpc("uid_governance_candidate_hash", { p_proposal_id: body.proposal_id });
+        if (hashError || !currentHash || body.candidate_hash !== currentHash)
+          return Response.json({ error: "The reviewed proposal, scope, canonical rules or baselines changed. Refresh and review before merging." }, { status: 409 });
         if(!body.evaluation_id)
           return Response.json({error:"Passed regression evaluation ID required before Accept"},{status:422});
         const { data, error } = await adminDb.rpc("uid_governance_accept_merge", {
@@ -406,7 +380,7 @@ export default {
           p_evaluation_id: body.evaluation_id,
         });
 
-        if (error) return Response.json({ error: error.message }, { status: 500 });
+        if (error) return Response.json({ error: error.message }, { status: 409 });
 
         return Response.json({
           proposal: {

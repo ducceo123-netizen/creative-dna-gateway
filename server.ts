@@ -966,7 +966,7 @@ export function createApp(): express.Application {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "branch_guide_upsert", ...(req.body || {}) }),
+        body: JSON.stringify({ ...(req.body || {}), mode: "branch_guide_upsert" }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to save branch visual guide" });
@@ -1055,6 +1055,33 @@ export function createApp(): express.Application {
     }
   });
 
+  // The gateway forwards the existing Admin session; resolution stays atomic in SQL.
+  app.get("/api/admin/feedback/:id/preflight", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "review_preflight", proposal_id: req.params.id }) });
+      const data = await upstream.json();
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(upstream.status).json(data);
+    } catch (err: any) { return res.status(502).json({ error: sanitizePublicError(err, "Unable to load current review") }); }
+  });
+  app.post("/api/admin/feedback/:id/resolve-covered", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: "resolve_covered", proposal_id: req.params.id,
+          candidate_hash: req.body?.candidate_hash, covered_proposal_id: req.body?.covered_proposal_id,
+          covered_hash: req.body?.covered_hash, review_note: req.body?.review_note }) });
+      const data = await upstream.json();
+      return res.status(upstream.status).json(data);
+    } catch (err: any) { return res.status(502).json({ error: sanitizePublicError(err, "Unable to resolve feedback") }); }
+  });
+
   app.post("/api/admin/governance/:mode", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
     const allowed=new Set(["governance_baseline_upsert","governance_list","governance_evaluate","governance_rollback_preview","governance_rollback","governance_rollback_proposal_preview","governance_rollback_proposal"]);
@@ -1065,10 +1092,10 @@ export function createApp(): express.Application {
     try {
       const upstream=await fetch(adminUpstreamUrl,{
         method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
-        body:JSON.stringify({mode,...(req.body||{})})
+        body:JSON.stringify({... (req.body||{}),mode})
       });
       const data=await upstream.json();
-      if(!upstream.ok)return res.status(upstream.status).json({error:data?.error||"Governance action failed"});
+      if(!upstream.ok)return res.status(upstream.status).json({error:data?.error||"Governance action failed",issues:data?.issues,retry_guidance:data?.retry_guidance});
       return res.json(data);
     } catch(err:any) {return res.status(502).json({error:sanitizePublicError(err,"Governance upstream unavailable")});}
   });
@@ -1108,7 +1135,7 @@ export function createApp(): express.Application {
       const upstream = await fetch(adminUpstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, evaluation_id: req.body?.evaluation_id || null, review_note: req.body?.review_note || "", regression_attestation: decision === "accept" ? validateRegressionAttestation(req.body?.regression).attestation : undefined }),
+        body: JSON.stringify({ mode: "review", proposal_id: req.params.id, decision, candidate_hash: req.body?.candidate_hash, evaluation_id: req.body?.evaluation_id || null, review_note: req.body?.review_note || "", regression_attestation: decision === "accept" ? validateRegressionAttestation(req.body?.regression).attestation : undefined }),
       });
       const data:any = await upstream.json();
       if (!upstream.ok) return res.status(upstream.status).json({ error: data?.error || "Unable to review feedback" });

@@ -13,7 +13,7 @@ import { buildSync } from 'esbuild';
 const componentCode = buildSync({
   entryPoints: ['src/components/AdminFeedback.tsx'], bundle: true,
   format: 'cjs', platform: 'node', jsx: 'automatic', write: false,
-  external: ['react', 'react/jsx-runtime', 'lucide-react', './GovernancePanel', './PrivateReferencePanel'],
+  external: ['react', 'react/jsx-runtime', 'lucide-react', './GovernancePanel', './PrivateReferencePanel', './FeedbackReviewPanel'],
 }).outputFiles[0].text;
 
 type Node = { type: string | symbol | ((props: any) => Node); props: Record<string, any>; key?: string };
@@ -144,6 +144,7 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: Symbol.for('Fragment') };
       if (name === './GovernancePanel') return { GovernancePanel };
       if (name === './PrivateReferencePanel') return { PrivateReferencePanel };
+      if (name === './FeedbackReviewPanel') return { FeedbackReviewPanel: (props:any) => jsx('feedback-review-panel-stub', { ...props, children: props.path }), ResolvedFeedbackAudit: (props:any) => jsx('resolved-feedback-audit-stub',props) };
       if (name === 'lucide-react') return new Proxy({}, { get: (_target, icon) => `icon-${String(icon)}` });
       throw new Error('Unexpected component dependency: ' + name);
     },
@@ -417,9 +418,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
   // These responses are generated only by the in-memory mock transport. No
   // external API is contacted and no real review, merge, or deletion is made.
   const examples = [
-    { action: 'accept', status: 'pending', label: 'Accept & Merge', path: 'synthetic-action/review', finalStatus: 'merged', message: /Accepted \(upstream response\)/ },
     { action: 'reject', status: 'pending', label: 'Reject', path: 'synthetic-action/review', finalStatus: 'rejected', message: /Rejected\. Canonical DNA was not changed/ },
-    { action: 'merge', status: 'accepted', label: 'Finish legacy merge', path: 'synthetic-action/merge', finalStatus: 'merged', message: /Merged into canonical DNA/ },
     { action: 'delete', status: 'rejected', label: 'Delete all rejected (1)', path: 'delete-all', finalStatus: '', message: /Deleted 1 rejected feedback proposal/ },
   ];
   for (const example of examples) await t.test(example.action, async t => {
@@ -457,44 +456,46 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
   });
 });
 
-test('a simulated Accept 422 displays gate issues beside only that proposal and clears them when retry starts', async t => {
-  const ui = setup({ mockMutationUrl: '/api/admin/feedback/synthetic-action/review' }); t.after(ui.unmount);
-  ui.calls[0].resolve(page([proposal('synthetic-action'), proposal('synthetic-unrelated')])); await flush();
-  const article = (id: string) => {
-    const node = ui.all('article').find(node => textOf(node).includes(`Synthetic branch ${id}`));
-    assert.ok(node, 'Missing synthetic proposal: ' + id); return node;
-  };
-  const articleAlerts = (id: string) => descendants(article(id)).filter(node => node.props.role === 'alert').map(textOf);
-  ui.click('Accept & Merge'); await flush();
-  assert.equal(ui.mutationCalls.length, 1);
-  const payload = JSON.parse(String(ui.mutationCalls[0].init.body));
-  assert.equal(payload.decision, 'accept'); assert.equal(payload.evaluation_id, '');
-  assert.deepEqual(payload.regression.evidence_urls, []); assert.deepEqual(payload.regression.baseline_ids, []);
-  assert.equal(payload.regression.scope_checked, false, 'Submitting does not silently satisfy the regression gate');
-  ui.mutationCalls[0].resolve(Response.json({
-    error: 'Synthetic regression gate blocked',
-    issues: ['Synthetic approved baseline required', 'Synthetic passed evaluation required'],
-  }, { status: 422 })); await flush();
-  assert.equal(articleAlerts('synthetic-action').length, 1);
-  assert.match(articleAlerts('synthetic-action')[0], /Chưa hoàn tất thao tác/);
-  assert.match(articleAlerts('synthetic-action')[0], /Synthetic regression gate blocked/);
-  assert.match(articleAlerts('synthetic-action')[0], /Synthetic approved baseline required/);
-  assert.match(articleAlerts('synthetic-action')[0], /Synthetic passed evaluation required/);
-  assert.deepEqual(articleAlerts('synthetic-unrelated'), [], 'The adjacent proposal does not inherit this action error');
-  assert.equal(ui.button('Accept & Merge').props.disabled, false);
-  assert.equal(ui.calls.length, 1, 'A rejected action never triggers a success refresh');
-  assert.doesNotMatch(ui.snapshots.at(-1)!, /Accepted \(upstream response\)|Merged into canonical DNA \(/);
-  ui.click('Accept & Merge'); await flush();
-  assert.equal(ui.mutationCalls.length, 2);
-  assert.deepEqual(articleAlerts('synthetic-action'), [], 'The previous gate message clears immediately when retry starts');
-  assert.equal(ui.button('Accepting & Merging...').props.disabled, true);
-  assert.doesNotMatch(ui.snapshots.at(-1)!, /Synthetic regression gate blocked|Synthetic approved baseline required/);
-  ui.mutationCalls[1].resolve(Response.json({ error: 'Synthetic retry still blocked', issues: ['Synthetic new gate issue'] }, { status: 422 }));
-  await flush();
-  assert.match(articleAlerts('synthetic-action')[0], /Synthetic retry still blocked.*Synthetic new gate issue/);
-  assert.deepEqual(articleAlerts('synthetic-unrelated'), []);
-  assert.equal(ui.button('Accept & Merge').props.disabled, false);
-  assert.equal(ui.all('article').length, 2); assert.equal(ui.calls.length, 1);
+test('both pending review paths open an in-card panel without a mutation or legacy merge action', async t => {
+  for (const [label,path] of [['Review & Merge','merge'],['Đã có trong quy chuẩn','covered']]) await t.test(path, async t => {
+    const ui=setup(); t.after(ui.unmount);
+    ui.calls[0].resolve(page([proposal('synthetic-action'),proposal('legacy','accepted')]));await flush();
+    ui.click(label);await flush();
+    const panels=ui.all('feedback-review-panel-stub');assert.equal(panels.length,1);
+    assert.equal(panels[0].props.path,path);assert.equal(panels[0].props.proposal.id,'synthetic-action');
+    assert.equal(ui.calls.length,1);assert.equal(ui.mutationCalls.length,0);
+    assert.equal(ui.button(label).props.disabled,true,'An open review cannot be replaced by a repeated click');
+    panels[0].props.onClose();await flush();assert.equal(ui.all('feedback-review-panel-stub').length,0);
+    ui.click('all');await flush();assert.match(ui.text(),/Legacy accepted · Chỉ xem/);
+    assert.doesNotMatch(ui.text(),/Finish legacy merge|Accept & Merge|Passed evaluation ID/);
+  });
+});
+
+test('a completed in-card review forces queue refresh, ignores older poll and preserves its result', async t => {
+  const ui=setup();t.after(ui.unmount);
+  ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
+  ui.click('Review & Merge');await flush();ui.poll();await flush();
+  const oldPoll=ui.calls[1];
+  ui.all('feedback-review-panel-stub')[0].props.onComplete('Synthetic review completed',{status:'merged'});await flush();
+  assert.equal(oldPoll.init.signal?.aborted,true);assert.equal(ui.calls.length,3);
+  assert.equal(ui.all('feedback-review-panel-stub').length,0);
+  oldPoll.resolve(page([proposal('stale-action')]));await flush();
+  assert.doesNotMatch(ui.text(),/Synthetic branch stale-action/);
+  ui.calls[2].resolve(page([proposal('synthetic-action','merged')]));await flush();
+  assert.match(ui.snapshots.at(-1)!,/Synthetic review completed/);
+  assert.equal(ui.queue().props['aria-busy'],false);
+});
+
+test('filter switch and logout remove the in-card review; proposal updates change its remount key', async t => {
+  const ui=setup();t.after(ui.unmount);
+  const p=proposal('synthetic-action');ui.calls[0].resolve(page([p]));await flush();
+  ui.click('Review & Merge');await flush();
+  const source=ui.all('feedback-review-panel-stub')[0];
+  ui.poll();ui.calls[1].resolve(page([{...p,proposed_content_md:'Changed proposal content'}]));await flush();
+  assert.equal(ui.all('feedback-review-panel-stub')[0].props.proposal.proposed_content_md,'Changed proposal content');
+  ui.click('all');await flush();assert.equal(ui.all('feedback-review-panel-stub').length,0);
+  ui.click('Review & Merge');await flush();ui.click('Sign out');await flush();
+  assert.equal(ui.all('feedback-review-panel-stub').length,0);
 });
 
 test('advanced Governance starts collapsed, mounts on first opening, and stays mounted on closing', async t => {

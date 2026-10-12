@@ -1,27 +1,11 @@
 import { GovernancePanel } from "./GovernancePanel";
+import { FeedbackReviewPanel, ResolvedFeedbackAudit, type FeedbackReviewPath } from "./FeedbackReviewPanel";
+import type { FeedbackProposal as Proposal } from "./feedback-review";
 import { PrivateReferencePanel } from "./PrivateReferencePanel";
 import { assessProposal } from "../knowledge-governance";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 
-type Proposal = {
-  id: string;
-  status: string;
-  brand_name?: string;
-  branch_title?: string;
-  branch_slug?: string;
-  submitted_by_name?: string;
-  raw_feedback?: string;
-  proposed_content_md?: string;
-  proposed_scope?: string;
-  change_summary?: string;
-  evidence_summary?: Record<string, unknown>;
-  created_at?: string;
-  reviewed_at?: string;
-  review_note?: string;
-  merged_at?: string;
-  context_images?: Array<{ role:string; image_url?:string|null; reference_id?:string|null; caption?:string|null }>;
-};
 
 export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [token, setToken] = useState(() => sessionStorage.getItem("creative_dna_admin_token") || "");
@@ -37,12 +21,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const queueRequest = useRef<AbortController | null>(null);
   const [advancedLoaded, setAdvancedLoaded] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [activeAction, setActiveAction] = useState<{ id:string; type:"accept"|"reject"|"merge" } | null>(null);
+  const [activeAction, setActiveAction] = useState<{ id:string; type:"reject" } | null>(null);
   const [message, setMessage] = useState("");
   const [actionErrors, setActionErrors] = useState<Record<string,string>>({});
-  const [gateInputs, setGateInputs] = useState<Record<string,{evidence:string;baselines:string;note:string;checks:boolean}>>({});
-  const [evaluationIds,setEvaluationIds] = useState<Record<string,string>>({});
-  const gateFor=(id:string)=>{const v=gateInputs[id]||{evidence:"",baselines:"",note:"",checks:false};return {evidence_urls:v.evidence.split("\n").map(x=>x.trim()).filter(Boolean),baseline_ids:v.baselines.split("\n").map(x=>x.trim()).filter(Boolean),scope_checked:v.checks,canonical_conflicts_checked:v.checks,product_truth_verified:v.checks,before_after_reviewed:v.checks,severe_regressions:v.checks?0:-1,review_note:v.note};};
+  const [reviewing, setReviewing] = useState<{id:string;path:FeedbackReviewPath}|null>(null);
+  const actionBusy = useRef(false);
   const [notes, setNotes] = useState<Record<string,string>>({});
   const [filter, setFilter] = useState("pending");
   const [expanded, setExpanded] = useState<Record<string,boolean>>({});
@@ -122,6 +105,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     setQueueError("");
     setAdvancedLoaded(false);
     setActionErrors({});
+    setReviewing(null);
     sessionStorage.removeItem("creative_dna_admin_token");
     sessionStorage.removeItem("creative_dna_admin_refresh_token");
     setToken("");
@@ -317,35 +301,22 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const merge = async (id:string) => {
-    if (!confirm("Confirm the evidence and regression checks are complete. Merge into canonical?")) return;
-    setLoading(true); setActiveAction({ id, type:"merge" }); setMessage("");
-    setActionErrors(previous => ({ ...previous, [id]: "" }));
-    try {
-      const res = await authFetch(`/api/admin/feedback/${id}/merge`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({regression:gateFor(id),evaluation_id:evaluationIds[id]||""}) });
-      const data = await res.json();
-      if (!res.ok) throw new Error([data.error || "Merge failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
-      setMessage(`Merged into canonical DNA (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).`);
-      await load(undefined, true, true);
-    } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); setLoading(false); }
-    finally { setLoading(false); setActiveAction(null); }
-  };
-
-  const decide = async (id:string, decision:"accept"|"reject") => {
-    setLoading(true); setActiveAction({ id, type:decision }); setMessage("");
+  const reject = async (id:string) => {
+    if (actionBusy.current) return;
+    actionBusy.current = true;
+    setLoading(true); setActiveAction({ id, type:"reject" }); setMessage("");
     setActionErrors(previous => ({ ...previous, [id]: "" }));
     try {
       const res = await authFetch(`/api/admin/feedback/${id}/review`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({ decision, review_note:notes[id] || "", ...(decision==="accept"?{regression:gateFor(id),evaluation_id:evaluationIds[id]||""}:{}) })
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({ decision:"reject", review_note:notes[id] || "" })
       });
       const data = await res.json();
       if (!res.ok) throw new Error([data.error || "Review failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
-      setMessage(decision === "accept" ? `Accepted (upstream response): canonical change reported (${data.merged_nodes || 1} node${data.merged_nodes===1?"":"s"}${data.cross_brand_sync?", cross-brand synced":""}).` : "Rejected. Canonical DNA was not changed.");
+      setMessage("Rejected. Canonical DNA was not changed.");
       await load(undefined, true, true);
-    } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); setLoading(false); }
-    finally { setLoading(false); setActiveAction(null); }
+    } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); }
+    finally { actionBusy.current = false; setLoading(false); setActiveAction(null); }
   };
 
   const deleteAllRejected = async () => {
@@ -411,7 +382,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-indigo-600"/><h1 className="text-2xl font-extrabold text-slate-900">Admin Feedback Queue</h1></div>
-          <p className="text-sm text-slate-500 mt-1">Visual-first review: scan context, problem, reusable rule and scope. Accept now merges directly into canonical DNA in one action.</p>
+          <p className="text-sm text-slate-500 mt-1">Đọc context và quy tắc, rồi chọn: đã có trong quy chuẩn hoặc review thay đổi mới trước khi merge.</p>
           {token && <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>Auto-sync mỗi 10 giây · tự refresh session</div>}
         </div>
         <button onClick={() => load()} disabled={!token || loading || queueLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${queueLoading?"animate-spin":""}`}/>Refresh</button>
@@ -421,7 +392,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==="Enter") login();}} placeholder="Password" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
         <button onClick={login} disabled={authLoading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-50"><LogIn className="w-4 h-4"/>{authLoading?"Signing in...":"Sign in"}</button>
       </div> : <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex gap-1">{["pending","merged","rejected","accepted","all"].map(x=><button key={x} onClick={()=>setFilter(x)} className={`px-3 py-2 text-xs font-semibold rounded-lg border ${filter===x?"bg-slate-900 text-white border-slate-900":"bg-white text-slate-600 border-slate-200"}`}>{x==="accepted"?"accepted (legacy)":x}</button>)}</div>
+        <div className="flex gap-1">{["pending","resolved","merged","rejected","accepted","all"].map(x=><button key={x} onClick={()=>{setReviewing(null);setFilter(x);}} className={`px-3 py-2 text-xs font-semibold rounded-lg border ${filter===x?"bg-slate-900 text-white border-slate-900":"bg-white text-slate-600 border-slate-200"}`}>{x==="accepted"?"accepted (legacy)":x}</button>)}</div>
         <div className="flex items-center gap-2">
           {filter==="rejected" && filtered.length>0 && <button onClick={deleteAllRejected} disabled={bulkDeleting || loading} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 disabled:opacity-50">
             {bulkDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin"/> : <XCircle className="w-3.5 h-3.5"/>}
@@ -535,7 +506,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     {token && <PrivateReferencePanel request={authFetch}/>}
     {token && <details className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setAdvancedLoaded(true); }}>
       <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>
-      <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách bên dưới. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Baseline và đánh giá regression chỉ cần trước khi Accept / Merge vào canonical DNA.</p>
+      <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách bên dưới. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Bạn có thể review ngay trong từng card. Phần nâng cao dành cho quản lý baseline và lịch sử governance.</p>
       {advancedLoaded && <div className="mt-4"><GovernancePanel request={authFetch}/></div>}
     </details>}
     <section className="space-y-3" aria-label="Feedback proposals" aria-busy={queueLoading}>
@@ -562,23 +533,12 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   <span>Impact {governance.scores.outcomeImpact}/10</span>
  </div>
  {governance.issues.length>0 && <p className="text-xs text-slate-600">{governance.issues.join(" · ")}</p>}
- {governance.similar.length>0 && <p className="text-xs text-slate-600">Potential duplicates: {governance.similar.map(x=>x.id.slice(0,8)).join(", ")}</p>}
+ {governance.similar.length>0 && <p className="text-xs text-slate-600">Có {governance.similar.length} feedback gần nhau về từ ngữ; cần đọc đối chiếu, chưa phải kết luận trùng lặp.</p>}
  <p className="text-[11px] text-slate-500">{governance.note}</p>
- </div>
- <div className="rounded-xl border border-slate-200 p-3 space-y-2">
- <p className="text-xs font-semibold text-slate-800">Regression gate · Bắt buộc trước Accept / Merge</p>
- <input className="w-full border border-slate-300 rounded-lg p-2 text-xs" placeholder="Passed evaluation ID (from Knowledge Governance)" value={evaluationIds[p.id]||""} onChange={e=>setEvaluationIds(x=>({...x,[p.id]:e.target.value}))}/>
- <div className="grid sm:grid-cols-2 gap-2">
-  <textarea aria-label="Evidence links or IDs" placeholder="Evidence URLs / IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.evidence||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{baselines:"",note:"",checks:false}),evidence:e.target.value}}))}/>
-  <textarea aria-label="Regression baseline IDs" placeholder="Baseline case IDs · mỗi dòng một mục" rows={2} className="border border-slate-300 rounded-lg p-2 text-xs" value={gateInputs[p.id]?.baselines||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",note:"",checks:false}),baselines:e.target.value}}))}/>
- </div>
- <textarea aria-label="Regression review notes" placeholder="Kết quả so sánh before/after, xung đột và kiểm tra fidelity..." rows={2} className="border border-slate-300 rounded-lg p-2 text-xs w-full" value={gateInputs[p.id]?.note||""} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",checks:false}),note:e.target.value}}))}/>
- <label className="flex gap-2 items-start text-xs text-slate-700"><input type="checkbox" checked={!!gateInputs[p.id]?.checks} onChange={e=>setGateInputs(x=>({...x,[p.id]:{...(x[p.id]||{evidence:"",baselines:"",note:""}),checks:e.target.checked}}))}/><span>Tôi đã kiểm tra Product Truth, scope, xung đột canonical và so sánh before/after trên baseline; không có regression nghiêm trọng</span></label>
- <p className="text-[11px] text-slate-500">Chỉ cần phần này khi Accept / Merge, không cần để đọc feedback. Nếu chưa có baseline đã duyệt hoặc evaluation đạt, hãy mở Nâng cao để chuẩn bị trước; hệ thống sẽ chặn merge khi thiếu các điều kiện an toàn.</p>
  </div>
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span><span className="font-bold text-slate-700">Submitted by:</span> {p.submitted_by_name || "Missing member name"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
-          <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
+          <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"||p.status==="resolved"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"||p.status==="resolved"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
         </div>
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -605,11 +565,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           {(outs.length>0 || refs.length>0) && <div className="grid md:grid-cols-2 gap-3">
             <div className="rounded-lg border border-rose-100 bg-rose-50/50 p-3">
               <div className="text-[9px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">Before / Bản có vấn đề</div>
-              {outs.length ? <div className="grid grid-cols-2 gap-2">{outs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-rose-100 bg-white"><img src={img.image_url!} alt={img.caption || "Before"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || img.reference_id || "Problem output"}</div></a>)}</div> : <div className="text-xs text-slate-400">No before/problem image attached.</div>}
+              {outs.length ? <div className="grid grid-cols-2 gap-2">{outs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-rose-100 bg-white"><img src={img.image_url!} alt={img.caption || "Before"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || "Problem output"}</div></a>)}</div> : <div className="text-xs text-slate-400">No before/problem image attached.</div>}
             </div>
             <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
               <div className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2">After / Bản đúng / Reference</div>
-              {refs.length ? <div className="grid grid-cols-2 gap-2">{refs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-emerald-100 bg-white"><img src={img.image_url!} alt={img.caption || "After or target"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || img.reference_id || "Target/reference"}</div></a>)}</div> : <div className="text-xs text-slate-400">No after/target image attached.</div>}
+              {refs.length ? <div className="grid grid-cols-2 gap-2">{refs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-emerald-100 bg-white"><img src={img.image_url!} alt={img.caption || "After or target"} className="w-full aspect-[4/3] object-cover"/><div className="p-2 text-[10px] text-slate-600 line-clamp-2">{img.caption || "Target/reference"}</div></a>)}</div> : <div className="text-xs text-slate-400">No after/target image attached.</div>}
             </div>
           </div>}
         </div>
@@ -626,7 +586,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
               </div>
               <div className="p-2">
                 <div className="text-[10px] font-semibold text-slate-700 line-clamp-2">{img.caption || "Context image"}</div>
-                {img.reference_id && <div className="text-[9px] text-slate-400 truncate mt-1">{img.reference_id}</div>}
+
               </div>
             </a>)}
           </div>
@@ -646,10 +606,18 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           <div className="rounded-lg bg-white border border-emerald-100 p-3 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">{p.proposed_content_md || String(spec?.generalized_rule || spec?.expected_behavior || parsed.memberFeedback || "—")}</div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs text-slate-500"><span>Scope:</span><span className="font-bold text-slate-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span></div><button onClick={()=>setExpanded({...expanded,[p.id]:!isOpen})} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 bg-white"><Eye className="w-3 h-3"/>{isOpen?"Hide details":"View details"}{isOpen?<ChevronUp className="w-3 h-3"/>:<ChevronDown className="w-3 h-3"/>}</button></div>
-        {isOpen && <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"><div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Original member feedback</div><div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{parsed.memberFeedback || p.raw_feedback}</div></div>{Array.isArray(spec?.reject_conditions) && spec.reject_conditions.length>0 && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 mb-1">Reject when</div><div className="flex flex-wrap gap-1.5">{spec.reject_conditions.map((x:any,i:number)=><span key={i} className="px-2 py-1 rounded-md bg-white border border-rose-100 text-[11px] text-rose-700">{String(x)}</span>)}</div></div>}{!!p.context_images?.filter(x=>!x.image_url).length && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Unrendered image references</div><div className="text-[10px] text-slate-400 break-all">{p.context_images?.filter(x=>!x.image_url).map(x=>x.reference_id).filter(Boolean).join(" · ")}</div></div>}</div>}
+        {isOpen && <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"><div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Original member feedback</div><div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{parsed.memberFeedback || p.raw_feedback}</div></div>{Array.isArray(spec?.reject_conditions) && spec.reject_conditions.length>0 && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 mb-1">Reject when</div><div className="flex flex-wrap gap-1.5">{spec.reject_conditions.map((x:any,i:number)=><span key={i} className="px-2 py-1 rounded-md bg-white border border-rose-100 text-[11px] text-rose-700">{String(x)}</span>)}</div></div>}{!!p.context_images?.filter(x=>!x.image_url).length && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Unrendered image references</div><div className="text-[10px] text-slate-400 break-all">{p.context_images?.filter(x=>!x.image_url).length} private reference(s); xem metadata đầy đủ trong Advanced của review.</div></div>}</div>}
         {actionErrors[p.id] && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Chưa hoàn tất thao tác: {actionErrors[p.id]}</p>}
-        {p.status==="pending" && <div className="grid lg:grid-cols-[1fr_auto] gap-3 items-end border-t border-slate-100 pt-4"><textarea value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin note..." className="w-full min-h-16 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/><div className="flex gap-2"><button onClick={()=>decide(p.id,"reject")} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg border border-rose-200 text-rose-700 bg-rose-50 disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="reject" && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id && activeAction.type==="reject" ? "Rejecting..." : "Reject"}</button><button onClick={()=>decide(p.id,"accept")} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg bg-emerald-600 text-white disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="accept" ? <RefreshCw className="w-3.5 h-3.5 animate-spin"/> : <Sparkles className="w-3.5 h-3.5"/>}{activeAction?.id===p.id && activeAction.type==="accept" ? "Accepting & Merging..." : "Accept & Merge"}</button></div></div>}
-        {p.status==="accepted" && <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4"><div className="text-xs text-indigo-700">Legacy accepted proposal from the old flow. New Accept actions merge automatically.</div><button onClick={()=>merge(p.id)} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 text-white disabled:opacity-50">{activeAction?.id===p.id && activeAction.type==="merge" && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id && activeAction.type==="merge" ? "Merging..." : "Finish legacy merge"}</button></div>}
+        {p.status==="pending" && <div className="space-y-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={()=>setReviewing({id:p.id,path:"covered"})} disabled={loading||!!reviewing} className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 disabled:opacity-50">Đã có trong quy chuẩn</button>
+            <button type="button" onClick={()=>setReviewing({id:p.id,path:"merge"})} disabled={loading||!!reviewing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Sparkles className="w-3.5 h-3.5"/>Review & Merge</button>
+          </div>
+          {reviewing?.id===p.id && <FeedbackReviewPanel key={`${reviewing.path}-${JSON.stringify(p)}`} proposal={p} path={reviewing.path} request={authFetch} onClose={()=>setReviewing(null)} onComplete={(resultMessage)=>{setMessage(resultMessage);setReviewing(null);void load(undefined,true,true);}}/>}
+          {!reviewing && <div className="flex flex-col sm:flex-row gap-2 items-end"><textarea aria-label="Ghi chú từ chối" value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin note..." className="w-full min-h-16 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"/><button type="button" onClick={()=>reject(p.id)} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg border border-rose-200 text-rose-700 bg-rose-50 disabled:opacity-50">{activeAction?.id===p.id && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id?"Rejecting...":"Reject"}</button></div>}
+        </div>}
+        {p.status==="accepted" && <p className="border-t border-slate-100 pt-4 text-xs text-amber-900">Legacy accepted · Chỉ xem. Luồng merge cũ đã bị chặn; trạng thái này không chứng minh canonical đã cập nhật. Cần kiểm tra lịch sử và tạo review hợp lệ trước khi thay đổi quy chuẩn.</p>}
+        {p.status==="resolved" && <ResolvedFeedbackAudit proposal={p}/>}
         {p.merged_at && <div className="text-xs text-emerald-700 font-semibold">Merged {new Date(p.merged_at).toLocaleString()}</div>}{p.review_note && <div className="text-xs text-slate-500">Admin note: {p.review_note}</div>}
       </article>})}
     </section>
