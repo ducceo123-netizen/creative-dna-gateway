@@ -15,6 +15,10 @@ Creative DNA connects ChatGPT and the OpenAI Apps SDK to a live, structured bran
 - **Terms of Service:** `https://creative-dna-gateway.vercel.app/terms`
 - **Support:** `https://creative-dna-gateway.vercel.app/support`
 
+## Muse auxiliary MVP
+
+Use the lightweight [Muse bootstrap](https://uid-brands-gateway-preview.onrender.com/muse) for public read-only routes, canonical rules, Onepage brief compilation, and template links. [Setup and limitations](docs/muse-mvp.md). This shares the existing backend; native Muse account connection remains to be tested.
+
 ## Supported Brands
 
 - `PawfectHouse`

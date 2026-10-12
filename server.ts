@@ -11,6 +11,7 @@ import { UID_NATIVE_WORKFLOW, REVIEW_TOOL_DESCRIPTION, NATIVE_WORKFLOW_DESCRIPTI
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA, LAUNCHER_INPUT_SCHEMA, discoverySchema, createReviewContext } from "./uid-brands-review-contract.ts";
 import { registerPrivateReferenceRoutes } from "./uid-private-reference-proxy.ts";
 import { readBoundedReferenceBytes } from "./supabase/functions/_shared/private-reference-access.ts";
+import { registerMuseRoutes } from "./uid-muse.ts";
 
 const DEFAULT_UPSTREAM_URL = "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-public";
 
@@ -871,6 +872,7 @@ export function createApp(): express.Application {
 
   // Separate authenticated image boundary; public MCP/resolver calls never use this route.
   registerPrivateReferenceRoutes(app);
+  registerMuseRoutes(app, { origin: CANONICAL_PRODUCTION_ORIGIN, routes: listCreativeDnaRoutes, sanitizeRoutes: sanitizeRoutesData, resolve: resolveCreativeDna, compile: compileOnepageJob });
 
   // Versioned backend-owned template: no Library session or datastore query required.
   app.get("/api/onepage-ui-template/:version/:file", (req: Request, res: Response) => {
