@@ -9,6 +9,7 @@ on:
       - 'uid-brands-attachment-ui.ts'
       - 'uid-brands-attachments.ts'
       - 'server.ts'
+      - 'uid-muse.ts'
       - 'onepage-ui-template.ts'
       - 'uid-private-reference-*.ts'
       - 'supabase/functions/_shared/reference-library*.ts'
