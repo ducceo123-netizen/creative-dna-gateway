@@ -1,3 +1,4 @@
+import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock, reconcilesReview } from "../request-recovery";
 import { useEffect, useRef, useState } from "react";
 import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
 import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
@@ -68,6 +69,9 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   onComplete:(message:string, result:Record<string,unknown>)=>void;
   onBusyChange?:(busy:boolean)=>void;
 }) {
+  const lockKey=reviewLockKey(proposal.id);
+  const [uncertain,setUncertain]=useState(!!getReviewLock(lockKey));
+  const dataRef=useRef<FeedbackPreflight|null>(null);
   const [data,setData]=useState<FeedbackPreflight|null>(null);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState<"covered"|"process"|"rule"|"cancel"|null>(null);
@@ -92,39 +96,50 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const visibleData=sameIdentity?data:null;
 
   const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);};
-  const load=async(clearInputs=true)=>{
+  const load=async(background=false)=>{
+    if(mutation.current || (background&&activeRead.current))return;
     activeRead.current?.abort();
     const controller=new AbortController();activeRead.current=controller;
     const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller;
-    setLoading(true);setData(null);resetAttestations();setStale(false);
-    if(clearInputs){setNote("");setQueueRequest(undefined);setCandidateSearch("");}
+    setLoading(true);
     try {
-      const response=await requestRef.current(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/preflight`,{signal:controller.signal});
+      const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/preflight`,{signal:controller.signal},requestRef.current);
       const result=await response.json();
       if(!current())return;
       if(!response.ok)throw Error([result.error||"Không tải được preflight.",...(Array.isArray(result.issues)?result.issues:[])].join(" · "));
-      setData(validatePreflight(result,proposal.id));setError("");setErrorIssues([]);
-    } catch(e:unknown){if(current())setError(e instanceof Error?e.message:"Không tải được preflight.");}
+      const next=validatePreflight(result,proposal.id);
+      const previous=dataRef.current;
+      if(previous&&(previous.candidate_hash!==next.candidate_hash||JSON.stringify(previous.targets)!==JSON.stringify(next.targets)||JSON.stringify(previous.covered_candidates)!==JSON.stringify(next.covered_candidates)||previous.review_intent_hash!==next.review_intent_hash||previous.direct_rule?.rule_hash!==next.direct_rule?.rule_hash||previous.direct_rule_plan?.plan_hash!==next.direct_rule_plan?.plan_hash||JSON.stringify(previous.baselines)!==JSON.stringify(next.baselines)))resetAttestations();
+      dataRef.current=next;setData(next);setQueueRequest(undefined);setStale(false);
+      const lock=getReviewLock(lockKey);
+      if(lock&&reconcilesReview(lock,next.proposal.status,next.review_request))clearReviewLock(lockKey);
+      const unresolved=!!getReviewLock(lockKey);setUncertain(unresolved);
+      setError(unresolved?"Kết quả thao tác chưa rõ. Đang kiểm tra trạng thái; không gửi lại. Đóng cửa sổ không hủy thao tác trên máy chủ.":"");setErrorIssues([]);
+    } catch(e:unknown){if(current()){setStale(true);setError(e instanceof Error?e.message:"Không tải được preflight.");}}
     finally {if(current()){activeRead.current=null;setLoading(false);}}
   };
   useEffect(()=>{
-    alive.current=true;identity.current={id:proposal.id,path};setBusy(null);load();
-    return ()=>{alive.current=false;activeRead.current?.abort();activeRead.current=null;};
+    alive.current=true;identity.current={id:proposal.id,path};dataRef.current=null;setData(null);setNote("");resetAttestations();setBusy(null);mutation.current=false;load();
+    const sync=()=>{if(document.visibilityState==="visible")void load(true);};
+    const poll=window.setInterval(sync,10000);document.addEventListener("visibilitychange",sync);window.addEventListener("focus",sync);
+    return ()=>{alive.current=false;activeRead.current?.abort();activeRead.current=null;window.clearInterval(poll);document.removeEventListener("visibilitychange",sync);window.removeEventListener("focus",sync);onBusyChangeRef.current?.(false);};
   },[proposal.id,path]);
+
+  useEffect(()=>{if(alive.current&&!mutation.current)void load(true);},[proposal]);
 
   const candidate=visibleData?.covered_candidates.find(item=>item.id===selected);
   const filteredCandidates=searchCoveredCandidates(visibleData?.covered_candidates||[],candidateSearch);
   const automatic=visibleData?.automatic_review;
   const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
   const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
-  const canReview=!!visibleData&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale;
+  const canReview=!!visibleData&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
-  const canCancel=!!visibleData&&activeRequest&&!loading&&!busy&&!stale;
+  const canCancel=!!visibleData&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
   const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
-    if(mutation.current||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
+    if(mutation.current||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
     mutation.current=true;onBusyChangeRef.current?.(true);setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
     const operationIdentity=identity.current;
@@ -133,11 +148,13 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     const payload=action==="covered"?{candidate_hash:visibleData.candidate_hash,covered_proposal_id:candidate!.id,covered_hash:candidate!.candidate_hash,review_note:note.trim()}:
       action==="rule"?{approve_rule:true,candidate_hash:visibleData.candidate_hash,rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash}:
       action==="cancel"?{request_id:currentRequest!.id}:{approve:true,review_intent_hash:visibleData.review_intent_hash};
+    setReviewLock(lockKey,{action,requestId:currentRequest?.id});
     try {
-      const response=await requestRef.current(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const response=await boundedFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)},requestRef.current,45000);
       const result=await response.json();
       if(!current())return;
       if(!response.ok){
+        if(response.status<500&&response.status!==408){clearReviewLock(lockKey);setUncertain(false);}else setUncertain(true);
         setError(result.error||"Chưa hoàn tất thao tác.");setErrorIssues(Array.isArray(result.issues)?result.issues:[]);
         setStale(true);resetAttestations();return;
       }
@@ -147,23 +164,25 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           (action==="cancel"?request.status!=="cancelled"||request.id!==currentRequest?.id:
             result.status!==request.status||result.approval_recorded!==true||!["queued","leased","blocked"].includes(request.status)))
           throw Error("Chưa xác nhận trạng thái hàng đợi. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
-        setQueueRequest(request);
+        clearReviewLock(lockKey);setUncertain(false);setQueueRequest(request);
       } else {
         if(action==="covered"&&result.status!=="resolved")throw Error("Chưa xác nhận trạng thái resolved. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
         if((action==="process"||action==="rule")&&(result.proposal?.id!==currentId||result.proposal?.status!=="merged"||result.canonical_changed!==true))throw Error("Chưa xác nhận trạng thái merged cho feedback này. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
         if(action==="process"&&(result.decision_kind==="owner_direct_rule"||result.rule_decision_id!==undefined))throw Error("Kết quả duyệt rule không phải kết quả review outcome. Hãy tải lại.");
         if(action==="rule"&&(result.status!=="merged"||result.decision_kind!=="owner_direct_rule"||result.visual_qc_performed!==false||typeof result.rule_decision_id!=="string"||!result.rule_decision_id||typeof result.proposal?.merged_at!=="string"||!Number.isFinite(Date.parse(result.proposal.merged_at))||result.candidate_hash!==visibleData.candidate_hash||result.rule_hash!==visibleData.direct_rule?.rule_hash||result.plan_hash!==visibleData.direct_rule_plan?.plan_hash))throw Error("Chưa xác nhận đúng quyết định duyệt rule. Hãy tải lại.");
+        clearReviewLock(lockKey);setUncertain(false);
         onCompleteRef.current(action==="rule"?"Đã merge rule do bạn duyệt trực tiếp. Đã lưu lịch sử và snapshot để rollback; đây không phải kết quả QC hình ảnh.":action==="covered"?"Đã đóng feedback: quy chuẩn hiện có đã bao phủ. Nội dung canonical không thay đổi.":"Đã merge: kiểm tra tự động và review đã lưu đều hợp lệ. Quy chuẩn đã được cập nhật.",result);
       }
-    } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setStale(true);resetAttestations();}}
-    finally {mutation.current=false;if(current()){setBusy(null);onBusyChangeRef.current?.(false);}}
+    } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setUncertain(true);setStale(true);resetAttestations();}}
+    finally {if(current()){mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);}}
   };
-  const close=()=>{if(mutation.current)return;activeRead.current?.abort();alive.current=false;onClose();};
+  const close=()=>{onBusyChangeRef.current?.(false);activeRead.current?.abort();alive.current=false;onClose();};
 
   return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
-    <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} disabled={!!busy} onClick={close}>Đóng / Cancel</button></div></div>
+    <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
+    {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
     {loading&&<p role="status" className="text-xs text-slate-600">Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…</p>}
-    {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại / Retry sẽ bỏ lựa chọn và xác nhận cũ trước khi review tiếp.</p>}</div>}
+    {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
     {visibleData&&<>
       {visibleData.proposal.status!=="pending"&&<p role="alert" className="text-xs text-amber-900">Feedback hiện có trạng thái {visibleData.proposal.status}. Chỉ xem; không thể gửi review mới.</p>}
       <CanonicalComparison data={visibleData}/>

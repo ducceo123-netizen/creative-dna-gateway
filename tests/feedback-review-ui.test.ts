@@ -55,6 +55,8 @@ function directReceipt(data=directPreflight()) {return {
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
 function setup(path:'covered'|'merge'='covered'){
+ const deadlines=new Map<number,()=>void>(),polls=new Map<number,()=>void>();let timerId=0;
+ const document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
  const slots:any[]=[],effects:Effect[]=[],queued:Effect[]=[],calls:Call[]=[],completed:any[]=[],busyEvents:boolean[]=[];
  let cursor=0,tree:Node,scheduled=false,mounted=true,writes=0,lateWrites=0,closed=0;
  let props:any={proposal,path,request,onBusyChange:(busy:boolean)=>busyEvents.push(busy),onClose:()=>{closed++;unmount();},onComplete:(...result:any[])=>completed.push(result)};
@@ -65,7 +67,10 @@ function setup(path:'covered'|'merge'='covered'){
  };
  const jsx=(type:Node['type'],props:Node['props'])=>({type,props});
  const module={exports:{} as {FeedbackReviewPanel:(props:any)=>Node}};
- vm.runInNewContext(code,{module,exports:module.exports,Error,AbortController,require(name:string){if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('Fragment')};throw Error(name);}});
+ vm.runInNewContext(code,{module,exports:module.exports,Error,AbortController,Response,setTimeout:(run:()=>void)=>{const id=++timerId;deadlines.set(id,run);return id;},clearTimeout:(id:number)=>deadlines.delete(id),
+ document,
+ window:{setInterval(run:()=>void){const id=++timerId;polls.set(id,run);return id;},clearInterval(id:number){polls.delete(id);},addEventListener(){},removeEventListener(){}},
+ sessionStorage:{getItem(){return null;},setItem(){},removeItem(){}},require(name:string){if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('Fragment')};throw Error(name);}});
  function request(url:string,init:RequestInit={}){return new Promise<Response>((resolve,reject)=>calls.push({url,init,resolve,reject}));}
  function materialize(value:any):any{if(Array.isArray(value))return value.map(materialize);if(!value||typeof value!=='object'||!('props'in value))return value;if(typeof value.type==='function')return materialize(value.type(value.props));return {...value,props:{...value.props,children:materialize(value.props.children)}};}
  function render(){cursor=0;tree=materialize(module.exports.FeedbackReviewPanel(props));for(const effect of queued.splice(0))effect.cleanup=effect.create()||undefined;}
@@ -77,7 +82,7 @@ function setup(path:'covered'|'merge'='covered'){
  function checkAll(){for(const node of all('input').filter(node=>node.props.type==='checkbox')){assert.equal(!!node.props.disabled,false);node.props.onChange({target:{checked:true}});}}
  function candidateFields(){all('input').find(node=>node.props.placeholder==='Source run ID từ công cụ tạo output')!.props.onChange({target:{value:'actual-run-42'}});all('input').find(node=>node.props.type==='url')!.props.onChange({target:{value:'https://example.test/candidate'}});all('textarea').find(node=>node.props.placeholder==='Dán output JSON object từ lần chạy thật')!.props.onChange({target:{value:'{"title":"Actual generated result"}'}});}
  render();
- return {calls,completed,busyEvents,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any){props={...props,proposal:next};render();},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
+ return {timeout:()=>{for(const run of [...deadlines.values()])run();},poll:()=>{for(const run of polls.values())run();},visibility:(state:string)=>{document.visibilityState=state;},calls,completed,busyEvents,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any){props={...props,proposal:next};render();},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
 }
 async function ready(ui:ReturnType<typeof setup>,data=preflight()){ui.calls[0].resolve(Response.json(data));await flush();}
 async function coveredReady(ui:ReturnType<typeof setup>){await ready(ui);ui.input('Quy chuẩn đã có','covered-1');await flush();ui.checkAll();ui.input('Lý do đóng feedback','Reviewed every affected brand and existing product safeguards.');await flush();}
@@ -111,7 +116,7 @@ test('covered resolution requires explicit choice and checks, sends hashes, and 
  const action=ui.button('Xác nhận đã có trong quy chuẩn').props.onClick;action();action();await flush();
  assert.equal(ui.calls.length,2);assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/resolve-covered`);
  assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{candidate_hash:'scope-v2:synthetic',covered_proposal_id:'covered-1',covered_hash:'covered-hash',review_note:'Reviewed every affected brand and existing product safeguards.'});
- assert.equal(ui.button('Đang đóng feedback…').props.disabled,true);assert.equal(ui.button('Đóng / Cancel').props.disabled,true);
+ assert.equal(ui.button('Đang đóng feedback…').props.disabled,true);assert.equal(!!ui.button('Đóng').props.disabled,false);
  ui.calls[1].resolve(Response.json({status:'resolved',resolution:{kind:'covered'},canonical_changed:false}));await flush();
  assert.equal(ui.completed.length,1);assert.match(ui.completed[0][0],/canonical không thay đổi/);
 });
@@ -138,10 +143,10 @@ test('initial load failure retries, and malformed/wrong-proposal preflight never
 test('close and unmount abort reads and suppress late JSON completion',async t=>{
  for(const close of [true,false])await t.test(close?'Cancel':'Unmount',async t=>{
   const ui=setup();t.after(ui.unmount);let finish!:(value:any)=>void;const body=new Promise(resolve=>{finish=resolve;});
-  ui.calls[0].resolve({ok:true,status:200,json:()=>body} as Response);await flush();
-  if(close)ui.click('Đóng / Cancel');else ui.unmount();
+  ui.calls[0].resolve({ok:true,status:200,arrayBuffer:()=>body} as Response);await flush();
+  if(close)ui.click('Đóng');else ui.unmount();
   assert.equal(ui.calls[0].init.signal?.aborted,true);const writes=ui.writes;
-  finish(preflight());await flush();assert.equal(ui.writes,writes);assert.equal(ui.lateWrites,0);assert.equal(ui.completed.length,0);
+  finish(new TextEncoder().encode(JSON.stringify(preflight())).buffer);await flush();assert.equal(ui.writes,writes);assert.equal(ui.lateWrites,0);assert.equal(ui.completed.length,0);
  });
 });
 
@@ -169,7 +174,7 @@ test('one processing intent persists a queue request without manual inputs or im
  const action=ui.button(actionLabel(ui)).props.onClick;action();action();await flush();assert.equal(ui.calls.length,2);
  assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/process`);
  assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve:true,review_intent_hash:'intent:synthetic'});
- assert.equal(ui.button('Đang tự kiểm tra…').props.disabled,true);assert.equal(ui.button('Đóng / Cancel').props.disabled,true);
+ assert.equal(ui.button('Đang tự kiểm tra…').props.disabled,true);assert.equal(!!ui.button('Đóng').props.disabled,false);
  ui.calls[1].resolve(Response.json({status:'queued',review_request:queueRequest(),canonical_changed:false,background_task_started:false,approval_recorded:true}));await flush();
  assert.match(ui.text(),/Đã lưu duyệt · Chờ dot review/);assert.match(ui.text(),/không khởi chạy review tức thì/);assert.equal(ui.completed.length,0);
  assert.equal(ui.button(actionLabel(ui)).props.disabled,true);assert.equal(ui.all('textarea').length,0);assert.equal(ui.calls.length,2);
@@ -261,7 +266,7 @@ test('direct-rule approval sends only explicit intent and displayed hashes once,
  const action=ui.button('Duyệt rule & merge ngay').props.onClick;action();action();await flush();
  assert.equal(ui.calls.length,2);assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/accept-rule`);
  assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
- assert.equal(ui.button('Đang merge rule…').props.disabled,true);assert.equal(ui.button('Đóng / Cancel').props.disabled,true);
+ assert.equal(ui.button('Đang merge rule…').props.disabled,true);assert.equal(!!ui.button('Đóng').props.disabled,false);
  assert.equal(ui.button('Duyệt & giao dot review').props.disabled,true);
  ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();
  assert.equal(ui.completed.length,1);assert.match(ui.completed[0][0],/Đã merge rule do bạn duyệt trực tiếp/);
@@ -506,4 +511,32 @@ test('review mutation synchronously locks its host drawer and unlocks after an e
  ui.click('Duyệt & giao dot review');assert.deepEqual(ui.busyEvents,[true]);
  ui.calls[1].resolve(Response.json({error:'Synthetic conflict'},{status:409}));await flush();
  assert.deepEqual(ui.busyEvents,[true,false]);assert.match(ui.text(),/Synthetic conflict/);
+});
+
+
+test('preflight deadline releases loading, retains notes and fails closed until successful read',async t=>{
+ const ui=setup();t.after(ui.unmount);await coveredReady(ui);
+ const note=ui.all('textarea')[0].props.value;ui.click('Tải lại / Retry');ui.timeout();await flush();
+ assert.match(ui.text(),/timed out/);assert.equal(ui.button('Xác nhận đã có trong quy chuẩn').props.disabled,true);
+ assert.equal(ui.all('textarea')[0].props.value,note);
+ ui.click('Tải lại / Retry');ui.calls.at(-1)!.resolve(Response.json(preflight()));await flush();
+ assert.equal(ui.all('textarea')[0].props.value,note);assert.equal(ui.button('Xác nhận đã có trong quy chuẩn').props.disabled,false);
+});
+
+test('unknown write remains locked through pending reconciliation, late HTTP success cannot replay or invent completion',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);await ready(ui,directPreflight());ui.click('Duyệt rule & merge ngay');await flush();
+ ui.timeout();await flush();assert.equal(!!ui.button('Đóng').props.disabled,false);assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,true);
+ ui.click('Tải lại / Retry');ui.calls[2].resolve(Response.json(directPreflight()));await flush();
+ assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,true);
+ ui.calls[1].resolve(Response.json(directReceipt()));await flush();assert.equal(ui.completed.length,0);
+ ui.poll();ui.calls[3].resolve(Response.json(directPreflight({proposal:{...proposal,status:'merged'}})));await flush();
+ assert.match(ui.text(),/trạng thái merged/);assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,1);
+});
+
+test('visible refresh never overlaps, updates open queue and invalidates version attestations without losing notes',async t=>{
+ const ui=setup();t.after(ui.unmount);await coveredReady(ui);const note=ui.all('textarea')[0].props.value;
+ ui.visibility('hidden');ui.poll();assert.equal(ui.calls.length,1);ui.visibility('visible');ui.poll();ui.poll();assert.equal(ui.calls.length,2);
+ ui.calls[1].resolve(Response.json(preflight({candidate_hash:'scope-v2:new'})));await flush();
+ assert.equal(ui.all('textarea')[0].props.value,note);assert.equal(ui.button('Xác nhận đã có trong quy chuẩn').props.disabled,true);
+ assert.ok(ui.all('input').filter(node=>node.props.type==='checkbox').every(node=>!node.props.checked));
 });

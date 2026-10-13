@@ -21,10 +21,25 @@ class Element {
   query(tag: string): Element[] { return this.children.flatMap(child => [...(child.tag === tag ? [child] : []), ...child.query(tag)]); }
 }
 function deferred<T = any>() { let resolve!: (value?: T) => void; let reject!: (error: Error) => void; const promise = new Promise<T>((a, b) => { resolve = a as any; reject = b; }); return { promise, resolve, reject }; }
-const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
+const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 const plain = (value: any) => JSON.parse(JSON.stringify(value));
 function file(name = "reference.png", type = "image/png", size = 200) { return { name, type, size, lastModified: 1, arrayBuffer: async () => new TextEncoder().encode("Product color is blue.").buffer }; }
+class TestClock {
+  now = 0; next = 0; timers = new Map<number, { at: number; run: () => void }>();
+  setTimeout = (run: () => void, delay: number) => { const id = ++this.next; this.timers.set(id, { at: this.now + delay, run }); return id; };
+  clearTimeout = (id: number) => { this.timers.delete(id); };
+  async tick(ms: number) {
+    const end = this.now + ms;
+    for (;;) {
+      const due = [...this.timers].filter(([, timer]) => timer.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
+      if (!due) break;
+      this.now = due[1].at; this.timers.delete(due[0]); due[1].run(); await flush();
+    }
+    this.now = end; await flush();
+  }
+}
 function setup(overrides: any = {}) {
+  const clock = new TestClock();
   const root = new Element(); const uploads: any[] = []; const calls: any[] = []; const urls: any[] = []; const states: any[] = []; const changes: any[] = []; const revoked: string[] = [];
   const openai: any = {
     uploadFile: async (selected: any) => { uploads.push(selected); return { fileId: "file-" + uploads.length }; },
@@ -37,12 +52,12 @@ function setup(overrides: any = {}) {
     static createObjectURL() { return "blob:local-preview-" + uploads.length; }
     static revokeObjectURL(url: string) { revoked.push(url); }
   }
-  const context: any = { window: { openai }, document: { createElement: (tag: string) => new Element(tag) }, URL: TestURL, TextDecoder, console };
+  const context: any = { window: { openai }, document: { createElement: (tag: string) => new Element(tag) }, URL: TestURL, TextDecoder, console, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout };
   vm.runInNewContext(ATTACHMENT_UI_SCRIPT + "\nglobalThis.createController=createAttachmentController;", context);
   const controller = context.createController({ root, idPrefix: "test", onChange: (state: any) => changes.push(plain(state)) });
   const items = () => controller.snapshot().scopes[controller.snapshot().scope];
   const button = (text: string) => root.query("button").find(node => node.textContent === text)!;
-  return { controller, root, openai, uploads, calls, urls, states, changes, revoked, items, button };
+  return { clock, controller, root, openai, uploads, calls, urls, states, changes, revoked, items, button };
 }
 
 test("exports script and compact responsive attachment styles without external upload route", () => {
@@ -116,11 +131,12 @@ test("removal also cancels late extraction, including while scoped elsewhere", a
   ui.controller.setScope("brief"); assert.equal(ui.items().length, 0);
 });
 
-test("failed upload retries the original File and never publishes failed evidence", async () => {
-  const selected = file(); const received: any[] = []; let fail = true;
-  const ui = setup({ uploadFile: async (file: any) => { received.push(file); if (fail) throw Error("host unavailable"); return { fileId: "retried" }; } });
-  await ui.controller.addFiles([selected]); assert.equal(ui.items()[0].status, "error"); assert.equal(ui.controller.getReadyAttachments().length, 0);
-  fail = false; await ui.controller.retry(ui.items()[0].id); assert.equal(received.length, 2); assert.ok(received.every(file => file === selected)); assert.equal(ui.items()[0].status, "ready");
+test("ambiguous failed upload cannot retry the same upload or publish evidence", async () => {
+  const selected = file(); const received: any[] = [];
+  const ui = setup({ uploadFile: async (file: any) => { received.push(file); throw Error("host unavailable"); } });
+  await ui.controller.addFiles([selected]); assert.equal(ui.items()[0].status, "needs_reselect"); assert.equal(ui.controller.getReadyAttachments().length, 0);
+  await ui.controller.retry(ui.items()[0].id); assert.equal(received.length, 1);
+  assert.equal(ui.root.query("button").some(button => button.textContent === "Thử lại"), false);
 });
 
 test("tool failure is retryable with fresh URL without uploading the same document again", async () => {
@@ -130,7 +146,7 @@ test("tool failure is retryable with fresh URL without uploading the same docume
 });
 
 test("malformed upload and ingestion outputs do not become ready references", async () => {
-  const badUpload = setup({ uploadFile: async () => ({ file_id: "wrong-shape" }) }); await badUpload.controller.addFiles([file()]); assert.equal(badUpload.items()[0].status, "error");
+  const badUpload = setup({ uploadFile: async () => ({ file_id: "wrong-shape" }) }); await badUpload.controller.addFiles([file()]); assert.equal(badUpload.items()[0].status, "needs_reselect");
   for (const structuredContent of [{ ok: true, file_id: "wrong", size_bytes: 200, text: "evidence" }, { ok: true, file_id: "file-1", size_bytes: 200 }, { ok: true, file_id: "file-1", size_bytes: 1024 * 1024 + 1, text: "too large" }, { ok: true, file_id: "file-1", size_bytes: 200, text: " " }]) {
     const ui = setup({ selectFiles: async () => [{ fileId: "file-1", fileName: "brief.txt", mimeType: "text/plain" }], callTool: async () => ({ structuredContent }) }); await ui.controller.selectLibrary(); assert.equal(ui.items()[0].status, "error");
   }
@@ -260,4 +276,102 @@ test("library cancellation and destroyed/remounted picker have no late side effe
   const cancelled = setup({ selectFiles: async () => { const error = new Error("cancelled"); error.name = "AbortError"; throw error; } }); await cancelled.controller.selectLibrary(); assert.equal(cancelled.items().length, 0); assert.equal(cancelled.controller.validateReady(), true);
   const wait = deferred(); const ui = setup({ selectFiles: () => wait.promise }); const pending = ui.controller.selectLibrary(); ui.controller.restore({ version: 1, scopes: { brief: [] }, scope: "brief" });
   wait.resolve([{ fileId: "late", fileName: "late.png", mimeType: "image/png" }]); await pending; assert.equal(ui.items().length, 0); assert.equal(ui.calls.length, 0);
+});
+
+
+test("upload timeout settles, blocks duplicate retry, and ignores late completion or rejection", async () => {
+  for (const rejects of [false, true]) {
+    const wait = deferred(); let attempts = 0; const ui = setup({ uploadFile: () => { attempts++; return wait.promise; } });
+    const pending = ui.controller.addFiles([file()]); await ui.clock.tick(59999); assert.equal(ui.items()[0].status, "uploading");
+    await ui.clock.tick(1); await pending; assert.equal(ui.items()[0].status, "needs_reselect"); assert.throws(() => ui.controller.validateReady());
+    await ui.controller.retry(ui.items()[0].id); assert.equal(attempts, 1);
+    const saved = plain(ui.controller.snapshot()); const changes = ui.changes.length;
+    if (rejects) wait.reject(new Error("late upload failure")); else wait.resolve({ fileId: "late" });
+    await flush(); assert.deepEqual(plain(ui.controller.snapshot()), saved); assert.equal(ui.changes.length, changes); assert.equal(ui.clock.timers.size, 0);
+  }
+});
+
+test("library picker timeout releases controls and discards old selection during a newer picker", async () => {
+  const old = deferred(); const next = deferred(); const ui = setup({ selectFiles: () => old.promise });
+  const pending = ui.controller.selectLibrary(); await ui.clock.tick(120000); await pending;
+  assert.equal(ui.button("Từ thư viện ChatGPT").disabled, false); assert.equal(ui.controller.validateReady(), true);
+  ui.openai.selectFiles = () => next.promise; const current = ui.controller.selectLibrary();
+  old.resolve([{ fileId: "old", fileName: "old.png", mimeType: "image/png" }]); await flush(); assert.equal(ui.items().length, 0);
+  assert.equal(ui.button("Từ thư viện ChatGPT").disabled, true);
+  next.resolve([]); await current; assert.equal(ui.controller.validateReady(), true); assert.equal(ui.clock.timers.size, 0);
+});
+
+test("local read timeout permits a read retry without another upload and ignores old bytes", async () => {
+  const wait = deferred(); const selected = file("brief.txt", "text/plain"); selected.arrayBuffer = () => wait.promise;
+  const ui = setup(); const pending = ui.controller.addFiles([selected]); await flush(); await ui.clock.tick(30000); await pending;
+  assert.equal(ui.items()[0].status, "error"); selected.arrayBuffer = async () => new TextEncoder().encode("new evidence").buffer;
+  await ui.controller.retry(ui.items()[0].id); assert.equal(ui.uploads.length, 1); assert.equal(ui.items()[0].text, "new evidence");
+  wait.resolve(new TextEncoder().encode("stale evidence").buffer); await flush(); assert.equal(ui.items()[0].text, "new evidence");
+});
+
+test("library URL and ingestion waits are bounded and retry uses fresh reads", async () => {
+  for (const stage of ["url", "ingestion"]) {
+    const wait = deferred(); const ui = setup({ selectFiles: async () => [{ fileId: "library", fileName: "brief.txt", mimeType: "text/plain" }] });
+    const original = stage === "url" ? ui.openai.getFileDownloadUrl : ui.openai.callTool;
+    ui.openai[stage === "url" ? "getFileDownloadUrl" : "callTool"] = () => wait.promise;
+    const pending = ui.controller.selectLibrary(); await flush(); await ui.clock.tick(30000); await pending; assert.equal(ui.items()[0].status, "error");
+    ui.openai[stage === "url" ? "getFileDownloadUrl" : "callTool"] = original;
+    await ui.controller.retry(ui.items()[0].id); assert.equal(ui.items()[0].status, "ready");
+    const saved = plain(ui.controller.snapshot()); wait.resolve({}); await flush(); assert.deepEqual(plain(ui.controller.snapshot()), saved); assert.equal(ui.uploads.length, 0);
+  }
+});
+
+test("visibility waits time out and stale visibility completion cannot authorize submission", async () => {
+  const wait = deferred(); const ui = setup({ setWidgetState: () => wait.promise }); await ui.controller.addFiles([file()]);
+  const pending = ui.controller.ensureModelVisibility({}, {}); const rejected = assert.rejects(pending, /chia sẻ tệp/);
+  await ui.clock.tick(30000); await rejected; wait.resolve(); await flush(); assert.equal(ui.items()[0].status, "ready");
+  for (const invalidate of [(controller: any) => controller.setScope("review"), (controller: any) => controller.restore({}), (controller: any) => controller.destroy()]) {
+    const stale = deferred(); const view = setup({ setWidgetState: () => stale.promise }); const visibility = view.controller.ensureModelVisibility({}, {});
+    const invalidated = assert.rejects(visibility, /đã thay đổi/); invalidate(view.controller); stale.resolve(); await invalidated;
+  }
+});
+
+test("scope retention is bounded with pending upload and picker origins preserved", async () => {
+  const upload = deferred(); const pick = deferred(); const ui = setup({ uploadFile: () => upload.promise, selectFiles: () => pick.promise });
+  const pending = ui.controller.addFiles([file()]); ui.controller.setScope("picker"); const picking = ui.controller.selectLibrary();
+  for (let i = 0; i < 100; i++) ui.controller.setScope("review:" + i);
+  let scopes = ui.controller.snapshot().scopes; assert.equal(Object.keys(scopes).length, 15); assert.ok(scopes.brief); assert.ok(scopes.picker); assert.ok(scopes["review:99"]);
+  upload.resolve({ fileId: "uploaded" }); await pending; pick.resolve([]); await picking;
+  scopes = ui.controller.snapshot().scopes; assert.equal(Object.keys(scopes).length, 13); assert.ok(scopes["review:99"]);
+  assert.equal(ui.revoked.length, 1, "evicted image preview is revoked");
+});
+
+test("restore prunes inactive terminal scopes before requesting image previews", async () => {
+  const scopes = Object.fromEntries(Array.from({ length: 100 }, (_, i) => ["review:" + i, [{ id: "saved:" + i, status: "ready", fileId: "image:" + i, fileName: "ref.png", mimeType: "image/png", size: 200 }]]));
+  const wait = deferred(); const ui = setup({ getFileDownloadUrl: () => wait.promise });
+  ui.controller.restore({ version: 1, scope: "review:0", scopes }); assert.equal(Object.keys(ui.controller.snapshot().scopes).length, 13); assert.ok(ui.controller.snapshot().scopes["review:0"]);
+  await ui.clock.tick(30000); assert.equal(ui.clock.timers.size, 0); assert.equal(ui.items()[0].status, "ready");
+  ui.controller.remove(ui.items()[0].id); wait.resolve({ downloadUrl: "https://files.example.test/late" }); await flush(); assert.equal(ui.items().length, 0); assert.equal(ui.root.query("img").length, 0);
+});
+
+
+test("same-scope refresh preserves visibility while removal invalidates it", async () => {
+  const first = deferred(); const ui = setup({ setWidgetState: () => first.promise }); await ui.controller.addFiles([file()]);
+  const visibility = ui.controller.ensureModelVisibility({}, {}); ui.controller.setScope("brief"); first.resolve(); await visibility;
+  const second = deferred(); ui.openai.setWidgetState = () => second.promise;
+  const removed = ui.controller.ensureModelVisibility({}, {}); const rejected = assert.rejects(removed, /đã thay đổi/);
+  ui.controller.remove(ui.items()[0].id); second.resolve(); await rejected;
+});
+
+test("stale picker cannot release a fresh picker after restore", async () => {
+  const old = deferred(); const next = deferred(); const ui = setup({ selectFiles: () => old.promise });
+  const pending = ui.controller.selectLibrary(); ui.controller.restore({}); ui.openai.selectFiles = () => next.promise;
+  const fresh = ui.controller.selectLibrary(); old.reject(new Error("old rejected")); await pending;
+  assert.equal(ui.button("Từ thư viện ChatGPT").disabled, true); assert.throws(() => ui.controller.validateReady(), /lựa chọn tệp/);
+  next.resolve([]); await fresh; assert.equal(ui.controller.validateReady(), true);
+});
+
+test("library extraction cannot mutate removed or restored references", async () => {
+  for (const restore of [false, true]) {
+    const wait = deferred(); const ui = setup({ selectFiles: async () => [{ fileId: "library", fileName: "brief.txt", mimeType: "text/plain" }], callTool: () => wait.promise });
+    const pending = ui.controller.selectLibrary(); await flush();
+    if (restore) ui.controller.restore({}); else ui.controller.remove(ui.items()[0].id);
+    wait.resolve({ structuredContent: { ok: true, file_id: "library", mime_type: "text/plain", size_bytes: 200, text: "stale" } }); await pending;
+    assert.equal(ui.items().length, 0); assert.equal(ui.controller.getReadyAttachments().length, 0);
+  }
 });

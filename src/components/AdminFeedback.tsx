@@ -1,3 +1,4 @@
+import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock } from "../request-recovery";
 import { feedbackStatuses, sourceBrand, feedbackTitle, materialKey, materialLabel, filterFeedback, groupFeedback, feedbackDate } from "./feedback-inbox";
 import { GovernancePanel } from "./GovernancePanel";
 import { FeedbackReviewPanel, ResolvedFeedbackAudit, type FeedbackReviewPath } from "./FeedbackReviewPanel";
@@ -13,6 +14,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [refreshToken, setRefreshToken] = useState(() => sessionStorage.getItem("creative_dna_admin_refresh_token") || "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const authSession=useRef(new AbortController());
+  const signingIn=useRef(false);
+  useEffect(()=>{if(authSession.current.signal.aborted)authSession.current=new AbortController();return()=>authSession.current.abort();},[]);
   const [authLoading, setAuthLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,11 +49,6 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [adminEmail, setAdminEmail] = useState("");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
-  const [guideRoutes, setGuideRoutes] = useState<Array<{brand:string;branch:string;title:string}>>([]);
-  const [guideBrand, setGuideBrand] = useState("giftsoul");
-  const [guideBranch, setGuideBranch] = useState("home-hero");
-  const [guideForm, setGuideForm] = useState({ title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"", page_url:"", css_selector:"", preview_mode:"selector" });
-  const [guideLoading, setGuideLoading] = useState(false);
 
   const filtered = useMemo(() => filterFeedback(proposals, { status: filter, brand: brandFilter, material: materialFilter, search }), [proposals, filter, brandFilter, materialFilter, search]);
   const groups = useMemo(() => groupFeedback(filtered), [filtered]);
@@ -63,7 +62,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     setBusyProposal(busy ? selected || null : null);
   };
   const closeDrawer = () => {
-    if (actionBusy.current || reviewBusyRef.current) return;
+    changeReviewBusy(false);
     setReviewing(null); setSelectedId(null);
   };
   const openFeedback = (id:string, opener?:HTMLButtonElement) => {
@@ -122,11 +121,14 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   };
 
   const login = async () => {
+    if(signingIn.current)return;
     if (!email.trim() || !password) return setMessage("Enter your admin email and password.");
+    signingIn.current=true;const session=authSession.current;
     setAuthLoading(true); setMessage("");
     try {
-      const res = await fetch("/api/admin/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ email:email.trim(), password }) });
+      const res = await boundedFetch("/api/admin/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ email:email.trim(), password }),signal:session.signal });
       const data = await res.json();
+      if(session.signal.aborted||authSession.current!==session)return;
       if (!res.ok || !data.access_token) throw new Error(data.error || "Unable to sign in");
       sessionStorage.setItem("creative_dna_admin_token", data.access_token);
       if (data.refresh_token) sessionStorage.setItem("creative_dna_admin_refresh_token", data.refresh_token);
@@ -134,10 +136,11 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       if (data.refresh_token) setRefreshToken(data.refresh_token);
       setPassword("");
       // The authenticated-session effect loads the queue and team once.
-    } catch(e:any) { setMessage(e.message); } finally { setAuthLoading(false); }
+    } catch(e:any) { if(!session.signal.aborted)setMessage(e.message); } finally { signingIn.current=false;if(!session.signal.aborted)setAuthLoading(false); }
   };
 
   const logout = () => {
+    authSession.current.abort();authSession.current=new AbortController();
     queueRequest.current?.abort();
     queueRequest.current = null;
     setQueueLoading(false);
@@ -159,10 +162,10 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     setMessage("Signed out.");
   };
 
-  const refreshSession = async (signal?: AbortSignal | null) => {
+  const refreshSession = async (signal: AbortSignal | null = authSession.current.signal) => {
     const currentRefresh = sessionStorage.getItem("creative_dna_admin_refresh_token");
     if (!currentRefresh || signal?.aborted) return "";
-    const res = await fetch("/api/admin/refresh", {
+    const res = await boundedFetch("/api/admin/refresh", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({ refresh_token:currentRefresh }), signal:signal || undefined
@@ -183,8 +186,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   };
 
   const authFetch = async (url:string, init:RequestInit = {}, explicitToken?:string) => {
+    init={...init,signal:init.signal||authSession.current.signal};
     let access = explicitToken || sessionStorage.getItem("creative_dna_admin_token") || token;
-    const run = (t:string) => fetch(url, {
+    const run = (t:string) => boundedFetch(url, {
       ...init,
       headers:{ ...(init.headers || {}), Authorization:`Bearer ${t}` }
     });
@@ -196,108 +200,17 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     return res;
   };
 
-  const loadGuideRoutes = async () => {
-    try {
-      const [routesRes, guidesRes] = await Promise.all([fetch("/api/routes", { method:"POST" }), fetch("/api/branch-guides")]);
-      const routesData = await routesRes.json();
-      const guidesData = await guidesRes.json();
-      const routes = Array.isArray(routesData?.routes) ? routesData.routes : [];
-      setGuideRoutes(routes);
-
-      const current = Array.isArray(guidesData?.guides)
-        ? guidesData.guides.find((g:any)=>g.brand_slug===guideBrand && g.branch_slug===guideBranch)
-        : null;
-      if (current) {
-        setGuideForm({
-          title_vi:current.title_vi || "",
-          description_vi:current.description_vi || "",
-          usage_badge:current.usage_badge || "",
-          ratio_note:current.ratio_note || "",
-          output_note:current.output_note || "",
-          image_url:current.image_url || "",
-          image_caption:current.image_caption || "",
-          page_url:current.page_url || "",
-          css_selector:current.css_selector || "",
-          preview_mode:current.preview_mode || "selector",
-        });
-      }
-    } catch {
-      // Visual guide management is optional; keep feedback queue usable if this fails.
-    }
-  };
-
-  const loadSelectedGuide = async (brandSlug:string, branchSlug:string) => {
-    setGuideLoading(true);
-    try {
-      const res = await fetch("/api/branch-guides");
-      const data = await res.json();
-      const current = Array.isArray(data?.guides)
-        ? data.guides.find((g:any)=>g.brand_slug===brandSlug && g.branch_slug===branchSlug)
-        : null;
-      setGuideForm(current ? {
-        title_vi:current.title_vi || "",
-        description_vi:current.description_vi || "",
-        usage_badge:current.usage_badge || "",
-        ratio_note:current.ratio_note || "",
-        output_note:current.output_note || "",
-        image_url:current.image_url || "",
-        image_caption:current.image_caption || "",
-        page_url:current.page_url || "",
-        css_selector:current.css_selector || "",
-        preview_mode:current.preview_mode || "selector",
-      } : { title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"", page_url:"", css_selector:"", preview_mode:"selector" });
-    } finally {
-      setGuideLoading(false);
-    }
-  };
-
-  const saveBranchGuide = async () => {
-    if (!guideForm.page_url.trim() || !guideForm.css_selector.trim()) {
-      return setMessage("Nhập Page URL và CSS selector trước khi lưu.");
-    }
-    setGuideLoading(true); setMessage("");
-    try {
-      const res = await authFetch("/api/admin/branch-guides/upsert", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-          brand_slug:guideBrand,
-          branch_slug:guideBranch,
-          ...guideForm,
-          preview_mode:"selector",
-          image_url:"",
-          image_caption:"",
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to save branch live preview");
-      setGuideForm(prev=>({
-        ...prev,
-        page_url:data?.guide?.page_url || prev.page_url,
-        css_selector:data?.guide?.css_selector || prev.css_selector,
-        image_url:"",
-        image_caption:"",
-        preview_mode:"selector",
-      }));
-      setMessage("Đã lưu Live UI selector cho branch này.");
-      await loadSelectedGuide(guideBrand, guideBranch);
-    } catch(e:any) {
-      setMessage(e.message);
-    } finally {
-      setGuideLoading(false);
-    }
-  };
-
   const loadTeam = async (authToken = sessionStorage.getItem("creative_dna_admin_token") || token) => {
     if (!authToken.trim()) return;
+    const session=authSession.current;
     setTeamLoading(true);
     try {
       const res = await authFetch("/api/admin/team", {}, authToken.trim());
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load admin team");
-      setTeamMembers(data.members || []);
-    } catch (e:any) { setMessage(e.message); }
-    finally { setTeamLoading(false); }
+      if(!session.signal.aborted)setTeamMembers(data.members || []);
+    } catch (e:any) { if(!session.signal.aborted)setMessage(e.message); }
+    finally { if(!session.signal.aborted)setTeamLoading(false); }
   };
 
   const grantAdmin = async () => {
@@ -335,6 +248,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       if (!Array.isArray(data?.proposals) || data.proposals.some((p:any) => !p || typeof p.id !== "string" || typeof p.status !== "string")) {
         throw new Error("Dữ liệu feedback trả về không hợp lệ. Vui lòng thử lại.");
       }
+      for(const proposal of data.proposals){const key=reviewLockKey(proposal.id);const lock=getReviewLock(key);if(lock&&["merged","resolved","rejected"].includes(proposal.status))clearReviewLock(key);}
       setProposals(data.proposals);
       setQueueLoaded(true);
       setQueueError("");
@@ -346,8 +260,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   };
 
   const reject = async (id:string) => {
-    if (actionBusy.current) return;
+    if (actionBusy.current || getReviewLock(reviewLockKey(id))) {setActionErrors(previous=>({...previous,[id]:"Kết quả thao tác trước chưa rõ. Đang kiểm tra trạng thái; không gửi lại."}));return;}
     actionBusy.current = true;
+    setReviewLock(reviewLockKey(id),{action:"reject"});
     setLoading(true); setActiveAction({ id, type:"reject" }); setMessage("");
     setActionErrors(previous => ({ ...previous, [id]: "" }));
     try {
@@ -356,7 +271,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         body:JSON.stringify({ decision:"reject", review_note:notes[id] || "" })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error([data.error || "Review failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
+      if (!res.ok) {if(res.status<500&&res.status!==408)clearReviewLock(reviewLockKey(id));throw new Error([data.error || "Review failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));}
+      if(data.proposal?.id!==id||data.proposal?.status!=="rejected")throw new Error("Chưa xác nhận kết quả từ chối. Đang kiểm tra trạng thái; không gửi lại.");
+      clearReviewLock(reviewLockKey(id));
       setMessage("Rejected. Canonical DNA was not changed.");
       setDetailNotice({id, message:"Rejected. Canonical DNA was not changed."});
       await load(undefined, true, true);
@@ -393,19 +310,18 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
 
     load(undefined, true);
     loadTeam();
-    loadGuideRoutes();
 
     const sync = () => {
       if (document.visibilityState === "visible") load(undefined, true);
     };
-    const onFocus = () => load(undefined, true);
+    const onFocus = sync;
 
     const poll = window.setInterval(() => {
       if (document.visibilityState === "visible") load(undefined, true);
     }, 10000);
 
     const refresh = window.setInterval(() => {
-      if (document.visibilityState === "visible") refreshSession();
+      if (document.visibilityState === "visible") void refreshSession().catch(()=>{});
     }, 45 * 60 * 1000);
 
     document.addEventListener("visibilitychange", sync);
@@ -530,77 +446,8 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
 
       </div>
     </div></details>}
-    {token && <details data-admin-tool="visual-guide" className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Branch Visual Guide <span className="ml-2 text-xs font-normal text-slate-500">URL trang & CSS selector</span></summary>
-        <div className="mt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ImagePlus className="w-4 h-4 text-indigo-600"/>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-700">Branch Visual Guide</div>
-              <div className="text-xs text-slate-500 mt-0.5">Chọn branch, nhập URL trang thật và CSS selector của đúng section. Preview sẽ render live theo web hiện tại.</div>
-            </div>
-          </div>
-
-          <div className="grid lg:grid-cols-[220px_1fr] gap-3">
-            <select
-              value={guideBrand}
-              onChange={e=>{
-                const next=e.target.value;
-                setGuideBrand(next);
-                const first=guideRoutes.find(r=>r.brand===next)?.branch || "";
-                setGuideBranch(first);
-                if(first) loadSelectedGuide(next,first);
-              }}
-              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
-            >
-              {[...new Set(guideRoutes.map(r=>r.brand))].map(b=><option key={b} value={b}>{b}</option>)}
-            </select>
-
-            <select
-              value={guideBranch}
-              onChange={e=>{setGuideBranch(e.target.value); loadSelectedGuide(guideBrand,e.target.value);}}
-              className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg"
-            >
-              {guideRoutes.filter(r=>r.brand===guideBrand).map(r=><option key={r.branch} value={r.branch}>{r.title || r.branch}</option>)}
-            </select>
-          </div>
-
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="text-sm font-bold text-slate-900">{guideForm.title_vi || guideBranch}</div>
-            <div className="text-xs text-slate-500 mt-1">{guideForm.description_vi || "Metadata tự lấy từ database."}</div>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-3 mt-3">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Page URL</div>
-              <input
-                value={guideForm.page_url}
-                onChange={e=>setGuideForm({...guideForm,page_url:e.target.value})}
-                placeholder="https://giftsoul.co/pages/..."
-                className="w-full px-3 py-3 text-sm bg-white border border-slate-200 rounded-lg"
-              />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">CSS selector</div>
-              <input
-                value={guideForm.css_selector}
-                onChange={e=>setGuideForm({...guideForm,css_selector:e.target.value})}
-                placeholder="#shopify-section-template--...__hero"
-                className="w-full px-3 py-3 text-sm font-mono bg-white border border-slate-200 rounded-lg"
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 flex justify-end">
-            <button onClick={saveBranchGuide} disabled={guideLoading || !guideBrand || !guideBranch || !guideForm.page_url.trim() || !guideForm.css_selector.trim()} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
-              {guideLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}
-              {guideLoading ? "Saving..." : "Save Live UI"}
-            </button>
-          </div>
-        </div>
-    </details>}
-
     {token && selectedId && <dialog ref={drawerRef} className="feedback-drawer" aria-labelledby="feedback-detail-title" onCancel={event => { event.preventDefault(); closeDrawer(); }}>
-      <div className="feedback-drawer-header"><div><div className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Chi tiết feedback</div><h2 id="feedback-detail-title" className="text-sm font-bold mt-1">{selected ? `${sourceBrand(selected).label} / ${materialLabel(selected)}` : "Feedback không còn trong danh sách"}</h2></div><button type="button" onClick={closeDrawer} disabled={loading || reviewBusy} aria-label="Đóng chi tiết feedback" className="feedback-close"><X className="w-5 h-5"/></button></div>
+      <div className="feedback-drawer-header"><div><div className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Chi tiết feedback</div><h2 id="feedback-detail-title" className="text-sm font-bold mt-1">{selected ? `${sourceBrand(selected).label} / ${materialLabel(selected)}` : "Feedback không còn trong danh sách"}</h2></div><button type="button" onClick={closeDrawer} aria-label="Đóng chi tiết feedback" className="feedback-close"><X className="w-5 h-5"/></button></div>
       <div className="feedback-drawer-body">
       {detailNotice?.id === selectedId && <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">{detailNotice.message}</p>}
       {!selected && <p className="p-5 text-sm text-slate-500">Feedback có thể đã bị xóa hoặc không còn được trả về. Đóng để quay lại danh sách.</p>}
@@ -678,7 +525,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             <button type="button" onClick={()=>setReviewing({id:p.id,path:"covered"})} disabled={loading||!!reviewing} className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 disabled:opacity-50">Đã có trong quy chuẩn</button>
             <button type="button" onClick={()=>setReviewing({id:p.id,path:"merge"})} disabled={loading||!!reviewing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Sparkles className="w-3.5 h-3.5"/>Xem & duyệt</button>
           </div>
-          {reviewing?.id===p.id && <FeedbackReviewPanel key={`${reviewing.path}-${JSON.stringify(p)}`} proposal={p} path={reviewing.path} request={authFetch} onBusyChange={changeReviewBusy} onClose={()=>setReviewing(null)} onComplete={(resultMessage)=>{setMessage(resultMessage);setDetailNotice({id:p.id,message:resultMessage});changeReviewBusy(false);setReviewing(null);void load(undefined,true,true);}}/>}
+          {reviewing?.id===p.id && <FeedbackReviewPanel key={`${reviewing.path}-${p.id}`} proposal={p} path={reviewing.path} request={authFetch} onBusyChange={changeReviewBusy} onClose={()=>setReviewing(null)} onComplete={(resultMessage)=>{setMessage(resultMessage);setDetailNotice({id:p.id,message:resultMessage});changeReviewBusy(false);setReviewing(null);void load(undefined,true,true);}}/>}
           {!reviewing && <div className="flex flex-col sm:flex-row gap-2 items-end"><textarea aria-label="Ghi chú từ chối" value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin note..." className="w-full min-h-16 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"/><button type="button" onClick={()=>reject(p.id)} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg border border-rose-200 text-rose-700 bg-rose-50 disabled:opacity-50">{activeAction?.id===p.id && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id?"Rejecting...":"Reject"}</button></div>}
         </div>}
         {p.status==="accepted" && <p className="border-t border-slate-100 pt-4 text-xs text-amber-900">Legacy accepted · Chỉ xem. Luồng merge cũ đã bị chặn; trạng thái này không chứng minh canonical đã cập nhật. Cần kiểm tra lịch sử và tạo review hợp lệ trước khi thay đổi quy chuẩn.</p>}

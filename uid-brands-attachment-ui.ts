@@ -19,11 +19,24 @@ export const ATTACHMENT_UI_SCRIPT = String.raw`
 function createAttachmentController(options){
  const root=options.root, prefix=String(options.idPrefix||"uid-attachments"), onChange=typeof options.onChange==="function"?options.onChange:()=>{};
  if(!root)throw new Error("Attachment root is required");
- const IMAGE_LIMIT=10*1024*1024,DOCUMENT_LIMIT=1024*1024,COUNT_LIMIT=6,TEXT_LIMIT=16000;
+ const IMAGE_LIMIT=10*1024*1024,DOCUMENT_LIMIT=1024*1024,COUNT_LIMIT=6,TEXT_LIMIT=16000,INACTIVE_SCOPE_LIMIT=12;
+ const UPLOAD_TIMEOUT=60000,PICKER_TIMEOUT=120000,READ_TIMEOUT=30000;
  const imageTypes=new Set(["image/png","image/jpeg","image/webp","image/gif"]);
  const documentTypes=new Set(["text/plain","text/markdown","text/csv","application/json"]);
  const extensionTypes={png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",txt:"text/plain",md:"text/markdown",csv:"text/csv",json:"application/json"};
- let scope="brief",scopes=new Map([[scope,[]]]),files=new Map(),generation=0,sequence=0,destroyed=false,notice="",libraryPicking=false,disabled=false;
+ let scope="brief",scopes=new Map([[scope,[]]]),files=new Map(),generation=0,sequence=0,destroyed=false,notice="",libraryPicking=false,disabled=false,scopeRevision=0;
+ // Host operations are not cancellable. Settle our wait once, consume late rejection,
+ // and let generation/attempt guards prevent stale results from changing evidence.
+ function bounded(run,ms,message){return new Promise((resolve,reject)=>{
+  let settled=false;const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);fn(value);};
+  const timer=setTimeout(()=>finish(reject,new Error(message)),ms);
+  try{Promise.resolve(run()).then(value=>finish(resolve,value),error=>finish(reject,error));}catch(error){finish(reject,error);}
+ });}
+ function pruneScopes(){
+  const protectedScopes=new Set(typeof options.protectedScopes==="function"?options.protectedScopes():[]);
+  const inactive=[...scopes].filter(([key,items])=>!protectedScopes.has(key)&&key!==scope&&key!==libraryPicking?.key&&!items.some(item=>item.status==="uploading"||item.status==="reading"));
+  for(const [key,items]of inactive.slice(0,Math.max(0,inactive.length-INACTIVE_SCOPE_LIMIT))){for(const item of items){item.attempt++;revoke(item);files.delete(item.id);}scopes.delete(key);}
+ }
  const bridge=()=>window.openai||{};
  const list=key=>scopes.get(key)||[];
  const cleanString=(value,max)=>typeof value==="string"?value.slice(0,max):"";
@@ -55,10 +68,10 @@ function createAttachmentController(options){
   return saved;
  }
  function snapshot(){const saved=Object.create(null);for(const [key,items]of scopes)saved[key]=items.map(viewItem);return {version:1,scope,scopes:saved};}
- function changed(){if(destroyed)return;render();onChange(snapshot());}
+ function changed(){if(destroyed)return;scopeRevision++;pruneScopes();render();onChange(snapshot());}
  function statusText(item){
   if(item.status==="ready")return item.kind==="document"?(item.truncated?"Sẵn sàng · nội dung đã rút gọn":"Sẵn sàng · đã đọc nội dung"):"Sẵn sàng";
-  return {uploading:"Đang tải lên…",reading:"Đang đọc và kiểm tra tệp…",error:item.error||"Không thể xử lý tệp.",needs_reselect:"Tải lên bị gián đoạn. Vui lòng xóa và chọn lại tệp."}[item.status]||"Đang chuẩn bị…";
+  return {uploading:"Đang tải lên…",reading:"Đang đọc và kiểm tra tệp…",error:item.error||"Không thể xử lý tệp.",needs_reselect:item.error||"Tải lên bị gián đoạn. Vui lòng xóa và chọn lại tệp."}[item.status]||"Đang chuẩn bị…";
  }
  function sizeLabel(size){if(!Number.isFinite(size))return "Đang kiểm tra kích thước";return size>=1024*1024?(size/1024/1024).toFixed(1)+" MB":Math.max(1,Math.ceil(size/1024))+" KB";}
  function element(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
@@ -76,7 +89,7 @@ function createAttachmentController(options){
  root.replaceChildren(drop,message,rows);
  function render(){
   const api=bridge();picker.disabled=disabled||typeof api.uploadFile!=="function"||list(scope).length>=COUNT_LIMIT;
-  library.hidden=typeof api.selectFiles!=="function";library.disabled=disabled||libraryPicking||list(scope).length>=COUNT_LIMIT;
+  library.hidden=typeof api.selectFiles!=="function";library.disabled=disabled||!!libraryPicking||list(scope).length>=COUNT_LIMIT;
   message.textContent=notice||((typeof api.uploadFile!=="function")?"ChatGPT chưa cung cấp tải tệp ở giao diện này. Bạn có thể chọn thư viện nếu có hoặc đính kèm tệp trong cuộc trò chuyện.":"");
   rows.replaceChildren();
   for(const item of list(scope)){
@@ -101,11 +114,11 @@ function createAttachmentController(options){
   if(!scopes.has(key))scopes.set(key,[]);scopes.get(key).push(item);return item;
  }
  function isCurrent(item,key,epoch,attempt){return !destroyed&&epoch===generation&&item.attempt===attempt&&list(key).includes(item);}
- async function freshUrl(fileId){const api=bridge();if(typeof api.getFileDownloadUrl!=="function")throw new Error("ChatGPT chưa hỗ trợ đọc tệp này. Hãy thử lại trong giao diện có hỗ trợ tệp.");let result;try{result=await api.getFileDownloadUrl({fileId});}catch{throw new Error("Không thể lấy đường dẫn tệp từ ChatGPT. Hãy thử lại.");}const url=safeHostUrl(result?.downloadUrl);if(!url)throw new Error("ChatGPT chưa trả về đường dẫn tệp HTTPS hợp lệ. Hãy thử lại.");return url;}
+ async function freshUrl(fileId){const api=bridge();if(typeof api.getFileDownloadUrl!=="function")throw new Error("ChatGPT chưa hỗ trợ đọc tệp này. Hãy thử lại trong giao diện có hỗ trợ tệp.");let result;try{result=await bounded(()=>api.getFileDownloadUrl({fileId}),READ_TIMEOUT,"Đọc đường dẫn tệp quá thời gian. Hãy thử lại.");}catch{throw new Error("Không thể lấy đường dẫn tệp từ ChatGPT. Hãy thử lại.");}const url=safeHostUrl(result?.downloadUrl);if(!url)throw new Error("ChatGPT chưa trả về đường dẫn tệp HTTPS hợp lệ. Hãy thử lại.");return url;}
 
  async function readLocalDocument(item,file){
   if(!file||typeof file.arrayBuffer!=="function"||typeof TextDecoder!=="function")throw new Error("Trình duyệt chưa hỗ trợ đọc tài liệu này. Hãy đính kèm nội dung văn bản trong cuộc trò chuyện.");
-  let buffer;try{buffer=await file.arrayBuffer();}catch{throw new Error("Không thể đọc tệp cục bộ. Hãy xóa và chọn lại tệp.");}
+  let buffer;try{buffer=await bounded(()=>file.arrayBuffer(),READ_TIMEOUT,"Đọc tệp quá thời gian. Hãy thử lại.");}catch{throw new Error("Không thể đọc tệp cục bộ. Hãy thử lại hoặc xóa và chọn lại tệp.");}
   if(!buffer||!Number.isFinite(buffer.byteLength)||buffer.byteLength<1||buffer.byteLength>DOCUMENT_LIMIT)throw new Error("Tài liệu phải có nội dung và không vượt quá 1 MB.");
   const bytes=new Uint8Array(buffer);
   if(bytes[0]===0x25&&bytes[1]===0x50&&bytes[2]===0x44&&bytes[3]===0x46||bytes[0]===0x50&&bytes[1]===0x4b||bytes[0]===0xff&&bytes[1]===0xd8||bytes[0]===0x89&&bytes[1]===0x50||bytes[0]===0x1f&&bytes[1]===0x8b)throw new Error("Tệp là định dạng nhị phân không được hỗ trợ. Hãy xuất thành TXT UTF-8.");
@@ -142,18 +155,18 @@ function createAttachmentController(options){
   const epoch=generation,attempt=++item.attempt;if(item.invalid)return;
   item.error="";item.status=item.fileId?"reading":"uploading";changed();
   try{
-   if(!item.fileId){const file=files.get(item.id),api=bridge();if(!file)throw new Error("Vui lòng xóa và chọn lại tệp để tiếp tục.");if(typeof api.uploadFile!=="function")throw new Error("ChatGPT chưa hỗ trợ tải tệp ở giao diện này.");let result;try{result=await api.uploadFile(file);}catch{throw new Error("Không thể tải tệp lên ChatGPT. Hãy thử lại.");}if(!isCurrent(item,key,epoch,attempt))return;if(!validFileId(result?.fileId))throw new Error("ChatGPT chưa trả về mã tệp hợp lệ. Hãy thử lại.");item.fileId=result.fileId;}
+   if(!item.fileId){const file=files.get(item.id),api=bridge();if(!file)throw new Error("Vui lòng xóa và chọn lại tệp để tiếp tục.");if(typeof api.uploadFile!=="function")throw new Error("ChatGPT chưa hỗ trợ tải tệp ở giao diện này.");let result;item.uploadDispatched=true;try{result=await bounded(()=>api.uploadFile(file),UPLOAD_TIMEOUT,"Tải lên quá thời gian.");}catch{throw new Error("Chưa xác nhận được kết quả tải lên. ChatGPT có thể vẫn đang xử lý; hãy kiểm tra trước khi xóa và chọn lại tệp.");}if(!isCurrent(item,key,epoch,attempt))return;if(!validFileId(result?.fileId))throw new Error("Chưa xác nhận được mã tệp đã tải lên. Hãy kiểm tra ChatGPT trước khi xóa và chọn lại tệp.");item.fileId=result.fileId;}
    if(!isCurrent(item,key,epoch,attempt))return;
    if(item.kind==="document"&&item.source==="local"){
     item.status="reading";changed();const evidence=await readLocalDocument(item,files.get(item.id));if(!isCurrent(item,key,epoch,attempt))return;Object.assign(item,evidence);
    }else if(item.source==="library"){
     item.status="reading";changed();const url=await freshUrl(item.fileId);if(!isCurrent(item,key,epoch,attempt))return;
     const api=bridge();if(typeof api.callTool!=="function")throw new Error("ChatGPT chưa hỗ trợ đọc nội dung tệp. Hãy thử lại.");
-    let result;try{result=await api.callTool("ingest_uid_brands_attachment",{file:{download_url:url,file_id:item.fileId,mime_type:item.mimeType,file_name:item.fileName}});}catch{throw new Error("Không thể kiểm tra tệp thư viện. Hãy thử lại hoặc chọn tệp từ thiết bị.");}
+    let result;try{result=await bounded(()=>api.callTool("ingest_uid_brands_attachment",{file:{download_url:url,file_id:item.fileId,mime_type:item.mimeType,file_name:item.fileName}}),READ_TIMEOUT,"Kiểm tra tệp quá thời gian. Hãy thử lại.");}catch{throw new Error("Không thể kiểm tra tệp thư viện. Hãy thử lại hoặc chọn tệp từ thiết bị.");}
     if(!isCurrent(item,key,epoch,attempt))return;readIngestion(result,item);if(item.kind==="image")item.previewUrl=url;
    }
    if(!isCurrent(item,key,epoch,attempt))return;item.status="ready";changed();
-  }catch(error){if(!isCurrent(item,key,epoch,attempt))return;item.status="error";item.error=error instanceof Error?error.message:"Không thể xử lý tệp. Hãy thử lại.";changed();}
+  }catch(error){if(!isCurrent(item,key,epoch,attempt))return;item.status=item.uploadDispatched&&!item.fileId?"needs_reselect":"error";item.error=error instanceof Error?error.message:"Không thể xử lý tệp. Hãy thử lại.";changed();}
  }
  function addFiles(selected){
   if(destroyed||disabled)return Promise.resolve();const key=scope,pending=[];notice="";
@@ -167,9 +180,9 @@ function createAttachmentController(options){
  }
  async function selectLibrary(){
   if(destroyed||disabled||libraryPicking)return;const api=bridge();if(typeof api.selectFiles!=="function"){notice="Thư viện ChatGPT chưa khả dụng. Hãy dùng Chọn tệp.";changed();return;}
-  const key=scope,epoch=generation;libraryPicking=true;notice="";render();
+  const key=scope,epoch=generation,pick={key};libraryPicking=pick;notice="";render();
   try{
-   let selected;try{selected=await api.selectFiles();}catch(error){if(error?.name==="AbortError")return;throw new Error("Không thể mở thư viện ChatGPT. Hãy thử lại hoặc chọn tệp từ thiết bị.");}if(destroyed||generation!==epoch)return;if(!Array.isArray(selected))throw new Error("Không thể đọc lựa chọn từ thư viện ChatGPT.");
+   let selected;try{selected=await bounded(()=>api.selectFiles(),PICKER_TIMEOUT,"Lựa chọn tệp quá thời gian. Hãy đóng thư viện và chọn lại.");}catch(error){if(error?.name==="AbortError")return;throw new Error("Không thể mở thư viện ChatGPT. Hãy thử lại hoặc chọn tệp từ thiết bị.");}if(destroyed||generation!==epoch)return;if(!Array.isArray(selected))throw new Error("Không thể đọc lựa chọn từ thư viện ChatGPT.");
    const pending=[];
    for(const file of selected){
     if(list(key).length>=COUNT_LIMIT){notice="Mỗi brief hoặc lượt review chỉ nhận tối đa 6 tệp. Xóa bớt tệp để thêm mới.";break;}
@@ -179,7 +192,7 @@ function createAttachmentController(options){
    }
    changed();await Promise.all(pending.filter(item=>!item.invalid).map(item=>process(item,key)));
   }catch(error){if(!destroyed&&generation===epoch){notice=error instanceof Error?error.message:"Không thể mở thư viện ChatGPT. Hãy thử lại.";changed();}}
-  finally{if(!destroyed&&generation===epoch){libraryPicking=false;render();}}
+  finally{if(!destroyed&&generation===epoch&&libraryPicking===pick){libraryPicking=false;pruneScopes();render();}}
  }
  function remove(id){if(disabled||destroyed)return false;for(const items of scopes.values()){const index=items.findIndex(item=>item.id===id);if(index>=0){const [item]=items.splice(index,1);item.attempt++;revoke(item);files.delete(id);notice="";changed();return true;}}return false;}
  function retry(id){if(disabled||destroyed)return Promise.resolve();for(const [key,items]of scopes){const item=items.find(item=>item.id===id);if(item&&item.status==="error"&&!item.invalid&&(files.has(id)||item.source==="library"&&validFileId(item.fileId)))return process(item,key);}return Promise.resolve();}
@@ -193,11 +206,11 @@ function createAttachmentController(options){
  const dragOver=event=>{event.preventDefault();drop.setAttribute("data-dragging","true");};
  const dragLeave=()=>drop.setAttribute("data-dragging","false");
  root.addEventListener("paste",handlePaste);drop.addEventListener("drop",handleDrop);drop.addEventListener("dragover",dragOver);drop.addEventListener("dragleave",dragLeave);
- function setScope(key){if(destroyed)return;const next=cleanString(key,2048);if(!next)throw new Error("Attachment scope is required");scope=next;if(!scopes.has(scope))scopes.set(scope,[]);notice="";render();}
+ function setScope(key){if(destroyed)return;const next=cleanString(key,2048);if(!next)throw new Error("Attachment scope is required");if(scope!==next)scopeRevision++;scope=next;const items=list(scope);scopes.delete(scope);scopes.set(scope,items);pruneScopes();notice="";render();}
  function getReadyAttachments(){return list(scope).filter(item=>item.status==="ready").map(item=>{const result={id:item.id,fileId:item.fileId,fileName:item.fileName,mimeType:item.mimeType,size:item.size,kind:item.kind};result.untrustedEvidence=true;if(item.kind==="document"){result.text=item.text;result.truncated=!!item.truncated;result.evidenceOrigin=item.evidenceOrigin||"host";}return result;});}
  function getImageIds(){return [...new Set(getReadyAttachments().filter(item=>item.kind==="image").map(item=>item.fileId))];}
  function validateReady(){const current=list(scope);if(libraryPicking)throw new Error("Hãy hoàn tất hoặc đóng lựa chọn tệp trước khi gửi.");if(current.some(item=>item.status==="uploading"||item.status==="reading"))throw new Error("Tệp đang được xử lý. Chờ trạng thái Sẵn sàng trước khi gửi.");if(current.some(item=>item.status!=="ready"))throw new Error("Có tệp chưa sẵn sàng. Hãy thử lại, chọn lại hoặc xóa tệp lỗi trước khi gửi.");return true;}
- async function ensureModelVisibility(privateState,modelContent){validateReady();const api=bridge();if(typeof api.setWidgetState!=="function"&&getReadyAttachments().length)throw new Error("ChatGPT chưa hỗ trợ chia sẻ tệp với mô hình ở giao diện này.");if(typeof api.setWidgetState==="function")await api.setWidgetState({modelContent,privateContent:privateState,imageIds:getImageIds()});}
+ async function ensureModelVisibility(privateState,modelContent){validateReady();const api=bridge();if(typeof api.setWidgetState!=="function"&&getReadyAttachments().length)throw new Error("ChatGPT chưa hỗ trợ chia sẻ tệp với mô hình ở giao diện này.");if(typeof api.setWidgetState==="function"){const epoch=generation,revision=scopeRevision;await bounded(()=>api.setWidgetState({modelContent,privateContent:privateState,imageIds:getImageIds()}),READ_TIMEOUT,"Chưa xác nhận được việc chia sẻ tệp với mô hình. Hãy thử lại trước khi gửi.");if(destroyed||generation!==epoch||scopeRevision!==revision)throw new Error("Tệp tham khảo đã thay đổi. Hãy kiểm tra lại trước khi gửi.");}}
  async function restorePreview(item,key,epoch){try{const url=await freshUrl(item.fileId);if(!destroyed&&generation===epoch&&list(key).includes(item)){item.previewUrl=url;render();}}catch{/* Missing preview never changes a ready host file into missing evidence. */}}
  function restore(saved){
   generation++;libraryPicking=false;for(const items of scopes.values())for(const item of items)revoke(item);files.clear();scopes=new Map();notice="";const restoredIds=new Set();
@@ -216,7 +229,7 @@ function createAttachmentController(options){
    }
    scopes.set(key,restored);
   }
-  scope=typeof saved?.scope==="string"&&scopes.has(saved.scope)?saved.scope:"brief";if(!scopes.has(scope))scopes.set(scope,[]);render();
+  scope=typeof saved?.scope==="string"&&scopes.has(saved.scope)?saved.scope:"brief";if(!scopes.has(scope))scopes.set(scope,[]);pruneScopes();render();
   for(const [key,items]of scopes)for(const item of items)if(item.status==="ready"&&item.kind==="image")restorePreview(item,key,generation);
  }
  function refreshCapabilities(){render();}
