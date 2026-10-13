@@ -1,3 +1,4 @@
+import { RESEARCH_GUIDANCE } from "./supabase/functions/_shared/product-research.ts";
 import { REVIEW_STEPS } from "./uid-brands-actions.ts";
 import { ATTACHMENT_UI_SCRIPT, ATTACHMENT_UI_STYLES } from "./uid-brands-attachment-ui.ts";
 
@@ -376,7 +377,7 @@ async function submitCurrentAction(){
  try{const u=new URL(url);if(!/^https?:$/.test(u.protocol)||!u.hostname.includes("."))throw new Error();}catch{showError("Nhập URL PDP hoặc collection hợp lệ (http/https).");return;}
  showError("");save();
  const requestKey=briefRequestKey();if(submittedRequests.has(requestKey))return;
- const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nBrief request ID (correlation only): "+briefId+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+attachmentEvidence()+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts.";
+ const prompt="Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nBrief request ID (correlation only): "+briefId+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+attachmentEvidence()+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts. "+${JSON.stringify(RESEARCH_GUIDANCE)};
  const fn=window.openai?.sendFollowUpMessage;
  if(!fn){showError("Chưa kết nối được ChatGPT. Mở panel trong ChatGPT rồi thử lại; brief vẫn được giữ.");return;}
  submitting=true;renderSubmissionState();

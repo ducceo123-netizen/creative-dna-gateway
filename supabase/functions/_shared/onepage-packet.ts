@@ -1,3 +1,4 @@
+import { attachResearch, classifySource, type ResearchContext } from './product-research.ts';
 import { compileCreativeQuality, QUALITY_COMPILER, type ResolvedDna } from './creative-quality.ts';
 const assets=[
  {slot:"banner_desktop",size:"2560x960",role:"story_banner"},
@@ -11,25 +12,25 @@ const assets=[
  {slot:"ui_mapping_preview",size:"full_page",role:"assembly_guide"}
 ];
 
-export type OnepageInput = { source_url?: string; source_type?: string; theme?: string };
+export type OnepageInput = ResearchContext & { theme?: string };
 export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<ResolvedDna['branch']>; brand: NonNullable<ResolvedDna['brand']> }, input: OnepageInput = {}) {
  const sourceUrl=String(input.source_url||'').trim(), sourceType=String(input.source_type||'auto').trim().toLowerCase(), theme=String(input.theme||'').trim();
  if (!['auto','product','collection'].includes(sourceType)) throw new Error('Invalid source_type');
  const creative_quality_contract = await compileCreativeQuality(r,{source_url:sourceUrl});
  const ruleIds=(...keys:string[]) => creative_quality_contract.rules.filter(rule => keys.includes(rule.key)).map(rule => rule.id);
  const ruleValue=(key:string) => creative_quality_contract.rules.find(rule => rule.key===key)?.value ?? null;
- const m=r.branch.metadata||{}; const inferred=sourceType==="auto"?(sourceUrl.includes("/collections/")||sourceUrl.includes("search-results")?"collection":"product"):sourceType;
+ const m=r.branch.metadata||{}; const inferred=classifySource(sourceUrl, sourceType);
  const singleProduct=inferred==="product";
  const packet = {
   api_version:"2.2",mode:"compiled_job",compiler_version:QUALITY_COMPILER,
   resolved:{brand:r.brand.slug,branch:r.branch.slug,dna_version:r.branch.version,creative_execution_revision:m.onepage_creative_execution_revision||null},
   dynamic_job:{source_url:sourceUrl||null,source_type:inferred,theme:theme||null,user_content_lock:"HARD_EXACT_PRESERVATION",single_product_mode:singleProduct},
   acquisition_contract:{
-   source_acquisition:"HARD",inspect_actual_matching_pdps:inferred==="collection",
+   source_acquisition:"HARD",inspect_actual_matching_pdps:true, source_classification:inferred==="unknown"?"REQUIRES_INSPECTION":"CLASSIFIED",
    verified_product_pool_required:true,
-   min_verified_designs:inferred==="collection"?Number(m.collection_min_verified_designs||4):1,
+   min_verified_designs:inferred==="collection"?Number(m.collection_min_verified_designs||4):inferred==="product"?1:null,
    rule:singleProduct?"Exact PDP is merchandise source of truth. Product pool=1. Do not drift to neighboring products. PDP thumbnail people/pets are NOT casting references.":"If fewer valid designs exist, use all. Never invent designs. Fidelity outranks diversity.",
-   diversity_gate:inferred==="collection"?"BLOCK_GENERATION_UNTIL_PASS":"N/A_BY_SINGLE_PDP",
+   diversity_gate:inferred==="collection"?"BLOCK_GENERATION_UNTIL_PASS":inferred==="product"?"N/A_BY_SINGLE_PDP":"REQUIRES_SOURCE_CLASSIFICATION",
    required_state:["matching_pdps_inspected","verified_design_count","product_pool","product_to_asset_allocation","diversity_gate"]
   },
   hard_gates:{
@@ -72,7 +73,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
   instruction:"Use creative_quality_contract active scoped rules as the creative execution authority. Do not substitute account memory or superseded historical metadata. Content/typography/banner/proof quality gates are mandatory alongside technical dimensions. Reference Library examples are optional supplementary inspiration; missing examples never block creation or override active brand/product rules. Inspect any selected example before using it. Only explicit required evidence can block the affected asset stage. Human artistic review is still required."
  };
 
- return { ...packet, creative_quality_contract,
+ return attachResearch({ ...packet, creative_quality_contract,
    resolved: { ...packet.resolved, quality_revision: creative_quality_contract.revision, quality_contract_hash: creative_quality_contract.contract_hash },
    rule_index_note: "Category indexes below refer to complete rules in creative_quality_contract.rules; do not reload full canonical prose or duplicate rules per slot.",
    content_contract: creative_quality_contract.rules.filter(r => r.category === 'content').map(r => r.id),
@@ -80,7 +81,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    visual_proof_contract: creative_quality_contract.rules.filter(r => r.category === 'proof' || r.category === 'banner').map(r => r.id),
    delivery_contract: creative_quality_contract.rules.filter(r => r.category === 'delivery').map(r => r.id),
    brand_expression: { ...packet.brand_expression, rule_ids: creative_quality_contract.rules.filter(r => r.category === 'brand_style').map(r => r.id) },
-   execution: ['VALIDATE_QUALITY_CONTRACT', ...packet.execution.slice(0,7), 'INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS', ...packet.execution.slice(7)],
+   execution: ['VALIDATE_QUALITY_CONTRACT', ...packet.execution.slice(0,3), 'INSPECT_DESCRIPTIONS_AND_REVIEW_COVERAGE', 'RESEARCH_MARKETPLACE_COMPETITOR_SUPPLIER', 'ANALYZE_BUYER_CONCERNS_AND_SCOPED_CLAIMS', 'VALIDATE_RESEARCH_BEFORE_CONTENT', ...packet.execution.slice(3,7), 'INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS', ...packet.execution.slice(7)],
    readiness: creative_quality_contract.gates,
- };
+ }, input);
 }

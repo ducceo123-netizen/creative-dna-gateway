@@ -18,6 +18,7 @@ on:
       - 'supabase/functions/creative-dna-reference-ingest/**'
       - 'supabase/functions/_shared/creative-quality.ts'
       - 'supabase/functions/_shared/onepage-packet.ts'
+      - 'supabase/functions/_shared/product-research.ts'
       - 'supabase/functions/creative-dna-public/**'
       - 'supabase/functions/creative-dna-compile-onepage/**'
       - 'tests/**'
