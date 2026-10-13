@@ -1,7 +1,7 @@
 /** Pure owner-decision projection. No network, model, credentials, writes or visual QC. */
 import {
   compileCreativeQuality, sourceHashes, sha256, stableJson,
-  QUALITY_CATALOG_SCHEMA, QUALITY_COMPILER, QUALITY_SCHEMA, QUALITY_SUPPLEMENTED_SCHEMA, OWNER_SUPPLEMENTAL_SCHEMA, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS,
+  QUALITY_CATALOG_SCHEMA, QUALITY_COMPILER, QUALITY_SCHEMA, QUALITY_SUPPLEMENTED_SCHEMA, QUALITY_AGENT_REVIEWED_SCHEMA, OWNER_SUPPLEMENTAL_SCHEMA, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS,
   type OwnerSupplementalRule, type QualityBundle, type ResolvedDna,
 } from './creative-quality.ts';
 
@@ -106,15 +106,12 @@ function checkDirectOpposites(rule: CanonicalOwnerRule, nodes: JsonObject[]) {
   }
 }
 
-/** Only call with the server-produced, immutable SQL preflight snapshot. */
-export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePlanResult> {
-  const base = { compiler_version: QUALITY_COMPILER, visual_qc_performed: false as const, semantic_consistency: 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS' as const };
-  try {
+/** A read-only projection primitive, not an approval or external write capability. */
+export async function prepareCanonicalRuleProjection(snapshot: unknown) {
     if (!object(snapshot) || !object(snapshot.proposal) || !object(snapshot.scope) || !object(snapshot.compiler_context)
-      || !string(snapshot.candidate_hash, 300) || !string(snapshot.direct_rule?.rule_hash, 300))
+      || !string(snapshot.candidate_hash, 300))
       fail('compiler_snapshot_required', 'An exact server-generated proposal, scope and compiler snapshot is required.');
     const s = snapshot as JsonObject, p = s.proposal, scope = s.scope, context = s.compiler_context;
-    if (!UUID.test(context.owner_user_id || '')) fail('verified_owner_required', 'The compiler snapshot must identify the SQL-authenticated owner.');
     if (!UUID.test(p.id || '') || p.status !== 'pending' || p.merged_at != null)
       fail('pending_proposal_required', 'A valid pending unmerged proposal is required.');
     const canonical = typeof p.proposed_content_md === 'string' ? p.proposed_content_md.trim() : p.proposed_content_md;
@@ -133,6 +130,8 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
       || !slug(scope.branch_slug) || targets.some(n => n.slug !== scope.branch_slug)
       || !targets.some(n => n.id === p.knowledge_node_id) || scope.source_node_id !== p.knowledge_node_id)
       fail('target_scope_mismatch', 'The source, exact target membership or branch scope changed.');
+    if (!['onepage-system','ldp-system','home-hero','ldp-hero','ugc-image','recipient-image','seasonal-banner','shop-by-product-image','shop-by-categories','niche-product-combo'].includes(scope.branch_slug))
+      fail('unsupported_branch', 'Only a supported canonical leaf or the verified structural Onepage closure can receive this plan.');
     const isOnepage = scope.branch_slug === 'onepage-system';
     if (isOnepage && (scope.cross_brand !== true || scope.structural !== true))
       fail('onepage_mirror_scope', 'Onepage master/mirror triggers do not permit an isolated brand update.');
@@ -170,12 +169,6 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
       if (!UNCOMPILED_LEAF_BRANCHES.has(scope.branch_slug))
         fail('unsupported_branch', 'Nhánh này chưa hỗ trợ thêm rule canonical trực tiếp.',
           'Dùng luồng quản trị của nhánh này; Brand DNA cần bản cập nhật bao gồm các nhánh phụ thuộc.');
-      if (s.direct_rule.owner_authorized !== true)
-        fail('verified_owner_required', 'The SQL preflight must explicitly authorize the configured owner.');
-      // SQL remains authoritative for protected/noncreative instructions. An
-      // append plan must not bypass any of its existing eligibility checks.
-      if (s.direct_rule.eligible !== true || !Array.isArray(s.direct_rule.blockers) || s.direct_rule.blockers.length)
-        fail('direct_rule_ineligible', 'The server eligibility checks must all pass before appending canonical guidance.');
       if (!Array.isArray(context.dependent_nodes) || context.dependent_nodes.length
         || targets.some(n => targets.some(parent => n.parent_id === parent.id)))
         fail('unsupported_dependency_scope', 'Chưa xác minh được phạm vi không có nhánh con đang hoạt động phụ thuộc vào thay đổi này.',
@@ -186,6 +179,8 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
       if (s.compiler_context.projected_targets.some((n: JsonObject) => Object.hasOwn(n.metadata, 'creative_quality_contract')))
         fail('merge_projection_mismatch', 'Canonical append cannot create a quality catalog or change its absence.');
     }
+    if (!canonicalAppend && !isOnepage && (targets.length !== 1 || scope.cross_brand !== false))
+      fail('unsupported_leaf_scope', 'A compiled non-Onepage plan must target exactly one canonical leaf.');
     const dnas = canonicalAppend ? [] : targets.map(n => {
       const matches = context.brand_dna_nodes.filter((d: any) => d.brand_id === n.brand_id);
       if (matches.length !== 1) fail('brand_dna_ambiguous', 'Each target must have exactly one server-resolved latest active brand DNA source.');
@@ -211,7 +206,23 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
       }
     }
     checkDirectOpposites(rule, targets);
+    return { snapshot: s, proposal: p, scope, context, canonical, rule, targets, projected, brands, brandSlugs, master, isOnepage, dnas, canonicalAppend };
+}
+
+/** Only call with the server-produced, immutable SQL preflight snapshot. */
+export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePlanResult> {
+  const base = { compiler_version: QUALITY_COMPILER, visual_qc_performed: false as const, semantic_consistency: 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS' as const };
+  try {
+    if (!object(snapshot) || !string(snapshot.direct_rule?.rule_hash, 300) || !UUID.test(snapshot.compiler_context?.owner_user_id || ''))
+      fail('verified_owner_required', 'The owner plan requires an authenticated owner preflight and exact direct-rule hash.');
+    const { snapshot: s, proposal: p, scope, context, canonical, rule, targets, projected, brands, brandSlugs, master, isOnepage, dnas, canonicalAppend } = await prepareCanonicalRuleProjection(snapshot);
     if (canonicalAppend) {
+      if (s.direct_rule.owner_authorized !== true)
+        fail('verified_owner_required', 'The SQL preflight must explicitly authorize the configured owner.');
+      // SQL remains authoritative for protected/noncreative instructions. An
+      // append plan must not bypass any of its existing eligibility checks.
+      if (s.direct_rule.eligible !== true || !Array.isArray(s.direct_rule.blockers) || s.direct_rule.blockers.length)
+        fail('direct_rule_ineligible', 'The server eligibility checks must all pass before appending canonical guidance.');
       const textHash = await sha256(canonical);
       const additions: OwnerRuleAddition[] = projected.map((n, i) => ({
         schema_version: OWNER_CANONICAL_APPEND_SCHEMA, id: `owner:${p.id}`, proposal_id: p.id,
@@ -239,12 +250,13 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
     for (let i = 0; i < projected.length; i++) {
       const catalog = isOnepage ? sharedCatalog : clone(projected[i].metadata.creative_quality_contract);
       const bundle: QualityBundle = catalog?.schema_version === QUALITY_CATALOG_SCHEMA ? catalog.contracts?.[brands[i].slug] : catalog;
-      if (!object(bundle) || ![QUALITY_SCHEMA, QUALITY_SUPPLEMENTED_SCHEMA].includes(bundle.schema_version) || !Array.isArray(bundle.rules))
+      if (!object(bundle) || ![QUALITY_SCHEMA, QUALITY_SUPPLEMENTED_SCHEMA, QUALITY_AGENT_REVIEWED_SCHEMA].includes(bundle.schema_version) || !Array.isArray(bundle.rules))
         fail('quality_bundle_missing', `No exact compiled bundle for ${brands[i].slug}.`);
       const previous = bundle.owner_supplemental_rules || [];
-      if (previous.length >= MAX_OWNER_SUPPLEMENTS)
+      const agentPrevious = bundle.agent_reviewed_supplemental_rules || [];
+      if (previous.length + agentPrevious.length >= MAX_OWNER_SUPPLEMENTS)
         fail('supplement_capacity_exceeded', 'The additive change exceeds the limit of 16 owner supplements; no existing guidance is removed or truncated.');
-      if (previous.some(r => r.id === `owner:${p.id}` || r.proposal_id === p.id || r.canonical_text === canonical))
+      if ([...previous, ...agentPrevious].some(r => r.id === `owner:${p.id}` || r.proposal_id === p.id || r.canonical_text === canonical))
         fail('owner_rule_id_collision', 'This proposal already has a compiled supplement; refresh the recorded decision.');
       const hashes = await sourceHashes(dnaFor(projected[i], brands[i], dnas[i]));
       const supplement: OwnerSupplementalRule = {
@@ -255,7 +267,7 @@ export async function buildOwnerRulePlan(snapshot: unknown): Promise<OwnerRulePl
         accepted_source_hashes: hashes, precedence: OWNER_SUPPLEMENTAL_PRECEDENCE,
         semantic_consistency: 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS', visual_qc_performed: false,
       };
-      bundle.schema_version = QUALITY_SUPPLEMENTED_SCHEMA;
+      bundle.schema_version = agentPrevious.length ? QUALITY_AGENT_REVIEWED_SCHEMA : QUALITY_SUPPLEMENTED_SCHEMA;
       bundle.owner_supplemental_rules = [...previous, supplement];
       bundle.revision = `owner-rule:${p.id}`;
       bundle.source_hashes = hashes;

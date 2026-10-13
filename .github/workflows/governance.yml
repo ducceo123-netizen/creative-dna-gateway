@@ -9,6 +9,9 @@ on:
       - 'supabase/**'
       - 'tests/*governance*.ts'
       - 'tests/sql/**'
+      - 'scripts/compile-agent-review-plan.mjs'
+      - 'scripts/agent-review-compiler.bundle.mjs'
+      - 'tests/agent-review-plan.test.ts'
       - '.github/workflows/governance.yml'
   push:
     branches: [main]
@@ -47,7 +50,19 @@ jobs:
           done
           psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/governance_covered_resolution.sql
           psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/uid_direct_rule_accept.sql
-      - name: Verify owner decision concurrency in disposable PostgreSQL
+          psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/uid_agent_review_queue.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify pinned compiler parity and transaction concurrency
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGDATABASE: governance_test
+          UID_TEST_PG_MODULE: /tmp/uid-governance-test/node_modules/pg/lib/index.js
         run: |
-          npm install --prefix /tmp/uid-pg-test-client --no-save --ignore-scripts pg@8.16.3
-          PGHOST=127.0.0.1 PGPORT=5432 PGUSER=postgres PGDATABASE=governance_test UID_TEST_PG_MODULE=/tmp/uid-pg-test-client/node_modules/pg/lib/index.js node tests/sql/uid_direct_rule_accept_concurrency.mjs
+          npm install --prefix /tmp/uid-governance-test --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
+          node tests/sql/uid_agent_review_compiler.mjs
+          node tests/sql/uid_direct_rule_accept_concurrency.mjs
+          node tests/sql/uid_agent_review_queue_concurrency.mjs

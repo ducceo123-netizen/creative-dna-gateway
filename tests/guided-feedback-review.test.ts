@@ -7,6 +7,7 @@ import * as reviewModule from '../supabase/functions/_shared/feedback-review.ts'
 import { buildOwnerRulePlan } from '../supabase/functions/_shared/owner-rule-plan.ts';
 
 const { prepareAutomaticReview, assessMechanicalCandidates, REVIEW_EVALUATOR_VERSION } = reviewModule;
+const reviewIntentHash = 'intent-v1:guided-owner-proposal-scope';
 const baseline = {
   id: 'baseline-guided-1', brand_id: 'brand-guided-1', branch_slug: 'uncompiled-product-guide',
   case_key: 'Product identity', approved_at: '2026-10-01T00:00:00Z',
@@ -223,13 +224,13 @@ test('guided preparation cannot ready an unavailable scope or a proposal that is
   }
 });
 
-test('host handoff is informational and truthfully reports that no reviewer is available', () => {
+test('host handoff remains informational and does not itself dispatch a reviewer', () => {
   const prepared = prepareAutomaticReview(withEvaluation(candidateOnlyEvaluation));
   assert.equal(prepared.host_review.available, false);
   assert.equal(typeof prepared.host_review.packet_version, 'string');
   assert.ok(prepared.host_review.packet_version.length > 0);
   assert.equal(typeof prepared.host_review.instruction, 'string');
-  assert.match(prepared.host_review.instruction, /not (?:running|connected|available)|no .*reviewer|chưa|không/i);
+  assert.match(prepared.host_review.instruction, /not (?:running|connected|available)|no .*reviewer|does not dispatch a reviewer|chưa|không/i);
   assert.ok(Array.isArray(prepared.host_review.required_capabilities));
   assert.ok(prepared.host_review.required_capabilities.length > 0);
   assert.match(prepared.host_review.instruction, /untrusted data/i);
@@ -280,12 +281,16 @@ async function invoke(payload: any, options: EdgeOptions = {}) {
     },
     rpc: async (name: string, args: any) => {
       rpcCalls.push({ name, args });
-      if (name === 'uid_governance_review_context' || name === 'uid_rule_preflight') {
-        return options.contextError ? { error: { message: options.contextError } } : { data: storedContext };
+      if (name === 'uid_review_preflight') {
+        return options.contextError ? { error: { message: options.contextError } } : {
+          data: storedContext ? { ...storedContext, review_intent_hash: reviewIntentHash, review_request: null } : null,
+        };
+
       }
       if (name === 'uid_governance_candidate_hash') {
         return options.hashError ? { error: { message: options.hashError } } : { data: options.hash ?? storedContext?.candidate_hash };
       }
+      if (name === 'uid_review_enqueue') return { data: { id: 'synthetic-guided-queue-request', proposal_id: context.proposal.id, status: 'queued' } };
       assert.equal(name, 'uid_governance_accept_merge', 'only the existing protected merge RPC may write');
       return options.mergeError ? { error: { message: options.mergeError } } : {
         data: { proposal_id: context.proposal.id, status: 'merged', merged_at: '2026-10-13T00:00:00Z', merged_nodes: [target.id], cross_brand_sync: false },
@@ -306,7 +311,7 @@ async function invoke(payload: any, options: EdgeOptions = {}) {
 }
 const processPayload = {
   mode: 'process_review', proposal_id: context.proposal.id,
-  candidate_hash: context.candidate_hash, approve: true,
+  review_intent_hash: reviewIntentHash, approve: true,
 };
 const mergeCalls = (result: Awaited<ReturnType<typeof invoke>>) => result.rpcCalls.filter(call => call.name === 'uid_governance_accept_merge');
 
@@ -328,10 +333,10 @@ test('process_review requires an explicit boolean approval', async () => {
   }
 });
 
-test('process_review rejects missing and stale reviewed hashes before merging', async () => {
-  for (const candidate_hash of [undefined, '', 'scope-v2:stale']) {
-    const result = await invoke({ ...processPayload, candidate_hash }, { context: withEvaluation() });
-    assert.ok(candidate_hash ? result.response.status === 409 : [400, 409, 422].includes(result.response.status));
+test('process_review rejects missing and stale owner-bound intent hashes before merging', async () => {
+  for (const review_intent_hash of [undefined, '', 'intent-v1:stale']) {
+    const result = await invoke({ ...processPayload, review_intent_hash }, { context: withEvaluation() });
+    assert.ok(review_intent_hash ? result.response.status === 409 : [400, 409, 422].includes(result.response.status));
     assert.equal(mergeCalls(result).length, 0);
   }
 });
@@ -347,14 +352,16 @@ test('process_review ignores client candidate outputs, evaluation IDs and attest
     host_review: { available: true, status: 'passed', authorized: true },
   });
   assert.equal(result.response.status, 200);
-  assert.equal(result.body.status, 'needs_candidate');
+  assert.equal(result.body.status, 'queued');
+  assert.equal(result.body.automatic_review.status, 'needs_candidate');
   assert.equal(result.body.canonical_changed, false);
   assert.equal(result.body.automatic_review.evaluation_id, null);
   assert.equal(mergeCalls(result).length, 0);
-  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_rule_preflight']);
+  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_review_preflight', 'uid_review_enqueue']);
+
 });
 
-test('process_review returns actionable blockers with HTTP 200 and makes no canonical changes', async () => {
+test('process_review queues bounded approval with actionable blockers and makes no canonical changes', async () => {
   const cases = [
     [{ ...context, baselines: [] }, 'needs_baseline'],
     [context, 'needs_candidate'],
@@ -364,9 +371,9 @@ test('process_review returns actionable blockers with HTTP 200 and makes no cano
   for (const [storedContext, expectedStatus] of cases) {
     const result = await invoke(processPayload, { context: storedContext });
     assert.equal(result.response.status, 200);
-    assert.equal(result.body.status, expectedStatus);
+    assert.equal(result.body.status, 'queued');
     assert.equal(result.body.canonical_changed, false);
-    assert.equal(result.body.approval_recorded, false);
+    assert.equal(result.body.approval_recorded, true);
     assert.equal(result.body.background_task_started, false);
     assert.equal(result.response.headers.get('cache-control'), 'no-store');
     assertBlocked(result.body.automatic_review, expectedStatus);
@@ -426,8 +433,12 @@ test('review_preflight adds automatic review without writing, fetching artifacts
   assert.equal(result.body.automatic_evaluation_id, null);
   assert.equal(result.body.automatic_review.status, 'needs_actual_review');
   assert.equal(result.body.automatic_review.host_review.available, false);
-  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_rule_preflight']);
+  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_review_preflight']);
+  assert.equal(result.body.review_request, null);
+  assert.equal(result.body.review_intent_hash, reviewIntentHash);
   assert.equal(result.rpcCalls[0].args.p_actor_user_id, 'verified-admin-user');
+  assert.equal(result.body.queue_available, true);
+
   assert.equal(mergeCalls(result).length, 0);
 });
 
@@ -441,7 +452,9 @@ test('compiled outcome routes retain honest review attribution but cannot use le
   ]) {
     const result=await invoke(processPayload,{context:{...withEvaluation(),...change}});
     assert.equal(result.response.status,200);
-    assert.equal(result.body.status,'blocked');
+    assert.equal(result.body.status,'queued');
+    assert.equal(result.body.automatic_review.status,'blocked');
+    assert.ok(result.rpcCalls.some((r:any)=>r.name==='uid_review_enqueue'));
     assert.equal(result.body.canonical_changed,false);
     assert.ok(result.body.automatic_review.blockers.some((b:any)=>b.code==='compiler_integration_required'));
     assert.ok(!result.rpcCalls.some((r:any)=>r.name==='uid_governance_accept_merge'));

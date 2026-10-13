@@ -11,6 +11,7 @@ import { sourceHashes, QUALITY_SCHEMA, type QualityRule } from '../supabase/func
 
 const proposalId = '00000000-0000-4000-8000-000000000101';
 const ownerId = '00000000-0000-4000-8000-000000000103';
+const reviewIntentHash = 'intent-v1:owner-direct-rule-and-queue';
 const canonicalScope = 'STRUCTURAL content for the product guide.';
 const canonicalRule = `## Generalized Rule\nContent titles must identify the current product.\n\n## Expected Behavior\nUse the correct product noun in a concise title.\n\n## Reject Conditions\n- A generic title without the product noun.\n\n## Scope\n${canonicalScope}\n\n## Rule Class\nSTRUCTURAL\n\n## Confidence\nHIGH`;
 
@@ -74,6 +75,7 @@ const sqlReceipt = {
 };
 type Options = {
   snapshot?: any; preflightError?: string; acceptError?: string; acceptResult?: any;
+  queueSnapshot?: any; queueError?: { message: string; code?: string };
   user?: { id: string } | null; role?: string; active?: boolean;
 };
 const edgeCode = transformSync(
@@ -94,7 +96,11 @@ async function invoke(payload: any, options: Options = {}) {
     },
     rpc: async (name: string, args: any) => {
       rpcCalls.push({ name, args: JSON.parse(JSON.stringify(args)) });
+      if (name === 'uid_review_preflight') return options.queueError ? { error: options.queueError, data: options.queueSnapshot } : {
+        data: Object.hasOwn(options, 'queueSnapshot') ? options.queueSnapshot : context ? { ...context, review_intent_hash: reviewIntentHash, review_request: null } : null,
+      };
       if (name === 'uid_rule_preflight') return options.preflightError ? { error: { message: options.preflightError } } : { data: context };
+      if (name === 'uid_review_enqueue') return { data: { id: 'synthetic-owner-queue-request', proposal_id: proposalId, status: 'queued' } };
       assert.equal(name, 'uid_rule_accept', 'only owner-authorized protected SQL may apply a direct rule');
       return options.acceptError ? { error: { message: options.acceptError } } : { data: Object.hasOwn(options, 'acceptResult') ? options.acceptResult : { ...sqlReceipt, plan_hash: payload.plan_hash } };
     },
@@ -119,7 +125,9 @@ test('owner-rule preflight recomputes a source-bound plan from one authenticated
   const result = await invoke({ mode: 'review_preflight', proposal_id: proposalId, actor_user_id: 'forged-owner' }, { snapshot: context });
   assert.equal(result.response.status, 200);
   assert.equal(result.response.headers.get('cache-control'), 'no-store');
-  assert.deepEqual(result.rpcCalls, [{ name: 'uid_rule_preflight', args: { p_proposal_id: proposalId, p_actor_user_id: ownerId } }]);
+  assert.deepEqual(result.rpcCalls, [{ name: 'uid_review_preflight', args: { p_proposal_id: proposalId, p_actor_user_id: ownerId } }]);
+  assert.equal(result.body.queue_available, true);
+  assert.equal(result.body.review_intent_hash, reviewIntentHash);
   assert.equal(result.compilerCalls.length, 1);
   assert.equal(result.body.direct_rule.eligible, true);
   assert.equal(result.body.direct_rule_plan.plan_hash, plan.plan_hash);
@@ -131,6 +139,82 @@ test('owner-rule preflight recomputes a source-bound plan from one authenticated
   assert.ok(result.body.automatic_review.blockers.some((b:any)=>b.code==='compiler_integration_required'));
   assert.equal(result.body.automatic_review.evaluation_id, null);
   assert.equal(result.body.automatic_evaluation_id, null);
+});
+
+test('explicit queue-owner denial preserves normal admin preflight without granting queue authority', async () => {
+  const fallback: any = await snapshot();
+  fallback.candidate_hash = 'scope-v2:fallback-only';
+  fallback.direct_rule = { ...fallback.direct_rule, eligible: false, owner_authorized: false,
+    blockers: [{ code: 'not_owner', message: 'Configured owner required', next_action: 'Ask the owner to approve.' }] };
+  fallback.review_intent_hash = 'must-not-grant-fallback-intent';
+  fallback.review_request = { id: 'must-not-leak-fallback-request' };
+  const result = await invoke({ mode: 'review_preflight', proposal_id: proposalId }, {
+    snapshot: fallback, queueError: { code: '42501', message: 'Enabled verified configured owner required' },
+    queueSnapshot: { candidate_hash: 'failed-partial-snapshot', review_intent_hash: 'failed-partial-intent' },
+  });
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.queue_available, false);
+  assert.equal(result.body.review_intent_hash, null);
+  assert.equal(result.body.review_request, null);
+  assert.equal(result.body.candidate_hash, fallback.candidate_hash);
+  assert.equal(result.body.direct_rule.eligible, false);
+  assert.equal(result.body.direct_rule.owner_authorized, false);
+  assert.deepEqual(result.rpcCalls, ['uid_review_preflight', 'uid_rule_preflight'].map(name => ({
+    name, args: { p_proposal_id: proposalId, p_actor_user_id: ownerId },
+  })));
+  assert.equal(result.compilerCalls.length, 1);
+  assert.equal(result.compilerCalls[0].candidate_hash, fallback.candidate_hash);
+  assert.doesNotMatch(JSON.stringify(result.body), /failed-partial|must-not-grant|must-not-leak/);
+});
+
+test('general preflight never falls back on arbitrary errors or a successful partial owner snapshot', async () => {
+  for (const options of [
+    { queueError: { code: 'XX000', message: 'Snapshot unavailable' } },
+    { queueError: { code: '42501', message: 'Another database permission boundary denied this read' } },
+    { queueError: { message: 'Enabled verified configured owner required' } },
+    { queueSnapshot: { ...await snapshot(), review_intent_hash: null, review_request: null } },
+  ]) {
+    const result = await invoke({ mode: 'review_preflight', proposal_id: proposalId }, options);
+    assert.ok(result.response.status >= 400);
+    assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_review_preflight']);
+    assert.equal(result.compilerCalls.length, 0);
+  }
+});
+
+test('normal-admin fallback read failures do not expose the rejected owner snapshot', async () => {
+  const result = await invoke({ mode: 'review_preflight', proposal_id: proposalId }, {
+    queueError: { code: '42501', message: 'Enabled verified configured owner required' }, preflightError: 'Admin rule context unavailable',
+    queueSnapshot: { ...await snapshot(), review_intent_hash: 'do-not-use-rejected-intent' },
+  });
+  assert.equal(result.response.status, 409);
+  assert.equal(result.body.error, 'Admin rule context unavailable');
+  assert.equal(result.compilerCalls.length, 0);
+  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_review_preflight', 'uid_rule_preflight']);
+  assert.doesNotMatch(JSON.stringify(result.body), /do-not-use/);
+});
+
+test('one atomic owner preview supports queued outcome review and separately approved direct-rule application', async () => {
+  const context = await snapshot();
+  const preview = await invoke({ mode: 'review_preflight', proposal_id: proposalId }, { snapshot: context });
+  assert.equal(preview.response.status, 200);
+  assert.equal(preview.body.direct_rule.eligible, true);
+  assert.equal(preview.body.automatic_review.status, 'blocked');
+  const queued = await invoke({ mode: 'process_review', proposal_id: proposalId, approve: true,
+    review_intent_hash: preview.body.review_intent_hash, plan: { forged: true }, candidate_runs: [{ forged: true }],
+  }, { snapshot: context });
+  assert.equal(queued.response.status, 200);
+  assert.equal(queued.body.status, 'queued');
+  assert.equal(queued.body.canonical_changed, false);
+  assert.equal(accepts(queued).length, 0);
+  assert.deepEqual(queued.rpcCalls.map(call => call.name), ['uid_review_preflight', 'uid_review_enqueue']);
+  const accepted = await invoke({ mode: 'accept_rule', proposal_id: proposalId, approve_rule: true,
+    candidate_hash: preview.body.candidate_hash, rule_hash: preview.body.direct_rule.rule_hash,
+    plan_hash: preview.body.direct_rule_plan.plan_hash,
+  }, { snapshot: context });
+  assert.equal(accepted.response.status, 200);
+  assert.equal(accepted.body.decision_kind, 'owner_direct_rule');
+  assert.equal(accepted.body.visual_qc_performed, false);
+  assert.deepEqual(accepted.rpcCalls.map(call => call.name), ['uid_rule_preflight', 'uid_rule_accept']);
 });
 
 test('direct rule routes reject unauthenticated, inactive and non-admin actors before protected reads', async () => {

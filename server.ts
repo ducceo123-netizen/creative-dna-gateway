@@ -1083,16 +1083,37 @@ export function createApp(): express.Application {
       const data=await upstream.json();res.setHeader("Cache-Control","no-store");return res.status(upstream.status).json(data);
     } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to accept rule. Reload before retrying.")});}
   });
+  app.get("/api/admin/feedback/:id/review-request", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
+    const authorization=req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode:"review_request_status",proposal_id:req.params.id})});
+      const data=await upstream.json();res.setHeader("Cache-Control","no-store");return res.status(upstream.status).json(data);
+    } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to read review status")});}
+  });
+  app.post("/api/admin/feedback/:id/cancel-review", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
+    const authorization=req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
+    if(typeof req.body?.request_id!=="string"||!req.body.request_id)return res.status(422).json({error:"request_id required"});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode:"cancel_review",proposal_id:req.params.id,request_id:req.body.request_id})});
+      const data=await upstream.json();res.setHeader("Cache-Control","no-store");return res.status(upstream.status).json(data);
+    } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to cancel review. Reload before retrying.")});}
+  });
 
   app.post("/api/admin/feedback/:id/process", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
     const authorization=req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
-    if (req.body?.approve !== true || typeof req.body?.candidate_hash !== "string")
+    if (req.body?.approve !== true || typeof req.body?.review_intent_hash !== "string" || !req.body.review_intent_hash.trim())
       return res.status(422).json({error:"Explicit approval of the current feedback is required."});
     try {
       const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
-        body:JSON.stringify({mode:"process_review",proposal_id:req.params.id,approve:true,candidate_hash:req.body.candidate_hash})});
+        body:JSON.stringify({mode:"process_review",proposal_id:req.params.id,approve:true,review_intent_hash:req.body.review_intent_hash})});
       const data=await upstream.json();res.setHeader("Cache-Control","no-store");
       return res.status(upstream.status).json(data);
     } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to process feedback. Reload before retrying.")});}
