@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, stableJson } from './supabase/functions/_shared/creative-quality.ts';
+import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, agentReviewedSupplementalShapeValid, AGENT_REVIEW_SCOPE, stableJson } from './supabase/functions/_shared/creative-quality.ts';
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
 
 const canvasCss = `
@@ -69,9 +69,11 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
   if (!['pawfecthouse', 'giftsoul', 'soulprise'].includes(brandSlug) || !['onepage', 'onepagesystem'].includes(branchSlug)) return data;
   const quality = data.creative_quality_contract;
   const currentCompiler = quality?.compiler_version === QUALITY_COMPILER;
+  const ownerCompiler = currentCompiler || quality?.compiler_version === '2026-10-13-owner-supplement-v1';
+  const hasAgentEnvelope = quality && (Object.hasOwn(quality, 'agent_reviewed_supplemental_rules') || Object.hasOwn(quality, 'agent_reviewed_supplemental_policy')) || Object.hasOwn(data, 'agent_reviewed_supplemental_contract');
   const hasSupplementEnvelope = quality && (Object.hasOwn(quality, 'owner_supplemental_rules') || Object.hasOwn(quality, 'owner_supplemental_policy')) || Object.hasOwn(data, 'owner_supplemental_contract');
   const { contract_hash: _claimedHash, ...hashableQuality } = quality && typeof quality === 'object' ? quality : {};
-  const supplementValid = currentCompiler && Array.isArray(quality?.owner_supplemental_rules)
+  const supplementValid = ownerCompiler && Array.isArray(quality?.owner_supplemental_rules)
     && quality.owner_supplemental_rules.length <= MAX_OWNER_SUPPLEMENTS
     && quality.owner_supplemental_rules.every((rule: any) => ownerSupplementalShapeValid(rule,brandSlug,'onepage-system')
       && createHash('sha256').update(rule.canonical_text).digest('hex') === rule.source.canonical_text_hash)
@@ -82,7 +84,17 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
     && quality.owner_supplemental_policy?.semantic_consistency === 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS'
     && createHash('sha256').update(stableJson(hashableQuality)).digest('hex') === quality.contract_hash
     && (!data.owner_supplemental_contract || stableJson(data.owner_supplemental_contract) === stableJson({ ...quality.owner_supplemental_policy, rules: quality.owner_supplemental_rules }));
-  const compilerSupported = currentCompiler ? supplementValid : quality?.compiler_version === '2026-10-11-v2' && !hasSupplementEnvelope;
+  const agentSupplementValid = currentCompiler && Array.isArray(quality?.agent_reviewed_supplemental_rules) && Array.isArray(quality?.owner_supplemental_rules)
+    && quality.agent_reviewed_supplemental_rules.length + (quality.owner_supplemental_rules?.length || 0) <= MAX_OWNER_SUPPLEMENTS
+    && quality.agent_reviewed_supplemental_rules.every((rule: any) => agentReviewedSupplementalShapeValid(rule,brandSlug,'onepage-system')
+      && createHash('sha256').update(rule.canonical_text).digest('hex') === rule.source.canonical_text_hash)
+    && new Set([...quality.owner_supplemental_rules,...quality.agent_reviewed_supplemental_rules].map((r: any) => r.proposal_id)).size === quality.owner_supplemental_rules.length + quality.agent_reviewed_supplemental_rules.length
+    && quality.agent_reviewed_supplemental_policy?.layer === 'OWNER_APPROVED_AGENT_REVIEWED_VERBATIM_SUPPLEMENT'
+    && quality.agent_reviewed_supplemental_policy?.precedence === OWNER_SUPPLEMENTAL_PRECEDENCE
+    && quality.agent_reviewed_supplemental_policy?.review_scope === AGENT_REVIEW_SCOPE
+    && (!data.agent_reviewed_supplemental_contract || stableJson(data.agent_reviewed_supplemental_contract) === stableJson({ ...quality.agent_reviewed_supplemental_policy, rules: quality.agent_reviewed_supplemental_rules }));
+  const compilerSupported = ownerCompiler ? supplementValid && (currentCompiler ? agentSupplementValid : !hasAgentEnvelope)
+    : quality?.compiler_version === '2026-10-11-v2' && !hasSupplementEnvelope && !hasAgentEnvelope;
   const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && compilerSupported &&
     /^[a-f0-9]{64}$/.test(String(quality.contract_hash || '')) && ['COMPILED','BLOCKED'].includes(quality.status) &&
     (quality.status === 'BLOCKED' || (typeof quality.revision === 'string' && !!quality.revision.trim())) &&

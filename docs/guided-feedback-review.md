@@ -1,11 +1,11 @@
 # Guided feedback processing
 
-> This document covers the stored-review outcome fast path. The separate owner rule decision is documented in [Owner-approved creative rules](owner-direct-rule-review.md). This document alone is not a deployment claim.
+> This document covers the stored-review outcome fast path. The separate owner rule decision is documented in [Owner-approved creative rules](owner-direct-rule-review.md), and owner-approved host execution in [Hourly review queue](uid-owner-review-queue.md). This document alone is not a deployment claim.
 
 ## Scope of the outcome fast path
 
 `Xem & duyệt` opens the current proposal and SQL-derived affected scope. One explicit
-`Merge outcome đã review` click when ready (otherwise `Kiểm tra điều kiện review`) submits only the displayed candidate hash and approval intent.
+`Merge outcome đã review` click when ready (otherwise `Duyệt & giao dot review`) submits only the displayed candidate hash and bounded approval intent.
 There are no merge checkboxes, required prose notes, evidence fields, run IDs, URLs,
 or JSON fields for the user to fill.
 
@@ -17,16 +17,15 @@ an existing complete review remains valid, it calls the unchanged transactional
 system audit note records the click; it does not claim the clicking admin personally
 performed visual review. The original stored reviewer evidence is preserved.
 
-Nothing in preflight or a blocked processing result writes baselines, evaluations,
-canonical nodes, synthetic passes or approval flags. Existing legacy API contracts
+Preflight is read-only. The owner’s processing click may persist a queued intent, but it does not write synthetic baselines, evidence or passes. An acknowledged queue entry is not a canonical merge. Existing legacy API contracts
 remain available with their original requirements. The already-covered resolution
-path is unchanged. Structural Onepage changes still cover all active brand targets;
+path is unchanged. Structural Onepage approval covers the full trigger-expanded target scope, including inactive mirrors;
 style-local changes remain local. Before/after snapshots and rollback are unchanged.
 
 ## Statuses
 
 - `ready_to_merge`: deterministic checks pass and an exact-current stored review is
-  valid. For supported noncompiled, nondependent routes the processing click may merge through the existing SQL gate. Onepage/compiled/dependency-changing routes return `compiler_integration_required` until the outcome merge has an atomic compiler plan; the direct owner-rule path is separate.
+  valid. For supported noncompiled, nondependent routes the processing click may merge through the existing SQL gate. Onepage/compiled/dependency-changing routes return `compiler_integration_required` for this legacy immediate outcome route. Supported rules can instead enter the owner queue, whose finalizer validates an exact compiler plan after genuine review. The direct owner-rule path is separate.
 - `needs_baseline`: an affected brand has no approved non-reference quality baseline.
   The next step is supplying a genuinely approved outcome, not automatically
   promoting an inspiration corpus or narrowing scope.
@@ -37,9 +36,7 @@ style-local changes remain local. Before/after snapshots and rollback are unchan
   or semantic conflict review has not been established.
 - `blocked`: proposal/scope is unavailable.
 
-Blocked outcomes explicitly return `background_task_started: false` and
-`approval_recorded: false`. No job has been queued and this patch does not promise
-later autonomous merge. The UI disables repeat processing until refreshed.
+An accepted queue response returns `background_task_started: false`, `approval_recorded: true`, `canonical_changed: false` and the sanitized request. A rejected approval is not queued. The browser does not dispatch a host; hourly processing requires the separately verified schedule. The UI distinguishes queued/leased/blocked, merged, cancelled and expired states and prevents duplicate processing.
 An uncertain HTTP result requires a state refresh, not blind mutation retry.
 
 ## What the current evaluator can prove
@@ -54,47 +51,14 @@ The existing SQL gate remains the final authority. It rechecks active-admin acce
 current proposal/scope/canonical/baseline hash, every eligible case, stored review,
 and transactional snapshots. The outcome fast path itself introduces no new schema, privilege, credential, API provider or credit consumption. The separately documented owner-rule path adds a private migration and guarded owner decision.
 
-## Bounded host-review packet and remaining integration
+## Read-only context versus an authorized queue attempt
 
-The authenticated preflight response includes `automatic_review.host_review` with
-`packet_version: uid.review-packet.v1`, the full proposal, affected targets,
-baselines, collected candidates/evidence and mechanical findings. This is a read-only
-contract for a future reviewer, not a running agent, authorization token or evidence
-of review. `available` is false. Private references retain their identifiers; the
-consumer must use its authorized source and inspect the actual bytes. Untrusted
-proposal text and artifacts cannot instruct the reviewer or grant approval.
+`automatic_review.host_review` remains a read-only explanatory packet with `available: false`; it is not a running agent, approval token or evidence of review. Proposal text and retrieved artifacts cannot instruct the reviewer or grant authority.
 
-To truly use the user's existing ChatGPT session without adding a paid backend model:
-
-1. Supply a host-bound, authenticated admin integration. The standalone admin page
-   cannot borrow the user's GPT session, and the current public MCP catalog is not an
-   admin write surface. Never place access tokens in prompts, URLs or packets.
-2. Expose packet retrieval and a bounded host-review execution action through that
-   identity. The host must read product sources and baseline/candidate media and
-   emit source-linked findings, unknowns and severity for every affected case.
-3. Store immutable run/provenance and review evidence bound to the packet/hash and
-   authenticated reviewer. Do not let arbitrary browser JSON attest to model work.
-4. Persist the user's one bounded approve-and-process intent with its exact snapshot,
-   expiry and cancellation state. An unchanged approved snapshot can then resume
-   automatically; material changes invalidate it rather than silently widening it.
-5. Add a versioned host-evaluator contract and SQL validation in an additive migration.
-   Keep model findings distinct from legacy human review, preserve baseline coverage,
-   and allow merge only after the actual review is complete and all gates pass.
-
-Until those steps exist, the system prepares the packet and states the exact blocker;
-it never substitutes five auto-ticked booleans or a generated human attestation.
+Only the owner-approved queue creates an authorized attempt. Its immutable intent pins the patch and exact scope; a separately fenced attempt pins current canonical, baseline, candidate, source and media versions. Evidence drift requires fresh QC under an unchanged intent, while patch or membership changes require another approval. The trusted host must inspect actual bytes and return evidence-linked findings, then run the hash-pinned compiler when required. Missing capabilities or genuine evidence block processing. See the queue and compiler-host runbooks for exact RPCs, receipts, source verification and operational limits.
 
 ## Release and rollback
 
-The owner-rule release supersedes the original no-migration procedure below. Follow its coordinated compiler rollout and additive-migration instructions; do not deploy only the admin function when supplemental guidance is enabled.
+Use the coordinated release instructions for the owner-direct and queue releases. They include additive migrations and the full public/compiler/admin/gateway consumer closure; deploying only the admin function is insufficient once supplemental guidance can be stored.
 
-1. Review this patch and run full test, type-check and build checks.
-2. Deploy `creative-dna-admin-feedback` first, then the gateway/UI. Old clients retain
-   their contracts; a new UI with an old Edge fails closed with an update message.
-3. Verify authenticated preflight and blocked processing using a test proposal only.
-   Do not submit a production process request solely as a smoke test: a ready case
-   is a real canonical mutation.
-4. Verify the live UI omits the merge form and distinguishes automated checks from
-   missing actual review. Confirm exact deployed commit before reporting success.
-5. Gateway/UI rollback is safe without DB changes. Keep the legacy Edge contract and
-   immutable governance history; never remove existing baseline/evaluation records.
+Run full JavaScript, type-check, build, SQL parity and race checks against the frozen release. Post-deploy checks must be read-only: submitting a ready production process request is a real canonical mutation, not a smoke test. Verify the exact deployed source and actual configured schedule before claiming availability. Keep immutable governance history, and preserve compatible consumers for stored supplemental schemas during rollback.

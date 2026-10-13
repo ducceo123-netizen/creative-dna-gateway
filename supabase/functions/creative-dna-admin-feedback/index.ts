@@ -3,6 +3,17 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildOwnerRulePlan } from "../_shared/owner-rule-plan.ts";
 import { assessReviewCandidates, reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, REVIEW_EVALUATOR_VERSION } from "../_shared/feedback-review.ts";
 
+function validReviewContext(value:any):boolean {
+  return !!value&&typeof value.proposal?.id==="string"&&typeof value.proposal?.status==="string"&&
+    typeof value.candidate_hash==="string"&&!!value.candidate_hash.trim()&&
+    [value.targets,value.baselines,value.evaluations,value.covered_candidates].every(Array.isArray)&&
+    value.targets.every((n:any)=>n&&typeof n.id==="string"&&typeof n.brand_id==="string"&&typeof n.content_md==="string")&&
+    value.baselines.every((b:any)=>b&&typeof b.id==="string"&&typeof b.brand_id==="string")&&
+    value.evaluations.every((e:any)=>e&&typeof e.id==="string")&&
+    value.covered_candidates.every((c:any)=>c&&typeof c.id==="string")&&
+    (value.direct_rule===undefined||(value.direct_rule&&Array.isArray(value.direct_rule.blockers)));
+}
+
 export default {
   fetch: async (req: Request) => {
     if (req.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
@@ -35,13 +46,24 @@ export default {
     // The displayed patch, full trigger scope and owner-bound rule hash come
     // from ONE SQL snapshot. The effective plan is derived only on the server.
     if (body.mode === "review_preflight") {
-      const { data, error } = await adminDb.rpc("uid_rule_preflight", { p_proposal_id: body.proposal_id,p_actor_user_id:user.id });
+      let { data, error } = await adminDb.rpc("uid_review_preflight", { p_proposal_id: body.proposal_id,p_actor_user_id:user.id });
+      let queue_available=true;
+      // Existing admins retain the general read surface; only the configured
+      // owner receives queue authority. Never combine two successful snapshots.
+      if(error?.code==="42501"&&error.message==="Enabled verified configured owner required") {
+        const fallback=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+        data=fallback.data;error=fallback.error;queue_available=false;
+      }
       if (error) return Response.json({ error: error.message }, { status: 409 });
       if (data?.proposal?.id !== body.proposal_id) return Response.json({ error: "Proposal not found" }, { status: 404 });
+      if(!validReviewContext(data))return Response.json({error:"Incomplete review snapshot. Reload before approving."},{status:503});
+      if(queue_available&&(typeof data?.review_intent_hash!=="string"||!data.review_intent_hash))
+        return Response.json({error:"Review queue unavailable. Retry after the update completes."},{status:503});
       const compiled = await buildOwnerRulePlan(data);
       const {plan:_plan,...direct_rule_plan}=compiled;
       const {compiler_context:_compilerContext,...visible}=reviewReadiness(data);
-      return Response.json({ ...visible, direct_rule_plan,
+      return Response.json({ ...visible, direct_rule_plan,queue_available,
+        review_intent_hash:queue_available?data.review_intent_hash:null,review_request:queue_available?(data.review_request||null):null,
         direct_rule:data.direct_rule ? {...data.direct_rule,eligible:data.direct_rule.eligible===true&&compiled.eligible,
           blockers:[...(data.direct_rule.blockers||[]),...compiled.blockers]} : undefined,
         automatic_review: prepareGuidedOutcomeReview(data) }, { headers: { "Cache-Control": "no-store" } });
@@ -79,20 +101,38 @@ export default {
         return Response.json({error:"Cannot verify the rule merge receipt. Reload to inspect the saved outcome; do not submit again blindly."},{status:502});
       return Response.json({...data,proposal:{id:data.proposal_id,status:data.status,merged_at:data.merged_at},canonical_changed:true},{headers:{"Cache-Control":"no-store"}});
     }
+    if(body.mode === "review_request_status") {
+      if(!body.proposal_id)return Response.json({error:"proposal_id required"},{status:400});
+      const {data,error}=await adminDb.rpc("uid_review_get",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      return error?Response.json({error:error.message},{status:409}):Response.json({review_request:data},{headers:{"Cache-Control":"no-store"}});
+    }
+    if(body.mode === "cancel_review") {
+      if(!body.proposal_id||!body.request_id)return Response.json({error:"proposal_id and request_id required"},{status:400});
+      const {data,error}=await adminDb.rpc("uid_review_cancel",{p_request_id:body.request_id,p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      return error?Response.json({error:error.message},{status:409}):Response.json({review_request:data,canonical_changed:false});
+    }
     // A single explicit intent; only EXISTING verified evidence can reach merge.
     // Client-supplied runs, review flags, actor and evaluation IDs are ignored.
     if (body.mode === "process_review") {
-      if (body.approve !== true || typeof body.candidate_hash !== "string" || !body.proposal_id)
+      if (body.approve !== true || typeof body.review_intent_hash !== "string" || !body.review_intent_hash || !body.proposal_id)
         return Response.json({error:"Explicit approval of the current feedback is required."},{status:422});
-      const {data:context,error:contextError}=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
-      if (contextError || context?.proposal?.status !== "pending")
-        return Response.json({error:contextError?.message || "Pending proposal required. Reload before retrying."},{status:409});
-      if (body.candidate_hash !== context.candidate_hash)
-        return Response.json({error:"The proposal, scope, canonical rules or baselines changed. Reload before approving."},{status:409});
+      const {data:context,error:contextError}=await adminDb.rpc("uid_review_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      if (contextError || context?.proposal?.id!==body.proposal_id || context?.proposal?.status !== "pending" || !validReviewContext(context))
+        return Response.json({error:contextError?.message || "Complete matching pending proposal required. Reload before retrying."},{status:409});
+      const intentHash=context.review_intent_hash;
+      if(typeof intentHash!=="string"||!intentHash||body.review_intent_hash!==intentHash)
+        return Response.json({error:"The proposed change or target scope changed. Reload before approving."},{status:409});
       const automatic_review=prepareGuidedOutcomeReview(context);
-      if (automatic_review.status !== "ready_to_merge" || !automatic_review.evaluation_id)
-        return Response.json({status:automatic_review.status,automatic_review,canonical_changed:false,
-          approval_recorded:false,background_task_started:false},{headers:{"Cache-Control":"no-store"}});
+      if (automatic_review.status !== "ready_to_merge" || !automatic_review.evaluation_id) {
+        const {data:review_request,error:queueError}=await adminDb.rpc("uid_review_enqueue",{
+          p_proposal_id:body.proposal_id,p_actor_user_id:user.id,p_expected_intent_hash:intentHash,
+        });
+        if(queueError)return Response.json({error:queueError.message},{status:409});
+        if(!review_request?.id||review_request.proposal_id!==body.proposal_id||!["queued","leased","blocked"].includes(review_request.status))
+          return Response.json({error:"Cannot verify saved queue status. Reload before retrying."},{status:502});
+        return Response.json({status:review_request.status,review_request,automatic_review,canonical_changed:false,
+          approval_recorded:true,background_task_started:false},{headers:{"Cache-Control":"no-store"}});
+      }
       // SQL rechecks scope, exact hash, full case coverage and stored genuine
       // Admin review under lock. No synthetic evaluation or self-attestation.
       const {data,error}=await adminDb.rpc("uid_governance_accept_merge",{

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { AutomaticReview, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
-import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateAutomaticReview, validatePreflight } from "./feedback-review";
+import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
+import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
 
 export type FeedbackReviewPath = "covered" | "merge";
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
@@ -69,7 +69,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
 }) {
   const [data,setData]=useState<FeedbackPreflight|null>(null);
   const [loading,setLoading]=useState(true);
-  const [busy,setBusy]=useState<"covered"|"process"|"rule"|null>(null);
+  const [busy,setBusy]=useState<"covered"|"process"|"rule"|"cancel"|null>(null);
   const [error,setError]=useState("");
   const [errorIssues,setErrorIssues]=useState<string[]>([]);
   const [stale,setStale]=useState(false);
@@ -78,7 +78,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const [coveredScope,setCoveredScope]=useState(false);
   const [safeguards,setSafeguards]=useState(false);
   const [note,setNote]=useState("");
-  const [processed,setProcessed]=useState<AutomaticReview|null>(null);
+  const [queueRequest,setQueueRequest]=useState<ReviewRequest|null|undefined>(undefined);
   const alive=useRef(false);
   const activeRead=useRef<AbortController|null>(null);
   const mutation=useRef(false);
@@ -95,7 +95,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     const controller=new AbortController();activeRead.current=controller;
     const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller;
     setLoading(true);setData(null);resetAttestations();setStale(false);
-    if(clearInputs){setNote("");setProcessed(null);setCandidateSearch("");}
+    if(clearInputs){setNote("");setQueueRequest(undefined);setCandidateSearch("");}
     try {
       const response=await requestRef.current(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/preflight`,{signal:controller.signal});
       const result=await response.json();
@@ -106,26 +106,31 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     finally {if(current()){activeRead.current=null;setLoading(false);}}
   };
   useEffect(()=>{
-    alive.current=true;identity.current={id:proposal.id,path};load();
+    alive.current=true;identity.current={id:proposal.id,path};setBusy(null);load();
     return ()=>{alive.current=false;activeRead.current?.abort();activeRead.current=null;};
   },[proposal.id,path]);
 
   const candidate=visibleData?.covered_candidates.find(item=>item.id===selected);
   const filteredCandidates=searchCoveredCandidates(visibleData?.covered_candidates||[],candidateSearch);
-  const automatic=processed||visibleData?.automatic_review;
+  const automatic=visibleData?.automatic_review;
+  const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
+  const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
   const canReview=!!visibleData&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale;
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
-  const canProcess=canReview&&!!automatic&&!processed;
+  const canCancel=!!visibleData&&activeRequest&&!loading&&!busy&&!stale;
   const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
+  const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
-  const post=async(action:"covered"|"process"|"rule")=>{
-    if(mutation.current||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:canProcess))return;
+  const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
+    if(mutation.current||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
     mutation.current=true;setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
-    const current=()=>alive.current&&identity.current.id===currentId&&identity.current.path===path;
-    const url=`/api/admin/feedback/${encodeURIComponent(currentId)}/${action==="covered"?"resolve-covered":action==="rule"?"accept-rule":"process"}`;
+    const operationIdentity=identity.current;
+    const current=()=>alive.current&&identity.current===operationIdentity;
+    const url=`/api/admin/feedback/${encodeURIComponent(currentId)}/${action==="covered"?"resolve-covered":action==="rule"?"accept-rule":action==="cancel"?"cancel-review":"process"}`;
     const payload=action==="covered"?{candidate_hash:visibleData.candidate_hash,covered_proposal_id:candidate!.id,covered_hash:candidate!.candidate_hash,review_note:note.trim()}:
-      action==="rule"?{approve_rule:true,candidate_hash:visibleData.candidate_hash,rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash}:{approve:true,candidate_hash:visibleData.candidate_hash};
+      action==="rule"?{approve_rule:true,candidate_hash:visibleData.candidate_hash,rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash}:
+      action==="cancel"?{request_id:currentRequest!.id}:{approve:true,review_intent_hash:visibleData.review_intent_hash};
     try {
       const response=await requestRef.current(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
       const result=await response.json();
@@ -134,15 +139,18 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
         setError(result.error||"Chưa hoàn tất thao tác.");setErrorIssues(Array.isArray(result.issues)?result.issues:[]);
         setStale(true);resetAttestations();return;
       }
-      if(action==="process"&&result.status!=="merged") {
-        const review=validateAutomaticReview(result.automatic_review,visibleData.candidate_hash);
-        if(result.status!==review.status||review.status==="ready_to_merge"||result.canonical_changed!==false)
-          throw Error("Chưa xác nhận kết quả xử lý. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
-        setProcessed(review);
+      if(action==="cancel"||(action==="process"&&result.status!=="merged")) {
+        const request=validateReviewRequest(result.review_request,currentId);
+        if(!request||result.canonical_changed!==false||
+          (action==="cancel"?request.status!=="cancelled"||request.id!==currentRequest?.id:
+            result.status!==request.status||result.approval_recorded!==true||!["queued","leased","blocked"].includes(request.status)))
+          throw Error("Chưa xác nhận trạng thái hàng đợi. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
+        setQueueRequest(request);
       } else {
         if(action==="covered"&&result.status!=="resolved")throw Error("Chưa xác nhận trạng thái resolved. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
         if((action==="process"||action==="rule")&&(result.proposal?.id!==currentId||result.proposal?.status!=="merged"||result.canonical_changed!==true))throw Error("Chưa xác nhận trạng thái merged cho feedback này. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
-        if(action==="rule"&&(result.decision_kind!=="owner_direct_rule"||result.visual_qc_performed!==false||typeof result.rule_decision_id!=="string"||!result.rule_decision_id||typeof result.proposal?.merged_at!=="string"||!Number.isFinite(Date.parse(result.proposal.merged_at))||result.candidate_hash!==visibleData.candidate_hash||result.rule_hash!==visibleData.direct_rule?.rule_hash||result.plan_hash!==visibleData.direct_rule_plan?.plan_hash))throw Error("Chưa xác nhận đúng quyết định duyệt rule. Hãy tải lại.");
+        if(action==="process"&&(result.decision_kind==="owner_direct_rule"||result.rule_decision_id!==undefined))throw Error("Kết quả duyệt rule không phải kết quả review outcome. Hãy tải lại.");
+        if(action==="rule"&&(result.status!=="merged"||result.decision_kind!=="owner_direct_rule"||result.visual_qc_performed!==false||typeof result.rule_decision_id!=="string"||!result.rule_decision_id||typeof result.proposal?.merged_at!=="string"||!Number.isFinite(Date.parse(result.proposal.merged_at))||result.candidate_hash!==visibleData.candidate_hash||result.rule_hash!==visibleData.direct_rule?.rule_hash||result.plan_hash!==visibleData.direct_rule_plan?.plan_hash))throw Error("Chưa xác nhận đúng quyết định duyệt rule. Hãy tải lại.");
         onCompleteRef.current(action==="rule"?"Đã merge rule do bạn duyệt trực tiếp. Đã lưu lịch sử và snapshot để rollback; đây không phải kết quả QC hình ảnh.":action==="covered"?"Đã đóng feedback: quy chuẩn hiện có đã bao phủ. Nội dung canonical không thay đổi.":"Đã merge: kiểm tra tự động và review đã lưu đều hợp lệ. Quy chuẩn đã được cập nhật.",result);
       }
     } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setStale(true);resetAttestations();}}
@@ -193,8 +201,9 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":"Duyệt rule & merge ngay"}</button>
         </div>
         <h4 className="text-sm font-semibold">Review outcome và bằng chứng</h4>
-        <p className="text-xs text-slate-600">Hệ thống tự gom bằng chứng đã lưu và kiểm tra quy tắc. Khi review hợp lệ đã có đủ, bạn có thể merge outcome theo đúng thay đổi và phạm vi ở trên.</p>
-        {!automatic&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng tự kiểm tra. Hãy tải lại sau khi bản cập nhật hoàn tất.</p>}
+        <p className="text-xs text-slate-600">Duyệt một lần cho đúng thay đổi và phạm vi ở trên. Nếu review hợp lệ đã có đủ, hệ thống merge ngay; nếu còn cần review, yêu cầu được lưu vào hàng đợi của bạn để dot đối chiếu nguồn và ảnh thật.</p>
+        {visibleData.queue_available===false&&<p className="text-xs text-slate-600">Hàng đợi review chỉ dành cho owner đã cấu hình. Bạn vẫn có thể xem feedback và đối chiếu quy chuẩn.</p>}
+        {visibleData.queue_available!==false&&(!automatic||!visibleData.review_intent_hash)&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng tự kiểm tra. Hãy tải lại sau khi bản cập nhật hoàn tất.</p>}
         {automatic&&<>
           <div role="status" className="rounded-lg bg-slate-50 p-3 text-xs space-y-1">
             <p>Kiểm tra quy tắc: {automatic.checks.mechanical==="passed"?"Đã đạt":automatic.checks.mechanical==="failed"?"Có lỗi cần sửa":"Còn thiếu dữ liệu"}</p>
@@ -203,12 +212,18 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>
           {automatic.blockers.map((item,index)=><div key={index} role="alert" className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">{item.message}</p><p className="mt-1">{item.next_action}</p></div>)}
           {!!automatic.mechanical_results.length&&<details><summary className="cursor-pointer text-xs font-semibold">Kết quả kiểm tra tự động</summary><div className="space-y-2 mt-2">{automatic.mechanical_results.map((row,index)=><div key={row.baseline_id||index} className="text-xs"><p className="font-semibold">{readableIssue(row.case_key||row.baseline_id||"Mẫu kiểm tra",visibleData.baselines,visibleData.targets)} · {row.status}</p>{(row.issues||[]).map((issue,i)=><p key={i} className="text-amber-800">{readableIssue(issue,visibleData.baselines,visibleData.targets)}</p>)}</div>)}</div></details>}
-          {processed&&<p className="text-xs text-slate-600">Chưa merge. Không có tác vụ review chạy nền; dữ liệu đã được gom để trình review tiếp tục khi có đủ điều kiện.</p>}
+
         </>}
-        <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canProcess} onClick={()=>post("process")}>{busy==="process"?"Đang tự kiểm tra…":automatic?.status==="ready_to_merge"?"Merge outcome đã review":"Kiểm tra điều kiện review"}</button>
-        <p className="text-xs text-slate-500">Thiếu baseline hoặc review ảnh thật sẽ giữ feedback ở trạng thái chờ. Bạn không cần điền checklist, mã lần chạy, URL hay JSON.</p>
+        {currentRequest&&<div role="status" className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs space-y-2">
+          <p className="font-semibold">{{queued:"Đã lưu duyệt · Chờ dot review",leased:"dot đang review",blocked:"Đang chờ phần còn thiếu",merged:"Đã merge",cancelled:"Đã hủy yêu cầu",superseded:"Ý duyệt hoặc phạm vi đã thay đổi",expired:"Yêu cầu đã hết hạn"}[currentRequest.status]}</p>
+          {activeRequest&&<><p>Yêu cầu nằm trong hàng đợi riêng của bạn. Lịch kiểm tra mỗi giờ áp dụng cho tài khoản đã bật xử lý; nút này không khởi chạy review tức thì.</p><p>Hiệu lực đến {dateLabel(currentRequest.expires_at)}. Bằng chứng mới sẽ được review lại; bạn không cần duyệt lại nếu ý thay đổi và phạm vi vẫn giữ nguyên.</p></>}
+          {(currentRequest.blockers||[]).map((item,index)=><p key={index} className="text-amber-900">{typeof item==="string"?item:[item.message,item.next_action].filter(Boolean).join(" ")}</p>)}
+          {activeRequest&&<button type="button" className={button} disabled={!canCancel} onClick={()=>post("cancel")}>{busy==="cancel"?"Đang hủy…":"Hủy yêu cầu"}</button>}
+        </div>}
+        <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canProcess} onClick={()=>post("process")}>{busy==="process"?"Đang tự kiểm tra…":automatic?.status==="ready_to_merge"?"Merge outcome đã review":"Duyệt & giao dot review"}</button>
+        <p className="text-xs text-slate-500">Thiếu baseline hoặc ảnh thật sẽ dừng đúng bước cần bổ sung. Bạn không cần điền checklist, mã lần chạy, URL hay JSON. Dùng Tải lại để xem trạng thái mới nhất.</p>
       </section>}
-      <details><summary className="cursor-pointer text-xs font-semibold">Advanced · IDs, hashes và dữ liệu đầy đủ</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-[11px]">{JSON.stringify({preflight:visibleData,automatic_review:processed,action_error:error,action_issues:errorIssues},null,2)}</pre></details>
+      <details><summary className="cursor-pointer text-xs font-semibold">Advanced · IDs, hashes và dữ liệu đầy đủ</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-[11px]">{JSON.stringify({preflight:visibleData,review_request:currentRequest,action_error:error,action_issues:errorIssues},null,2)}</pre></details>
     </>}
   </section>;
 }

@@ -55,7 +55,15 @@ async function invoke(payload: any, options: { hash?: string; rpcError?: string;
   const member = { select: () => member, eq: () => member, maybeSingle: async () => ({ data: { role: 'admin', is_active: true } }) };
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: 'verified-user' } } }) },
-    rpc: async (name: string, args: any) => { rpcCalls.push({ name, args }); return options.rpcError ? { error: { message: options.rpcError } } : { data: ['uid_governance_review_context','uid_rule_preflight'].includes(name) ? options.missing ? null : context : name === 'uid_governance_candidate_hash' ? options.hash || context.candidate_hash : { status: 'resolved', proposal_id: 'proposal-1', resolution: { type: 'already_covered' } } }; },
+    rpc: async (name: string, args: any) => {
+      rpcCalls.push({ name, args });
+      if (options.rpcError) return { error: { message: options.rpcError } };
+      if (name === 'uid_review_preflight') return { data: options.missing ? null : { ...context, review_intent_hash: 'intent-current', review_request: null } };
+      if (name === 'uid_governance_review_context' || name === 'uid_rule_preflight') return { data: options.missing ? null : context };
+      if (name === 'uid_governance_candidate_hash') return { data: options.hash || context.candidate_hash };
+      assert.equal(name, 'uid_governance_resolve_covered');
+      return { data: { status: 'resolved', proposal_id: 'proposal-1', resolution: { type: 'already_covered' } } };
+    },
     from: (name: string) => { if (name === 'creative_dna_team_members') return member; assert.equal(name, 'uid_governance_evaluations'); return { insert: (value: any) => { inserts.push(value); return { select: () => ({ single: async () => ({ data: { id: 'stored', ...value } }) }) }; } }; },
   };
   const sandbox: any = { Response, URL, Deno: { env: { get: () => 'synthetic' } }, createClient: () => client, buildOwnerRulePlan, reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, assessReviewCandidates, REVIEW_EVALUATOR_VERSION };
@@ -95,7 +103,8 @@ test('preflight is read-only and never returns a fabricated evaluation', async (
   assert.equal(result.response.status, 200); assert.equal(result.response.headers.get('cache-control'), 'no-store');
   assert.equal(result.body.automatic_evaluation_id, null); assert.equal(result.inserts.length, 0);
   assert.equal(result.body.direct_rule_plan.eligible,false);
-  assert.deepEqual(result.rpcCalls.map(x=>x.name),['uid_rule_preflight']);
+  assert.deepEqual(result.rpcCalls.map(x=>x.name),['uid_review_preflight']);
+  assert.equal(result.body.queue_available,true);assert.equal(result.body.review_intent_hash,'intent-current');
   const removed = await invoke({ mode: 'review_preflight', proposal_id: 'proposal-1' }, { missing: true });
   assert.equal(removed.response.status, 404); assert.match(removed.body.error, /not found/);
 });
@@ -113,11 +122,11 @@ test('gateway pins route mode and proposal; forwards session and stale guidance 
     assert.equal(calls.length, 0);
     const headers = { Authorization: 'Bearer synthetic.admin', 'Content-Type': 'application/json' };
     await realFetch(base + '/api/admin/feedback/target/preflight', { headers });
-    const noApproval = await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST', headers, body: JSON.stringify({candidate_hash:'current'}) });
+    const noApproval = await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST', headers, body: JSON.stringify({review_intent_hash:'current'}) });
     assert.equal(noApproval.status,422);
-    const processed = await realFetch(base + '/api/admin/feedback/target/process', { method:'POST', headers, body:JSON.stringify({mode:'delete_all',proposal_id:'attacker',approve:true,candidate_hash:'current',evaluation_id:'forged',review:{visual_reviewed:true},actor_user_id:'attacker'}) });
+    const processed = await realFetch(base + '/api/admin/feedback/target/process', { method:'POST', headers, body:JSON.stringify({mode:'delete_all',proposal_id:'attacker',approve:true,review_intent_hash:'current',evaluation_id:'forged',review:{visual_reviewed:true},actor_user_id:'attacker'}) });
     assert.equal(processed.status,409);assert.equal(processed.headers.get('cache-control'),'no-store');
-    assert.deepEqual(calls[1],{mode:'process_review',proposal_id:'target',approve:true,candidate_hash:'current'});
+    assert.deepEqual(calls[1],{mode:'process_review',proposal_id:'target',approve:true,review_intent_hash:'current'});
     const response = await realFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all', proposal_id: 'attacker', candidate_hash: 'current' }) });
     assert.equal(response.status, 409); assert.equal((await response.json()).retry_guidance, 'Refresh');
     await realFetch(base + '/api/admin/governance/governance_list', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });

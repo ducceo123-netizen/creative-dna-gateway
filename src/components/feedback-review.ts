@@ -77,9 +77,26 @@ export function validateDirectRule(value:unknown):DirectRuleReview {
   (rule.eligible&&(!rule.owner_authorized||rule.blockers.length)))throw Error("Kết quả kiểm tra rule chưa đầy đủ. Hãy tải lại.");
  return rule;
 }
+export type ReviewRequest = {
+ id:string; proposal_id:string;
+ status:"queued"|"leased"|"blocked"|"merged"|"cancelled"|"superseded"|"expired";
+ created_at:string;updated_at:string;expires_at:string;
+ blockers?:Array<{code?:string;message?:string;next_action?:string}|string>;outcome?:Record<string,unknown>|null;
+};
+export function validateReviewRequest(value:unknown,proposalId:string):ReviewRequest|null {
+ if(value===null)return null;
+ const request=value as ReviewRequest;
+ if(!request||typeof request.id!=="string"||!request.id.trim()||request.proposal_id!==proposalId||
+  !["queued","leased","blocked","merged","cancelled","superseded","expired"].includes(request.status)||
+  ![request.created_at,request.updated_at,request.expires_at].every(x=>typeof x==="string"&&Number.isFinite(Date.parse(x)))||
+   (request.blockers!==undefined&&(!Array.isArray(request.blockers)||request.blockers.some(b=>typeof b!=="string"&&
+    (!b||typeof b!=="object"||Array.isArray(b)||[b.code,b.message,b.next_action].some(value=>value!==undefined&&typeof value!=="string"))))))
+  throw Error("Trạng thái hàng đợi không đầy đủ hoặc không đúng feedback. Hãy tải lại.");
+ return request;
+}
 export type FeedbackPreflight = {
   proposal:FeedbackProposal; candidate_hash:string; targets:ReviewTarget[]; baselines:ReviewBaseline[];
-  evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null; automatic_review?:AutomaticReview; direct_rule?:DirectRuleReview; direct_rule_plan?:DirectRulePlan;
+  evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null; automatic_review?:AutomaticReview; direct_rule?:DirectRuleReview; direct_rule_plan?:DirectRulePlan; review_request?:ReviewRequest|null; review_intent_hash?:string|null; queue_available?:boolean;
 };
 export type ReviewChecks = { scope:boolean; productTruth:boolean; visual:boolean; conflicts:boolean; zeroRegressions:boolean };
 export const emptyReviewChecks = ():ReviewChecks => ({scope:false,productTruth:false,visual:false,conflicts:false,zeroRegressions:false});
@@ -105,6 +122,10 @@ export function validatePreflight(value:unknown, proposalId:string):FeedbackPref
   if(data.direct_rule)validateDirectRule(data.direct_rule);
   if(data.direct_rule_plan)validateDirectRulePlan(data.direct_rule_plan,data);
   if(data.direct_rule?.eligible&&!data.direct_rule_plan?.eligible)throw Error("Chưa có bản hướng dẫn rule hợp lệ. Hãy tải lại.");
+  if(data.review_request!==undefined)validateReviewRequest(data.review_request,proposalId);
+  if(data.queue_available!==undefined&&typeof data.queue_available!=="boolean")throw Error("Trạng thái quyền review không hợp lệ.");
+  if(data.queue_available===false&&(data.review_intent_hash!==null||data.review_request!==null))throw Error("Dữ liệu hàng đợi không khớp quyền truy cập.");
+  if(data.review_intent_hash!==undefined&&!(data.queue_available===false&&data.review_intent_hash===null)&&(typeof data.review_intent_hash!=="string"||!data.review_intent_hash.trim()))throw Error("Ý duyệt hiện tại chưa xác định. Hãy tải lại.");
   return data;
 }
 export function validateAutomaticReview(value:unknown, candidateHash:string):AutomaticReview {
