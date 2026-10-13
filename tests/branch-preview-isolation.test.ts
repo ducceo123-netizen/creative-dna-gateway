@@ -21,8 +21,8 @@ test('preview response isolates direct navigation and keeps only nonce-authorize
     const bad=await originalFetch(base+'/api/branch-preview?url='+encodeURIComponent('https://user:password@example.myshopify.com:444/page')+'&selector=%23hero');assert.equal(bad.status,400);assert.equal(calls.length,1);
   } finally {globalThis.fetch=originalFetch;await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
-test('preview iframe and height listener preserve opaque-origin boundary', () => {
+test('temporarily removed Live Preview has no iframe, sizing listener or guide fetch on dashboard', () => {
   const source=readFileSync('src/App.tsx','utf8');
-  assert.ok(source.includes('sandbox="allow-scripts"'));assert.ok(source.includes('referrerPolicy="no-referrer"'));
-  assert.ok(source.includes('event.origin!=="null" || event.source!==previewFrame.current?.contentWindow'));
+  assert.doesNotMatch(source, /<iframe|uid-branch-preview-height|api\/branch-preview|api\/branch-guides/);
+  assert.match(source,/Output chính/);assert.match(source,/Input thường cần/);
 });

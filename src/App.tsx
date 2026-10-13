@@ -1,3 +1,4 @@
+import { boundedFetch } from "./request-recovery";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
@@ -129,15 +130,18 @@ export default function App() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
+  const resolveRequest=useRef<AbortController|null>(null);
+  useEffect(()=>()=>{resolveRequest.current?.abort();},[]);
+  useEffect(()=>{resolveRequest.current?.abort();resolveRequest.current=null;setLoading(false);},[currentPage]);
   const [responseData, setResponseData] = useState<any>(null);
   const [responseMeta, setResponseMeta] = useState<QueryMeta | null>(null);
   const [supportedBrands, setSupportedBrands] = useState(FALLBACK_BRANDS);
-  const [branchGuides, setBranchGuides] = useState<any[]>([]);
 
   useEffect(() => {
+    const controller=new AbortController();
     const loadCanonicalRoutes = async () => {
       try {
-        const res = await fetch("/api/routes", { method:"POST", headers:{ "Content-Type":"application/json" } });
+        const res = await boundedFetch("/api/routes", { method:"POST", headers:{ "Content-Type":"application/json" },signal:controller.signal });
         const data = await res.json();
         if (!res.ok || !Array.isArray(data?.routes)) return;
 
@@ -155,36 +159,14 @@ export default function App() {
 
         const order = ["pawfecthouse","giftsoul","soulprise"];
         const next = order.map(k=>grouped.get(k)).filter(Boolean) as { name:string; category:string; branches:string[] }[];
-        if (next.length) setSupportedBrands(next);
+        if (!controller.signal.aborted&&next.length) setSupportedBrands(next);
       } catch {
         // Keep fallback routes so dashboard remains usable if route discovery is temporarily unavailable.
       }
     };
     loadCanonicalRoutes();
 
-    const loadBranchGuides = async () => {
-      try {
-        const res = await fetch("/api/branch-guides", { cache:"no-store" });
-        const data = await res.json();
-        if (res.ok && Array.isArray(data?.guides)) setBranchGuides(data.guides);
-      } catch {
-        // Optional visual guide layer; branch selection remains usable without it.
-      }
-    };
-    loadBranchGuides();
-
-    const syncGuides = () => {
-      if (document.visibilityState === "visible") loadBranchGuides();
-    };
-    const guidePoll = window.setInterval(syncGuides, 10000);
-    document.addEventListener("visibilitychange", syncGuides);
-    window.addEventListener("focus", syncGuides);
-
-    return () => {
-      window.clearInterval(guidePoll);
-      document.removeEventListener("visibilitychange", syncGuides);
-      window.removeEventListener("focus", syncGuides);
-    };
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -232,36 +214,19 @@ export default function App() {
     return lines.join("\n");
   }, [useCommand, promptFields]);
 
-  const previewFrame = useRef<HTMLIFrameElement>(null);
-  const [previewHeight,setPreviewHeight] = useState(760);
-  const [previewExpanded,setPreviewExpanded] = useState(false);
-  useEffect(()=>{
-    setPreviewHeight(760);setPreviewExpanded(false);
-  },[brand,branch]);
-  useEffect(()=>{
-    const receive=(event:MessageEvent)=>{
-      if(event.origin!=="null" || event.source!==previewFrame.current?.contentWindow)return;
-      if(event.data?.type!=="uid-branch-preview-height")return;
-      const h=Number(event.data.height);
-      if(Number.isFinite(h)&&h>80)setPreviewHeight(Math.min(12000,Math.max(360,Math.ceil(h)+24)));
-    };
-    window.addEventListener("message",receive);
-    return ()=>window.removeEventListener("message",receive);
-  },[]);
   const selectedGuide = useMemo(() => {
-    const brandSlug = brand.toLowerCase();
-    const stored = branchGuides.find((g:any) => g.brand_slug === brandSlug && g.branch_slug === selectedBranchSlug) || null;
     return {
       ...(DEFAULT_BRANCH_HELP[selectedBranchSlug] || {
         usage_badge:"Creative DNA",
         description_vi:"Material guide cho branch này.",
         output_note:"Bám canonical Creative DNA của branch."
       }),
-      ...(stored || {}),
+
     };
-  }, [brand, branchGuides, selectedBranchSlug]);
+  }, [selectedBranchSlug]);
 
   const selectBranch = (nextBrand: string, nextBranch: string) => {
+    resolveRequest.current?.abort();resolveRequest.current=null;setLoading(false);
     setBrand(nextBrand);
     setBranch(nextBranch);
     setResponseData(null);
@@ -272,15 +237,19 @@ export default function App() {
   };
 
   const handleResolve = async () => {
+    if(resolveRequest.current)return;
+    const controller=new AbortController();resolveRequest.current=controller;
+    const current=()=>resolveRequest.current===controller&&!controller.signal.aborted;
     setLoading(true);
     const start = performance.now();
     try {
-      const res = await fetch("/api/resolve", {
+      const res = await boundedFetch("/api/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brand, branch }),
+        body: JSON.stringify({ brand, branch }),signal:controller.signal,
       });
       const data = await res.json();
+      if(!current())return;
       setResponseData(data);
       setResponseMeta({
         action: "resolve",
@@ -290,6 +259,7 @@ export default function App() {
         ok: res.ok,
       });
     } catch (err: any) {
+      if(!current())return;
       setResponseData({ error: err?.message || "Failed to resolve Creative DNA" });
       setResponseMeta({
         action: "resolve",
@@ -299,7 +269,7 @@ export default function App() {
         ok: false,
       });
     } finally {
-      setLoading(false);
+      if(current()){resolveRequest.current=null;setLoading(false);}
     }
   };
 
@@ -418,46 +388,10 @@ export default function App() {
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">{selectedGuide.usage_badge}</span>
-                  {selectedGuide.ratio_note && <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{selectedGuide.ratio_note}</span>}
-                </div>
-                <h3 className="text-xl font-extrabold text-slate-900">{selectedGuide.title_vi || `${brand} / ${branch}`}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed mt-2">{selectedGuide.description_vi}</p>
-              </div>
 
-              <div>
-                {selectedGuide.page_url && selectedGuide.css_selector && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <span className="text-xs text-slate-500">Xem nhanh material · Bấm “Xem đầy đủ” khi cần</span>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={()=>setPreviewExpanded(v=>!v)} className="border border-slate-200 px-4 py-2 text-xs font-semibold rounded-full">{previewExpanded?"Thu gọn":"Xem đầy đủ"}</button>
-                      <a href={selectedGuide.page_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 border border-slate-200 text-xs font-semibold rounded-full">Mở trang gốc ↗</a>
-                    </div>
-                  </div>
-                )}
-                <div className="relative rounded-xl border border-slate-200 bg-slate-100 overflow-hidden">
-                  {selectedGuide.page_url && selectedGuide.css_selector ? (
-                    <iframe
-                      key={`${selectedGuide.page_url}:${selectedGuide.css_selector}`}
-                      ref={previewFrame}
-                      sandbox="allow-scripts"
-                      referrerPolicy="no-referrer"
-                      src={`/api/branch-preview?url=${encodeURIComponent(selectedGuide.page_url)}&selector=${encodeURIComponent(selectedGuide.css_selector)}`}
-                      title={`${brand} ${branch} live UI preview`}
-                      scrolling={previewExpanded?"auto":"no"}
-                      style={{height:previewExpanded?previewHeight:(["onepage-system","ldp-system"].includes(selectedBranchSlug)?620:["seasonal-banner","home-hero","ldp-hero"].includes(selectedBranchSlug)?440:520)}}
-                      className="w-full bg-white rounded-xl"
-                    />
-                  ) : (
-                    <div className="text-center px-6">
-                      <Layers className="w-7 h-7 text-slate-300 mx-auto mb-2" />
-                      <div className="text-xs font-bold text-slate-500">Chưa có Live UI preview</div>
-                      <div className="text-[11px] text-slate-400 mt-1">Admin lưu Page URL + CSS selector để nhúng section thật.</div>
-                    </div>
-                  )}
-                  {!previewExpanded && selectedGuide.page_url && selectedGuide.css_selector && (
-                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent" aria-hidden="true" />
-                  )}
                 </div>
+                <h3 className="text-xl font-extrabold text-slate-900">{`${brand} / ${branch}`}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed mt-2">{selectedGuide.description_vi}</p>
               </div>
 
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">

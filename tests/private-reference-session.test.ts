@@ -2,23 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
+import {boundedFetch} from '../src/request-recovery.ts';
 
 /** Execute the actual component's auth helpers with isolated fetch/storage, not a copied implementation. */
 function helpers(fetcher: typeof fetch) {
   const source = readFileSync('src/components/AdminFeedback.tsx', 'utf8');
   const start = source.indexOf('  const refreshSession = async');
-  const end = source.indexOf('  const loadGuideRoutes = async', start);
+  const end = source.indexOf('  const loadTeam = async', start);
   assert.ok(start > 0 && end > start);
   const code = transformSync(source.slice(start, end) + '\nreturn { refreshSession, authFetch };', { loader: 'ts' }).code;
   const storage = new Map<string, string>([['creative_dna_admin_refresh_token', 'existing-refresh']]);
   const stateWrites: string[] = [];
   const deps = {
-    fetch: fetcher, token: 'existing.user.jwt',
+    boundedFetch:(url:string,init?:RequestInit)=>boundedFetch(url,init,fetcher),authSession:{current:new AbortController()}, fetch: fetcher, token: 'existing.user.jwt',
     sessionStorage: { getItem: (key: string) => storage.get(key) || null, setItem: (key: string, value: string) => storage.set(key, value) },
     setToken: (value: string) => stateWrites.push(value), setRefreshToken: (value: string) => stateWrites.push(value),
     setMessage: () => {}, logout: () => storage.clear(),
   };
-  const factory = new Function('deps', 'const {fetch, token, sessionStorage, setToken, setRefreshToken, setMessage, logout} = deps;\n' + code);
+  const factory = new Function('deps', 'const {boundedFetch, authSession, fetch, token, sessionStorage, setToken, setRefreshToken, setMessage, logout} = deps;\n' + code);
   return { ...factory(deps), storage, stateWrites };
 }
 test('private-panel refresh does not start after cancellation', async () => {
@@ -45,5 +46,5 @@ test('cancelled panel request carries AbortSignal into refresh and does not repl
   }) as typeof fetch);
   const pending = h.authFetch('/api/member/creative-references/reference.test', { signal: abort.signal });
   complete(Response.json({ access_token: 'new.user.jwt', refresh_token: 'new-refresh' }));
-  assert.equal((await pending).status, 401); assert.equal(refreshSignal, abort.signal); assert.equal(calls, 2); assert.deepEqual(h.stateWrites, []);
+  await assert.rejects(pending,/interrupted/); assert.equal(refreshSignal?.aborted, true); assert.equal(calls, 2); assert.deepEqual(h.stateWrites, []);
 });

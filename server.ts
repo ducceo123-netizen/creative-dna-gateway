@@ -1,5 +1,6 @@
 import { attachResearch, RESEARCH_GUIDANCE, RESEARCH_INPUT_SCHEMA, type ResearchContext } from "./supabase/functions/_shared/product-research.ts";
 import { UID_ATTACHMENT_OUTPUT_SCHEMA, UID_ATTACHMENT_INPUT_SCHEMA, UID_ATTACHMENT_META, UID_ATTACHMENT_DESCRIPTION, ingestUidAttachment, UidAttachmentError } from "./uid-brands-attachments.ts";
+import { gatewayJson, gatewayBudget, gatewayFailure, GATEWAY_TIMEOUTS, type GatewayBudget } from "./uid-gateway-upstream.ts";
 import express, { Request, Response } from "express";
 import path from "path";
 import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, ONEPAGE_TEMPLATE_DESC } from "./onepage-ui-template.ts";
@@ -22,27 +23,7 @@ const UPSTREAM_URL = process.env.CREATIVE_DNA_UPSTREAM_URL || DEFAULT_UPSTREAM_U
 const FEEDBACK_UPSTREAM_URL = process.env.CREATIVE_DNA_FEEDBACK_UPSTREAM_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-feedback-submit";
 const COMPILE_ONEPAGE_URL = process.env.CREATIVE_DNA_COMPILE_ONEPAGE_URL || "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-compile-onepage";
 
-// Read-only material preview metadata, matching the existing dashboard source.
-async function getPublicBranchPreviewGuides(): Promise<any[]> {
-  const key = "sb_publishable_NRcIK4NuC_MniBDuDhsHHQ_NlwpN0d_";
-  const endpoint = "https://wuonwttmkadwsmefjukv.supabase.co/rest/v1/branch_visual_guides?select=brand_slug,branch_slug,title_vi,description_vi,usage_badge,ratio_note,image_url,image_caption,page_url,css_selector,preview_mode&order=brand_slug.asc,branch_slug.asc";
-  const response = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" });
-  if (!response.ok) return [];
-  const raw: any = await response.json();
-  if (!Array.isArray(raw)) return [];
-  return raw.map((g: any) => ({
-    brand: String(g.brand_slug || "").toLowerCase(),
-    branch: String(g.branch_slug || "").toLowerCase(),
-    title: String(g.title_vi || "").slice(0, 140),
-    description: String(g.description_vi || "").slice(0, 500),
-    usageBadge: String(g.usage_badge || "").slice(0, 100),
-    ratio: String(g.ratio_note || "").slice(0, 100),
-    imageUrl: /^https:\/\//.test(String(g.image_url || "")) ? String(g.image_url) : "",
-    imageCaption: String(g.image_caption || "").slice(0, 250),
-    pageUrl: /^https:\/\//.test(String(g.page_url || "")) ? String(g.page_url) : "",
-    selector: String(g.css_selector || "").slice(0, 200),
-  })).filter((g:any) => g.brand && g.branch);
-}
+
 
 export const CANONICAL_PRODUCTION_ORIGIN = (process.env.UID_GATEWAY_ORIGIN || "https://uid-brands-gateway-preview.onrender.com").replace(/\/$/, "");
 export const CANONICAL_PRODUCTION_MCP_URL = `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`;
@@ -133,8 +114,9 @@ export function validateResolveInput(brand: unknown, branch: unknown): { brand: 
  * Strips raw internal URLs, tokens, database details, or stack traces.
  */
 export function sanitizePublicError(err: unknown, fallback = "Unable to resolve Creative DNA"): string {
-  console.error("[GATEWAY SERVER ERROR]", err);
+  // Do not log raw exceptions: they may contain prompts, signed URLs, or credentials.
   if (err instanceof Error) {
+    if (err.message === "Oversized object") return "Reference exceeds the preview size limit. Use a smaller reference or supported attachment.";
     if (
       err.message.includes("parameter") ||
       err.message.includes("required") ||
@@ -184,7 +166,7 @@ export type TrainingSpec = {
   admin_change_vi?:string;
 };
 
-async function persistFeedbackContextImage(upload:FeedbackContextImageUpload):Promise<FeedbackContextImage> {
+async function persistFeedbackContextImage(upload:FeedbackContextImageUpload, budget:GatewayBudget):Promise<FeedbackContextImage> {
   const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!serviceKey) throw new Error("feedback image storage is not configured");
   const clean=String(upload.data_base64||"").replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/,"").replace(/\s+/g,"");
@@ -194,8 +176,8 @@ async function persistFeedbackContextImage(upload:FeedbackContextImageUpload):Pr
   const ext=upload.mime_type==="image/png"?"png":upload.mime_type==="image/webp"?"webp":upload.mime_type==="image/gif"?"gif":"jpg";
   const safeRef=String(upload.reference_id||"context").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"context";
   const objectPath=`member/${Date.now()}-${safeRef}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const response=await fetch(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":upload.mime_type,"x-upsert":"false"},body:bytes});
-  if(!response.ok) throw new Error("unable to persist context image");
+  const response=await gatewayJson(`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/feedback-context/${objectPath}`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":upload.mime_type,"x-upsert":"false"},body:bytes}, { operation:"train_image", timeoutMs:GATEWAY_TIMEOUTS.train, budget });
+  if(!response.ok) throw Object.assign(new Error("unable to persist context image"), { gatewayResult: response });
   return {role:upload.role,image_url:`https://wuonwttmkadwsmefjukv.supabase.co/storage/v1/object/public/feedback-context/${objectPath}`,reference_id:upload.reference_id,caption:upload.caption};
 }
 
@@ -229,29 +211,34 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   if (cleanFeedback.length > 8000) throw new Error("feedback exceeds maximum allowed length");
   const cleanSubmitter = String(submitter_name || "").trim();
   if (!cleanSubmitter || /^(team member|member|unknown|anonymous|n\/a)$/i.test(cleanSubmitter)) throw new Error("submitter_name must be the exact member account/display name");
-  const persistedUploads=context_image_uploads?.length ? await Promise.all(context_image_uploads.slice(0,12).map(persistFeedbackContextImage)) : [];
+  const budget = gatewayBudget(GATEWAY_TIMEOUTS.train);
+  const normalizedSpec=validateTrainingSpec(training_spec);
+  let persistedUploads: FeedbackContextImage[] = [];
+  try { persistedUploads = context_image_uploads?.length ? await Promise.all(context_image_uploads.slice(0,12).map(upload => persistFeedbackContextImage(upload, budget))) : []; }
+  catch (error: any) { if (error.gatewayResult) return error.gatewayResult; throw error; }
   const persistedAssets=(context_asset_ids||[]).slice(0,12).map(contextAssetToImage);
   const normalizedImages=[...(context_images||[]),...persistedUploads,...persistedAssets].slice(0,12);
-  const normalizedSpec=validateTrainingSpec(training_spec);
   const enrichedFeedback=normalizedSpec ? `${cleanFeedback}\n\n--- AI INTERPRETED TRAINING SPEC ---\nObserved issue: ${normalizedSpec.observed_issue}\nGeneralized rule: ${normalizedSpec.generalized_rule}\nExpected behavior: ${normalizedSpec.expected_behavior}\nReject conditions: ${normalizedSpec.reject_conditions.join(" | ") || "None specified"}\nScope: ${normalizedSpec.scope}\nRule class: ${normalizedSpec.rule_class}\nEvidence summary: ${normalizedSpec.evidence_summary}\nConfidence: ${normalizedSpec.confidence}` : cleanFeedback;
   const feedbackBranch = isPawfectHouseNicheProductCombo(validated.brand, validated.branch) ? "LDP" : validated.branch;
   const routedFeedback = isPawfectHouseNicheProductCombo(validated.brand, validated.branch)
     ? `[Gateway material: Niche Product Combo]\n${enrichedFeedback}`
     : enrichedFeedback;
-  const response = await fetch(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:feedbackBranch,feedback:routedFeedback,submitter_name:cleanSubmitter,proposed_scope:normalizedSpec?.scope||proposed_scope||"niche-product-combo",context_images:normalizedImages,training_spec:normalizedSpec})});
-  return {status:response.status,ok:response.ok,data:await response.json()};
+  const response = await gatewayJson(FEEDBACK_UPSTREAM_URL,{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,branch:feedbackBranch,feedback:routedFeedback,submitter_name:cleanSubmitter,proposed_scope:normalizedSpec?.scope||proposed_scope||"niche-product-combo",context_images:normalizedImages,training_spec:normalizedSpec})}, { operation:"train", timeoutMs:GATEWAY_TIMEOUTS.train, budget });
+  return response;
 }
 
 export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown) {
  const validated=validateResolveInput(brand,"onepage-system");
- const response=await fetch(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})});
- const data = await response.json();
+ const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
+ const data = response.data;
  return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,research}) : data};
 }
 
 // Core gateway functions
 export async function fetchUpstream(payload: { action: "resolve"; brand: string; branch: string } | { action: "routes" }) {
-  const response = await fetch(UPSTREAM_URL, {
+  const timeoutMs = payload.action === "routes" ? GATEWAY_TIMEOUTS.routes : GATEWAY_TIMEOUTS.resolve;
+  const budget = gatewayBudget(timeoutMs);
+  const response = await gatewayJson(UPSTREAM_URL, {
     method: "POST",
     cache: "no-store",
     headers: {
@@ -259,14 +246,23 @@ export async function fetchUpstream(payload: { action: "resolve"; brand: string;
       "User-Agent": "Creative-DNA-Gateway/1.0",
     },
     body: JSON.stringify(payload),
-  });
+  }, { operation: payload.action, timeoutMs, budget, readOnly: true });
 
-  const rawJson = await response.json();
+  const rawJson = response.data;
+  if (response.ok && payload.action === "routes" && !Array.isArray(rawJson?.routes)) return gatewayFailure(budget, "routes", "UPSTREAM_INVALID_RESPONSE", 502, true);
   return {
     status: response.status,
     ok: response.ok,
     data: rawJson,
   };
+}
+
+export async function loadLauncherData() {
+  const upstream = await listCreativeDnaRoutes();
+  // Preview metadata is not consumed by the launcher. Keep its output field compatible
+  // without starting optional network work or delaying the intake form.
+  const safe = sanitizeRoutesData(upstream.data);
+  return { ...upstream, data: { ...(upstream.ok ? {} : upstream.data), routes: upstream.ok ? safe.routes : [], guides: [] } };
 }
 
 const NICHE_PRODUCT_COMBO_SLUG = "niche-product-combo";
@@ -384,7 +380,7 @@ export async function listCreativeDnaRoutes() {
     action: "routes",
   });
 
-  if (!result.ok || !Array.isArray(result.data?.routes)) return result;
+  if (!result.ok) return result;
 
   const exists = result.data.routes.some((r: any) =>
     normalizeRouteKey(String(r.brand || "")) === "pawfecthouse" &&
@@ -609,16 +605,18 @@ export function createMcpServer(): McpServer {
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
   }, async ({ stage, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images }) => {
     let routes: any[] = [];
+    let routeFailure: Record<string, unknown> = {};
     if (!stage || stage === "launcher") {
       try {
         const upstream = await listCreativeDnaRoutes();
-        routes = sanitizeRoutesData(upstream.data).routes;
+        routes = upstream.ok ? sanitizeRoutesData(upstream.data).routes : [];
+        if (!upstream.ok) routeFailure = { routes_error: upstream.data };
       } catch { /* Native form can still present its fields with empty route choices. */ }
     }
     const currentStage = stage || "launcher";
     return {
       content: [{ type: "text" as const, text: NATIVE_FALLBACK_TEXT }],
-      structuredContent: { ...UID_NATIVE_WORKFLOW, stage: currentStage, form: UID_NATIVE_WORKFLOW.steps[currentStage], routes, assets: assets || [], result_summary: result_summary || "", result_content: result_content || "", result_links: result_links || [], result_images: result_images || [],
+      structuredContent: { ...UID_NATIVE_WORKFLOW, stage: currentStage, form: UID_NATIVE_WORKFLOW.steps[currentStage], routes, ...routeFailure, assets: assets || [], result_summary: result_summary || "", result_content: result_content || "", result_links: result_links || [], result_images: result_images || [],
         ...(currentStage !== "launcher" ? { review_context: createReviewContext({ stage: currentStage, task_id, content_version, retry_id, assets }) } : {}) },
     };
   });
@@ -632,11 +630,10 @@ export function createMcpServer(): McpServer {
     
   }, async ({ navigation_id }) => {
     try {
-      const upstream = await listCreativeDnaRoutes();
-      const safe = sanitizeRoutesData(upstream.data);
-      return { content: [{ type: "text" as const, text: "UID Brands launcher ready. Use the integrated task form." }], structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", routes: safe.routes, guides: await getPublicBranchPreviewGuides().catch(() => []) } };
+      const upstream = await loadLauncherData();
+      return { content: [{ type: "text" as const, text: upstream.ok ? "UID Brands launcher ready. Use the integrated task form." : "UID Brands routes could not load. Keep your input and retry the read." }], isError: !upstream.ok, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", ...upstream.data } };
     } catch (err) {
-      return { content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", routes: [], error: "Routes temporarily unavailable" } };
+      return { content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } };
     }
   });
 
@@ -765,7 +762,7 @@ export function createMcpServer(): McpServer {
     async () => {
       try {
         const upstream = await listCreativeDnaRoutes();
-        const safeData = sanitizeRoutesData(upstream.data);
+        const safeData = upstream.ok ? sanitizeRoutesData(upstream.data) : upstream.data;
         return {
           content: [
             {
@@ -776,7 +773,6 @@ export function createMcpServer(): McpServer {
           isError: !upstream.ok,
         };
       } catch (err: any) {
-        console.error("[MCP LIST ROUTES ERROR]", err);
         return {
           content: [
             {
@@ -1234,7 +1230,7 @@ export function createApp(): express.Application {
       const upstream = await resolveCreativeDna(validated.brand, validated.branch,{source_url:input.source_url ?? req.query.source_url,source_type:input.source_type ?? req.query.source_type,research:input.research});
       if (!upstream.ok) {
         return res.status(upstream.status).json({
-          error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
+          ...upstream.data, error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
         });
       }
       return res.status(upstream.status).json(upstream.data);
@@ -1355,12 +1351,11 @@ export function createApp(): express.Application {
       const upstream = await listCreativeDnaRoutes();
       if (!upstream.ok) {
         return res.status(upstream.status).json({
-          error: "Unable to list Creative DNA routes",
+          ...upstream.data, error: upstream.data?.error || "Unable to list Creative DNA routes",
         });
       }
       return res.status(upstream.status).json(sanitizeRoutesData(upstream.data));
     } catch (err: any) {
-      console.error("[ROUTES ERROR]", err);
       return res.status(500).json({ error: "Unable to list Creative DNA routes" });
     }
   });
@@ -1376,7 +1371,7 @@ export function createApp(): express.Application {
       const upstream = await resolveCreativeDna(validated.brand, validated.branch,{source_url:input.source_url ?? req.query.source_url,source_type:input.source_type ?? req.query.source_type,research:input.research});
       if (!upstream.ok) {
         return res.status(upstream.status).json({
-          error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
+          ...upstream.data, error: typeof upstream.data?.error === "string" ? upstream.data.error.replace(/https?:\/\/[^\s]+/gi, "[redacted]") : "Unable to resolve Creative DNA",
         });
       }
       return res.status(upstream.status).json(upstream.data);
@@ -1449,12 +1444,11 @@ export function createApp(): express.Application {
       const upstream = await listCreativeDnaRoutes();
       if (!upstream.ok) {
         return res.status(upstream.status).json({
-          error: "Unable to list Creative DNA routes",
+          ...upstream.data, error: upstream.data?.error || "Unable to list Creative DNA routes",
         });
       }
       return res.status(upstream.status).json(sanitizeRoutesData(upstream.data));
     } catch (err: any) {
-      console.error("[TOOLS LIST ROUTES ERROR]", err);
       return res.status(500).json({ error: "Unable to list Creative DNA routes" });
     }
   });

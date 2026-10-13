@@ -50,7 +50,7 @@ class Element {
 function output(stage: typeof REVIEW_STAGES[number] = "content_approval", version = "v1", task = "task-A") {
   return { stage, assets: [{ id: "asset-1", element: "Banner", position: "desktop" }], review_context: createReviewContext({ stage, task_id: task, content_version: version }) };
 }
-function setup(data: any = output(), options: { send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
+function setup(data: any = output(), options: { timers?: { setTimeout: any; clearTimeout: any }; send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
   const document = { activeElement: null } as FocusDocument;
   document.body = new Element("body", document);
   const nodes = new Map<string, Element>();
@@ -72,8 +72,8 @@ function setup(data: any = output(), options: { send?: (message: any) => Promise
   $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
   const window = { openai, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
-  vm.runInNewContext(script, { window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
-  return { $, nodes, messages, openai, storage, document, globals(globals: any) { events["openai:set_globals"]({ detail: { globals } }); }, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
+  vm.runInNewContext(script, { setTimeout: options.timers?.setTimeout || setTimeout, clearTimeout: options.timers?.clearTimeout || clearTimeout, window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
+  return { $, nodes, messages, openai, storage, document, snapshot() { events.pagehide({}); return openai.widgetState; }, globals(globals: any) { events["openai:set_globals"]({ detail: { globals } }); }, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
     choose(value: string) { const action = REVIEW_STEPS[openai.toolOutput.stage as typeof REVIEW_STAGES[number]].choices.findIndex(x => x.value === value); return $("reviewChoices").children[action].click(); },
     submit() { return $("run").onclick!(); } };
 }
@@ -95,12 +95,12 @@ test("a non-feedback action sends on one click with the exact version and action
   assert.ok(message.includes('"action":"approve"'));
   assert.doesNotMatch(message, /authentication|Tuân thủ yêu cầu xác nhận|REAL USER ACTION|WIDGET ACTION IS AUTHORITATIVE/);
   assert.equal(ui.$("run").disabled, true);
-  assert.match(ui.$("flowState").textContent, /Chờ kết quả mới/);
+  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
 });
 
 test("pending double-clicks, successful re-clicks and same-output host rerenders send once", async () => {
   const wait = deferred(); const data = output(); const ui = setup(data, { send: () => wait.promise });
-  const first = ui.submit(); await ui.submit(); assert.equal(ui.messages.length, 1);
+  const first = ui.submit(); await flushAttachmentWork(); await ui.submit(); assert.equal(ui.messages.length, 1);
   ui.update(data); await ui.submit(); assert.equal(ui.messages.length, 1);
   wait.resolve(); await first; await ui.submit(); assert.equal(ui.messages.length, 1);
   ui.update({ structuredContent: data }); await ui.submit(); assert.equal(ui.messages.length, 1);
@@ -108,19 +108,19 @@ test("pending double-clicks, successful re-clicks and same-output host rerenders
 
 test("successful submits survive remount through widget state and session storage independently", async () => {
   const data = output(); const ui = setup(data); await ui.submit();
-  const fromState = setup(data, { state: ui.openai.widgetState }); await fromState.submit();
+  const fromState = setup(data, { state: ui.snapshot() }); await fromState.submit();
   const fromStorage = setup(data, { storage: ui.storage }); await fromStorage.submit();
   assert.equal(fromState.messages.length, 0); assert.equal(fromStorage.messages.length, 0);
   assert.equal(fromState.$("run").disabled, true); assert.equal(fromStorage.$("run").disabled, true);
 });
 
-test("a rejected send remains retryable, retains feedback and clears the prior error on retry", async () => {
-  let fail = true; const ui = setup(output(), { send: async () => { if (fail) throw Error("host unavailable"); } });
+test("a rejected dispatched send stays unknown and cannot be replayed", async () => {
+  const ui = setup(output(), { send: async () => { throw Error("host unavailable"); } });
   ui.choose("revise"); ui.$("reviewFeedback").value = "Keep the product color";
-  await ui.submit(); assert.equal(ui.$("run").disabled, false); assert.match(ui.$("error").textContent, /Gửi thất bại/);
+  await ui.submit(); assert.equal(ui.$("run").disabled, true); assert.match(ui.$("error").textContent, /Chưa xác định/);
   assert.equal(ui.$("reviewFeedback").value, "Keep the product color");
-  fail = false; await ui.submit(); assert.equal(ui.messages.length, 2);
-  assert.equal(ui.$("error").textContent, ""); assert.equal(ui.$("run").disabled, true);
+  await ui.submit(); assert.equal(ui.messages.length, 1);
+  assert.equal(ui.$("checkRequest").hidden, false);
 });
 
 test("missing bridge fails honestly without persisting success and can recover", async () => {
@@ -139,7 +139,7 @@ test("new revision and different task reset old approval without carrying stale 
 });
 
 test("a late completion for an old outcome cannot lock or alter a newer review", async () => {
-  const wait = deferred(); const ui = setup(output(), { send: () => wait.promise }); const old = ui.submit();
+  const wait = deferred(); const ui = setup(output(), { send: () => wait.promise }); const old = ui.submit(); await flushAttachmentWork();
   ui.update(output("content_approval", "v2")); assert.equal(ui.$("run").disabled, false);
   wait.resolve(); await old; assert.equal(ui.$("run").disabled, false);
   assert.doesNotMatch(ui.$("flowState").textContent, /Đã gửi/);
@@ -181,18 +181,18 @@ test("successful or pending review can return to an enabled new-task launcher", 
   }
 });
 
-test("legacy widgets get unique fallback identities and still deduplicate their own remount", async () => {
+test("legacy outcomes deduplicate conservative session remounts; different visible outcomes get fresh identity", async () => {
   const legacy = { stage: "content_approval" }; const storage = new Map<string, string>();
   const first = setup(legacy, { storage }); await first.submit();
-  const second = setup(legacy, { storage }); assert.equal(second.$("run").disabled, false); await second.submit();
-  assert.notEqual(first.openai.widgetState.privateContent.legacyReviewId, second.openai.widgetState.privateContent.legacyReviewId);
-  const remount = setup(legacy, { state: first.openai.widgetState, storage }); await remount.submit(); assert.equal(remount.messages.length, 0);
+  const repeated = setup(legacy,{storage});await repeated.submit();assert.equal(repeated.messages.length,0);
+  const second = setup({...legacy,result_content:"Different actual outcome"}, { storage }); assert.equal(second.$("run").disabled, false); await second.submit();
+  assert.notEqual(first.snapshot().privateContent.legacyReviewId, second.openai.widgetState.privateContent.legacyReviewId);
+  const remount = setup(legacy, { state: first.snapshot(), storage }); await remount.submit(); assert.equal(remount.messages.length, 0);
 });
 
-test("host state persistence failure does not turn an accepted send into a retry", async () => {
-  const ui = setup(output()); ui.openai.setWidgetState = () => { throw Error("state unavailable"); };
-  await ui.submit(); await ui.submit(); assert.equal(ui.messages.length, 1); assert.equal(ui.$("run").disabled, true);
-  const remount = setup(output(), { storage: ui.storage }); await remount.submit(); assert.equal(remount.messages.length, 0);
+test("host state persistence failure blocks dispatch before any send", async () => {
+ const ui=setup(output(),{host:{setWidgetState(){throw Error("unavailable");}}});
+ await ui.submit();assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);assert.match(ui.$("draftNote").textContent,/Chưa lưu/);
 });
 
 test("an explicit downstream-failure retry enables a fresh submit without automatically replaying", async () => {
@@ -214,7 +214,7 @@ test("guided view identifies current step, missing input and next action without
   assert.match(ui.$("nextAction").textContent, /Bắt đầu/);
   await ui.submit(); await ui.submit();
   assert.equal(ui.messages.length, 1);
-  assert.match(ui.$("flowState").textContent, /Chờ phản hồi/);
+  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
   assert.doesNotMatch(ui.$("flowState").textContent, /đang tạo|đã hoàn tất|đang xử lý/i);
   assert.equal(ui.$("newBrief").hidden, false);
   ui.$("newBrief").click(); assert.equal(ui.$("run").disabled, false);
@@ -229,7 +229,7 @@ test("brief draft keeps edits when refreshed routes arrive and successful duplic
   ui.$("custom").value = "Warm lighting"; ui.$("custom").dispatch("blur");
   ui.update({ stage: "launcher", routes }); assert.equal(ui.$("brand").value, "giftsoul");
   assert.equal(ui.$("custom").value, "Warm lighting"); await ui.submit();
-  const restored = setup({ stage: "launcher", routes }, { state: ui.openai.widgetState, storage: ui.storage });
+  const restored = setup({ stage: "launcher", routes }, { state: ui.snapshot(), storage: ui.storage });
   assert.equal(restored.$("url").value, "https://example.com/products/gift");
   await restored.submit(); assert.equal(restored.messages.length, 0);
 });
@@ -240,7 +240,7 @@ test("feedback drafts survive Back, mode changes, remount and returning to exact
   const textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Preserve the logo"; textarea.oninput!();
   ui.$("modeTrain").click(); ui.$("backToReview").click(); ui.choose("feedback");
   assert.equal(ui.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
-  const restored = setup(first, { state: ui.openai.widgetState });
+  const restored = setup(first, { state: ui.snapshot() });
   assert.equal(restored.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
   ui.update(output("asset_review", "v2")); ui.choose("feedback");
   assert.equal(ui.$("variableItems").querySelectorAll("textarea").length, 0);
@@ -274,10 +274,10 @@ test("image evidence uses documented structured state before a prompt-only follo
   const input = fileInput(ui); input.files = [new File([new Uint8Array([137,80,78,71,13,10,26,10])], "reference.png", { type: "image/png" })]; input.onchange!();
   await flushAttachmentWork(); await ui.submit();
   assert.ok(events.includes("send")); assert.ok(events.indexOf("image-state") < events.indexOf("send"));
-  assert.deepEqual(Array.from(ui.openai.widgetState.imageIds), ["file-image-1"]);
-  assert.match(ui.openai.widgetState.modelContent.instruction, /untrusted/);
+  assert.deepEqual(Array.from(ui.snapshot().imageIds), ["file-image-1"]);
+  assert.match(ui.snapshot().modelContent.instruction, /untrusted/);
   await ui.choose("approve"); ui.choose("revise");
-  assert.deepEqual(Array.from(ui.openai.widgetState.imageIds), ["file-image-1"]);
+  assert.deepEqual(Array.from(ui.snapshot().imageIds), ["file-image-1"]);
 });
 
 test("pending or failed attachments prevent an accidental text-only submit; remove recovers", async () => {
@@ -304,22 +304,22 @@ test("local document extracted content and truncation reach prompt and model sta
   assert.match(ui.messages[0].prompt, /"extracted_text":"source fact/);
   assert.match(ui.messages[0].prompt, /"truncated":true/);
   assert.match(ui.messages[0].prompt, /untrusted reference data/);
-  assert.equal(ui.openai.widgetState.modelContent.attachments[0].truncated, true);
-  assert.deepEqual(Array.from(ui.openai.widgetState.imageIds), []);
+  assert.equal(ui.snapshot().modelContent.attachments[0].truncated, true);
+  assert.deepEqual(Array.from(ui.snapshot().imageIds), []);
 });
 
 test("serialized host snapshots preserve the latest unblurred brief, content and group feedback edits", () => {
   const brief = setup({ stage: "launcher" });
   brief.$("url").value = "https://example.com/latest"; brief.$("url").dispatch("input");
   brief.$("custom").value = "Latest brief keystroke"; brief.$("custom").dispatch("input");
-  const briefRestored = setup({ stage: "launcher" }, { state: brief.openai.widgetState });
+  const briefRestored = setup({ stage: "launcher" }, { state: brief.snapshot() });
   assert.equal(briefRestored.$("url").value, "https://example.com/latest");
   assert.equal(briefRestored.$("custom").value, "Latest brief keystroke");
   const content = setup(output()); content.choose("revise"); content.$("reviewFeedback").value = "Latest content edit"; content.$("reviewFeedback").oninput!();
-  assert.equal(setup(output(), { state: content.openai.widgetState }).$("reviewFeedback").value, "Latest content edit");
+  assert.equal(setup(output(), { state: content.snapshot() }).$("reviewFeedback").value, "Latest content edit");
   const assets = setup(output("asset_review")); assets.choose("feedback"); assets.$("variableKeys").children[0].click(); assets.$("createSharedFeedback").click();
   const area = assets.$("variableItems").querySelectorAll("textarea")[0]; area.value = "Latest group edit"; area.oninput!();
-  assert.equal(setup(output("asset_review"), { state: assets.openai.widgetState }).$("variableItems").querySelectorAll("textarea")[0].value, "Latest group edit");
+  assert.equal(setup(output("asset_review"), { state: assets.snapshot() }).$("variableItems").querySelectorAll("textarea")[0].value, "Latest group edit");
 });
 
 test("cleared draft inputs stay empty through same-output host updates", () => {
@@ -345,7 +345,7 @@ test("confirmed delivery keeps the fourth step and exposes revise/new-task witho
   assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), ["Sửa tiếp", "Task mới"]);
   await ui.choose("new_task");
   assert.equal(ui.messages.length, 1); assert.match(ui.messages[0].prompt, /launch_creative_dna/);
-  assert.match(ui.$("flowState").textContent, /Chờ kết quả mới/);
+  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
 });
 
 test("delivery revise opens asset feedback without requiring an invisible feedback draft", async () => {
@@ -377,21 +377,18 @@ test("real action-button double clicks and remounts send once; feedback selectio
   const wait = deferred(); const data = output(); const ui = setup(data, { send: () => wait.promise });
   const first = ui.choose("approve"); await ui.choose("approve");
   assert.equal(ui.$("reviewChoices").children.every(x => x.disabled), true);
-  await Promise.resolve(); assert.equal(ui.messages.length, 1);
+  await flushAttachmentWork(); assert.equal(ui.messages.length, 1);
   wait.resolve(); await first;
   assert.equal(ui.$("reviewChoices").children[0].disabled, true);
   assert.match(ui.$("reviewChoices").children[0].textContent, /Đã gửi/);
   ui.choose("revise"); assert.equal(ui.messages.length, 1); assert.equal(ui.$("run").hidden, false);
   assert.equal(ui.$("reviewChoices").children[0].disabled, true);
-  const restored = setup(data, { state: ui.openai.widgetState }); await restored.choose("approve"); assert.equal(restored.messages.length, 0);
+  const restored = setup(data, { state: ui.snapshot() }); await restored.choose("approve"); assert.equal(restored.messages.length, 0);
 });
 
-test("one-click failed send remains retryable without claiming execution", async () => {
-  let fail = true; const ui = setup(output(), { send: async () => { if (fail) throw Error("host denied"); } });
-  await ui.choose("approve"); assert.equal(ui.$("reviewChoices").children[0].disabled, false);
-  assert.match(ui.$("error").textContent, /host denied/); assert.doesNotMatch(ui.$("flowState").textContent, /hoàn tất|đang tạo/i);
-  fail = false; await ui.choose("approve"); assert.equal(ui.messages.length, 2);
-  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
+test("one-click ambiguous send cannot replay and offers a read-only check", async () => {
+ const ui=setup(output(),{send:async()=>{throw Error("host denied");}});await ui.choose("approve");await ui.choose("approve");assert.equal(ui.messages.length,1);assert.equal(ui.$("checkRequest").hidden,false);
+ await ui.$("checkRequest").click();assert.equal(ui.messages.length,2);assert.match(ui.messages[1].prompt,/Read and reconcile only/);assert.match(ui.messages[1].prompt,/Do not replay/);
 });
 
 test("delivery navigation directly calls registered read-only tools and preserves the outcome", async () => {
@@ -441,7 +438,7 @@ test("image previews use fresh host URLs, never persist signed URLs, and ignore 
   await Promise.resolve(); assert.equal(calls.length, 1); assert.equal(calls[0].fileId, "file-image-1");
   ui.update(output("asset_review", "v2")); wait.resolve(); await flushAttachmentWork();
   assert.equal(ui.$("resultImages").children.length, 0);
-  assert.doesNotMatch(JSON.stringify(ui.openai.widgetState), /signature=ephemeral/);
+  assert.doesNotMatch(JSON.stringify(ui.snapshot()), /signature=ephemeral/);
   const loaded = setup(data, { host: { getFileDownloadUrl: async () => ({ downloadUrl: signedUrl }) } });
   await flushAttachmentWork(); const img = loaded.$("resultImages").children[0].children[0] as any;
   assert.equal(img.tag, "img"); assert.equal(img.src, signedUrl); assert.equal(img.referrerPolicy, "no-referrer");
@@ -460,10 +457,10 @@ test("unavailable or unsafe image previews retain attachment labels and never ad
 test("Task mới starts a fresh brief after an earlier brief was submitted in the same widget", async () => {
   const ui = setup({ stage: "launcher" }, { host: { callTool: async () => ({ structuredContent: { stage: "launcher" } }) } });
   ui.$("url").value = "https://example.com/product"; await ui.submit();
-  const oldBriefId = ui.openai.widgetState.privateContent.briefId;
+  const oldBriefId = ui.snapshot().privateContent.briefId;
   assert.equal(ui.$("run").disabled, true);
   ui.update(output("complete")); await ui.choose("new_task");
-  assert.notEqual(ui.openai.widgetState.privateContent.briefId, oldBriefId);
+  assert.notEqual(ui.snapshot().privateContent.briefId, oldBriefId);
   assert.equal(ui.$("url").value, "https://example.com/product");
   assert.equal(ui.$("run").disabled, false); assert.equal(ui.$("run").textContent, "Bắt đầu");
   await ui.submit(); assert.equal(ui.messages.length, 2);
@@ -518,7 +515,7 @@ for (const mode of ["feedback", "train"]) for (const echo of ["sync", "microtask
     // A selection deletion models Backspace without refocusing the control.
     area.setSelectionRange(3, 4); enterAtSelection(ui, ""); await Promise.resolve();
     assert.equal(area.value, "abXef"); assert.equal(area.selectionStart, 3);
-    const draft = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id];
+    const draft = ui.snapshot().privateContent.reviewDrafts[data.review_context.review_id];
     assert.equal(draft.variableItems[0].text, "abXef"); assert.equal(ui.messages.length, 0);
   });
 }
@@ -538,7 +535,7 @@ test("text paste and Vietnamese composition retain the same node, selection and 
   assert.equal(area.composing, true); assert.deepEqual([area.selectionStart, area.selectionEnd], [2, 2]);
   area.setSelectionRange(0, 2); enterAtSelection(ui, "Góp", false); await Promise.resolve();
   assert.equal(area.value, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
-  assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems[0].text, area.value);
+  assert.equal(ui.snapshot().privateContent.reviewDrafts[data.review_context.review_id].variableItems[0].text, area.value);
   assert.equal(ui.messages.length, 0);
 });
 
@@ -549,7 +546,7 @@ test("equal cloned, wrapped and reordered tool outputs do not rebuild the review
   function reverseKeys(value: any): any { return Array.isArray(value) ? value.map(reverseKeys) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).reverse().map(([key, item]) => [key, reverseKeys(item)])) : value; }
   ui.update({ structuredContent: reverseKeys(JSON.parse(JSON.stringify(data))) });
   assert.ok(ui.$("reviewChoices").children[0] === choice, "DOM identity/focus must stay unchanged"); assert.ok(ui.$("workflowSteps").children[0] === step, "DOM identity/focus must stay unchanged");
-  ui.globals({ theme: "dark", widgetState: ui.openai.widgetState });
+  ui.globals({ theme: "dark", widgetState: ui.snapshot() });
   assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged"); assert.equal(ui.messages.length, 0);
 });
 
@@ -578,12 +575,12 @@ test("multi-select and removing or adding other groups preserve the active texta
   assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === active, "DOM identity/focus must stay unchanged");
   // group-1 already survives; adding now produces the same persisted key.
   addOverallGroup(ui); assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.notEqual(groupArea(ui, 1), active);
-  const groups = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems;
+  const groups = ui.snapshot().privateContent.reviewDrafts[data.review_context.review_id].variableItems;
   assert.equal(groups[0].key, groups[1].key); assert.equal(groups[0].text, "Keep group two"); assert.equal(groups[1].text, "");
   ui.$("variableKeys").querySelectorAll("button").find(x => x.textContent.includes("Chọn cả nhóm"))!.click();
   assert.match(ui.$("targetCount").textContent, /Đã chọn 2 mục/); ui.$("createSharedFeedback").click();
   assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.deepEqual([active.selectionStart, active.selectionEnd], [2, 6]);
-  const latest = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems;
+  const latest = ui.snapshot().privateContent.reviewDrafts[data.review_context.review_id].variableItems;
   assert.deepEqual(Array.from(latest[2].targets), ["asset-1", "asset-2"]);
   ui.$("variableItems").querySelectorAll("button")[1].click();
   assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.equal(active.value, "Keep group two");
@@ -599,7 +596,7 @@ test("real task, version and retry transitions isolate drafts, then restore only
     assert.equal(ui.$("run").disabled, false); assert.equal(ui.messages.length, 0);
   }
   ui.update(first); assert.equal(groupArea(ui).value, "Draft for first review"); assert.equal(ui.$("run").textContent, "Gửi đề xuất Train");
-  const restored = setup(first, { state: ui.openai.widgetState, globalsEcho: "sync" });
+  const restored = setup(first, { state: ui.snapshot(), globalsEcho: "sync" });
   assert.equal(groupArea(restored).value, "Draft for first review"); assert.equal(restored.messages.length, 0);
 });
 
@@ -666,9 +663,78 @@ test("whole-section and mixed asset selection retain exact IDs through metadata 
   ui.$("modeTrain").click(); ui.$("modeFeedback").click();
   assert.ok(groupArea(ui) === area); assert.ok(ui.document.activeElement === area);
   assert.equal(area.valueWrites, writes); assert.deepEqual([area.selectionStart, area.selectionEnd], [2, 5]);
-  const draft = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id];
+  const draft = ui.snapshot().privateContent.reviewDrafts[data.review_context.review_id];
   assert.deepEqual(draft.variableItems[0].targets, ["onepage_product-wyl_01.webp", "opaque-benefit", "banner_mobile"]);
   assert.equal(draft.variableItems[0].text, "Sửa màu cả nhóm");
   await ui.submit();
   for (const id of draft.variableItems[0].targets) assert.ok(ui.messages[0].prompt.includes("[asset_id=" + id + "]"));
+});
+
+function fakeClock(){let sequence=0;const tasks=new Map<number,{delay:number;fn:()=>void}>();return {setTimeout(fn:()=>void,delay:number){const id=++sequence;tasks.set(id,{fn,delay});return id;},clearTimeout(id:number){tasks.delete(id);},fire(delay:number){for(const [id,task] of [...tasks])if(task.delay===delay){tasks.delete(id);task.fn();}},get size(){return tasks.size;}};}
+
+test("a pending send is durably deduplicated before completion and after remount",async()=>{
+ const wait=deferred(),data=output(),clock=fakeClock();const ui=setup(data,{send:()=>wait.promise,timers:clock});const pending=ui.choose("approve");await flushAttachmentWork();
+ assert.equal(ui.messages.length,1);const state=JSON.parse(JSON.stringify(ui.openai.widgetState));const records=state.privateContent.requestRecords;
+ assert.equal(Object.values(records).length,1);assert.equal((Object.values(records)[0] as any).status,"sending");assert.match(Object.keys(records)[0],/^request-v2:[a-f0-9]{32}$/);
+ const fromState=setup(data,{state,timers:fakeClock()});await fromState.choose("approve");assert.equal(fromState.messages.length,0);assert.equal(fromState.$("checkRequest").hidden,false);
+ const fromStorage=setup(data,{storage:ui.storage,timers:fakeClock()});await fromStorage.choose("approve");assert.equal(fromStorage.messages.length,0);
+ clock.fire(15000);await pending;assert.equal(ui.$("reviewFeedback").disabled,false);assert.equal(ui.$("checkRequest").hidden,false);await ui.choose("approve");assert.equal(ui.messages.length,1);
+ wait.resolve();await flushAttachmentWork();assert.match(ui.$("flowState").textContent,/Chưa xác định/);
+});
+
+test("state publication timeout blocks send and does not overlap unresolved writes",async()=>{
+ const wait=deferred(),clock=fakeClock();let writes=0;const ui=setup(output(),{timers:clock,host:{setWidgetState(){writes++;return wait.promise;}}});
+ const pending=ui.choose("approve");await flushAttachmentWork();assert.equal(writes,1);clock.fire(15000);await pending;assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);assert.match(ui.$("draftNote").textContent,/Chưa xác nhận/);
+ const retry=ui.submit();await flushAttachmentWork();assert.equal(writes,1);clock.fire(15000);await retry;assert.equal(ui.messages.length,0);wait.resolve();await flushAttachmentWork();
+});
+
+test("new review while persistence is pending cancels the old unsent dispatch",async()=>{
+ const wait=deferred(),clock=fakeClock();const ui=setup(output(),{timers:clock,host:{setWidgetState(){return wait.promise;}}});const pending=ui.choose("approve");ui.update(output("content_approval","v2"));wait.resolve();await pending;assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);
+});
+
+test("typing coalesces host writes and blur flushes the latest draft without changing focus",()=>{
+ const clock=fakeClock();let writes=0;const ui=setup(output("asset_review"),{timers:clock,host:{setWidgetState(state:any){writes++;this.widgetState=JSON.parse(JSON.stringify(state));}}});ui.choose("feedback");addOverallGroup(ui);const area=groupArea(ui);area.focus();
+ for(const char of "abcdefghijklmnopqrst")enterAtSelection(ui,char);
+ assert.equal(writes,0);clock.fire(200);assert.equal(writes,1);assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[output("asset_review").review_context.review_id].variableItems[0].text,area.value);assert.equal(ui.document.activeElement,area);
+ enterAtSelection(ui,"Z");area.dispatch("blur");assert.equal(writes,2);assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[output("asset_review").review_context.review_id].variableItems[0].text,area.value);
+});
+
+test("state writes serialize and flush the latest edit after an older write settles",async()=>{
+ const clock=fakeClock(),first=deferred();const snapshots:any[]=[];const ui=setup(output(),{timers:clock,host:{setWidgetState(state:any){snapshots.push(JSON.parse(JSON.stringify(state)));return snapshots.length===1?first.promise:undefined;}}});ui.choose("revise");ui.$("reviewFeedback").value="A";ui.$("reviewFeedback").oninput!();clock.fire(200);
+ ui.$("reviewFeedback").value="AB";ui.$("reviewFeedback").oninput!();clock.fire(200);assert.equal(snapshots.length,1);first.resolve();await flushAttachmentWork();assert.equal(snapshots.length,2);assert.equal(snapshots[1].privateContent.reviewDrafts[output().review_context.review_id].feedback,"AB");
+});
+
+test("read-only navigation timeout unlocks controls and ignores late result",async()=>{
+ const clock=fakeClock();let resolve!:(value:any)=>void;const response=new Promise(r=>resolve=r);const ui=setup(output("complete"),{timers:clock,host:{callTool(){return response;}}});const pending=ui.choose("revise");clock.fire(15000);await pending;assert.equal(ui.$("reviewChoices").children[0].disabled,false);ui.update({...output("asset_review","v2"),result_content:"New outcome"});resolve(output("asset_review"));await flushAttachmentWork();assert.equal(ui.$("resultContent").textContent,"New outcome");assert.equal(ui.messages.length,0);
+});
+
+test("compact request identity never contains raw feedback or attachment excerpts",async()=>{
+ const clock=fakeClock();const ui=setup(output(),{timers:clock});ui.choose("revise");ui.$("reviewFeedback").value="Private unique feedback text";await ui.submit();const serialized=JSON.stringify([...ui.storage]);assert.doesNotMatch(serialized,/Private unique feedback text/);assert.match(serialized,/request-v2:/);
+});
+
+for(const data of [{stage:"launcher"},{stage:"content_approval"}])test("ambiguous "+data.stage+" survives a storage-only remount without changing fallback identity",async()=>{
+ const wait=deferred(),clock=fakeClock();const ui=setup(data,{timers:clock,send:()=>wait.promise});if(data.stage==="launcher")ui.$("url").value="https://example.com/product";const pending=ui.submit();await flushAttachmentWork();assert.equal(ui.messages.length,1);clock.fire(15000);await pending;
+ const restored=setup(data,{timers:fakeClock(),storage:ui.storage});if(data.stage==="launcher")restored.$("url").value="https://example.com/product";await restored.submit();assert.equal(restored.messages.length,0);wait.resolve();
+});
+
+test("a confirmed late state save flushes the latest draft even after earlier waits timed out",async()=>{
+ const clock=fakeClock(),first=deferred(),snapshots:any[]=[];const ui=setup(output(),{timers:clock,host:{setWidgetState(state:any){snapshots.push(JSON.parse(JSON.stringify(state)));return snapshots.length===1?first.promise:undefined;}}});ui.choose("revise");ui.$("reviewFeedback").value="A";ui.$("reviewFeedback").oninput!();clock.fire(200);ui.$("reviewFeedback").value="AB";ui.$("reviewFeedback").oninput!();clock.fire(200);clock.fire(15000);await flushAttachmentWork();assert.equal(snapshots.length,1);first.resolve();await flushAttachmentWork();clock.fire(200);await flushAttachmentWork();assert.equal(snapshots.length,2);assert.equal(snapshots[1].privateContent.reviewDrafts[output().review_context.review_id].feedback,"AB");assert.equal(ui.messages.length,0);
+});
+
+test("pending request retains exact ready attachment evidence across terminal scope pruning",async()=>{
+ const data=output("asset_review"),clock=fakeClock();const ui=setup(data,{timers:clock,send:async()=>{throw Error("unknown");},host:{uploadFile:async()=>({fileId:"file-protected"})}});ui.choose("feedback");addOverallGroup(ui);groupArea(ui).value="Keep this reference";groupArea(ui).oninput!();const input=fileInput(ui);input.files=[new File(["reference"],"reference.txt",{type:"text/plain"})];input.onchange!();await flushAttachmentWork();await ui.submit();assert.equal(ui.messages.length,1);
+ for(let i=0;i<20;i++)ui.update(output("asset_review","other-"+i));ui.update(data);await ui.submit();assert.equal(ui.messages.length,1);const state=ui.snapshot();assert.equal(state.privateContent.attachments.scopes["review:"+data.review_context.review_id][0].fileId,"file-protected");assert.equal(groupArea(ui).value,"Keep this reference");
+});
+
+test("concurrent mounted widgets merge durable unknown ledgers instead of clobbering them",async()=>{
+ const storage=new Map<string,string>(),clock=fakeClock(),send=async()=>{throw Error("unknown");};const a=setup(output("content_approval","v1","A"),{storage,timers:clock,send}),b=setup(output("content_approval","v1","B"),{storage,timers:clock,send});await a.submit();await b.submit();const restored=setup(output("content_approval","v1","A"),{storage,timers:clock});await restored.submit();assert.equal(restored.messages.length,0);assert.equal(Object.keys(JSON.parse(storage.get("uid-brands-request-records")!)).length,2);
+});
+
+test("late reconciliation feedback cannot replace guidance for a newer review",async()=>{
+ const clock=fakeClock(),wait=deferred();let count=0;const ui=setup(output(),{timers:clock,send:async()=>{if(++count===1)throw Error("unknown");return wait.promise;}});await ui.submit();const check=ui.$("checkRequest").click();ui.update(output("content_approval","v2"));wait.resolve();await check;assert.equal(ui.$("error").textContent,"");assert.doesNotMatch(ui.$("nextAction").textContent,/Đã gửi yêu cầu kiểm tra/);
+});
+
+test("terminal records are bounded while unknown records are retained",async()=>{
+ const records:Record<string,any>={};for(let i=0;i<90;i++){const id="request-v2:"+i.toString(16).padStart(32,"0");records[id]={id,status:i<70?"accepted":"unknown",context:{review_id:"old-"+i}};}
+ const ui=setup(output(),{timers:fakeClock(),state:{requestRecords:records}});await ui.submit();const saved=JSON.parse(ui.storage.get("uid-brands-request-records")!);assert.equal(Object.values(saved).filter((x:any)=>x.status==="unknown").length,20);assert.ok(Object.values(saved).filter((x:any)=>x.status==="accepted").length<=64);
 });

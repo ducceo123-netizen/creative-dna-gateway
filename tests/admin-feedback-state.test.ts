@@ -61,6 +61,7 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
   const storage = new Map<string, string>();
   if (options.authenticated !== false) storage.set('creative_dna_admin_token', 'synthetic.access.jwt');
   if (options.refreshToken) storage.set('creative_dna_admin_refresh_token', 'synthetic.refresh');
+  const deadlines=new Map<number,()=>void>();let deadlineId=0;
   const intervals = new Map<number, { run: () => void; ms: number }>();
   const windowListeners = new Map<string, Set<() => void>>(), documentListeners = new Map<string, Set<() => void>>();
   let cursor = 0, tree: Node, mounted = true, scheduled = false, timerId = 0;
@@ -148,7 +149,7 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
       if (name === 'lucide-react') return new Proxy({}, { get: (_target, icon) => `icon-${String(icon)}` });
       throw new Error('Unexpected component dependency: ' + name);
     },
-    Error, AbortController, fetch: fetcher, document,
+    Error, AbortController, Response, setTimeout:(run:()=>void)=>{const id=++deadlineId;deadlines.set(id,run);return id;}, clearTimeout:(id:number)=>deadlines.delete(id), fetch: fetcher, document,
     sessionStorage: {
       getItem: (key: string) => storage.get(key) || null,
       setItem: (key: string, value: string) => storage.set(key, value),
@@ -195,6 +196,8 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
   function event(target: Map<string, Set<() => void>>, name: string) { for (const listener of target.get(name) || []) listener(); }
   render();
   return {
+    strictEffects:()=>{for(const effect of effects)effect.cleanup?.();for(const effect of effects)effect.cleanup=effect.create()||undefined;},
+    timeout:()=>{for(const run of [...deadlines.values()])run();},
     all, button, click, change, queue, calls, loginCalls, mutationCalls, confirmations, requests, snapshots, storage, intervals, unmount,
     fullText: () => textOf(tree), open: (id = 'synthetic-action') => click(`Mở feedback: Synthetic feedback ${id}`), text: () => textOf(queue()), alerts: () => descendants(queue()).filter(node => node.props.role === 'alert').map(textOf),
     statuses: () => descendants(queue()).filter(node => node.props.role === 'status').map(textOf),
@@ -438,7 +441,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
       assert.equal(JSON.parse(String(ui.mutationCalls[0].init.body)).decision, example.action);
     }
     assert.equal(ui.confirmations.length, example.action === 'merge' || example.action === 'delete' ? 1 : 0);
-    ui.mutationCalls[0].resolve(Response.json({ merged_nodes: 1, deleted_count: 1 })); await flush();
+    ui.mutationCalls[0].resolve(Response.json({ merged_nodes: 1, deleted_count: 1, proposal:{id:previous.id,status:"rejected"} })); await flush();
     assert.equal(ui.calls.length, 3, 'The post-mutation reload replaces the older in-flight poll');
     assert.equal(oldPoll.init.signal?.aborted, true);
     assert.equal(ui.queue().props['aria-busy'], true);
@@ -524,7 +527,7 @@ test('advanced Governance starts collapsed, mounts on first opening, and stays m
   ui.change('Admin email', 'synthetic@example.invalid'); ui.change('Password', 'synthetic-test-only'); await flush();
   ui.click('Sign in');
   ui.loginCalls[0].resolve(Response.json({ access_token: 'synthetic.next-session.jwt' })); await flush();
-  assert.equal(ui.all('details').length, 4); assert.equal(ui.all('governance-panel-stub').length, 0);
+  assert.equal(ui.all('details').length, 3); assert.equal(ui.all('governance-panel-stub').length, 0);
   assert.equal(ui.governanceRenders, loggedOutRenders, 'A new authenticated session starts with advanced tools unloaded again');
   ui.calls[1].resolve(page()); await flush();
 });
@@ -538,17 +541,15 @@ test('compact rows defer details and guarded actions until explicitly opened, th
   assert.equal(ui.all('article').length,1);assert.equal(ui.mutationCalls.length,0);
 });
 
-test('drawer close and Escape are blocked synchronously during a guarded review mutation', async t => {
-  const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
-  ui.open();await flush();ui.click('Xem & duyệt');await flush();
-  const panel=ui.all('feedback-review-panel-stub')[0];
-  const close=ui.button('Đóng chi tiết feedback').props.onClick;
-  panel.props.onBusyChange(true);close();await flush();
-  assert.equal(ui.all('dialog').length,1);assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,true);
-  let prevented=false;ui.all('dialog')[0].props.onCancel({preventDefault:()=>{prevented=true;}});await flush();
-  assert.equal(prevented,true);assert.equal(ui.all('dialog').length,1);
-  panel.props.onBusyChange(false);await flush();ui.click('Đóng chi tiết feedback');await flush();
-  assert.equal(ui.all('dialog').length,0);assert.equal(ui.mutationCalls.length,0);
+test('drawer close and Escape remain available during a submitted review without claiming cancellation', async t => {
+  for(const escape of [false,true])await t.test(escape?'Escape':'Close',async t=>{
+    const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
+    ui.open();await flush();ui.click('Xem & duyệt');await flush();
+    ui.all('feedback-review-panel-stub')[0].props.onBusyChange(true);await flush();
+    if(escape){let prevented=false;ui.all('dialog')[0].props.onCancel({preventDefault:()=>{prevented=true;}});assert.equal(prevented,true);}
+    else ui.click('Đóng chi tiết feedback');
+    await flush();assert.equal(ui.all('dialog').length,0);assert.equal(ui.mutationCalls.length,0);
+  });
 });
 
 test('brand grouping, search, material filters and collapsed groups are read-only', async t=>{
@@ -571,9 +572,9 @@ test('poll updates cannot remount the active review during mutation, including t
     const stillActive=ui.all('feedback-review-panel-stub')[0];assert.ok(stillActive);
     assert.equal(stillActive.props.proposal.proposed_content_md,original.proposed_content_md);
     assert.equal(stillActive.props.proposal.status,'pending');
-    assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,true);
+    assert.equal(!!!!ui.button('Đóng chi tiết feedback').props.disabled,false);
     originalPanel.props.onBusyChange(false);await flush();
-    assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,false);
+    assert.equal(!!ui.button('Đóng chi tiết feedback').props.disabled,false);
     ui.click('Đóng chi tiết feedback');await flush();assert.equal(ui.all('dialog').length,0);
     assert.equal(ui.mutationCalls.length,0);
   });
@@ -593,8 +594,8 @@ test('a successful action notice is associated with its feedback and never appea
 
 test('screenshot ancillary sections each start independently collapsed and reference data loads on demand',async t=>{
  const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal()]));await flush();
- const tools=ui.all('details');assert.equal(tools.length,4);assert.ok(tools.every(node=>!node.props.open));
- for(const title of ['Admin access','Branch Visual Guide','Reference Library','Nâng cao · Knowledge Governance']){
+ const tools=ui.all('details');assert.equal(tools.length,3);assert.ok(tools.every(node=>!node.props.open));
+ for(const title of ['Admin access','Reference Library','Nâng cao · Knowledge Governance']){
    assert.ok(ui.all('summary').some(node=>textOf(node).includes(title)),title);
  }
  assert.equal(ui.all('private-reference-panel-stub').length,0);
@@ -602,4 +603,41 @@ test('screenshot ancillary sections each start independently collapsed and refer
  library.props.onToggle({currentTarget:{open:true}});await flush();assert.equal(ui.all('private-reference-panel-stub').length,1);
  library.props.onToggle({currentTarget:{open:false}});await flush();assert.equal(ui.all('private-reference-panel-stub').length,1,'Closing preserves the reference session and unfinished form');
  assert.equal(ui.calls.length,1);assert.equal(ui.mutationCalls.length,0);
+});
+
+
+test('hung inbox read releases busy state on deadline, allows retry, and ignores late prior response',async t=>{
+ const ui=setup();t.after(ui.unmount);await flush();ui.timeout();await flush();
+ assert.match(ui.alerts().join(' '),/timed out/);assert.equal(ui.button('Thử lại').props.disabled,false);
+ ui.click('Thử lại');assert.equal(ui.calls.length,2);ui.calls[1].resolve(page([proposal('fresh')]));await flush();
+ ui.calls[0].resolve(page([proposal('old')]));await flush();assert.match(ui.text(),/fresh/);assert.doesNotMatch(ui.text(),/Synthetic feedback old/);
+});
+
+test('removed Live UI admin editor never loads or saves guide configuration',async t=>{
+ const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page());await flush();
+ assert.doesNotMatch(ui.fullText(),/Branch Visual Guide|Save Live UI|CSS selector/);
+ assert.equal(ui.requests.some(call=>call.url.includes('branch-guide')),false);
+});
+
+
+test('StrictMode effect replay renews auth lifetime and login still works',async t=>{
+ const ui=setup({authenticated:false});t.after(ui.unmount);ui.strictEffects();
+ ui.change('Admin email','synthetic@example.invalid');ui.change('Password','synthetic-only');await flush();ui.click('Sign in');
+ assert.equal(ui.loginCalls.length,1);assert.equal(ui.loginCalls[0].init.signal?.aborted,false);
+ ui.loginCalls[0].resolve(Response.json({access_token:'new.synthetic'}));await flush();assert.equal(ui.calls.length,1);
+});
+
+test('malformed reject success stays unknown and blocks repeat submission',async t=>{
+ const ui=setup({mockMutationUrl:'/api/admin/feedback/synthetic-action/review'});t.after(ui.unmount);
+ ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();ui.open();await flush();ui.click('Reject');
+ ui.mutationCalls[0].resolve(Response.json({}));await flush();ui.click('Reject');await flush();
+ assert.equal(ui.mutationCalls.length,1);assert.match(ui.fullText(),/chưa rõ|Chưa xác nhận/);
+});
+
+
+test('logout then relogin still aborts current session when admin unmounts',async t=>{
+ const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page());await flush();ui.click('Sign out');await flush();
+ ui.change('Admin email','synthetic@example.invalid');ui.change('Password','synthetic-only');await flush();ui.click('Sign in');
+ const request=ui.loginCalls[0];ui.unmount();assert.equal(request.init.signal?.aborted,true);
+ request.resolve(Response.json({access_token:'must-not-return'}));await flush();assert.equal(ui.storage.get('creative_dna_admin_token'),undefined);
 });
