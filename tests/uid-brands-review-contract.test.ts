@@ -81,7 +81,9 @@ test("live local MCP advertises and executes matching review/native contracts, m
     assert.equal(reviewTool._meta["openai/outputTemplate"], LAUNCHER_URI);
     assert.equal(reviewTool._meta["openai/widgetAccessible"], true);
     assert.deepEqual(reviewTool._meta.ui.visibility, ["model", "app"]);
-    assert.deepEqual(tools.find((tool: any) => tool.name === "launch_creative_dna")._meta, reviewTool._meta);
+    const launcherMeta = tools.find((tool: any) => tool.name === "launch_creative_dna")._meta;
+    for (const key of ["ui", "openai/outputTemplate", "openai/widgetAccessible"]) assert.deepEqual(launcherMeta[key], reviewTool._meta[key]);
+    assert.notEqual(launcherMeta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
     const resource = await rpc("resources/read", { uri: LAUNCHER_URI });
     assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
     assert.equal(resource.contents[0].text, launcherHtml);

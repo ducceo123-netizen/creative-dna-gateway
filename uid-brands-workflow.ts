@@ -1,3 +1,4 @@
+import { UID_PROGRESS_REMINDER } from "./uid-brands-progress.ts";
 import { RESEARCH_GUIDANCE } from "./supabase/functions/_shared/product-research.ts";
 import { REVIEW_STEPS } from "./uid-brands-actions.ts";
 import { ATTACHMENT_UI_SCRIPT, ATTACHMENT_UI_STYLES } from "./uid-brands-attachment-ui.ts";
@@ -178,7 +179,7 @@ function renderSubmissionState(){
 }
 function renderRecoveryStatus(){const record=activeRecord();if(!record)return;const message=record.status==="accepted"?"ChatGPT đã nhận tin nhắn; chưa xác nhận thực thi. Kiểm tra yêu cầu nếu chưa có kết quả.":record.status==="sending"?"Đang chờ ChatGPT nhận yêu cầu…":"Chưa xác định yêu cầu đã được nhận hay thực thi. Không gửi lại; kiểm tra yêu cầu trước.";$("flowState").textContent=message;$("nextAction").textContent=message;}
 let checkingRequest=false;
-$("checkRequest").onclick=async()=>{const record=activeRecord(),fn=window.openai?.sendFollowUpMessage;if(!record||checkingRequest||typeof fn!=="function")return;checkingRequest=true;renderSubmissionState();try{await bounded(()=>fn.call(window.openai,{prompt:"Read and reconcile only. Check the existing UID Brands request "+JSON.stringify(record.context)+"; request_id="+record.id+". Report only verified receipt/execution/results from the conversation or authoritative sources. Do not replay, generate, package, upload, or write anything. If status cannot be verified, say unknown and ask before any new attempt. Correlation is not authorization."}),"Kiểm tra yêu cầu");if(activeRecord()?.id===record.id)showError("Đã gửi yêu cầu kiểm tra; chưa có xác nhận thực thi.");}catch{if(activeRecord()?.id===record.id)showError("Chưa xác định tin nhắn kiểm tra đã được nhận. Xem cuộc trò chuyện trước khi kiểm tra lại.");}finally{checkingRequest=false;renderSubmissionState();}};
+$("checkRequest").onclick=async()=>{const record=activeRecord(),fn=window.openai?.sendFollowUpMessage;if(!record||checkingRequest||typeof fn!=="function")return;checkingRequest=true;renderSubmissionState();try{await bounded(()=>fn.call(window.openai,{prompt:"Read and reconcile only. Check the existing UID Brands request "+JSON.stringify(record.context)+"; request_id="+record.id+". Report only verified receipt/execution/results from the conversation or authoritative sources. Do not replay, generate, package, upload, or write anything. If status cannot be verified, say unknown and ask before any new attempt. For partial work, report verified done / pending / blocked and the next safe action. Correlation is not authorization."}),"Kiểm tra yêu cầu");if(activeRecord()?.id===record.id)showError("Đã gửi yêu cầu kiểm tra; chưa có xác nhận thực thi.");}catch{if(activeRecord()?.id===record.id)showError("Chưa xác định tin nhắn kiểm tra đã được nhận. Xem cuộc trò chuyện trước khi kiểm tra lại.");}finally{checkingRequest=false;renderSubmissionState();}};
 function rememberSubmission(key){
  submittedRequests.add(key);
  while(submittedRequests.size>64)submittedRequests.delete(submittedRequests.values().next().value);
@@ -385,7 +386,7 @@ async function dispatchRequest(key,context,prompt,fn){
  storeRecords();if(requestBlocked(key))throw new Error("Yêu cầu tương ứng đang chờ kiểm tra. Không gửi lại khi chưa xác định kết quả.");
  const record={id:key,status:"sending",context,createdAt:Date.now()};requestRecords[key]=record;storeRecords();save();
  try{await flushState();}catch(error){delete requestRecords[key];storeRecords(key);save();throw error;}
- try{if((stage==="launcher"?briefRequestKey():currentRequestKey())!==key){delete requestRecords[key];throw new Error("Kết quả đã đổi trước khi gửi.");}await bounded(()=>fn.call(window.openai,{prompt:prompt+"\nRequest ID (correlation only): "+key}),"Gửi yêu cầu");record.status="accepted";rememberSubmission(key);}
+ try{if((stage==="launcher"?briefRequestKey():currentRequestKey())!==key){delete requestRecords[key];throw new Error("Kết quả đã đổi trước khi gửi.");}await bounded(()=>fn.call(window.openai,{prompt:prompt+"\n"+${JSON.stringify(UID_PROGRESS_REMINDER)}+"\nRequest ID (correlation only): "+key}),"Gửi yêu cầu");record.status="accepted";rememberSubmission(key);}
  catch(error){if(requestRecords[key])record.status="unknown";throw error;}
  finally{storeRecords();save();}
 }
