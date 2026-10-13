@@ -7,7 +7,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CanonicalComparison, EvaluationDetails, ResolvedFeedbackAudit } from '../src/components/FeedbackReviewPanel.tsx';
 import { affectedBrands, candidateRuns, currentEvaluation, emptyReviewChecks, missingBaselineBrands, proposedLines, searchCoveredCandidates, validatePreflight } from '../src/components/feedback-review.ts';
-import type { FeedbackPreflight } from '../src/components/feedback-review.ts';
+import type { AutomaticReview, FeedbackPreflight } from '../src/components/feedback-review.ts';
 
 const code=buildSync({entryPoints:['src/components/FeedbackReviewPanel.tsx'],bundle:true,format:'cjs',platform:'node',jsx:'automatic',write:false,external:['react','react/jsx-runtime']}).outputFiles[0].text;
 type Node={type:string|symbol|((props:any)=>Node);props:Record<string,any>};
@@ -17,11 +17,41 @@ function nodes(value:any):Node[]{if(Array.isArray(value))return value.flatMap(no
 function textOf(value:any):string{if(Array.isArray(value))return value.map(textOf).join('');if(value==null||typeof value==='boolean')return '';if(typeof value==='object')return textOf(value.props.children);return String(value);}
 async function flush(){for(let i=0;i<50;i++)await Promise.resolve();}
 const proposal={id:'synthetic-proposal',status:'pending',brand_name:'PawfectHouse',branch_slug:'onepage-system',proposed_scope:'global_system',raw_feedback:'Preserve the real product silhouette.',proposed_content_md:'Preserve the real product silhouette.\nDo not infer dimensions.'};
+function automaticReview(overrides:Partial<AutomaticReview>={}):AutomaticReview {return {
+ status:'needs_candidate',candidate_hash:'scope-v2:synthetic',evaluation_id:null,
+ checks:{mechanical:'blocked',actual_review:'required'},
+ blockers:[{code:'missing_candidate',message:'Chưa có candidate thật.',next_action:'Trình tạo kết quả cần lưu candidate.'}],
+ evidence:[],candidate_runs:[],mechanical_results:[],mechanical_issues:[],
+ host_review:{available:false,packet_version:'uid.review-packet.v1',instruction:'Inspect real sources and pixels.',required_capabilities:['actual_media_inspection'],packet:{}},...overrides,
+};}
 function preflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPreflight{return {
   proposal,candidate_hash:'scope-v2:synthetic',
   targets:[{id:'node-1',brand_id:'brand-1',brand_name:'PawfectHouse',slug:'onepage-system',title:'Onepage System',content_md:'Preserve the real product silhouette.',node_hash:'node-hash',version:3}],
   baselines:[{id:'base-1',brand_id:'brand-1',brand_name:'PawfectHouse',branch_slug:'onepage-system',case_key:'approved-product-visual',approved_at:'2026-10-11T00:00:00Z'}],
-  evaluations:[],covered_candidates:[{id:'covered-1',summary:'Nolan · protect product truth',text:'Preserve the real product silhouette.',merged_at:'2026-10-10T00:00:00Z',candidate_hash:'covered-hash',brand_names:['PawfectHouse']}],issues:[],automatic_evaluation_id:null,...overrides,
+  automatic_review:automaticReview({candidate_hash:overrides.candidate_hash||'scope-v2:synthetic'}),evaluations:[],covered_candidates:[{id:'covered-1',summary:'Nolan · protect product truth',text:'Preserve the real product silhouette.',merged_at:'2026-10-10T00:00:00Z',candidate_hash:'covered-hash',brand_names:['PawfectHouse']}],issues:[],automatic_evaluation_id:null,...overrides,
+};}
+function directPreflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPreflight {
+ const data=preflight(overrides);
+ return {...data,direct_rule:{schema_version:'uid.owner-rule-eligibility.v1',eligible:true,owner_authorized:true,
+  rule_hash:'owner-rule-v1:synthetic',rule_class:'STRUCTURAL',blockers:[],
+  check_scope:'STRUCTURE_SCOPE_AND_DETECTABLE_CONFLICTS_ONLY',visual_qc_performed:false},
+  direct_rule_plan:{eligible:true,plan_hash:'plan-sha256:synthetic',blockers:[],visual_qc_performed:false,
+   semantic_consistency:'NOT_PROVEN_BY_DETERMINISTIC_CHECKS',additions:data.targets.map(target=>({
+    schema_version:'uid.owner-supplemental-rule.v1',id:`owner:${data.proposal.id}`,proposal_id:data.proposal.id,
+    decision_kind:'owner_direct_rule',canonical_text:data.proposal.proposed_content_md!,declared_scope:data.proposal.proposed_scope!,
+    scope:{brands:[target.brand_name.toLowerCase()],branches:[target.slug]},rule_class:'STRUCTURAL',confidence:'HIGH',
+    precedence:'SUPPLEMENTAL_SUBORDINATE_TO_CANONICAL_HARD_RULES_AND_PRODUCT_TRUTH',
+    semantic_consistency:'NOT_PROVEN_BY_DETERMINISTIC_CHECKS',visual_qc_performed:false,
+    source:{node:'branch',locator:`owner-rule:${data.proposal.id}`,canonical_text_hash:'canonical-sha256:synthetic'},
+    accepted_source_hashes:{branch:target.node_hash,brand_dna:'brand-dna-sha256:synthetic'},
+    target_node_ids:[target.id],affected_brands:[target.brand_name.toLowerCase()],
+   }))},...overrides};
+}
+function directReceipt(data=directPreflight()) {return {
+ status:'merged',proposal_id:data.proposal.id,proposal:{id:data.proposal.id,status:'merged',merged_at:'2026-10-13T04:00:00Z'},
+ merged_at:'2026-10-13T04:00:00Z',decision_kind:'owner_direct_rule',visual_qc_performed:false,
+ rule_decision_id:'synthetic-owner-decision',candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,
+ plan_hash:data.direct_rule_plan!.plan_hash,canonical_changed:true,
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
 function setup(path:'covered'|'merge'='covered'){
@@ -51,7 +81,7 @@ function setup(path:'covered'|'merge'='covered'){
 }
 async function ready(ui:ReturnType<typeof setup>,data=preflight()){ui.calls[0].resolve(Response.json(data));await flush();}
 async function coveredReady(ui:ReturnType<typeof setup>){await ready(ui);ui.input('Quy chuẩn đã có','covered-1');await flush();ui.checkAll();ui.input('Lý do đóng feedback','Reviewed every affected brand and existing product safeguards.');await flush();}
-async function mergeReady(ui:ReturnType<typeof setup>){await ready(ui,preflight({evaluations:[passed],automatic_evaluation_id:passed.id}));ui.checkAll();ui.input('Ghi chú review','Verified visual fidelity and every product-truth constraint.');ui.input('Evidence đã đối chiếu','https://example.test/product');await flush();}
+async function mergeReady(ui:ReturnType<typeof setup>){await ready(ui,preflight({evaluations:[passed],automatic_evaluation_id:passed.id,automatic_review:automaticReview({status:'ready_to_merge',evaluation_id:passed.id,checks:{mechanical:'passed',actual_review:'verified'},blockers:[]})}));}
 
 test('preflight and pure gates fail closed; reference corpus does not supply candidate coverage',()=>{
  assert.deepEqual(emptyReviewChecks(),{scope:false,productTruth:false,visual:false,conflicts:false,zeroRegressions:false});
@@ -69,7 +99,7 @@ test('opening either panel only reads preflight and never preselects or pre-atte
  for(const path of ['covered','merge'] as const)await t.test(path,async t=>{
   const ui=setup(path);t.after(ui.unmount);assert.equal(ui.calls.length,1);assert.equal(ui.calls[0].url,`/api/admin/feedback/${proposal.id}/preflight`);assert.notEqual(ui.calls[0].init.method,'POST');
   await ready(ui);assert.equal(ui.calls.length,1);assert.ok(ui.all('input').filter(node=>node.props.type==='checkbox').every(node=>!node.props.checked));
-  assert.equal(ui.button(path==='covered'?'Xác nhận đã có trong quy chuẩn':'Xác nhận Review & Merge').props.disabled,true);
+  assert.equal(ui.button(path==='covered'?'Xác nhận đã có trong quy chuẩn':'Kiểm tra điều kiện review').props.disabled,path==='covered');
   if(path==='covered'){assert.match(ui.text(),/Nolan · protect product truth/);assert.equal(ui.all('select')[0].props.value,'');}
  });
 });
@@ -123,33 +153,42 @@ test('switching proposal cancels earlier read and ignores stale success and fail
  });
 });
 
-test('reference corpus and missing SoulPrise coverage are explicit blockers without candidate inputs',async t=>{
+test('reference-only and missing coverage show one server-derived blocker with no manual form',async t=>{
  const ui=setup('merge');t.after(ui.unmount);
  const data=preflight();data.baselines[0].is_reference_only=true;data.targets.push({...data.targets[0],id:'soul-node',brand_id:'soul',brand_name:'SoulPrise'});
- await ready(ui,data);assert.match(ui.text(),/Reference corpus \/ chỉ tham chiếu/);assert.match(ui.text(),/Blocked: chưa có baseline được duyệt cho PawfectHouse, SoulPrise/);
- assert.equal(ui.all('input').filter(node=>node.props.type==='url').length,0);
- assert.equal(ui.button('Chạy kiểm tra candidate thật').props.disabled,true);assert.equal(ui.button('Xác nhận Review & Merge').props.disabled,true);
+ data.automatic_review=automaticReview({status:'needs_baseline',blockers:[{code:'missing_baseline',message:'Chưa có baseline chất lượng cho PawfectHouse, SoulPrise.',next_action:'Cần mẫu đã được duyệt; reference-only không đủ.'}]});
+ await ready(ui,data);assert.match(ui.text(),/Chưa có baseline chất lượng cho PawfectHouse, SoulPrise/);
+ assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);assert.equal(ui.button('Kiểm tra điều kiện review').props.disabled,false);
 });
 
-test('evaluation submits actual output and reviewed hash once, then refreshes and displays detailed blocked result',async t=>{
- const ui=setup('merge');t.after(ui.unmount);await ready(ui);ui.candidateFields();ui.checkAll();ui.input('Ghi chú review','I reviewed the actual candidate against approved output.');await flush();
- const run=ui.button('Chạy kiểm tra candidate thật').props.onClick;run();run();await flush();assert.equal(ui.calls.length,2);
- const payload=JSON.parse(String(ui.calls[1].init.body));assert.equal(payload.candidate_hash,'scope-v2:synthetic');assert.equal(payload.proposal_id,proposal.id);assert.equal(payload.candidate_runs[0].source_run_id,'actual-run-42');assert.deepEqual(payload.candidate_runs[0].output,{title:'Actual generated result'});
- const evaluation={...passed,evaluation_status:'blocked'};const results=[{baseline_id:'base-1',status:'failed',issues:['Missing approved immutable product field'],artifact_url:'https://example.test/candidate'}];
- ui.calls[1].resolve(Response.json({evaluation,issues:['SoulPrise approved baseline missing'],results}));await flush();assert.equal(ui.calls.length,3);assert.equal(ui.calls[2].url,`/api/admin/feedback/${proposal.id}/preflight`);
- ui.calls[2].resolve(Response.json(preflight({evaluations:[{...evaluation,test_results:results}],issues:['SoulPrise approved baseline missing']})));await flush();
- assert.match(ui.text(),/SoulPrise approved baseline missing/);assert.match(ui.text(),/Missing approved immutable product field/);assert.match(ui.text(),/Kết quả: blocked/);
- assert.ok(ui.all('input').filter(node=>node.props.type==='checkbox').every(node=>!node.props.checked));assert.equal(ui.button('Xác nhận Review & Merge').props.disabled,true);
+test('one processing intent has no client evidence or attestations and shows blocked outcome honestly',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);await ready(ui);
+ const action=ui.button('Kiểm tra điều kiện review').props.onClick;action();action();await flush();assert.equal(ui.calls.length,2);
+ assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/process`);
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve:true,candidate_hash:'scope-v2:synthetic'});
+ assert.equal(ui.button('Đang tự kiểm tra…').props.disabled,true);assert.equal(ui.button('Đóng / Cancel').props.disabled,true);
+ const review=automaticReview({status:'needs_actual_review',checks:{mechanical:'passed',actual_review:'required'},blockers:[{code:'actual_review_required',message:'Cần xem ảnh thật.',next_action:'Chưa có trình review tự động được kết nối.'}]});
+ ui.calls[1].resolve(Response.json({status:review.status,automatic_review:review,canonical_changed:false,background_task_started:false,approval_recorded:false}));await flush();
+ assert.match(ui.text(),/Cần xem ảnh thật/);assert.match(ui.text(),/Không có tác vụ review chạy nền/);assert.equal(ui.completed.length,0);
+ assert.equal(ui.button('Kiểm tra điều kiện review').props.disabled,true);assert.equal(ui.all('textarea').length,0);assert.equal(ui.calls.length,2);
 });
 
-test('merge automatically binds fresh evaluation, sends exact human attestations once and invalidates on 409',async t=>{
+test('approval uses the displayed hash once and stale rejection requires refreshed review',async t=>{
  const ui=setup('merge');t.after(ui.unmount);await mergeReady(ui);
- const action=ui.button('Xác nhận Review & Merge').props.onClick;action();action();await flush();assert.equal(ui.calls.length,2);
- const payload=JSON.parse(String(ui.calls[1].init.body));assert.equal(payload.evaluation_id,'evaluation-1');assert.equal(payload.candidate_hash,'scope-v2:synthetic');assert.deepEqual(payload.regression.baseline_ids,['base-1']);assert.equal(payload.regression.scope_checked,true);assert.equal(payload.regression.severe_regressions,0);
+ const action=ui.button('Merge outcome đã review').props.onClick;action();action();await flush();assert.equal(ui.calls.length,2);
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve:true,candidate_hash:'scope-v2:synthetic'});
  ui.calls[1].resolve(Response.json({error:'Evaluation no longer current',issues:['Canonical has changed']},{status:409}));await flush();
- assert.equal(ui.button('Xác nhận Review & Merge').props.disabled,true);assert.match(ui.text(),/Evaluation no longer current/);assert.match(ui.text(),/Canonical has changed/);assert.equal(ui.completed.length,0);
- ui.click('Tải lại / Retry');ui.calls[2].resolve(Response.json(preflight({evaluations:[passed],automatic_evaluation_id:null,candidate_hash:'scope-v2:new'})));await flush();
- assert.match(ui.text(),/Evaluation đã cũ/);assert.equal(ui.button('Xác nhận Review & Merge').props.disabled,true);
+ assert.equal(ui.button('Merge outcome đã review').props.disabled,true);assert.match(ui.text(),/Evaluation no longer current/);assert.match(ui.text(),/Canonical has changed/);assert.equal(ui.completed.length,0);
+ ui.click('Tải lại / Retry');ui.calls[2].resolve(Response.json(preflight({candidate_hash:'scope-v2:new'})));await flush();
+ ui.click('Kiểm tra điều kiện review');await flush();assert.equal(JSON.parse(String(ui.calls[3].init.body)).candidate_hash,'scope-v2:new');
+});
+
+test('old server and malformed preparation fail closed without reviving a legacy checklist',async t=>{
+ for(const automatic_review of [undefined,{candidate_hash:'wrong'}]) await t.test(automatic_review?'malformed':'old server',async t=>{
+  const ui=setup('merge');t.after(ui.unmount);await ready(ui,preflight({automatic_review:automatic_review as AutomaticReview}));
+  if(automatic_review)assert.match(ui.text(),/không đầy đủ hoặc đã cũ/);else assert.equal(ui.button('Kiểm tra điều kiện review').props.disabled,true);
+  assert.equal(ui.all('textarea').length,0);assert.equal(ui.calls.length,1);
+ });
 });
 
 test('rendered comparison and evaluation detail expose readable rules and named failures',()=>{
@@ -174,11 +213,11 @@ test('stored blocked evaluation surfaces conflict_results issues after a reload'
 
 test('merge completion requires the expected merged proposal, never an incomplete HTTP success',async t=>{
  for(const complete of [true,false])await t.test(complete?'confirmed merged':'malformed success',async t=>{
-  const ui=setup('merge');t.after(ui.unmount);await mergeReady(ui);ui.click('Xác nhận Review & Merge');
-  ui.calls[1].resolve(Response.json(complete?{proposal:{id:proposal.id,status:'merged'},merged_nodes:1}:{}));await flush();
+  const ui=setup('merge');t.after(ui.unmount);await mergeReady(ui);ui.click('Merge outcome đã review');
+  ui.calls[1].resolve(Response.json(complete?{status:'merged',proposal:{id:proposal.id,status:'merged'},merged_nodes:1,canonical_changed:true}:{status:'merged'}));await flush();
   assert.equal(ui.completed.length,complete?1:0);
   if(complete)assert.match(ui.completed[0][0],/Quy chuẩn đã được cập nhật/);
-  else{assert.match(ui.text(),/Chưa xác nhận trạng thái merged/);assert.equal(ui.button('Xác nhận Review & Merge').props.disabled,true);}
+  else{assert.match(ui.text(),/Chưa xác nhận trạng thái merged/);assert.equal(ui.button('Merge outcome đã review').props.disabled,true);}
  });
 });
 
@@ -191,4 +230,92 @@ test('covered-rule search filters summary, literal text and date without selecti
  ui.input('Quy chuẩn đã có','covered-2');await flush();ui.checkAll();await flush();
  ui.input('Tìm quy chuẩn đã merge','Nolan');await flush();
  assert.equal(ui.all('select')[0].props.value,'');assert.ok(ui.all('input').filter(node=>node.props.type==='checkbox').every(node=>!node.props.checked));
+});
+
+test('direct-rule preview shows exact guidance and scope without manual forms or fabricated QC claims',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);const data=directPreflight();await ready(ui,data);
+ assert.equal(ui.calls.length,1);assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,false);
+ assert.equal(ui.button('Kiểm tra điều kiện review').props.disabled,false);
+ assert.match(ui.text(),/Hướng dẫn bổ sung do bạn duyệt/);assert.match(ui.text(),/Phạm vi đầy đủ: PawfectHouse/);
+ assert.match(ui.text(),/không chứng nhận outcome hay QC hình ảnh/);assert.match(ui.text(),/không bảo đảm phát hiện mọi xung đột ngữ nghĩa/);
+ assert.ok(ui.text().includes(data.proposal.proposed_content_md!));
+ assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);assert.equal(ui.all('select').length,0);
+ assert.equal(ui.completed.length,0);
+});
+
+test('direct-rule approval sends only explicit intent and displayed hashes once, then accepts the normalized real receipt',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);const data=directPreflight();await ready(ui,data);
+ const action=ui.button('Duyệt rule & merge ngay').props.onClick;action();action();await flush();
+ assert.equal(ui.calls.length,2);assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/accept-rule`);
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ assert.equal(ui.button('Đang merge rule…').props.disabled,true);assert.equal(ui.button('Đóng / Cancel').props.disabled,true);
+ assert.equal(ui.button('Kiểm tra điều kiện review').props.disabled,true);
+ ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();
+ assert.equal(ui.completed.length,1);assert.match(ui.completed[0][0],/Đã merge rule do bạn duyệt trực tiếp/);
+ assert.match(ui.completed[0][0],/không phải kết quả QC hình ảnh/);
+ assert.equal(ui.completed[0][1].decision_kind,'owner_direct_rule');assert.equal(ui.completed[0][1].visual_qc_performed,false);
+});
+
+test('direct-rule owner or configuration blockers keep approval disabled without requiring evidence forms',async t=>{
+ for(const owner_authorized of [false,true])await t.test(owner_authorized?'configuration disabled':'not owner',async t=>{
+  const ui=setup('merge');t.after(ui.unmount);const data=directPreflight();
+  data.direct_rule={...data.direct_rule!,eligible:false,owner_authorized,blockers:[{code:'owner_denial',message:'Chưa được phép duyệt rule.',next_action:'Kiểm tra owner và cấu hình.'}]};
+  await ready(ui,data);assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,true);
+  assert.match(ui.text(),/Chưa được phép duyệt rule/);assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);
+  assert.equal(ui.calls.length,1);assert.equal(ui.completed.length,0);
+ });
+});
+
+test('direct-rule stale response requires reload and reapproval of fresh candidate, rule and plan hashes',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);await ready(ui,directPreflight());ui.click('Duyệt rule & merge ngay');
+ ui.calls[1].resolve(Response.json({error:'Effective rule plan changed',issues:['Affected canonical version is newer']},{status:409}));await flush();
+ assert.equal(ui.completed.length,0);assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,true);
+ assert.match(ui.text(),/Effective rule plan changed/);assert.match(ui.text(),/Affected canonical version is newer/);
+ ui.click('Tải lại / Retry');const newer=directPreflight({candidate_hash:'scope-v2:new'});
+ newer.direct_rule!.rule_hash='owner-rule-v1:new';newer.direct_rule_plan!.plan_hash='plan-sha256:new';
+ ui.calls[2].resolve(Response.json(newer));await flush();ui.click('Duyệt rule & merge ngay');await flush();
+ assert.deepEqual(JSON.parse(String(ui.calls[3].init.body)),{approve_rule:true,candidate_hash:'scope-v2:new',rule_hash:'owner-rule-v1:new',plan_hash:'plan-sha256:new'});
+ assert.equal(ui.completed.length,0);
+});
+
+test('direct-rule display fails closed for missing, malformed, wrong-text or incomplete-scope plans',async t=>{
+ const missing=directPreflight();delete missing.direct_rule_plan;
+ const noHash=directPreflight();noHash.direct_rule_plan!.plan_hash=null;
+ const wrongText=directPreflight();wrongText.direct_rule_plan!.additions[0].canonical_text='An unrelated proposed rule.';
+ const wrongScope=directPreflight();wrongScope.direct_rule_plan!.additions[0].declared_scope='different scope';
+ const incomplete=directPreflight();incomplete.targets.push({...incomplete.targets[0],id:'node-2',brand_id:'brand-2',brand_name:'GiftSoul'});
+ const fakeQc=directPreflight();(fakeQc.direct_rule_plan as any).visual_qc_performed=true;
+ for(const data of [missing,noHash,wrongText,wrongScope,incomplete,fakeQc]) {
+  const ui=setup('merge');t.after(ui.unmount);await ready(ui,data);
+  assert.equal(ui.calls.length,1);assert.equal(ui.completed.length,0);
+  assert.match(ui.text(),/Hãy tải lại/);
+  assert.equal(ui.all('button').some(button=>textOf(button)==='Duyệt rule & merge ngay'&&!button.props.disabled),false);
+  assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);
+ }
+});
+
+test('direct-rule malformed HTTP success never completes or allows blind duplicate submission',async t=>{
+ const valid=directReceipt();
+ for(const response of [
+  {status:'merged'}, {...valid,proposal:undefined}, {...valid,proposal:{...valid.proposal,id:'another-proposal'}},
+  {...valid,canonical_changed:false}, {...valid,decision_kind:'owner_rule_accept'}, {...valid,visual_qc_performed:true},
+  {...valid,rule_decision_id:undefined}, {...valid,candidate_hash:'another-candidate'}, {...valid,rule_hash:'another-rule'},
+  {...valid,plan_hash:'another-plan'},
+  {...valid,proposal:{...valid.proposal,merged_at:undefined}},
+  {...valid,proposal:{...valid.proposal,merged_at:'not-a-date'}},
+ ]) {
+  const ui=setup('merge');t.after(ui.unmount);await ready(ui,directPreflight());ui.click('Duyệt rule & merge ngay');
+  ui.calls[1].resolve(Response.json(response));await flush();
+  assert.equal(ui.completed.length,0,JSON.stringify(response));assert.equal(ui.calls.length,2);
+  assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,true);assert.match(ui.text(),/Chưa xác nhận/);
+ }
+});
+
+test('late direct-rule success after unmount or proposal navigation is ignored',async t=>{
+ for(const navigate of [false,true])await t.test(navigate?'new proposal':'unmounted',async t=>{
+  const ui=setup('merge');t.after(ui.unmount);await ready(ui,directPreflight());ui.click('Duyệt rule & merge ngay');
+  if(navigate){ui.changeProposal({...proposal,id:'new-proposal'});await flush();}else ui.unmount();
+  const writes=ui.writes;ui.calls[1].resolve(Response.json(directReceipt()));await flush();
+  assert.equal(ui.completed.length,0);assert.equal(ui.writes,writes);assert.equal(ui.lateWrites,0);
+ });
 });

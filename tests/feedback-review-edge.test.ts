@@ -5,7 +5,8 @@ import vm from 'node:vm';
 import { transformSync } from 'esbuild';
 import { once } from 'node:events';
 import { createApp } from '../server.ts';
-import { reviewReadiness, assessReviewCandidates, isReferenceOnlyBaseline, REVIEW_EVALUATOR_VERSION } from '../supabase/functions/_shared/feedback-review.ts';
+import { buildOwnerRulePlan } from '../supabase/functions/_shared/owner-rule-plan.ts';
+import { reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, assessReviewCandidates, isReferenceOnlyBaseline, REVIEW_EVALUATOR_VERSION } from '../supabase/functions/_shared/feedback-review.ts';
 
 const baseline = { id: 'base-1', brand_id: 'brand-1', branch_slug: 'onepage-system', case_key: 'Product identity', approved_at: '2026-10-01', approved_output: { title: 'Comfort T-Shirt' }, expected_assertions: { required_text: ['T-Shirt'], required_keys: ['title'], forbidden_text: ['cure'] } };
 const target = { id: 'node-1', brand_id: 'brand-1', brand_name: 'Synthetic brand', slug: 'onepage-system', title: 'Onepage', node_hash: 'node-v1', content_md: 'Canonical rules' };
@@ -54,10 +55,10 @@ async function invoke(payload: any, options: { hash?: string; rpcError?: string;
   const member = { select: () => member, eq: () => member, maybeSingle: async () => ({ data: { role: 'admin', is_active: true } }) };
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: 'verified-user' } } }) },
-    rpc: async (name: string, args: any) => { rpcCalls.push({ name, args }); return options.rpcError ? { error: { message: options.rpcError } } : { data: name === 'uid_governance_review_context' ? options.missing ? null : context : name === 'uid_governance_candidate_hash' ? options.hash || context.candidate_hash : { status: 'resolved', proposal_id: 'proposal-1', resolution: { type: 'already_covered' } } }; },
+    rpc: async (name: string, args: any) => { rpcCalls.push({ name, args }); return options.rpcError ? { error: { message: options.rpcError } } : { data: ['uid_governance_review_context','uid_rule_preflight'].includes(name) ? options.missing ? null : context : name === 'uid_governance_candidate_hash' ? options.hash || context.candidate_hash : { status: 'resolved', proposal_id: 'proposal-1', resolution: { type: 'already_covered' } } }; },
     from: (name: string) => { if (name === 'creative_dna_team_members') return member; assert.equal(name, 'uid_governance_evaluations'); return { insert: (value: any) => { inserts.push(value); return { select: () => ({ single: async () => ({ data: { id: 'stored', ...value } }) }) }; } }; },
   };
-  const sandbox: any = { Response, URL, Deno: { env: { get: () => 'synthetic' } }, createClient: () => client, reviewReadiness, assessReviewCandidates, REVIEW_EVALUATOR_VERSION };
+  const sandbox: any = { Response, URL, Deno: { env: { get: () => 'synthetic' } }, createClient: () => client, buildOwnerRulePlan, reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, assessReviewCandidates, REVIEW_EVALUATOR_VERSION };
   vm.runInNewContext(edgeCode, sandbox);
   const response = await sandbox.handler.fetch(new Request('https://example.test/admin', { method: 'POST', body: JSON.stringify(payload) }));
   return { response, body: await response.json(), rpcCalls, inserts };
@@ -93,6 +94,8 @@ test('preflight is read-only and never returns a fabricated evaluation', async (
   const result = await invoke({ mode: 'review_preflight', proposal_id: 'proposal-1' });
   assert.equal(result.response.status, 200); assert.equal(result.response.headers.get('cache-control'), 'no-store');
   assert.equal(result.body.automatic_evaluation_id, null); assert.equal(result.inserts.length, 0);
+  assert.equal(result.body.direct_rule_plan.eligible,false);
+  assert.deepEqual(result.rpcCalls.map(x=>x.name),['uid_rule_preflight']);
   const removed = await invoke({ mode: 'review_preflight', proposal_id: 'proposal-1' }, { missing: true });
   assert.equal(removed.response.status, 404); assert.match(removed.body.error, /not found/);
 });
@@ -106,14 +109,20 @@ test('gateway pins route mode and proposal; forwards session and stale guidance 
   try {
     assert.equal((await realFetch(base + '/api/admin/feedback/target/preflight')).status, 401);
     assert.equal((await realFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST' })).status, 401);
+    assert.equal((await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST' })).status, 401);
     assert.equal(calls.length, 0);
     const headers = { Authorization: 'Bearer synthetic.admin', 'Content-Type': 'application/json' };
     await realFetch(base + '/api/admin/feedback/target/preflight', { headers });
+    const noApproval = await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST', headers, body: JSON.stringify({candidate_hash:'current'}) });
+    assert.equal(noApproval.status,422);
+    const processed = await realFetch(base + '/api/admin/feedback/target/process', { method:'POST', headers, body:JSON.stringify({mode:'delete_all',proposal_id:'attacker',approve:true,candidate_hash:'current',evaluation_id:'forged',review:{visual_reviewed:true},actor_user_id:'attacker'}) });
+    assert.equal(processed.status,409);assert.equal(processed.headers.get('cache-control'),'no-store');
+    assert.deepEqual(calls[1],{mode:'process_review',proposal_id:'target',approve:true,candidate_hash:'current'});
     const response = await realFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all', proposal_id: 'attacker', candidate_hash: 'current' }) });
     assert.equal(response.status, 409); assert.equal((await response.json()).retry_guidance, 'Refresh');
     await realFetch(base + '/api/admin/governance/governance_list', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
     await realFetch(base + '/api/admin/branch-guides/upsert', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
-    assert.deepEqual(calls.map(x => x.mode), ['review_preflight', 'resolve_covered', 'governance_list', 'branch_guide_upsert']);
-    assert.equal(calls[1].proposal_id, 'target');
+    assert.deepEqual(calls.map(x => x.mode), ['review_preflight', 'process_review', 'resolve_covered', 'governance_list', 'branch_guide_upsert']);
+    assert.equal(calls[2].proposal_id, 'target');
   } finally { globalThis.fetch = realFetch; if (oldUrl === undefined) delete process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL; else process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL = oldUrl; await new Promise<void>(r => server.close(() => r())); }
 });

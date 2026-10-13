@@ -156,21 +156,35 @@ function rememberSubmission(key){
 }
 const fallback=[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}];
 function readable(name){const brands={pawfecthouse:"PawfectHouse",giftsoul:"GiftSoul",soulprise:"SoulPrise"};return brands[name.toLowerCase()]||name.replace(/-/g," ").replace(/\b\w/g,x=>x.toUpperCase())}
+// Group by section identity, never the free-form per-asset element/creative title.
+const assetSections=["Banner","Why You'll Love It","Product Details","Good To Know","Perfect for Every Occasion","FAQ","Chưa định danh"];
+function assetTokens(value){return String(value||"").replace(/([a-z])([A-Z])/g,"$1 $2").toLowerCase().replace(/[’']/g,"").replace(/([a-z])(\d)/g,"$1 $2").replace(/[^a-z0-9]+/g," ").trim();}
+function assetSection(value,identifier=false){
+ const text=assetTokens(value);
+ // Names may be followed by a slot (e.g. Product Details — Main); IDs may
+ // also carry a product prefix. Word boundaries avoid matching incidental substrings.
+ const aliases=[[/^(?:banner|hero)(?: |$)/,"Banner"],[/^(?:why you(?:ll)? love it|wyl|benefits?)(?: |$)/,"Why You'll Love It"],[/^(?:product details?|details?|pd)(?: |$)/,"Product Details"],[/^(?:good to know|gtk)(?: |$)/,"Good To Know"],[/^(?:perfect for every occasion|occasions?)(?: |$)/,"Perfect for Every Occasion"],[/^faqs?(?: |$)/,"FAQ"]];
+ for(const [pattern,name] of aliases)if(pattern.test(text))return name;
+ if(identifier){for(const part of text.split(/\s+/).map((_,i,parts)=>parts.slice(i).join(" "))){for(const [pattern,name] of aliases)if(pattern.test(part))return name;}}
+ return "";
+}
 function availableVariables(){
  const seen=new Set(),result=[{key:"Overall",label:"Overall",element:"Overall",detail:"Toàn bộ outcome"}],counters=Object.create(null);
- const shortName={"Why You'll Love It":"WYL","Why You’ll Love It":"WYL","Good To Know":"GTK","Product Details":"PD","Perfect for Every Occasion":"Occasion","Banner":"Banner","FAQ":"FAQ","FAQs":"FAQ"};
+ const shortName={"Why You'll Love It":"WYL","Good To Know":"GTK","Product Details":"PD","Perfect for Every Occasion":"Occasion","Banner":"Banner","FAQ":"FAQ","Chưa định danh":"Asset"};
  taskAssets.forEach(a=>{
   const id=String(a.id||a.asset_id||"").trim();if(!id||seen.has(id))return;seen.add(id);
-  const element=String(a.element||a.section||"").trim()||"Chưa định danh";
+  const element=assetSection(a.section)||assetSection(a.element)||assetSection(id,true)||assetSection(a.position)||assetSection(a.label)||assetSection(a.asset_name)||assetSection(a.name)||"Chưa định danh";
   counters[element]=(counters[element]||0)+1;
   const index=String(counters[element]).padStart(2,"0");
   const raw=String(a.position||a.label||a.asset_name||a.name||"").trim();
-  const selector=raw.split(/\s*[—–]\s*/)[0].trim();
-  // Only selector/slot may be displayed. Never show creative headlines or description.
-  const known=/^(?:desktop|mobile|main|hero|story\s*\d+|icon\s*\d+|asset\s*\d+|\d{1,2})$/i.test(selector);
-  const slot=known?selector:index;
-  const label=(Object.prototype.hasOwnProperty.call(shortName,element)?shortName[element]:element)+" · "+slot;
-  result.push({key:id,label,element,detail:raw});
+  // Pull only bounded slot vocabulary, never an arbitrary headline, into labels.
+  let slot="";
+  for(const value of [a.position,a.element,id,a.label,a.asset_name,a.name]){
+   const text=assetTokens(String(value||"").split(/\s*[—–]\s*/)[0]);
+   const match=text.match(/(?:^| )(desktop|mobile|main|hero|story \d{1,2}|icon \d{1,2}|asset \d{1,2})(?:$| (?:webp|png|jpg|jpeg)$)/)||text.match(/(?:^| )(\d{1,2})(?:$| (?:webp|png|jpg|jpeg)$)/);
+   if(match){slot=match[1];break;}
+  }
+  result.push({key:id,label:shortName[element]+" · "+(slot||index),element,detail:raw});
  });
  return result;
 }
@@ -194,7 +208,8 @@ function renderVariables(){
   where.appendChild(btn);
  }
  targetButton(variables[0],keys);
- Object.entries(groups).forEach(([name,items])=>{
+ assetSections.filter(name=>groups[name]).forEach(name=>{
+  const items=groups[name];
   const section=document.createElement("div");section.className="variable-section";
   const header=document.createElement("div");header.className="variable-section-title";
   const all=items.every(v=>selectedTargets.has(v.key));

@@ -1071,6 +1071,33 @@ export function createApp(): express.Application {
       return res.status(upstream.status).json(data);
     } catch (err: any) { return res.status(502).json({ error: sanitizePublicError(err, "Unable to load current review") }); }
   });
+  app.post("/api/admin/feedback/:id/accept-rule", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
+    const authorization=req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
+    if(req.body?.approve_rule!==true||typeof req.body?.candidate_hash!=="string"||!req.body.candidate_hash||typeof req.body?.rule_hash!=="string"||!req.body.rule_hash||typeof req.body?.plan_hash!=="string"||!req.body.plan_hash)
+      return res.status(422).json({error:"Explicit approval of the displayed rule and current scope is required."});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode:"accept_rule",proposal_id:req.params.id,approve_rule:true,candidate_hash:req.body.candidate_hash,rule_hash:req.body.rule_hash,plan_hash:req.body.plan_hash})});
+      const data=await upstream.json();res.setHeader("Cache-Control","no-store");return res.status(upstream.status).json(data);
+    } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to accept rule. Reload before retrying.")});}
+  });
+
+  app.post("/api/admin/feedback/:id/process", async (req: Request, res: Response) => {
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
+    const authorization=req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
+    if (req.body?.approve !== true || typeof req.body?.candidate_hash !== "string")
+      return res.status(422).json({error:"Explicit approval of the current feedback is required."});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode:"process_review",proposal_id:req.params.id,approve:true,candidate_hash:req.body.candidate_hash})});
+      const data=await upstream.json();res.setHeader("Cache-Control","no-store");
+      return res.status(upstream.status).json(data);
+    } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to process feedback. Reload before retrying.")});}
+  });
+
   app.post("/api/admin/feedback/:id/resolve-covered", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
     const authorization = req.header("authorization");

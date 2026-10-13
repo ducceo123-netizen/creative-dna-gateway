@@ -262,14 +262,21 @@ end $$;
 select pg_temp.assert_true((select count(*) from public.uid_governance_snapshots)=0,'failed merges leave zero snapshots'),
  pg_temp.assert_true((select jsonb_agg(to_jsonb(n) order by id) from public.knowledge_nodes n)=nodes_before,'failed merges leave zero canonical changes') from test_state;
 
--- Exercise the successful service-only RPC as service_role, not the DB owner.
+-- The owner-rule migration now guards compiled/Onepage routes even when an
+-- older service client supplies an otherwise complete passed evaluation.
 set local role service_role;
-select public.uid_governance_accept_merge('00000000-0000-0000-0000-000000000211','00000000-0000-0000-0000-000000000010','00000000-0000-0000-0000-000000000401','Reviewed fresh candidate artifacts across all affected brands');
+do $$ begin
+ begin
+  perform public.uid_governance_accept_merge('00000000-0000-0000-0000-000000000211','00000000-0000-0000-0000-000000000010','00000000-0000-0000-0000-000000000401','Reviewed fresh candidate artifacts across all affected brands');
+ exception when others then
+  if position('Compiler integration required' in sqlerrm)>0 then return; end if;
+  raise;
+ end;
+ raise exception 'ASSERTION: legacy Onepage compiler bypass succeeded';
+end $$;
 reset role;
-select pg_temp.assert_true((select count(*) from public.uid_governance_snapshots where checkpoint='before')=3,'atomic before snapshots all targets'),
- pg_temp.assert_true((select count(*) from public.uid_governance_snapshots where checkpoint='after')=3,'atomic after snapshots all targets'),
- pg_temp.assert_true((select count(*) from public.knowledge_nodes where status='active' and slug='onepage-system'
-   and position('A genuinely new structural rule requiring evaluated artifacts' in content_md)>0)=3,'genuine merge all targets'),
- pg_temp.assert_true((select status='resolved' and merged_at is null from public.knowledge_proposals where id='00000000-0000-0000-0000-000000000201'),'resolution never converted to merge');
+select pg_temp.assert_true((select count(*) from public.uid_governance_snapshots)=0,'legacy compiler block writes no snapshots'),
+ pg_temp.assert_true((select jsonb_agg(to_jsonb(n) order by id) from public.knowledge_nodes n)=nodes_before,'legacy compiler block changes no canonical nodes'),
+ pg_temp.assert_true((select status='pending' from public.knowledge_proposals where id='00000000-0000-0000-0000-000000000211'),'evaluated Onepage remains pending') from test_state;
 select 'covered-resolution SQL assertions passed' as result;
 rollback;

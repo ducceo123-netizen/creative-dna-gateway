@@ -329,11 +329,13 @@ test("cleared draft inputs stay empty through same-output host updates", () => {
   for (const id of ["url", "theme", "custom"]) assert.equal(ui.$(id).value, "");
 });
 
-test("asset groups use exact metadata safely even for prototype-like section names", () => {
+test("unknown and prototype-like section names share one safe fallback group", () => {
   const data = { ...output("asset_review"), assets: [{ id: "prototype-1", element: "__proto__", position: "desktop" }, { id: "prototype-2", element: "constructor" }] };
   const ui = setup(data); ui.choose("feedback");
   const buttons = ui.$("variableKeys").querySelectorAll("button").map(x => x.textContent);
-  assert.ok(buttons.some(x => x.includes("__proto__"))); assert.ok(buttons.some(x => x.includes("constructor")));
+  assert.equal(buttons.filter(x => x.includes("Chọn cả nhóm")).length, 1);
+  assert.ok(buttons.includes("Chọn cả nhóm: Chưa định danh (2)"));
+  assert.doesNotMatch(buttons.join("|"), /__proto__|constructor/);
 });
 
 test("confirmed delivery keeps the fourth step and exposes revise/new-task without repackaging", async () => {
@@ -611,4 +613,62 @@ test("pending and failed attachments with globals echoes never replace a focused
   // Submitting may temporarily disable and blur an input in a real browser.
   // After that attempt, assert retained node/text rather than modeled focus.
   await ui.submit(); assert.equal(ui.messages.length, 0);
+});
+
+const legacyOnepageAssets = [
+  { asset_id: "product-gtk_02.webp", element: "Care instructions image", label: "A very long creative headline that must never be a heading" },
+  { id: "banner_desktop", element: "Banner Desktop — product story" },
+  { id: "banner_mobile", section: "BANNER", element: "Mobile hero crop" },
+  { id: "onepage_product-wyl_01.webp", element: "A unique benefit title" },
+  { id: "opaque-benefit", section: "WHY YOU’LL LOVE IT", element: "Another benefit title", position: "02" },
+  { id: "detail_01", element: "Product_Details_01" },
+  { id: "occasion_story_01_mobile", section: "Product Details", element: "Main image", position: "main" },
+  { id: "detail_main", section: "PD", position: "main" },
+  { id: "gtk_01", element: "Good-to-know — 01" },
+  { id: "opaque-gtk", section: "unknown", element: "GTK03" },
+  { id: "detail_01", section: "Bad duplicate" },
+];
+function sectionButtons(ui: ReturnType<typeof setup>) { return ui.$("variableKeys").querySelectorAll("button").filter(x => x.textContent.includes("Chọn cả nhóm")); }
+
+test("legacy Onepage slots and free-form elements collapse into ordered canonical sections", () => {
+  const ui = setup({ ...output("asset_review"), assets: legacyOnepageAssets }); ui.choose("feedback");
+  assert.deepEqual(sectionButtons(ui).map(x => x.textContent), [
+    "Chọn cả nhóm: Banner (2)", "Chọn cả nhóm: Why You'll Love It (2)",
+    "Chọn cả nhóm: Product Details (3)", "Chọn cả nhóm: Good To Know (3)",
+  ]);
+  const labels = ui.$("variableKeys").querySelectorAll("button").filter(x => !x.textContent.includes("Chọn cả nhóm")).map(x => x.textContent);
+  assert.deepEqual(labels, ["Overall", "Banner · desktop", "Banner · mobile", "WYL · 01", "WYL · 02", "PD · 01", "PD · main", "PD · main", "GTK · 02", "GTK · 01", "GTK · 03"]);
+  assert.ok(labels.every(x => x.length < 25));
+  ui.update({ ...output("asset_review"), assets: [...legacyOnepageAssets].reverse().filter(x => x.section !== "Bad duplicate") });
+  assert.deepEqual(sectionButtons(ui).map(x => x.textContent), ["Chọn cả nhóm: Banner (2)", "Chọn cả nhóm: Why You'll Love It (2)", "Chọn cả nhóm: Product Details (3)", "Chọn cả nhóm: Good To Know (3)"]);
+});
+
+test("canonical grouping keeps Occasion and FAQ distinct and unknown elements in one group", () => {
+  const ui = setup({ ...output("asset_review"), assets: [
+    { id: "occasion_icon_01" }, { id: "occasion_story_02" },
+    { id: "faq_01" }, { id: "faq_02", section: "FAQs" },
+    { id: "random-1", element: "Special creative headline" }, { id: "random-2", section: "Different unique headline" },
+  ] }); ui.choose("feedback");
+  assert.deepEqual(sectionButtons(ui).map(x => x.textContent), ["Chọn cả nhóm: Perfect for Every Occasion (2)", "Chọn cả nhóm: FAQ (2)", "Chọn cả nhóm: Chưa định danh (2)"]);
+});
+
+test("whole-section and mixed asset selection retain exact IDs through metadata reorder and typed host echoes", async () => {
+  const data = { ...output("asset_review"), assets: legacyOnepageAssets };
+  const ui = setup(data, { globalsEcho: "sync" }); ui.choose("feedback");
+  sectionButtons(ui)[1].click(); // Whole WYL section.
+  ui.$("variableKeys").querySelectorAll("button").find(x => x.textContent === "Banner · mobile")!.click();
+  ui.update({ ...data, assets: [...legacyOnepageAssets].reverse().filter(x => x.section !== "Bad duplicate") });
+  assert.match(ui.$("targetCount").textContent, /Đã chọn 3 mục/);
+  ui.$("createSharedFeedback").click();
+  const area = groupArea(ui); area.focus(); enterAtSelection(ui, "Sửa màu cả nhóm"); area.setSelectionRange(2, 5);
+  const writes = area.valueWrites;
+  sectionButtons(ui)[2].click(); sectionButtons(ui)[2].click(); // Select/unselect another whole section.
+  ui.$("modeTrain").click(); ui.$("modeFeedback").click();
+  assert.ok(groupArea(ui) === area); assert.ok(ui.document.activeElement === area);
+  assert.equal(area.valueWrites, writes); assert.deepEqual([area.selectionStart, area.selectionEnd], [2, 5]);
+  const draft = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id];
+  assert.deepEqual(draft.variableItems[0].targets, ["onepage_product-wyl_01.webp", "opaque-benefit", "banner_mobile"]);
+  assert.equal(draft.variableItems[0].text, "Sửa màu cả nhóm");
+  await ui.submit();
+  for (const id of draft.variableItems[0].targets) assert.ok(ui.messages[0].prompt.includes("[asset_id=" + id + "]"));
 });

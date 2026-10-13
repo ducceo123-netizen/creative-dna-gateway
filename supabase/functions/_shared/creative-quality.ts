@@ -1,6 +1,11 @@
 /** Deterministic, account-independent quality policy. No model, credentials, network or writes. */
 export const QUALITY_SCHEMA = 'uid-creative-quality/1';
-export const QUALITY_COMPILER = '2026-10-11-v2';
+// Stored /2 bundles require supplemental capability. Old /1 compilers fail closed.
+export const QUALITY_SUPPLEMENTED_SCHEMA = 'uid-creative-quality/2';
+export const QUALITY_COMPILER = '2026-10-13-owner-supplement-v1';
+export const OWNER_SUPPLEMENTAL_SCHEMA = 'uid.owner-supplemental-rule.v1';
+export const OWNER_SUPPLEMENTAL_PRECEDENCE = 'SUPPLEMENTAL_SUBORDINATE_TO_CANONICAL_HARD_RULES_AND_PRODUCT_TRUTH';
+export const MAX_OWNER_SUPPLEMENTS = 16;
 export const QUALITY_CATALOG_SCHEMA = 'uid-creative-quality-catalog/1';
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Scope = { brands: string[]; branches: string[]; product_urls?: string[] };
@@ -15,10 +20,19 @@ export type QualityReference = {
   usage?: 'supplementary_inspiration' | 'required_evidence'; suggested_for?: string[];
   asset_url?: string; reference_id?: string; source: RuleSource;
 };
+export type OwnerSupplementalRule = {
+  schema_version: typeof OWNER_SUPPLEMENTAL_SCHEMA; id: string; proposal_id: string;
+  decision_kind: 'owner_direct_rule'; canonical_text: string; declared_scope: string; scope: Scope;
+  rule_class: 'STRUCTURAL' | 'BRAND_STYLE' | 'WORKFLOW'; confidence: 'HIGH' | 'MEDIUM';
+  source: { node: 'branch'; locator: string; canonical_text_hash: string };
+  accepted_source_hashes: { branch: string; brand_dna: string };
+  precedence: typeof OWNER_SUPPLEMENTAL_PRECEDENCE;
+  semantic_consistency: 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS'; visual_qc_performed: false;
+};
 export type QualityBundle = {
-  schema_version: typeof QUALITY_SCHEMA; revision: string;
+  schema_version: typeof QUALITY_SCHEMA | typeof QUALITY_SUPPLEMENTED_SCHEMA; revision: string;
   source_hashes: { branch: string; brand_dna: string };
-  rules: QualityRule[]; references: QualityReference[];
+  rules: QualityRule[]; references: QualityReference[]; owner_supplemental_rules?: OwnerSupplementalRule[];
 };
 export type ResolvedDna = {
   brand?: { slug?: string; version?: string }; branch?: DnaNode; brand_dna?: DnaNode;
@@ -80,6 +94,33 @@ function referenceValid(r: unknown, dna: ResolvedDna): r is QualityReference {
     (r.suggested_for === undefined || strings(r.suggested_for)) &&
     sourceValid(r.source,dna) && (r.asset_url === undefined || text(r.asset_url,2000)) && (r.reference_id === undefined || text(r.reference_id,500));
 }
+function exactKeys(value: unknown, keys: string[]): boolean {
+  return object(value) && Object.keys(value).length === keys.length && keys.every(k => Object.hasOwn(value, k));
+}
+export function ownerSupplementalShapeValid(r: unknown, brand: string, branch: string): r is OwnerSupplementalRule {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const hash = (s: unknown) => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
+  if (!object(r) || !exactKeys(r, ['schema_version','id','proposal_id','decision_kind','canonical_text','declared_scope','scope','rule_class','confidence','source','accepted_source_hashes','precedence','semantic_consistency','visual_qc_performed'])
+    || r.schema_version !== OWNER_SUPPLEMENTAL_SCHEMA || !uuid.test(r.proposal_id)
+    || r.id !== 'owner:' + r.proposal_id || r.decision_kind !== 'owner_direct_rule'
+    || !text(r.canonical_text,16000) || r.canonical_text !== r.canonical_text.trim() || /[\u0000-\u0008\u000b-\u001f]/.test(r.canonical_text) || !text(r.declared_scope,500)
+    || !scopeValid(r.scope) || !exactKeys(r.scope,['brands','branches'])
+    || r.scope.brands.includes('*') || r.scope.branches.includes('*')
+    || !r.scope.brands.includes(brand) || !r.scope.branches.includes(branch)
+    || !['STRUCTURAL','BRAND_STYLE','WORKFLOW'].includes(r.rule_class) || !['HIGH','MEDIUM'].includes(r.confidence)
+    || !exactKeys(r.source,['node','locator','canonical_text_hash']) || r.source.node !== 'branch'
+    || r.source.locator !== 'owner-rule:' + r.proposal_id || !hash(r.source.canonical_text_hash)
+    || !exactKeys(r.accepted_source_hashes,['branch','brand_dna']) || !hash(r.accepted_source_hashes.branch) || !hash(r.accepted_source_hashes.brand_dna)
+    || r.precedence !== OWNER_SUPPLEMENTAL_PRECEDENCE || r.semantic_consistency !== 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS' || r.visual_qc_performed !== false) return false;
+  const headings = ['Generalized Rule','Expected Behavior','Reject Conditions','Scope','Rule Class','Confidence'];
+  const sections = [...r.canonical_text.matchAll(/^## ([^\n]+)\n/gm)];
+  if (sections.length !== 6 || sections[0].index !== 0 || sections.some((m,i) => m[1] !== headings[i])) return false;
+  const contents = sections.map((m,i) => r.canonical_text.slice(m.index! + m[0].length,sections[i+1]?.index ?? r.canonical_text.length).trim());
+  return contents.every(v => v && !/^#{1,6}\s/m.test(v) && !/```|~~~/m.test(v))
+    && contents.slice(0,3).every(v => v.length <= 4000)
+    && contents[2].split('\n').length <= 12 && contents[2].split('\n').every((v: string) => /^- \S/.test(v) && v.length <= 802)
+    && contents[3] === r.declared_scope && contents[4] === r.rule_class && contents[5] === r.confidence;
+}
 function usableAssetUrl(value?: string) {
   // This reports a retrievable candidate only, never claims that bytes were fetched or visually inspected.
   try { const u = new URL(value || ''); return u.protocol === 'https:' && !u.username && !u.password && !u.search && !u.hash &&
@@ -98,11 +139,23 @@ export async function compileCreativeQuality(dna: ResolvedDna, context: QualityC
   if (isCatalog && (!catalogValid || !Object.hasOwn(stored.contracts,brand))) errors.push('BRAND_CONTRACT_MISSING');
   let bundle: QualityBundle | null = null;
   if (!object(raw)) errors.push('QUALITY_CONTRACT_MISSING');
-  else if (raw.schema_version !== QUALITY_SCHEMA || !text(raw.revision,120) || !object(raw.source_hashes) ||
+  else if (![QUALITY_SCHEMA, QUALITY_SUPPLEMENTED_SCHEMA].includes(raw.schema_version) || !text(raw.revision,120) || !object(raw.source_hashes) ||
     !Array.isArray(raw.rules) || !raw.rules.length || raw.rules.length > 80 || !Array.isArray(raw.references) || raw.references.length > 48 ||
     stableJson(raw).length > 100000 || !raw.rules.every(r => ruleValid(r,dna)) || !raw.references.every(r => referenceValid(r,dna))) errors.push('QUALITY_CONTRACT_INVALID');
   else bundle = raw as QualityBundle;
   if (bundle && (bundle.source_hashes.branch !== hashes.branch || bundle.source_hashes.brand_dna !== hashes.brand_dna)) errors.push('QUALITY_CONTRACT_STALE');
+  const rawSupplemental = bundle?.owner_supplemental_rules;
+  if (bundle && ((bundle.schema_version === QUALITY_SCHEMA && rawSupplemental !== undefined)
+    || (bundle.schema_version === QUALITY_SUPPLEMENTED_SCHEMA && (!Array.isArray(rawSupplemental) || !rawSupplemental.length))))
+    errors.push('OWNER_SUPPLEMENTAL_SCHEMA_INVALID');
+  const supplements = Array.isArray(rawSupplemental) ? rawSupplemental : [];
+  if (rawSupplemental !== undefined && (!Array.isArray(rawSupplemental) || rawSupplemental.length > MAX_OWNER_SUPPLEMENTS
+    || !supplements.every(r => ownerSupplementalShapeValid(r,brand,branch)))) errors.push('OWNER_SUPPLEMENTAL_INVALID');
+  if (new Set(supplements.map(r => r?.id)).size !== supplements.length) errors.push('DUPLICATE_OWNER_SUPPLEMENTAL_IDS');
+  for (const supplement of supplements) if (ownerSupplementalShapeValid(supplement,brand,branch)) {
+    if (supplement.source.canonical_text_hash !== await sha256(supplement.canonical_text)) errors.push('OWNER_SUPPLEMENTAL_HASH_MISMATCH');
+    if (!dna.branch?.content_md?.includes(supplement.canonical_text)) errors.push('OWNER_SUPPLEMENTAL_SOURCE_DRIFT');
+  }
   const allRules = bundle?.rules || [];
   if (new Set(allRules.map(r => r.id)).size !== allRules.length) errors.push('DUPLICATE_RULE_IDS');
   const candidates = allRules.filter(r => applies(r.scope,brand,branch,context));
@@ -155,7 +208,12 @@ export async function compileCreativeQuality(dna: ResolvedDna, context: QualityC
     schema_version: QUALITY_SCHEMA, compiler_version: QUALITY_COMPILER, revision: bundle?.revision ?? null,
     route: { brand, branch }, source_hashes: hashes,
     status: contentReady ? 'COMPILED' : 'BLOCKED', errors: [...new Set(errors)].sort(),
-    rules: contentReady ? rules : [], superseded_rule_ids: [...superseded].sort(), references,
+    rules: contentReady ? rules : [],
+    owner_supplemental_rules: contentReady ? [...supplements].sort((a,b) => a.id.localeCompare(b.id)) : [],
+    owner_supplemental_policy: { layer: 'OWNER_APPROVED_VERBATIM_SUPPLEMENT', precedence: OWNER_SUPPLEMENTAL_PRECEDENCE,
+      semantic_consistency: 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS', visual_qc_performed: false,
+      instruction: 'Read the applicable owner-approved supplemental canonical text verbatim alongside the active catalog. This layer adds guidance only; it never replaces or supersedes existing catalog rules, hard gates, verified product truth, safety or scoped brand expression. If supplemental prose conflicts with any of those, keep the hard canonical requirement and stop the conflicting part for clarification. Owner acceptance is not image QC or proof of semantic consistency.' },
+    superseded_rule_ids: [...superseded].sort(), references,
     canonical_visual_reference_catalog: canonicalReferences.map((r: any) => ({ id: r.id, material_type: r.material_type, status: r.status, usage: 'supplementary_inspiration', asset_url: usableAssetUrl(r.asset_url), pixel_inspection: 'NOT_INSPECTED' })),
     reference_library_policy: { usage: 'OPTIONAL_SUPPLEMENTARY_INSPIRATION', fixed_seed_set_required: false, empty_library_blocks_generation: false,
       overrides_active_brand_or_product_rules: false, inspect_selected_images_before_use: true },
@@ -165,7 +223,7 @@ export async function compileCreativeQuality(dna: ResolvedDna, context: QualityC
     provenance: { source: 'approved_canonical_metadata', account_independent: true, canonical_branch_version: dna.branch?.version ?? null, canonical_brand_version: dna.brand_dna?.version ?? null,
       legacy_library_pointer_count: new Set((String(dna.branch?.content_md || '') + String(dna.brand_dna?.content_md || '')).match(/libfile_[a-zA-Z0-9]+/g) || []).size,
       visual_reference_set_hash: await sha256(stableJson(dna.visual_references || [])) },
-    instruction: 'Apply active scoped rules only. Superseded historical prose and metadata do not override this contract. Verify current PDP facts before content. Reference Library images and legacy reference_ids are optional supplementary inspiration, never fixed seeds, universal style or product evidence. An empty library or unavailable inspiration does not block creation. Follow active brand/product rules and inspect current product evidence before assets. Inspect any inspiration actually selected before using it; otherwise omit it. Only explicitly scoped required_evidence references and required_reference_ids may add an evidence gate; fetch and inspect their pixels. URLs/IDs alone are not visual verification. Stop the affected stage and name missing evidence, stale contract or rule conflict. No silent fallback to account memory. Human review is required for artistic quality; a matching policy hash is not an identical-output guarantee.',
+    instruction: 'Apply active scoped rules and the explicitly emitted owner-approved verbatim supplemental layer. Supplements are subordinate to the active canonical catalog, hard gates, safety and verified product truth; stop conflicting supplemental directions for clarification. Never infer image QC from owner acceptance. Superseded historical prose and metadata do not override this contract. Verify current PDP facts before content. Reference Library images and legacy reference_ids are optional supplementary inspiration, never fixed seeds, universal style or product evidence. An empty library or unavailable inspiration does not block creation. Follow active brand/product rules and inspect current product evidence before assets. Inspect any inspiration actually selected before using it; otherwise omit it. Only explicitly scoped required_evidence references and required_reference_ids may add an evidence gate; fetch and inspect their pixels. URLs/IDs alone are not visual verification. Stop the affected stage and name missing evidence, stale contract or rule conflict. No silent fallback to account memory. Human review is required for artistic quality; a matching policy hash is not an identical-output guarantee.',
   };
   return { ...contract, contract_hash: await sha256(stableJson(contract)) };
 }

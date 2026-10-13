@@ -457,7 +457,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
 });
 
 test('both pending review paths open an in-card panel without a mutation or legacy merge action', async t => {
-  for (const [label,path] of [['Review & Merge','merge'],['Đã có trong quy chuẩn','covered']]) await t.test(path, async t => {
+  for (const [label,path] of [['Xem & duyệt','merge'],['Đã có trong quy chuẩn','covered']]) await t.test(path, async t => {
     const ui=setup(); t.after(ui.unmount);
     ui.calls[0].resolve(page([proposal('synthetic-action'),proposal('legacy','accepted')]));await flush();
     ui.click(label);await flush();
@@ -474,7 +474,7 @@ test('both pending review paths open an in-card panel without a mutation or lega
 test('a completed in-card review forces queue refresh, ignores older poll and preserves its result', async t => {
   const ui=setup();t.after(ui.unmount);
   ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
-  ui.click('Review & Merge');await flush();ui.poll();await flush();
+  ui.click('Xem & duyệt');await flush();ui.poll();await flush();
   const oldPoll=ui.calls[1];
   ui.all('feedback-review-panel-stub')[0].props.onComplete('Synthetic review completed',{status:'merged'});await flush();
   assert.equal(oldPoll.init.signal?.aborted,true);assert.equal(ui.calls.length,3);
@@ -489,12 +489,12 @@ test('a completed in-card review forces queue refresh, ignores older poll and pr
 test('filter switch and logout remove the in-card review; proposal updates change its remount key', async t => {
   const ui=setup();t.after(ui.unmount);
   const p=proposal('synthetic-action');ui.calls[0].resolve(page([p]));await flush();
-  ui.click('Review & Merge');await flush();
+  ui.click('Xem & duyệt');await flush();
   const source=ui.all('feedback-review-panel-stub')[0];
   ui.poll();ui.calls[1].resolve(page([{...p,proposed_content_md:'Changed proposal content'}]));await flush();
   assert.equal(ui.all('feedback-review-panel-stub')[0].props.proposal.proposed_content_md,'Changed proposal content');
   ui.click('all');await flush();assert.equal(ui.all('feedback-review-panel-stub').length,0);
-  ui.click('Review & Merge');await flush();ui.click('Sign out');await flush();
+  ui.click('Xem & duyệt');await flush();ui.click('Sign out');await flush();
   assert.equal(ui.all('feedback-review-panel-stub').length,0);
 });
 
