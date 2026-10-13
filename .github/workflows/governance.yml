@@ -8,6 +8,7 @@ on:
       - 'src/components/GovernancePanel.tsx'
       - 'supabase/**'
       - 'tests/*governance*.ts'
+      - 'tests/sql/**'
       - '.github/workflows/governance.yml'
   push:
     branches: [main]

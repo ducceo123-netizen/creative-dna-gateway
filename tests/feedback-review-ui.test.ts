@@ -319,3 +319,44 @@ test('late direct-rule success after unmount or proposal navigation is ignored',
   assert.equal(ui.completed.length,0);assert.equal(ui.writes,writes);assert.equal(ui.lateWrites,0);
  });
 });
+
+function canonicalAppendPreflight():FeedbackPreflight {
+ const data=directPreflight();
+ data.proposal={...data.proposal,branch_slug:'ldp-system'};
+ data.targets=data.targets.map(target=>({...target,slug:'ldp-system',title:'Landing page system'}));
+ data.direct_rule_plan={...data.direct_rule_plan!,plan_kind:'canonical_append',compiler_version:null,compiled:[],
+  additions:data.direct_rule_plan!.additions.map(addition=>{
+   const {accepted_source_hashes:_,...plain}=addition;
+   return {...plain,schema_version:'uid.owner-canonical-append.v1',scope:{...plain.scope,branches:['ldp-system']}};
+  })};
+ return data;
+}
+
+test('canonical append preview stays literal and owner-approved without a compiled-quality claim',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);const data=canonicalAppendPreflight();await ready(ui,data);
+ assert.equal(ui.button('Duyệt rule & merge ngay').props.disabled,false);
+ assert.match(ui.text(),/Rule thêm nguyên văn vào nhánh đã chọn/);
+ assert.match(ui.text(),/Phạm vi đầy đủ: PawfectHouse/);
+ assert.doesNotMatch(ui.text(),/GiftSoul|SoulPrise/);
+ assert.match(ui.text(),/không tạo quality catalog/);
+ assert.match(ui.text(),/không gắn nhãn đã biên dịch chất lượng hay QC hình ảnh/);
+ assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);
+ ui.click('Duyệt rule & merge ngay');await flush();
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();
+ assert.equal(ui.completed.length,1);assert.match(ui.completed[0][0],/không phải kết quả QC hình ảnh/);
+});
+
+test('canonical append display rejects invented compilation, catalog source hashes and Onepage fallback',async t=>{
+ const compiled=canonicalAppendPreflight();compiled.direct_rule_plan!.compiled=[{status:'COMPILED'}];
+ const compiler=canonicalAppendPreflight();compiler.direct_rule_plan!.compiler_version='pretend-quality-compiler';
+ const hashes=canonicalAppendPreflight();hashes.direct_rule_plan!.additions[0].accepted_source_hashes={branch:'invented',brand_dna:'invented'};
+ const onepage=canonicalAppendPreflight();onepage.targets[0].slug='onepage-system';
+ const wrongSchema=canonicalAppendPreflight();wrongSchema.direct_rule_plan!.additions[0].schema_version='uid.owner-supplemental-rule.v1';
+ for(const data of [compiled,compiler,hashes,onepage,wrongSchema]){
+  const ui=setup('merge');t.after(ui.unmount);await ready(ui,data);
+  assert.match(ui.text(),/Hãy tải lại/);
+  assert.equal(ui.all('button').some(button=>textOf(button)==='Duyệt rule & merge ngay'&&!button.props.disabled),false);
+  assert.equal(ui.completed.length,0);assert.equal(ui.calls.length,1);
+ }
+});
