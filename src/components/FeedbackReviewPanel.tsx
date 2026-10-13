@@ -63,9 +63,10 @@ export function ResolvedFeedbackAudit({proposal}:{proposal:FeedbackProposal}) {
   </div>;
 }
 
-export function FeedbackReviewPanel({proposal, path, request, onClose, onComplete}:{
+export function FeedbackReviewPanel({proposal, path, request, onClose, onComplete, onBusyChange}:{
   proposal:FeedbackProposal; path:FeedbackReviewPath; request:Http; onClose:()=>void;
   onComplete:(message:string, result:Record<string,unknown>)=>void;
+  onBusyChange?:(busy:boolean)=>void;
 }) {
   const [data,setData]=useState<FeedbackPreflight|null>(null);
   const [loading,setLoading]=useState(true);
@@ -84,6 +85,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const mutation=useRef(false);
   const requestRef=useRef(request); requestRef.current=request;
   const onCompleteRef=useRef(onComplete); onCompleteRef.current=onComplete;
+  const onBusyChangeRef=useRef(onBusyChange); onBusyChangeRef.current=onBusyChange;
   const identity=useRef({id:proposal.id,path});
   // A changed proposal/path never renders the previous proposal's fetched data.
   const sameIdentity=identity.current.id===proposal.id&&identity.current.path===path;
@@ -123,7 +125,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
     if(mutation.current||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
-    mutation.current=true;setBusy(action);setError("");setErrorIssues([]);
+    mutation.current=true;onBusyChangeRef.current?.(true);setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
     const operationIdentity=identity.current;
     const current=()=>alive.current&&identity.current===operationIdentity;
@@ -154,7 +156,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
         onCompleteRef.current(action==="rule"?"Đã merge rule do bạn duyệt trực tiếp. Đã lưu lịch sử và snapshot để rollback; đây không phải kết quả QC hình ảnh.":action==="covered"?"Đã đóng feedback: quy chuẩn hiện có đã bao phủ. Nội dung canonical không thay đổi.":"Đã merge: kiểm tra tự động và review đã lưu đều hợp lệ. Quy chuẩn đã được cập nhật.",result);
       }
     } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setStale(true);resetAttestations();}}
-    finally {mutation.current=false;if(current())setBusy(null);}
+    finally {mutation.current=false;if(current()){setBusy(null);onBusyChangeRef.current?.(false);}}
   };
   const close=()=>{if(mutation.current)return;activeRead.current?.abort();alive.current=false;onClose();};
 

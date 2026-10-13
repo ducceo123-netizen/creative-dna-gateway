@@ -52,7 +52,7 @@ function proposal(id = 'synthetic-pending', status = 'pending'): Proposal {
   };
 }
 const page = (proposals: Proposal[] = []) => Response.json({ proposals });
-const emptyPattern = /No\s+(?:pending|merged|rejected|accepted)?\s*feedback proposals\./;
+const emptyPattern = /Không có feedback phù hợp/;
 
 function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockMutationUrl?: string } = {}) {
   const slots: any[] = [], effects: Effect[] = [], effectQueue: Effect[] = [];
@@ -180,10 +180,10 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
   function unmount() { if (!mounted) return; mounted = false; for (const effect of effects) effect.cleanup?.(); }
   function all(type: Node['type']) { return descendants(tree).filter(node => node.type === type); }
   function button(label: string) {
-    const node = all('button').find(node => textOf(node) === label);
+    const node = all('button').find(node => (textOf(node) === label || node.props['aria-label'] === label || node.props['data-status-filter'] === label));
     assert.ok(node, 'Missing button: ' + label); return node;
   }
-  function click(label: string) { const node = button(label); assert.ok(!node.props.disabled, label + ' is disabled'); node.props.onClick(); }
+  function click(label: string) { const node = button(label); assert.ok(!node.props.disabled, label + ' is disabled'); node.props.onClick({currentTarget:{focus:()=>{}}}); }
   function change(placeholder: string, value: string) {
     const node = all('input').find(node => node.props.placeholder === placeholder);
     assert.ok(node, 'Missing input: ' + placeholder); node.props.onChange({ target: { value } });
@@ -196,14 +196,14 @@ function setup(options: { authenticated?: boolean; refreshToken?: boolean; mockM
   render();
   return {
     all, button, click, change, queue, calls, loginCalls, mutationCalls, confirmations, requests, snapshots, storage, intervals, unmount,
-    text: () => textOf(queue()), alerts: () => descendants(queue()).filter(node => node.props.role === 'alert').map(textOf),
+    fullText: () => textOf(tree), open: (id = 'synthetic-action') => click(`Mở feedback: Synthetic feedback ${id}`), text: () => textOf(queue()), alerts: () => descendants(queue()).filter(node => node.props.role === 'alert').map(textOf),
     statuses: () => descendants(queue()).filter(node => node.props.role === 'status').map(textOf),
     poll: () => { for (const interval of intervals.values()) if (interval.ms === 10000) interval.run(); },
     focus: () => event(windowListeners, 'focus'),
     visibility: (value: string) => { document.visibilityState = value; event(documentListeners, 'visibilitychange'); },
     toggleAdvanced: (open: boolean) => {
-      const details = all('details'); assert.equal(details.length, 1);
-      details[0].props.onToggle({ currentTarget: { open } });
+      const details = all('details').find(node => textOf(node).includes('Nâng cao · Knowledge Governance')); assert.ok(details);
+      details.props.onToggle({ currentTarget: { open } });
     },
     get stateWrites() { return stateWrites; }, get lateStateWrites() { return lateStateWrites; },
     get governanceRenders() { return governanceRenders; },
@@ -234,12 +234,12 @@ test('feedback queue starts in loading, never claims empty before its first succ
 test('a successful empty response alone permits the pending-filter empty state', async t => {
   const ui = setup(); t.after(ui.unmount);
   ui.calls[0].resolve(page()); await flush();
-  assert.match(ui.text(), /No pending feedback proposals\./);
+  assert.match(ui.text(), emptyPattern);
   assert.equal(ui.queue().props['aria-busy'], false);
   assert.equal(ui.button('Refresh').props.disabled, false);
   assert.deepEqual(ui.statuses(), []); assert.deepEqual(ui.alerts(), []);
   ui.click('all'); await flush();
-  assert.match(ui.text(), /No\s+feedback proposals\./);
+  assert.match(ui.text(), emptyPattern);
   assert.equal(ui.calls.length, 1, 'Changing a filter does not reload or mutate feedback');
 });
 
@@ -278,7 +278,8 @@ test('successful data renders real proposal content and filters pending, merged,
   assert.equal(ui.all('article').length, 1);
   assert.match(ui.text(), /Synthetic branch synthetic-pending/);
   assert.match(ui.text(), /Synthetic reviewer/);
-  assert.match(ui.text(), /Synthetic proposed rule synthetic-pending/);
+  assert.match(ui.text(), /Synthetic feedback synthetic-pending/);
+  assert.doesNotMatch(ui.text(), /Synthetic proposed rule/, 'Canonical payload is only rendered after opening detail');
   assert.doesNotMatch(ui.text(), /Synthetic branch synthetic-merged/);
   assert.doesNotMatch(ui.text(), emptyPattern);
   ui.click('merged'); await flush();
@@ -323,7 +324,7 @@ test('failure after a successful empty response is stale, and retry-to-empty cle
   assert.match(ui.alerts().join(''), /Đang giữ kết quả lần tải thành công gần nhất/);
   assert.doesNotMatch(ui.text(), emptyPattern);
   ui.click('Thử lại'); ui.calls[2].resolve(page()); await flush();
-  assert.match(ui.text(), /No pending feedback proposals\./);
+  assert.match(ui.text(), emptyPattern);
   assert.deepEqual(ui.alerts(), []);
 });
 
@@ -358,7 +359,7 @@ test('login loads the authenticated queue once, and a signed-out view never clai
   assert.equal(ui.calls.length, 1, 'The session effect is the only initial queue loader after login');
   assert.match(ui.text(), /Đang tải feedback/);
   ui.calls[0].resolve(page()); await flush();
-  assert.equal(ui.calls.length, 1); assert.match(ui.text(), /No pending feedback proposals\./);
+  assert.equal(ui.calls.length, 1); assert.match(ui.text(), emptyPattern);
 });
 
 test('logout and unmount abort a queue read and ignore both late success and late failure', async t => {
@@ -430,6 +431,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
     ui.poll(); await flush();
     const oldPoll = ui.calls[1];
     assert.equal(oldPoll.init.signal?.aborted, false);
+    if (example.action === 'reject') { ui.open(); await flush(); }
     ui.click(example.label); await flush();
     assert.equal(ui.mutationCalls.length, 1); assert.equal(ui.mutationCalls[0].url, mutationUrl);
     if (example.action === 'accept' || example.action === 'reject') {
@@ -452,29 +454,30 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
     assert.match(ui.snapshots.at(-1)!, example.message, 'The silent post-mutation refresh preserves the action result');
     assert.equal(ui.all('article').length, current.length);
     if (current.length) assert.match(ui.text(), /Synthetic branch synthetic-action-result/);
-    else assert.match(ui.text(), /No rejected feedback proposals\./);
+    else assert.match(ui.text(), emptyPattern);
   });
 });
 
-test('both pending review paths open an in-card panel without a mutation or legacy merge action', async t => {
+test('both pending review paths open an detail-drawer panel without a mutation or legacy merge action', async t => {
   for (const [label,path] of [['Xem & duyệt','merge'],['Đã có trong quy chuẩn','covered']]) await t.test(path, async t => {
     const ui=setup(); t.after(ui.unmount);
     ui.calls[0].resolve(page([proposal('synthetic-action'),proposal('legacy','accepted')]));await flush();
+    ui.open();await flush();
     ui.click(label);await flush();
     const panels=ui.all('feedback-review-panel-stub');assert.equal(panels.length,1);
     assert.equal(panels[0].props.path,path);assert.equal(panels[0].props.proposal.id,'synthetic-action');
     assert.equal(ui.calls.length,1);assert.equal(ui.mutationCalls.length,0);
     assert.equal(ui.button(label).props.disabled,true,'An open review cannot be replaced by a repeated click');
     panels[0].props.onClose();await flush();assert.equal(ui.all('feedback-review-panel-stub').length,0);
-    ui.click('all');await flush();assert.match(ui.text(),/Legacy accepted · Chỉ xem/);
+    ui.click('all');await flush();ui.open('legacy');await flush();assert.match(ui.fullText(),/Legacy accepted · Chỉ xem/);
     assert.doesNotMatch(ui.text(),/Finish legacy merge|Accept & Merge|Passed evaluation ID/);
   });
 });
 
-test('a completed in-card review forces queue refresh, ignores older poll and preserves its result', async t => {
+test('a completed detail-drawer review forces queue refresh, ignores older poll and preserves its result', async t => {
   const ui=setup();t.after(ui.unmount);
   ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
-  ui.click('Xem & duyệt');await flush();ui.poll();await flush();
+  ui.open();await flush();ui.click('Xem & duyệt');await flush();ui.poll();await flush();
   const oldPoll=ui.calls[1];
   ui.all('feedback-review-panel-stub')[0].props.onComplete('Synthetic review completed',{status:'merged'});await flush();
   assert.equal(oldPoll.init.signal?.aborted,true);assert.equal(ui.calls.length,3);
@@ -486,24 +489,24 @@ test('a completed in-card review forces queue refresh, ignores older poll and pr
   assert.equal(ui.queue().props['aria-busy'],false);
 });
 
-test('filter switch and logout remove the in-card review; proposal updates change its remount key', async t => {
+test('filter switch and logout remove the detail-drawer review; proposal updates change its remount key', async t => {
   const ui=setup();t.after(ui.unmount);
   const p=proposal('synthetic-action');ui.calls[0].resolve(page([p]));await flush();
-  ui.click('Xem & duyệt');await flush();
+  ui.open();await flush();ui.click('Xem & duyệt');await flush();
   const source=ui.all('feedback-review-panel-stub')[0];
   ui.poll();ui.calls[1].resolve(page([{...p,proposed_content_md:'Changed proposal content'}]));await flush();
   assert.equal(ui.all('feedback-review-panel-stub')[0].props.proposal.proposed_content_md,'Changed proposal content');
   ui.click('all');await flush();assert.equal(ui.all('feedback-review-panel-stub').length,0);
-  ui.click('Xem & duyệt');await flush();ui.click('Sign out');await flush();
+  ui.open();await flush();ui.click('Xem & duyệt');await flush();ui.click('Sign out');await flush();
   assert.equal(ui.all('feedback-review-panel-stub').length,0);
 });
 
 test('advanced Governance starts collapsed, mounts on first opening, and stays mounted on closing', async t => {
   const ui = setup(); t.after(ui.unmount);
   ui.calls[0].resolve(page([proposal()])); await flush();
-  const details = ui.all('details'); assert.equal(details.length, 1);
+  const details = ui.all('details').filter(node => textOf(node).includes('Nâng cao · Knowledge Governance')); assert.equal(details.length, 1);
   assert.ok(!details[0].props.open, 'Native details has no initial open attribute');
-  assert.match(textOf(ui.all('summary')[0]), /Nâng cao · Knowledge Governance/);
+  assert.match(textOf(details[0]), /Nâng cao · Knowledge Governance/);
   assert.equal(ui.governanceRenders, 0); assert.equal(ui.all('governance-panel-stub').length, 0);
   assert.equal(ui.all('article').length, 1, 'Reading feedback does not require opening advanced tools');
   ui.toggleAdvanced(true); await flush();
@@ -521,7 +524,82 @@ test('advanced Governance starts collapsed, mounts on first opening, and stays m
   ui.change('Admin email', 'synthetic@example.invalid'); ui.change('Password', 'synthetic-test-only'); await flush();
   ui.click('Sign in');
   ui.loginCalls[0].resolve(Response.json({ access_token: 'synthetic.next-session.jwt' })); await flush();
-  assert.equal(ui.all('details').length, 1); assert.equal(ui.all('governance-panel-stub').length, 0);
+  assert.equal(ui.all('details').length, 4); assert.equal(ui.all('governance-panel-stub').length, 0);
   assert.equal(ui.governanceRenders, loggedOutRenders, 'A new authenticated session starts with advanced tools unloaded again');
   ui.calls[1].resolve(page()); await flush();
+});
+
+test('compact rows defer details and guarded actions until explicitly opened, then close without mutation', async t => {
+  const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
+  assert.equal(ui.all('dialog').length,0);assert.doesNotMatch(ui.fullText(),/Database Payload|Synthetic proposed rule|Ghi chú từ chối/);
+  ui.open();await flush();assert.equal(ui.all('dialog').length,1);assert.match(ui.fullText(),/Synthetic proposed rule/);
+  assert.equal(ui.mutationCalls.length,0);assert.equal(ui.calls.length,1);
+  ui.click('Đóng chi tiết feedback');await flush();assert.equal(ui.all('dialog').length,0);
+  assert.equal(ui.all('article').length,1);assert.equal(ui.mutationCalls.length,0);
+});
+
+test('drawer close and Escape are blocked synchronously during a guarded review mutation', async t => {
+  const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();
+  ui.open();await flush();ui.click('Xem & duyệt');await flush();
+  const panel=ui.all('feedback-review-panel-stub')[0];
+  const close=ui.button('Đóng chi tiết feedback').props.onClick;
+  panel.props.onBusyChange(true);close();await flush();
+  assert.equal(ui.all('dialog').length,1);assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,true);
+  let prevented=false;ui.all('dialog')[0].props.onCancel({preventDefault:()=>{prevented=true;}});await flush();
+  assert.equal(prevented,true);assert.equal(ui.all('dialog').length,1);
+  panel.props.onBusyChange(false);await flush();ui.click('Đóng chi tiết feedback');await flush();
+  assert.equal(ui.all('dialog').length,0);assert.equal(ui.mutationCalls.length,0);
+});
+
+test('brand grouping, search, material filters and collapsed groups are read-only', async t=>{
+  const ui=setup();t.after(ui.unmount);
+  ui.calls[0].resolve(page([{...proposal('synthetic-action'),brand_name:'PawfectHouse'},{...proposal('other'),brand_name:'GiftSoul'}]));await flush();
+  const search=ui.all('input').find(node=>node.props['aria-label']==='Tìm feedback');assert.ok(search);
+  search.props.onChange({target:{value:'other'}});await flush();assert.equal(ui.all('article').length,1);assert.match(ui.text(),/Synthetic feedback other/);
+  search.props.onChange({target:{value:''}});await flush();assert.equal(ui.all('article').length,2);
+  const group=ui.all('button').find(node=>node.props['aria-controls']?.includes('pawfecthouse'));assert.ok(group);
+  group.props.onClick();await flush();assert.equal(ui.all('article').length,1);
+  assert.equal(ui.calls.length,1);assert.equal(ui.mutationCalls.length,0);
+});
+
+test('poll updates cannot remount the active review during mutation, including terminal status changes', async t => {
+  for(const nextStatus of ['pending','merged','resolved']) await t.test(nextStatus,async t=>{
+    const ui=setup();t.after(ui.unmount);const original=proposal('synthetic-action');
+    ui.calls[0].resolve(page([original]));await flush();ui.open();await flush();ui.click('Xem & duyệt');await flush();
+    const originalPanel=ui.all('feedback-review-panel-stub')[0];originalPanel.props.onBusyChange(true);await flush();
+    ui.poll();ui.calls[1].resolve(page([{...original,status:nextStatus,proposed_content_md:'New proposal after poll'}]));await flush();
+    const stillActive=ui.all('feedback-review-panel-stub')[0];assert.ok(stillActive);
+    assert.equal(stillActive.props.proposal.proposed_content_md,original.proposed_content_md);
+    assert.equal(stillActive.props.proposal.status,'pending');
+    assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,true);
+    originalPanel.props.onBusyChange(false);await flush();
+    assert.equal(ui.button('Đóng chi tiết feedback').props.disabled,false);
+    ui.click('Đóng chi tiết feedback');await flush();assert.equal(ui.all('dialog').length,0);
+    assert.equal(ui.mutationCalls.length,0);
+  });
+});
+
+
+test('a successful action notice is associated with its feedback and never appears in another drawer',async t=>{
+ const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal('synthetic-action'),proposal('other')]));await flush();
+ ui.open();await flush();ui.click('Xem & duyệt');await flush();
+ ui.all('feedback-review-panel-stub')[0].props.onComplete('Synthetic A-only completion');await flush();
+ assert.match(textOf(ui.all('dialog')[0]),/Synthetic A-only completion/);
+ ui.calls[1].resolve(page([proposal('synthetic-action','merged'),proposal('other')]));await flush();
+ ui.click('Đóng chi tiết feedback');await flush();ui.open('other');await flush();
+ assert.doesNotMatch(textOf(ui.all('dialog')[0]),/Synthetic A-only completion/);
+});
+
+
+test('screenshot ancillary sections each start independently collapsed and reference data loads on demand',async t=>{
+ const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal()]));await flush();
+ const tools=ui.all('details');assert.equal(tools.length,4);assert.ok(tools.every(node=>!node.props.open));
+ for(const title of ['Admin access','Branch Visual Guide','Reference Library','Nâng cao · Knowledge Governance']){
+   assert.ok(ui.all('summary').some(node=>textOf(node).includes(title)),title);
+ }
+ assert.equal(ui.all('private-reference-panel-stub').length,0);
+ const library=tools.find(node=>textOf(node).includes('Reference Library'));assert.ok(library);
+ library.props.onToggle({currentTarget:{open:true}});await flush();assert.equal(ui.all('private-reference-panel-stub').length,1);
+ library.props.onToggle({currentTarget:{open:false}});await flush();assert.equal(ui.all('private-reference-panel-stub').length,1,'Closing preserves the reference session and unfinished form');
+ assert.equal(ui.calls.length,1);assert.equal(ui.mutationCalls.length,0);
 });

@@ -1,10 +1,11 @@
+import { feedbackStatuses, sourceBrand, feedbackTitle, materialKey, materialLabel, filterFeedback, groupFeedback, feedbackDate } from "./feedback-inbox";
 import { GovernancePanel } from "./GovernancePanel";
 import { FeedbackReviewPanel, ResolvedFeedbackAudit, type FeedbackReviewPath } from "./FeedbackReviewPanel";
 import type { FeedbackProposal as Proposal } from "./feedback-review";
 import { PrivateReferencePanel } from "./PrivateReferencePanel";
 import { assessProposal } from "../knowledge-governance";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Clock3, Eye, ImagePlus, LogIn, LogOut, RefreshCw, ShieldCheck, Sparkles, XCircle, X, Search, ChevronRight, SlidersHorizontal, Layers3, Paperclip } from "lucide-react";
 
 
 export function AdminFeedback({ onBack }: { onBack: () => void }) {
@@ -23,11 +24,23 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [activeAction, setActiveAction] = useState<{ id:string; type:"reject" } | null>(null);
   const [message, setMessage] = useState("");
+  const [detailNotice, setDetailNotice] = useState<{id:string;message:string} | null>(null);
   const [actionErrors, setActionErrors] = useState<Record<string,string>>({});
   const [reviewing, setReviewing] = useState<{id:string;path:FeedbackReviewPath}|null>(null);
   const actionBusy = useRef(false);
   const [notes, setNotes] = useState<Record<string,string>>({});
   const [filter, setFilter] = useState("pending");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [materialFilter, setMaterialFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [collapsedBrands, setCollapsedBrands] = useState<Record<string, boolean>>({});
+  const [referencesLoaded, setReferencesLoaded] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [busyProposal, setBusyProposal] = useState<Proposal | null>(null);
+  const reviewBusyRef = useRef(false);
+  const drawerRef = useRef<HTMLDialogElement | null>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
   const [expanded, setExpanded] = useState<Record<string,boolean>>({});
   const [adminEmail, setAdminEmail] = useState("");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -38,7 +51,34 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const [guideForm, setGuideForm] = useState({ title_vi:"", description_vi:"", usage_badge:"", ratio_note:"", output_note:"", image_url:"", image_caption:"", page_url:"", css_selector:"", preview_mode:"selector" });
   const [guideLoading, setGuideLoading] = useState(false);
 
-  const filtered = useMemo(() => filter === "all" ? proposals : proposals.filter(p => p.status === filter), [proposals, filter]);
+  const filtered = useMemo(() => filterFeedback(proposals, { status: filter, brand: brandFilter, material: materialFilter, search }), [proposals, filter, brandFilter, materialFilter, search]);
+  const groups = useMemo(() => groupFeedback(filtered), [filtered]);
+  const brands = useMemo(() => groupFeedback(proposals), [proposals]);
+  const materials = useMemo(() => [...new Map(proposals.map(p => [materialKey(p), materialLabel(p)])).entries()].sort((a,b) => a[1].localeCompare(b[1])), [proposals]);
+  const selected = busyProposal?.id === selectedId ? busyProposal : proposals.find(p => p.id === selectedId);
+  const rejectedCount = proposals.filter(p => p.status === "rejected").length;
+  const changeReviewBusy = (busy:boolean) => {
+    reviewBusyRef.current = busy; setReviewBusy(busy);
+    // Polls may update the inbox, but must not remount an in-flight guarded mutation.
+    setBusyProposal(busy ? selected || null : null);
+  };
+  const closeDrawer = () => {
+    if (actionBusy.current || reviewBusyRef.current) return;
+    setReviewing(null); setSelectedId(null);
+  };
+  const openFeedback = (id:string, opener?:HTMLButtonElement) => {
+    if (actionBusy.current || reviewBusyRef.current) return;
+    if (opener) openerRef.current = opener;
+    setReviewing(null); setSelectedId(id);
+  };
+  useEffect(() => {
+    const dialog = drawerRef.current;
+    if (!selectedId || !token || !dialog) return;
+    if (!dialog.open) dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { dialog.close(); document.body.style.overflow = previousOverflow; openerRef.current?.focus(); };
+  }, [selectedId, token]);
 
   const parseTrainingSpec = (raw = "") => {
     const marker = "--- AI INTERPRETED TRAINING SPEC ---";
@@ -104,6 +144,10 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     setQueueLoaded(false);
     setQueueError("");
     setAdvancedLoaded(false);
+    setReferencesLoaded(false);
+    setSelectedId(null);
+    setDetailNotice(null);
+    changeReviewBusy(false);
     setActionErrors({});
     setReviewing(null);
     sessionStorage.removeItem("creative_dna_admin_token");
@@ -314,6 +358,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       const data = await res.json();
       if (!res.ok) throw new Error([data.error || "Review failed", ...(Array.isArray(data.issues) ? data.issues : [])].join(" · "));
       setMessage("Rejected. Canonical DNA was not changed.");
+      setDetailNotice({id, message:"Rejected. Canonical DNA was not changed."});
       await load(undefined, true, true);
     } catch(e:any){ setMessage(e.message); setActionErrors(previous => ({ ...previous, [id]: e.message })); }
     finally { actionBusy.current = false; setLoading(false); setActiveAction(null); }
@@ -376,14 +421,14 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
     };
   }, [token]);
 
-  return <main className="max-w-[1440px] mx-auto px-4 sm:px-6 py-8 space-y-6">
+  return <main className="feedback-admin max-w-[1440px] mx-auto px-4 sm:px-6 py-6 space-y-5">
     <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"><ArrowLeft className="w-4 h-4"/>Back to Creative DNA</button>
-    <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-indigo-600"/><h1 className="text-2xl font-extrabold text-slate-900">Admin Feedback Queue</h1></div>
-          <p className="text-sm text-slate-500 mt-1">Đọc context và quy tắc, rồi chọn: đã có trong quy chuẩn hoặc review thay đổi mới trước khi merge.</p>
-          {token && <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>Auto-sync mỗi 10 giây · tự refresh session</div>}
+          <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-indigo-600"/><h1 className="text-2xl font-extrabold text-slate-900">Feedback inbox</h1></div>
+          <p className="text-sm text-slate-500 mt-1">Quét nhanh theo brand. Mở một feedback để xem context và xử lý.</p>
+          {token && <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 "/>Đồng bộ mỗi 10 giây</div>}
         </div>
         <button onClick={() => load()} disabled={!token || loading || queueLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"><RefreshCw className={`w-3.5 h-3.5 ${queueLoading?"animate-spin":""}`}/>Refresh</button>
       </div>
@@ -391,18 +436,66 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         <input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Admin email" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
         <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==="Enter") login();}} placeholder="Password" className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"/>
         <button onClick={login} disabled={authLoading} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-50"><LogIn className="w-4 h-4"/>{authLoading?"Signing in...":"Sign in"}</button>
-      </div> : <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex gap-1">{["pending","resolved","merged","rejected","accepted","all"].map(x=><button key={x} onClick={()=>{setReviewing(null);setFilter(x);}} className={`px-3 py-2 text-xs font-semibold rounded-lg border ${filter===x?"bg-slate-900 text-white border-slate-900":"bg-white text-slate-600 border-slate-200"}`}>{x==="accepted"?"accepted (legacy)":x}</button>)}</div>
-        <div className="flex items-center gap-2">
-          {filter==="rejected" && filtered.length>0 && <button onClick={deleteAllRejected} disabled={bulkDeleting || loading} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 disabled:opacity-50">
-            {bulkDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin"/> : <XCircle className="w-3.5 h-3.5"/>}
-            {bulkDeleting ? "Deleting..." : `Delete all rejected (${filtered.length})`}
-          </button>}
+      </div> : <div className="flex flex-col gap-3">
+        <div className="feedback-status-tabs" aria-label="Lọc trạng thái">
+          {feedbackStatuses.map(status => <button key={status.value} type="button" data-status-filter={status.value} aria-pressed={filter === status.value} onClick={() => { setReviewing(null); setSelectedId(null); setFilter(status.value); }} className={filter === status.value ? "is-active" : ""}>
+            {status.label}<span>{proposals.filter(p => status.value === "all" || p.status === status.value).length}</span>
+          </button>)}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="feedback-search flex-1 min-w-48"><Search className="w-4 h-4" aria-hidden="true"/><input type="search" aria-label="Tìm feedback" placeholder="Tìm feedback, người gửi, nội dung…" value={search} onChange={event => setSearch(event.target.value)}/></label>
+          <label className="flex items-center gap-2 text-xs text-slate-500"><SlidersHorizontal className="w-4 h-4" aria-hidden="true"/><span className="sr-only">Lọc material</span><select aria-label="Lọc material" value={materialFilter} onChange={event => setMaterialFilter(event.target.value)} className="max-w-56 border border-slate-200 px-3 py-2 text-xs"><option value="all">Tất cả material</option>{materials.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
           <button onClick={logout} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600"><LogOut className="w-3.5 h-3.5"/>Sign out</button>
         </div>
       </div>}
-      {message && <div className="text-xs p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">{message}</div>}
-      {token && <div className="border-t border-slate-100 pt-4 space-y-3">
+
+      {message && <div role="status" className="text-xs p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">{message}</div>}
+
+    </section>
+    <section className="space-y-3" aria-label="Feedback proposals" aria-busy={queueLoading}>
+      {token && queueLoaded && <>
+        <div className="feedback-brands" aria-label="Lọc brand nguồn">
+          <button type="button" aria-pressed={brandFilter === "all"} onClick={() => setBrandFilter("all")} className={brandFilter === "all" ? "is-active" : ""}><Layers3 className="w-4 h-4"/>Tất cả brand<span>{proposals.length}</span></button>
+          {brands.map(brand => <button key={brand.key} type="button" aria-pressed={brandFilter === brand.key} onClick={() => setBrandFilter(brand.key)} className={brandFilter === brand.key ? "is-active" : ""}><span className={`feedback-brand-dot brand-${brand.key}`}/>{brand.label}<span>{brand.proposals.length}</span></button>)}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>{filtered.length} feedback · Nhóm theo brand nguồn</span><span>Phạm vi áp dụng được kiểm tra riêng khi duyệt</span></div>
+        {(search || materialFilter !== "all" || brandFilter !== "all") && <button type="button" className="text-xs font-semibold text-emerald-700" onClick={() => { setSearch(""); setMaterialFilter("all"); setBrandFilter("all"); }}>Xóa bộ lọc tìm kiếm / brand / material</button>}
+      </>}
+      {!token && <p className="text-sm text-slate-500">Đăng nhập bằng tài khoản admin để xem feedback.</p>}
+      {token && !queueLoaded && !queueError && <div role="status" className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Đang tải feedback…</div>}
+      {token && queueLoaded && queueLoading && <p role="status" className="text-xs text-slate-500">Đang cập nhật feedback…</p>}
+      {token && queueError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="font-semibold">{queueLoaded ? "Chưa cập nhật được feedback. Đang giữ kết quả lần tải thành công gần nhất." : "Chưa tải được feedback. Chưa thể xác nhận danh sách có trống hay không."}</p>
+        <p className="mt-1 text-xs">{queueError}</p>
+        <button onClick={() => load()} disabled={queueLoading} className="mt-3 rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">{queueLoading ? "Đang thử lại…" : "Thử lại"}</button>
+      </div>}
+      {token && queueLoaded && !queueError && !queueLoading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">Không có feedback phù hợp. {search || brandFilter !== "all" || materialFilter !== "all" ? "Thử đổi hoặc xóa bộ lọc." : "Bạn đã xem hết mục này."}</div>}
+      {groups.map(group => <div key={group.key} className="feedback-group">
+        <button type="button" className="feedback-group-heading" aria-expanded={!collapsedBrands[group.key]} aria-controls={`brand-group-${encodeURIComponent(group.key)}`} onClick={() => setCollapsedBrands(previous => ({ ...previous, [group.key]: !previous[group.key] }))}>
+          <ChevronDown className={`w-4 h-4 ${collapsedBrands[group.key] ? "-rotate-90" : ""}`} aria-hidden="true"/><span className={`feedback-brand-dot brand-${group.key}`}/><span>{group.label}</span><span className="feedback-count">{group.proposals.length}</span><span className="ml-auto text-[11px] font-normal text-slate-500">Brand nguồn</span>
+        </button>
+        {!collapsedBrands[group.key] && <div id={`brand-group-${encodeURIComponent(group.key)}`}>
+          <div className="feedback-row-columns" aria-hidden="true"><span>Feedback</span><span>Material</span><span>Trạng thái</span><span>Ngày gửi</span><span/></div>
+          {group.proposals.map(p => <article key={p.id} className="feedback-row">
+            <button type="button" onClick={event => openFeedback(p.id, event.currentTarget)} aria-label={`Mở feedback: ${feedbackTitle(p)}`} aria-haspopup="dialog" className="feedback-row-button">
+              <span className="feedback-row-copy"><span className="feedback-row-title">{feedbackTitle(p)}</span><span className="feedback-row-meta"><span>{p.submitted_by_name || "Chưa có tên người gửi"}</span>{!!p.context_images?.length && <span className="inline-flex items-center gap-1"><Paperclip className="w-3 h-3" aria-hidden="true"/>{p.context_images.length} ảnh / reference</span>}{p.proposed_scope && p.proposed_scope !== "brand_branch" && <span className="feedback-scope" title={p.proposed_scope}>Scope: {p.proposed_scope}</span>}</span></span>
+              <span className="feedback-row-material">{materialLabel(p)}</span>
+              <span className={`feedback-status status-${p.status}`}>{feedbackStatuses.find(status => status.value === p.status)?.label || p.status}</span>
+              <time className="feedback-row-date" dateTime={p.created_at} title={p.created_at}>{feedbackDate(p.created_at)}</time><ChevronRight className="feedback-row-arrow w-4 h-4" aria-hidden="true"/>
+            </button>
+          </article>)}
+        </div>}
+      </div>)}
+    </section>
+    {token && <details className="rounded-xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setReferencesLoaded(true); }}><summary className="cursor-pointer text-sm font-semibold">Reference Library <span className="ml-2 text-xs font-normal text-slate-500">Ảnh mẫu & context riêng</span></summary>{referencesLoaded && <div className="mt-4"><PrivateReferencePanel request={authFetch}/></div>}</details>}
+    {token && <details className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setAdvancedLoaded(true); }}>
+      <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>
+      <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách phía trên. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Bạn có thể review ngay trong phần chi tiết. Phần nâng cao dành cho quản lý baseline và lịch sử governance.</p>
+      {advancedLoaded && <div className="mt-4"><GovernancePanel request={authFetch}/></div>}
+      {!!rejectedCount && <div className="mt-5 border-t border-slate-100 pt-4"><p className="mb-2 text-xs text-slate-500">Dọn toàn bộ lịch sử từ chối của mọi brand, không theo bộ lọc hiện tại.</p><button onClick={deleteAllRejected} disabled={bulkDeleting || loading} className="px-3 py-2 text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 disabled:opacity-50">{bulkDeleting ? "Deleting..." : `Delete all rejected (${rejectedCount})`}</button></div>}
+    </details>}
+    {token && <details data-admin-tool="access" className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Admin access <span className="ml-2 text-xs font-normal text-slate-500">Quản lý quyền duyệt</span></summary><div className="mt-4">
+      <div className="space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
           <div className="flex-1">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700">Admin access</div>
@@ -435,7 +528,10 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           {!teamLoading && teamMembers.filter((m:any)=>m.role==="admin" && m.is_active).length===0 && <span className="text-xs text-slate-400">No active admins found.</span>}
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
+      </div>
+    </div></details>}
+    {token && <details data-admin-tool="visual-guide" className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Branch Visual Guide <span className="ml-2 text-xs font-normal text-slate-500">URL trang & CSS selector</span></summary>
+        <div className="mt-4">
           <div className="flex items-center gap-2 mb-3">
             <ImagePlus className="w-4 h-4 text-indigo-600"/>
             <div>
@@ -501,41 +597,14 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             </button>
           </div>
         </div>
-      </div>}
-    </section>
-    {token && <PrivateReferencePanel request={authFetch}/>}
-    {token && <details className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setAdvancedLoaded(true); }}>
-      <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>
-      <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách bên dưới. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Bạn có thể review ngay trong từng card. Phần nâng cao dành cho quản lý baseline và lịch sử governance.</p>
-      {advancedLoaded && <div className="mt-4"><GovernancePanel request={authFetch}/></div>}
     </details>}
-    <section className="space-y-3" aria-label="Feedback proposals" aria-busy={queueLoading}>
-      {!token && <p className="text-sm text-slate-500">Đăng nhập bằng tài khoản admin để xem feedback.</p>}
-      {token && !queueLoaded && !queueError && <div role="status" className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Đang tải feedback…</div>}
-      {token && queueLoaded && queueLoading && <p role="status" className="text-xs text-slate-500">Đang cập nhật feedback…</p>}
-      {token && queueError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <p className="font-semibold">{queueLoaded ? "Chưa cập nhật được feedback. Đang giữ kết quả lần tải thành công gần nhất." : "Chưa tải được feedback. Chưa thể xác nhận danh sách có trống hay không."}</p>
-        <p className="mt-1 text-xs">{queueError}</p>
-        <button onClick={() => load()} disabled={queueLoading} className="mt-3 rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">{queueLoading ? "Đang thử lại…" : "Thử lại"}</button>
-      </div>}
-      {token && queueLoaded && !queueError && !queueLoading && filtered.length===0 && <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">No {filter==="all"?"":filter} feedback proposals.</div>}
-      {filtered.map(p=>{ const governance=assessProposal(p,proposals); const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <article key={p.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
- <div className="flex flex-wrap items-center justify-between gap-2">
-  <span className="text-xs font-semibold text-slate-800">Knowledge Governance · Advisory</span>
-  <span className="text-xs font-semibold text-slate-700">Evidence priority {governance.total}/100 · {governance.recommendation}</span>
- </div>
- <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] text-slate-600">
-  <span>Evidence {governance.scores.evidence}/30</span>
-  <span>Product Truth {governance.scores.productTruth}/25</span>
-  <span>Reusability {governance.scores.reusability}/20</span>
-  <span>Consistency {governance.scores.consistency}/15</span>
-  <span>Impact {governance.scores.outcomeImpact}/10</span>
- </div>
- {governance.issues.length>0 && <p className="text-xs text-slate-600">{governance.issues.join(" · ")}</p>}
- {governance.similar.length>0 && <p className="text-xs text-slate-600">Có {governance.similar.length} feedback gần nhau về từ ngữ; cần đọc đối chiếu, chưa phải kết luận trùng lặp.</p>}
- <p className="text-[11px] text-slate-500">{governance.note}</p>
- </div>
+
+    {token && selectedId && <dialog ref={drawerRef} className="feedback-drawer" aria-labelledby="feedback-detail-title" onCancel={event => { event.preventDefault(); closeDrawer(); }}>
+      <div className="feedback-drawer-header"><div><div className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Chi tiết feedback</div><h2 id="feedback-detail-title" className="text-sm font-bold mt-1">{selected ? `${sourceBrand(selected).label} / ${materialLabel(selected)}` : "Feedback không còn trong danh sách"}</h2></div><button type="button" onClick={closeDrawer} disabled={loading || reviewBusy} aria-label="Đóng chi tiết feedback" className="feedback-close"><X className="w-5 h-5"/></button></div>
+      <div className="feedback-drawer-body">
+      {detailNotice?.id === selectedId && <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">{detailNotice.message}</p>}
+      {!selected && <p className="p-5 text-sm text-slate-500">Feedback có thể đã bị xóa hoặc không còn được trả về. Đóng để quay lại danh sách.</p>}
+      {[selected].filter((p):p is Proposal => !!p).map(p=>{ const governance=assessProposal(p,proposals); const parsed=parseTrainingSpec(p.raw_feedback || ""); const spec=parsed.spec; const outs=outcomeImages(p); const refs=referenceImages(p); const overview=legacyOverviewVi(p) || (p.evidence_summary as any)?.admin_overview || null; const isOpen=!!expanded[p.id]; return <div key={p.id} className="feedback-detail space-y-4">
 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><div className="text-base font-extrabold text-slate-900">{p.brand_name || "Brand"} <span className="text-slate-300">/</span> {p.branch_title || "Branch"}</div>{spec?.rule_class && <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">{String(spec.rule_class).replaceAll("_"," ")}</span>}{spec?.confidence && <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">{String(spec.confidence)} CONFIDENCE</span>}</div><div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2"><span><span className="font-bold text-slate-700">Submitted by:</span> {p.submitted_by_name || "Missing member name"} · {p.created_at ? new Date(p.created_at).toLocaleString() : ""}</span>{(p.context_images?.length || 0) > 0 && <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold">{p.context_images?.length} visual context</span>}</div></div>
           <span className={`inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${p.status==="pending"?"bg-amber-50 text-amber-700":p.status==="accepted"||p.status==="merged"||p.status==="resolved"?"bg-emerald-50 text-emerald-700":"bg-rose-50 text-rose-700"}`}>{p.status==="pending"?<Clock3 className="w-3 h-3"/>:p.status==="accepted"||p.status==="merged"||p.status==="resolved"?<CheckCircle2 className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.status}</span>
@@ -548,14 +617,14 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             </div>
             <span className="px-2 py-1 rounded-full bg-white border border-indigo-100 text-[10px] font-bold text-indigo-700">{String(overview?.rule_class || spec?.rule_class || "TRAINING").replaceAll("_"," ")}</span>
           </div>
-          <div className="grid md:grid-cols-3 gap-2.5">
+          <div className="grid gap-2.5">
             <div className="rounded-lg bg-white border border-slate-200 p-3">
               <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Case này là gì?</div>
               <div className="text-xs text-slate-800 leading-relaxed">{String(overview?.summary || spec?.observed_issue || p.change_summary || parsed.memberFeedback || "—")}</div>
             </div>
             <div className="rounded-lg bg-white border border-slate-200 p-3">
               <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Vì sao rút ra wisdom này?</div>
-              <div className="text-xs text-slate-800 leading-relaxed">{String(overview?.why_it_matters || spec?.evidence_summary || "No additional evidence summary.")}</div>
+              <div className="text-xs text-slate-800 leading-relaxed">{String(overview?.why_it_matters || spec?.evidence_summary || "Chưa có tóm tắt bằng chứng bổ sung.")}</div>
             </div>
             <div className="rounded-lg bg-white border border-slate-200 p-3">
               <div className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Sau này cần làm khác thế nào?</div>
@@ -591,21 +660,17 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             </a>)}
           </div>
         </div>}
-        {(outs.length>0 || refs.length>0) && <div className="grid md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3"><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">Outcome / Problem</div>{outs.length ? <div className="grid grid-cols-2 gap-2">{outs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="relative overflow-hidden rounded-lg border border-rose-100 bg-white"><img src={img.image_url!} alt={img.caption || "Outcome"} className="w-full aspect-[4/3] object-cover"/>{img.caption && <div className="absolute inset-x-0 bottom-0 bg-slate-950/75 text-white text-[10px] p-2 line-clamp-2">{img.caption}</div>}</a>)}</div> : <div className="text-xs text-slate-400">No persisted outcome image</div>}</div>
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3"><div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 mb-2">Target / Reference</div>{refs.length ? <div className="grid grid-cols-2 gap-2">{refs.slice(0,4).map((img,i)=><a key={i} href={img.image_url!} target="_blank" rel="noreferrer" className="relative overflow-hidden rounded-lg border border-emerald-100 bg-white"><img src={img.image_url!} alt={img.caption || "Reference"} className="w-full aspect-[4/3] object-cover"/>{img.caption && <div className="absolute inset-x-0 bottom-0 bg-slate-950/75 text-white text-[10px] p-2 line-clamp-2">{img.caption}</div>}</a>)}</div> : <div className="text-xs text-slate-400">No persisted target/reference image</div>}</div>
-        </div>}
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <div>
               <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Database Payload</div>
-              <div className="text-xs text-slate-500 mt-0.5">Phần này giữ nguyên nội dung canonical và sẽ được nạp vào Creative DNA khi duyệt.</div>
+              <div className="text-xs text-slate-500 mt-0.5">Nội dung đề xuất. Chỉ cập nhật Creative DNA sau khi hoàn tất đúng luồng duyệt.</div>
             </div>
             <span className="px-2 py-1 rounded-full bg-white border border-emerald-100 text-[10px] font-bold text-emerald-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span>
           </div>
           <div className="rounded-lg bg-white border border-emerald-100 p-3 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">{p.proposed_content_md || String(spec?.generalized_rule || spec?.expected_behavior || parsed.memberFeedback || "—")}</div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs text-slate-500"><span>Scope:</span><span className="font-bold text-slate-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span></div><button onClick={()=>setExpanded({...expanded,[p.id]:!isOpen})} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 bg-white"><Eye className="w-3 h-3"/>{isOpen?"Hide details":"View details"}{isOpen?<ChevronUp className="w-3 h-3"/>:<ChevronDown className="w-3 h-3"/>}</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2 text-xs text-slate-500"><span>Scope:</span><span className="font-bold text-slate-700">{String(spec?.scope || p.proposed_scope || "brand_branch")}</span></div><button onClick={()=>setExpanded({...expanded,[p.id]:!isOpen})} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 bg-white"><Eye className="w-3 h-3"/>{isOpen?"Ẩn feedback gốc":"Xem feedback gốc"}{isOpen?<ChevronUp className="w-3 h-3"/>:<ChevronDown className="w-3 h-3"/>}</button></div>
         {isOpen && <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"><div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Original member feedback</div><div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{parsed.memberFeedback || p.raw_feedback}</div></div>{Array.isArray(spec?.reject_conditions) && spec.reject_conditions.length>0 && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 mb-1">Reject when</div><div className="flex flex-wrap gap-1.5">{spec.reject_conditions.map((x:any,i:number)=><span key={i} className="px-2 py-1 rounded-md bg-white border border-rose-100 text-[11px] text-rose-700">{String(x)}</span>)}</div></div>}{!!p.context_images?.filter(x=>!x.image_url).length && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Unrendered image references</div><div className="text-[10px] text-slate-400 break-all">{p.context_images?.filter(x=>!x.image_url).length} private reference(s); xem metadata đầy đủ trong Advanced của review.</div></div>}</div>}
         {actionErrors[p.id] && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Chưa hoàn tất thao tác: {actionErrors[p.id]}</p>}
         {p.status==="pending" && <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -613,13 +678,31 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             <button type="button" onClick={()=>setReviewing({id:p.id,path:"covered"})} disabled={loading||!!reviewing} className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 disabled:opacity-50">Đã có trong quy chuẩn</button>
             <button type="button" onClick={()=>setReviewing({id:p.id,path:"merge"})} disabled={loading||!!reviewing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Sparkles className="w-3.5 h-3.5"/>Xem & duyệt</button>
           </div>
-          {reviewing?.id===p.id && <FeedbackReviewPanel key={`${reviewing.path}-${JSON.stringify(p)}`} proposal={p} path={reviewing.path} request={authFetch} onClose={()=>setReviewing(null)} onComplete={(resultMessage)=>{setMessage(resultMessage);setReviewing(null);void load(undefined,true,true);}}/>}
+          {reviewing?.id===p.id && <FeedbackReviewPanel key={`${reviewing.path}-${JSON.stringify(p)}`} proposal={p} path={reviewing.path} request={authFetch} onBusyChange={changeReviewBusy} onClose={()=>setReviewing(null)} onComplete={(resultMessage)=>{setMessage(resultMessage);setDetailNotice({id:p.id,message:resultMessage});changeReviewBusy(false);setReviewing(null);void load(undefined,true,true);}}/>}
           {!reviewing && <div className="flex flex-col sm:flex-row gap-2 items-end"><textarea aria-label="Ghi chú từ chối" value={notes[p.id]||""} onChange={e=>setNotes({...notes,[p.id]:e.target.value})} placeholder="Optional admin note..." className="w-full min-h-16 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"/><button type="button" onClick={()=>reject(p.id)} disabled={loading} className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-lg border border-rose-200 text-rose-700 bg-rose-50 disabled:opacity-50">{activeAction?.id===p.id && <RefreshCw className="w-3.5 h-3.5 animate-spin"/>}{activeAction?.id===p.id?"Rejecting...":"Reject"}</button></div>}
         </div>}
         {p.status==="accepted" && <p className="border-t border-slate-100 pt-4 text-xs text-amber-900">Legacy accepted · Chỉ xem. Luồng merge cũ đã bị chặn; trạng thái này không chứng minh canonical đã cập nhật. Cần kiểm tra lịch sử và tạo review hợp lệ trước khi thay đổi quy chuẩn.</p>}
         {p.status==="resolved" && <ResolvedFeedbackAudit proposal={p}/>}
         {p.merged_at && <div className="text-xs text-emerald-700 font-semibold">Merged {new Date(p.merged_at).toLocaleString()}</div>}{p.review_note && <div className="text-xs text-slate-500">Admin note: {p.review_note}</div>}
-      </article>})}
-    </section>
+        <details className="rounded-xl border border-slate-200 p-3"><summary className="cursor-pointer text-xs font-semibold">Phân tích governance · Tham khảo</summary><div className="mt-3">        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+ <div className="flex flex-wrap items-center justify-between gap-2">
+  <span className="text-xs font-semibold text-slate-800">Knowledge Governance · Advisory</span>
+  <span className="text-xs font-semibold text-slate-700">Evidence priority {governance.total}/100 · {governance.recommendation}</span>
+ </div>
+ <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] text-slate-600">
+  <span>Evidence {governance.scores.evidence}/30</span>
+  <span>Product Truth {governance.scores.productTruth}/25</span>
+  <span>Reusability {governance.scores.reusability}/20</span>
+  <span>Consistency {governance.scores.consistency}/15</span>
+  <span>Impact {governance.scores.outcomeImpact}/10</span>
+ </div>
+ {governance.issues.length>0 && <p className="text-xs text-slate-600">{governance.issues.join(" · ")}</p>}
+ {governance.similar.length>0 && <p className="text-xs text-slate-600">Có {governance.similar.length} feedback gần nhau về từ ngữ; cần đọc đối chiếu, chưa phải kết luận trùng lặp.</p>}
+ <p className="text-[11px] text-slate-500">{governance.note}</p>
+ </div>
+</div></details>
+      </div>})}
+      </div>
+    </dialog>}
   </main>;
 }

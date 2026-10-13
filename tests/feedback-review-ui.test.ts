@@ -55,9 +55,9 @@ function directReceipt(data=directPreflight()) {return {
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
 function setup(path:'covered'|'merge'='covered'){
- const slots:any[]=[],effects:Effect[]=[],queued:Effect[]=[],calls:Call[]=[],completed:any[]=[];
+ const slots:any[]=[],effects:Effect[]=[],queued:Effect[]=[],calls:Call[]=[],completed:any[]=[],busyEvents:boolean[]=[];
  let cursor=0,tree:Node,scheduled=false,mounted=true,writes=0,lateWrites=0,closed=0;
- let props:any={proposal,path,request,onClose:()=>{closed++;unmount();},onComplete:(...result:any[])=>completed.push(result)};
+ let props:any={proposal,path,request,onBusyChange:(busy:boolean)=>busyEvents.push(busy),onClose:()=>{closed++;unmount();},onComplete:(...result:any[])=>completed.push(result)};
  const hooks={
   useState(initial:any){const i=cursor++;if(!(i in slots)){const slot={value:typeof initial==='function'?initial():initial,set:(value:any)=>{writes++;if(!mounted){lateWrites++;return;}const next=typeof value==='function'?value(slot.value):value;if(Object.is(next,slot.value))return;slot.value=next;if(!scheduled){scheduled=true;queueMicrotask(()=>{scheduled=false;if(mounted)render();});}}};slots[i]=slot;}return [slots[i].value,slots[i].set];},
   useRef(initial:any){const i=cursor++;if(!(i in slots))slots[i]={current:initial};return slots[i];},
@@ -77,7 +77,7 @@ function setup(path:'covered'|'merge'='covered'){
  function checkAll(){for(const node of all('input').filter(node=>node.props.type==='checkbox')){assert.equal(!!node.props.disabled,false);node.props.onChange({target:{checked:true}});}}
  function candidateFields(){all('input').find(node=>node.props.placeholder==='Source run ID từ công cụ tạo output')!.props.onChange({target:{value:'actual-run-42'}});all('input').find(node=>node.props.type==='url')!.props.onChange({target:{value:'https://example.test/candidate'}});all('textarea').find(node=>node.props.placeholder==='Dán output JSON object từ lần chạy thật')!.props.onChange({target:{value:'{"title":"Actual generated result"}'}});}
  render();
- return {calls,completed,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any){props={...props,proposal:next};render();},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
+ return {calls,completed,busyEvents,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any){props={...props,proposal:next};render();},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
 }
 async function ready(ui:ReturnType<typeof setup>,data=preflight()){ui.calls[0].resolve(Response.json(data));await flush();}
 async function coveredReady(ui:ReturnType<typeof setup>){await ready(ui);ui.input('Quy chuẩn đã có','covered-1');await flush();ui.checkAll();ui.input('Lý do đóng feedback','Reviewed every affected brand and existing product safeguards.');await flush();}
@@ -498,4 +498,12 @@ test('non-owner fallback preserves general read and covered workflow without que
  covered.input('Quy chuẩn đã có','covered-1');await flush();covered.checkAll();
  covered.input('Lý do đóng feedback','Reviewed every affected brand and existing product safeguards.');await flush();
  assert.equal(covered.button('Xác nhận đã có trong quy chuẩn').props.disabled,false);
+});
+
+
+test('review mutation synchronously locks its host drawer and unlocks after an error',async t=>{
+ const ui=setup('merge');t.after(ui.unmount);await ready(ui);assert.deepEqual(ui.busyEvents,[]);
+ ui.click('Duyệt & giao dot review');assert.deepEqual(ui.busyEvents,[true]);
+ ui.calls[1].resolve(Response.json({error:'Synthetic conflict'},{status:409}));await flush();
+ assert.deepEqual(ui.busyEvents,[true,false]);assert.match(ui.text(),/Synthetic conflict/);
 });
