@@ -4,7 +4,7 @@ import { transformSync } from 'esbuild';
 import { attachResearch } from '../supabase/functions/_shared/product-research.ts';
 import { compileCreativeQuality as compilePreviousQuality } from './fixtures/creative-quality-v2.fixture.ts';
 import assert from 'node:assert/strict';
-import { buildOwnerRulePlan, parseCanonicalOwnerRule, OWNER_RULE_PLAN_SCHEMA } from '../supabase/functions/_shared/owner-rule-plan.ts';
+import { buildOwnerRulePlan, parseCanonicalOwnerRule, OWNER_RULE_PLAN_SCHEMA, OWNER_CANONICAL_APPEND_SCHEMA } from '../supabase/functions/_shared/owner-rule-plan.ts';
 import { compileCreativeQuality, sourceHashes, sha256, stableJson, QUALITY_CATALOG_SCHEMA, QUALITY_SCHEMA, type QualityRule } from '../supabase/functions/_shared/creative-quality.ts';
 import { attachOnepageUiTemplate } from '../onepage-ui-template.ts';
 import { buildOnepagePacket } from '../supabase/functions/_shared/onepage-packet.ts';
@@ -46,6 +46,7 @@ test('adds effective scoped verbatim supplements to every brand and retains cata
   const s = await fixture(); const before = clone(s);
   const r = await buildOwnerRulePlan(s);
   assert.equal(r.eligible, true, JSON.stringify(r.blockers)); assert.ok(r.plan);
+  assert.equal(r.plan_kind, 'compiled_supplement');
   assert.deepEqual(s, before, 'the pure compiler must never mutate its SQL snapshot');
   assert.equal(r.additions.length, 3); assert.equal(r.compiled.length, 3);
   assert.equal(r.plan_hash, await sha256(stableJson(r.plan)));
@@ -87,6 +88,156 @@ test('adds effective scoped verbatim supplements to every brand and retains cata
     assert.equal(compiled.gates.human_artistic_review, 'REQUIRED');
     assert.equal(compiled.gates.asset_generation, 'REQUIRES_PRODUCT_PIXEL_INSPECTION');
   }
+});
+
+/** Synthetic leaf sources only; never use live preflight text or identities. */
+async function leafFixture(count = 1, branch = 'ldp-system', body = canonical()) {
+  const s: any = await fixture(body);
+  s.targets = s.targets.slice(0, count).map((target: any) => {
+    const t = { ...target, slug: branch, parent_id: null };
+    delete t.metadata.creative_quality_contract;
+    return t;
+  });
+  s.proposal.knowledge_node_id = s.targets[0].id;
+  s.direct_rule.owner_authorized = true;
+  s.direct_rule.blockers = [];
+  s.scope = { ...s.scope, branch_slug: branch, cross_brand: count > 1, structural: count > 1,
+    source_node_id: s.targets[0].id, target_node_ids: s.targets.map((t: any) => t.id) };
+  s.compiler_context.master_node_id = null;
+  s.compiler_context.dependent_nodes = [];
+  s.compiler_context.projected_targets = s.targets.map((t: any) => ({ ...clone(t), content_md: t.content_md + s.compiler_context.merge_block_text }));
+  return s;
+}
+
+test('uncompiled leaf appends the exact canonical rule without creating a quality catalog or claiming compilation', async () => {
+  const s = await leafFixture();
+  s.compiler_context.brand_dna_nodes = [];
+  const before = clone(s), result = await buildOwnerRulePlan(s);
+  assert.equal(result.eligible, true, JSON.stringify(result.blockers)); assert.ok(result.plan);
+  assert.equal(result.plan_kind, 'canonical_append');
+  assert.equal(result.compiler_version, null);
+  assert.deepEqual(result.compiled, []);
+  assert.equal(result.visual_qc_performed, false);
+  assert.equal(result.semantic_consistency, 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS');
+  assert.deepEqual(s, before, 'planning must not mutate the server snapshot');
+  assert.deepEqual(Object.keys(result.plan).sort(), ['candidate_hash', 'rule_hash', 'schema_version', 'targets']);
+  assert.equal(result.plan.schema_version, OWNER_RULE_PLAN_SCHEMA);
+  assert.equal(result.plan.candidate_hash, s.candidate_hash);
+  assert.equal(result.plan.rule_hash, s.direct_rule.rule_hash);
+  assert.equal(result.plan_hash, await sha256(stableJson(result.plan)));
+  const target = result.plan.targets[0], old = before.targets[0];
+  assert.deepEqual(target, { node_id: old.id, content_md: old.content_md + s.compiler_context.merge_block_text,
+    metadata: old.metadata, version: old.version, input_schema: old.input_schema, status: old.status, confidence: old.confidence });
+  assert.equal(Object.hasOwn(target.metadata, 'creative_quality_contract'), false);
+  assert.equal(result.additions.length, 1);
+  const addition = result.additions[0];
+  assert.equal(addition.schema_version, OWNER_CANONICAL_APPEND_SCHEMA);
+  assert.equal(addition.canonical_text, s.proposal.proposed_content_md);
+  assert.equal(addition.proposal_id, s.proposal.id);
+  assert.equal(addition.declared_scope, s.proposal.proposed_scope);
+  assert.equal(addition.source.canonical_text_hash, await sha256(s.proposal.proposed_content_md));
+  assert.deepEqual(addition.scope, { brands: ['pawfecthouse'], branches: ['ldp-system'] });
+  assert.deepEqual(addition.target_node_ids, [target.node_id]);
+  assert.deepEqual(addition.affected_brands, ['pawfecthouse']);
+  assert.equal(Object.hasOwn(addition, 'accepted_source_hashes'), false);
+  assert.equal(Object.hasOwn(addition, 'owner_user_id'), false);
+  assert.equal(addition.precedence, 'SUPPLEMENTAL_SUBORDINATE_TO_CANONICAL_HARD_RULES_AND_PRODUCT_TRUTH');
+  assert.ok(!JSON.stringify(result).includes(s.compiler_context.owner_user_id));
+  const quality = await compileCreativeQuality({ brand: s.compiler_context.brands[0], branch: { ...old, ...target } });
+  assert.equal(quality.status, 'BLOCKED', 'canonical acceptance must not turn a missing contract into quality approval');
+});
+
+test('every supported uncompiled leaf route may append and an all-uncompiled cross-brand plan is deterministic', async () => {
+  for (const branch of ['ldp-system', 'home-hero', 'ldp-hero', 'ugc-image', 'recipient-image', 'seasonal-banner', 'shop-by-product-image', 'shop-by-categories', 'niche-product-combo']) {
+    const result = await buildOwnerRulePlan(await leafFixture(1, branch));
+    assert.equal(result.eligible, true, branch + ': ' + JSON.stringify(result.blockers));
+    assert.equal(result.plan_kind, 'canonical_append');
+  }
+  const s = await leafFixture(3), shuffled = clone(s);
+  shuffled.targets.reverse(); shuffled.scope.target_node_ids.reverse(); shuffled.compiler_context.projected_targets.reverse();
+  shuffled.compiler_context.brands.reverse();
+  const a = await buildOwnerRulePlan(s), b = await buildOwnerRulePlan(shuffled);
+  assert.equal(a.eligible, true, JSON.stringify(a.blockers)); assert.deepEqual(a, b);
+  assert.equal(a.additions.length, 3);
+  assert.deepEqual(a.compiled, []);
+  for (const [i, target] of a.plan!.targets.entries()) {
+    assert.equal(target.content_md, s.targets[i].content_md + s.compiler_context.merge_block_text);
+    assert.deepEqual(target.metadata, s.targets[i].metadata);
+    assert.deepEqual(a.additions[i].scope.brands, ['giftsoul', 'pawfecthouse', 'soulprise']);
+  }
+});
+
+test('uncompiled append retains all SQL owner, protected-rule and noncreative eligibility blockers', async () => {
+  for (const state of ['owner', 'denied', 'missing', 'contradictory']) {
+    const s = await leafFixture();
+    if (state === 'owner') s.direct_rule.owner_authorized = false;
+    if (state === 'denied') { s.direct_rule.eligible = false; s.direct_rule.blockers = [{ code: 'non_creative_operation' }]; }
+    if (state === 'missing') delete s.direct_rule.blockers;
+    if (state === 'contradictory') s.direct_rule.blockers = [{ code: 'protected_rule_class' }];
+    await mustBlock(s, state === 'owner' ? 'verified_owner_required' : 'direct_rule_ineligible');
+  }
+  await mustBlock(await leafFixture(1, 'ldp-system', canonical().replace('STRUCTURAL\n\n## Confidence', 'PRODUCT_TRUTH\n\n## Confidence')), 'unsupported_rule_class');
+  const owner = await leafFixture(); owner.compiler_context.owner_user_id = 'unverified';
+  await mustBlock(owner, 'verified_owner_required');
+});
+
+test('uncompiled append blocks unsupported branches, Onepage, missing dependency evidence and parent scopes', async () => {
+  for (const branch of ['brand-dna', 'unsupported-route']) await mustBlock(await leafFixture(1, branch), 'unsupported_branch');
+  await mustBlock(await leafFixture(1, 'onepage-system'), 'onepage_mirror_scope');
+  const sharedOnepage: any = await fixture();
+  for (const t of sharedOnepage.targets) delete t.metadata.creative_quality_contract;
+  sharedOnepage.compiler_context.projected_targets = sharedOnepage.targets.map((t: any) => ({ ...clone(t), content_md: t.content_md + sharedOnepage.compiler_context.merge_block_text }));
+  await mustBlock(sharedOnepage, 'preexisting_quality_blocked');
+  for (const state of ['child', 'missing', 'malformed', 'internal-parent']) {
+    const s = await leafFixture(state === 'internal-parent' ? 3 : 1);
+    if (state === 'child') s.compiler_context.dependent_nodes = [{ id: 'synthetic-child', status: 'active', parent_id: s.targets[0].id }];
+    if (state === 'missing') delete s.compiler_context.dependent_nodes;
+    if (state === 'malformed') s.compiler_context.dependent_nodes = {};
+    if (state === 'internal-parent') s.targets[1].parent_id = s.targets[0].id;
+    await mustBlock(s, 'unsupported_dependency_scope');
+  }
+});
+
+test('present invalid catalogs and mixed compiled targets never fall back to canonical append', async () => {
+  for (const catalog of [null, {}, [], 'invalid', undefined, { schema_version: QUALITY_SCHEMA, rules: [] }]) {
+    const s = await leafFixture();
+    s.targets[0].metadata.creative_quality_contract = catalog;
+    s.compiler_context.projected_targets[0].metadata.creative_quality_contract = catalog;
+    await mustBlock(s, 'preexisting_quality_blocked');
+  }
+  const mixed = await leafFixture(3);
+  mixed.targets[1].metadata.creative_quality_contract = (await fixture()).targets[1].metadata.creative_quality_contract;
+  mixed.compiler_context.projected_targets[1].metadata.creative_quality_contract = clone(mixed.targets[1].metadata.creative_quality_contract);
+  await mustBlock(mixed, 'mixed_quality_scope');
+});
+
+test('canonical append checks exact SQL projections, unchanged metadata, active source state and rule conflicts', async () => {
+  for (const field of ['content_md', 'version', 'input_schema', 'status', 'confidence', 'metadata', 'brand_id', 'slug']) {
+    const s = await leafFixture();
+    s.compiler_context.projected_targets[0][field] = field === 'metadata' ? { unexpected: true } : 'unexpected';
+    await mustBlock(s, 'merge_projection_mismatch');
+  }
+  const catalog = await leafFixture(); catalog.compiler_context.projected_targets[0].metadata.creative_quality_contract = null;
+  await mustBlock(catalog, 'merge_projection_mismatch');
+  const inactive = await leafFixture(); inactive.targets[0].status = 'inactive';
+  await mustBlock(inactive, 'mirror_preservation_blocked');
+  const scopeMismatch = await leafFixture(); scopeMismatch.scope.target_node_ids = ['different-node'];
+  await mustBlock(scopeMismatch, 'target_scope_mismatch');
+  const localScope = await leafFixture(3); localScope.scope.cross_brand = false;
+  await mustBlock(localScope, 'target_scope_mismatch');
+  const conflict = await leafFixture(); conflict.targets[0].content_md = 'Never Content titles must identify the current product or category.';
+  conflict.compiler_context.projected_targets[0].content_md = conflict.targets[0].content_md + conflict.compiler_context.merge_block_text;
+  await mustBlock(conflict, 'canonical_conflict');
+});
+
+test('canonical append preserves an existing exact appendix instead of appending it twice', async () => {
+  const s = await leafFixture();
+  s.targets[0].content_md += s.compiler_context.merge_block_text;
+  s.compiler_context.projected_targets[0].content_md = s.targets[0].content_md;
+  const result = await buildOwnerRulePlan(s);
+  assert.equal(result.eligible, true, JSON.stringify(result.blockers));
+  assert.equal(result.plan!.targets[0].content_md, s.targets[0].content_md);
+  assert.equal(result.plan!.targets[0].content_md.split(s.proposal.proposed_content_md).length, 2);
 });
 
 test('never interprets owner acceptance or self-attested review flags as image QC', async () => {

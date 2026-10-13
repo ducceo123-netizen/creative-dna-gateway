@@ -353,3 +353,51 @@ test('direct-rule gateway requires a session and all displayed hashes, pins rout
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });
+
+async function leafSnapshot() {
+ const context=await snapshot();
+ delete context.targets[0].metadata.creative_quality_contract;
+ delete context.compiler_context.projected_targets[0].metadata.creative_quality_contract;
+ (context.compiler_context as any).dependent_nodes=[];
+ return context;
+}
+
+test('genuinely uncompiled leaf preflight returns a canonical append preview, not compiled quality or QC',async()=>{
+ const context=await leafSnapshot();
+ const result=await invoke({mode:'review_preflight',proposal_id:proposalId},{snapshot:context});
+ assert.equal(result.response.status,200);
+ assert.equal(result.body.direct_rule.eligible,true,JSON.stringify(result.body.direct_rule.blockers));
+ assert.equal(result.body.direct_rule_plan.plan_kind,'canonical_append');
+ assert.equal(result.body.direct_rule_plan.compiler_version,null);
+ assert.deepEqual(result.body.direct_rule_plan.compiled,[]);
+ assert.equal(result.body.direct_rule_plan.additions[0].schema_version,'uid.owner-canonical-append.v1');
+ assert.equal(Object.hasOwn(result.body.direct_rule_plan.additions[0],'accepted_source_hashes'),false);
+ assert.equal(Object.hasOwn(result.body.direct_rule_plan,'plan'),false);
+ assert.equal(Object.hasOwn(result.body,'compiler_context'),false);
+ assert.equal(result.body.direct_rule.visual_qc_performed,false);
+ assert.equal(accepts(result).length,0);
+});
+
+test('uncompiled leaf approval passes only the fresh exact projected plan to guarded SQL',async()=>{
+ const context=await leafSnapshot();const payload=await approval(context);
+ const result=await invoke({...payload,actor_user_id:'forged-owner',plan:{untrusted:true}},{snapshot:context});
+ assert.equal(result.response.status,200);assert.equal(result.body.decision_kind,'owner_direct_rule');
+ const calls=accepts(result);assert.equal(calls.length,1);
+ assert.equal(calls[0].args.p_actor_user_id,ownerId);
+ const plan=calls[0].args.p_plan;
+ assert.deepEqual(Object.keys(plan).sort(),['candidate_hash','rule_hash','schema_version','targets']);
+ assert.equal(plan.targets[0].content_md,context.compiler_context.projected_targets[0].content_md);
+ assert.deepEqual(plan.targets[0].metadata,context.targets[0].metadata);
+ assert.equal(Object.hasOwn(plan.targets[0].metadata,'creative_quality_contract'),false);
+ assert.equal(result.body.visual_qc_performed,false);
+});
+
+test('present invalid catalogs never fall back to canonical append or call the accept RPC',async()=>{
+ for(const catalog of [null,{},'malformed']){
+  const context=await leafSnapshot();context.targets[0].metadata.creative_quality_contract=catalog;
+  context.compiler_context.projected_targets[0].metadata.creative_quality_contract=catalog;
+  const result=await invoke({mode:'review_preflight',proposal_id:proposalId},{snapshot:context});
+  assert.equal(result.body.direct_rule.eligible,false);assert.equal(result.body.direct_rule_plan.plan_hash,null);
+  assert.equal(accepts(result).length,0);
+ }
+});

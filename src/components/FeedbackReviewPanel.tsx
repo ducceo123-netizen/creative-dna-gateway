@@ -181,9 +181,11 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           <p className="text-xs">Áp dụng đúng rule và toàn bộ phạm vi đang hiển thị. Với phạm vi được hỗ trợ, hệ thống kiểm tra cấu trúc, phiên bản và các xung đột có thể phát hiện; lưu quyết định của bạn cùng lịch sử rollback.</p>
           <p className="text-xs text-slate-600">Luồng này không chứng nhận outcome hay QC hình ảnh. Bạn chịu quyết định về nội dung rule; kiểm tra tự động không bảo đảm phát hiện mọi xung đột ngữ nghĩa.</p>
           {!!visibleData.direct_rule_plan?.additions.length&&<div className="rounded-lg border border-emerald-200 bg-white p-3 space-y-2" aria-label="Hướng dẫn rule có hiệu lực">
-            <p className="text-xs font-semibold">Hướng dẫn bổ sung do bạn duyệt</p>
+            <p className="text-xs font-semibold">{visibleData.direct_rule_plan?.plan_kind==="canonical_append"?"Rule thêm nguyên văn vào nhánh đã chọn":"Hướng dẫn bổ sung do bạn duyệt"}</p>
             <p className="text-xs">Phạm vi đầy đủ: {affectedBrands(visibleData).join(", ")}. Giữ ưu tiên cho thông tin sản phẩm, Brand DNA và các ràng buộc bắt buộc hiện có.</p>
-            <p className="text-xs text-slate-600">Nội dung dưới đây được đưa nguyên văn vào hướng dẫn có hiệu lực. Đây là quyết định của chủ sở hữu; hệ thống không gắn nhãn đã kiểm chứng ngữ nghĩa hay QC hình ảnh.</p>
+            <p className="text-xs text-slate-600">{visibleData.direct_rule_plan?.plan_kind==="canonical_append"
+              ?"Nhánh này dùng rule dạng văn bản. Nội dung được thêm nguyên văn; không tạo quality catalog, không gắn nhãn đã biên dịch chất lượng hay QC hình ảnh."
+              :"Nội dung dưới đây được đưa nguyên văn vào hướng dẫn có hiệu lực. Đây là quyết định của chủ sở hữu; hệ thống không gắn nhãn đã kiểm chứng ngữ nghĩa hay QC hình ảnh."}</p>
             <div className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed">{visibleData.direct_rule_plan.additions[0].canonical_text}</div>
           </div>}
           {!visibleData.direct_rule&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng duyệt rule trực tiếp. Hãy tải lại sau khi cập nhật.</p>}

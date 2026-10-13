@@ -506,6 +506,101 @@ do $$ declare s record; call text; command text; begin
  exception when sqlstate 'ZX001' then null; end;
 end $$;
 
+-- Genuinely uncompiled leaves use the same exact projection/owner transaction.
+-- No migration, fabricated catalog, compiler refresh or visual pass is needed.
+do $$ declare s record; c jsonb; plan jsonb; h text; result jsonb; replay jsonb;
+ target_before jsonb; target_after jsonb; outside_before jsonb; bad jsonb; change text; variant jsonb;
+ p uuid:='10000000-0000-0000-0000-000000000209'; leaf uuid:='10000000-0000-0000-0000-000000000198';
+begin
+ select * into s from test_state;
+ begin
+  insert into public.knowledge_nodes(id,brand_id,slug,title,node_type,content_md,version,status,confidence,metadata,input_schema)
+  values(leaf,'10000000-0000-0000-0000-000000000001','ldp-system','Synthetic uncompiled LDP leaf','page','Existing LDP canonical content.','2.7','active','HIGH',
+   '{"preserve":{"nested":[1,true,"kept"]},"source_policy":"verified only"}','{"required":["product"],"preserve":true}');
+  insert into public.knowledge_proposals(id,knowledge_node_id,brand_id,proposed_content_md,raw_feedback,proposed_scope,evidence_summary)
+  values(p,leaf,'10000000-0000-0000-0000-000000000001',pg_temp.canonical('Use concise verified product-led LDP headings.','Keep LDP headings specific to the supplied product.','Generic headings without product context.','LDP local','STRUCTURAL'),
+   'Synthetic direct leaf fixture','LDP local','{"admin_overview":{"rule_class":"STRUCTURAL"}}');
+  c:=public.uid_rule_preflight(p,s.actor);
+  perform pg_temp.assert_true(c#>'{direct_rule,eligible}'='true','genuine absent-catalog leaf eligible');
+  perform pg_temp.assert_true(c#>'{compiler_context,dependent_nodes}'='[]','leaf has no active dependent child');
+  perform pg_temp.assert_true(public.uid_rule_catalog_plan(c) is null,'absent catalog stays absent');
+  plan:=pg_temp.plan_for(c);
+  perform pg_temp.assert_true(plan is not null and plan->>'schema_version'='uid.owner-rule-plan.v1','leaf still requires exact nonnull plan');
+  perform pg_temp.assert_true(not(plan#>'{targets,0,metadata}' ? 'creative_quality_contract'),'no catalog is fabricated for leaf');
+  select to_jsonb(n) into target_before from public.knowledge_nodes n where id=leaf;
+  select jsonb_agg(to_jsonb(n) order by id) into outside_before from public.knowledge_nodes n where id<>leaf;
+  h:=encode(sha256(convert_to(public.uid_rule_stable_json(plan),'UTF8')),'hex');
+  -- JSON null means a present malformed catalog, not an absent catalog.
+  for variant in select * from (values ('null'::jsonb),('{}'::jsonb),('[]'::jsonb),('"invalid"'::jsonb),('{"schema_version":"uid-creative-quality-catalog/unsupported","contracts":{}}'::jsonb))x(v) loop
+   begin
+    update public.knowledge_nodes set metadata=metadata||jsonb_build_object('creative_quality_contract',variant) where id=leaf;
+    bad:=public.uid_rule_preflight(p,s.actor);
+    perform pg_temp.assert_true(bad#>'{direct_rule,eligible}'='false','present null/malformed catalog cannot use leaf fallback');
+    perform pg_temp.expect_error(format('select public.uid_rule_catalog_plan(%L)',bad),'Supported shared quality catalog required');
+    raise exception sqlstate 'ZX001';
+   exception when sqlstate 'ZX001' then null; end;
+  end loop;
+  for bad in select * from (values
+   (jsonb_set(plan,'{targets,0,metadata}','{}')),
+   (jsonb_set(plan,'{targets,0,version}','"new"')),
+   (jsonb_set(plan,'{targets,0,input_schema}','{}')),
+   (jsonb_set(plan,'{targets,0,status}','"inactive"')),
+   (jsonb_set(plan,'{targets,0,confidence}','"LOW"')),
+   (jsonb_set(plan,'{targets,0,content_md}','"Different unseen text"')),
+   (jsonb_set(plan,'{targets,0,node_id}',to_jsonb('10000000-0000-0000-0000-000000000199'::text))),
+   (jsonb_set(plan,'{targets}','[]')),
+   (plan||'{"approve_all":true}')
+  )x(v) loop
+   perform pg_temp.expect_error(format('select public.uid_rule_accept(%L,%L,%L,%L,%L,%L)',p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',bad,encode(sha256(convert_to(public.uid_rule_stable_json(bad),'UTF8')),'hex')),'plan');
+  end loop;
+  perform pg_temp.expect_error(format('select public.uid_rule_accept(%L,%L,%L,%L,null,%L)',p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',h),'plan hash');
+  perform pg_temp.expect_error(format('select public.uid_rule_accept(%L,%L,%L,%L,%L,%L)',p,'10000000-0000-0000-0000-000000000011',c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',plan,h),'verified owner Admin');
+  for change in select * from (values
+   (format('update public.knowledge_nodes set version=''2.8'' where id=%L',leaf)),
+   (format('update public.knowledge_nodes set metadata=metadata||''{"concurrent":true}'' where id=%L',leaf)),
+   (format('update public.knowledge_proposals set proposed_scope=''Changed scope'' where id=%L',p)),
+   (format('update public.knowledge_proposals set proposed_content_md=proposed_content_md||E''\nDifferent patch'' where id=%L',p))
+  )x(statement) loop
+   begin
+    execute change;
+    perform pg_temp.expect_error(format('select public.uid_rule_accept(%L,%L,%L,%L,%L,%L)',p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',plan,h),'changed; refresh');
+    raise exception sqlstate 'ZX001';
+   exception when sqlstate 'ZX001' then null; end;
+  end loop;
+  begin
+   insert into public.knowledge_nodes(brand_id,parent_id,slug,title,metadata) values('10000000-0000-0000-0000-000000000001',leaf,'compiled-child','Active dependent child','{"creative_quality_contract":{"revision":"fixture"}}');
+   bad:=public.uid_rule_preflight(p,s.actor);
+   perform pg_temp.assert_true(bad#>'{direct_rule,eligible}'='false' and bad#>'{direct_rule,blockers}' @> '[{"code":"unsupported_dependency_scope"}]','active child blocks absent-catalog parent');
+   perform pg_temp.expect_error(format('select public.uid_rule_accept(%L,%L,%L,%L,%L,%L)',p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',plan,h),'changed; refresh');
+   raise exception sqlstate 'ZX001';
+  exception when sqlstate 'ZX001' then null; end;
+  begin
+   update public.knowledge_proposals set proposed_content_md=pg_temp.canonical('State product material as a fact.','Describe material.','Unknown material.','LDP local','PRODUCT_TRUTH'),evidence_summary='{"admin_overview":{"rule_class":"PRODUCT_TRUTH"}}' where id=p;
+   bad:=public.uid_rule_preflight(p,s.actor);
+   perform pg_temp.assert_true(bad#>'{direct_rule,eligible}'='false','leaf fallback never opens protected Product Truth class');
+   raise exception sqlstate 'ZX001';
+  exception when sqlstate 'ZX001' then null; end;
+  perform pg_temp.assert_true((select count(*)=0 from public.uid_governance_snapshots where proposal_id=p),'rejected leaf plans never partially snapshot');
+  perform pg_temp.assert_true((select to_jsonb(n) from public.knowledge_nodes n where id=leaf)=target_before,'rejected leaf operations leave source exact');
+  result:=public.uid_rule_accept(p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',plan,h);
+  select to_jsonb(n) into target_after from public.knowledge_nodes n where id=leaf;
+  perform pg_temp.assert_true(target_after->>'content_md'=plan#>>'{targets,0,content_md}','exact displayed canonical append');
+  perform pg_temp.assert_true(target_after-'content_md'-'updated_at'=target_before-'content_md'-'updated_at','all metadata and non-content fields unchanged');
+  perform pg_temp.assert_true((select jsonb_agg(to_jsonb(n) order by id) from public.knowledge_nodes n where id<>leaf)=outside_before,'all outside rows unchanged');
+  perform pg_temp.assert_true(result->>'decision_kind'='owner_direct_rule' and result->'visual_qc_performed'='false','honest direct decision attribution');
+  replay:=public.uid_rule_accept(p,s.actor,c->>'candidate_hash',c#>>'{direct_rule,rule_hash}',null,h);
+  perform pg_temp.assert_true(replay=result,'leaf replay reads immutable receipt exactly');
+  perform pg_temp.assert_true((select count(*)=2 from public.uid_governance_snapshots where proposal_id=p),'one exact snapshot pair for leaf including retry');
+  perform pg_temp.assert_true((select count(*)=1 from uid_rule_private.decisions where proposal_id=p),'one immutable owner decision');
+  perform pg_temp.assert_true((select count(*)=0 from public.uid_governance_evaluations where proposal_id=p),'direct leaf creates no visual evaluation');
+  perform public.uid_governance_rollback_proposal(p,s.actor);
+  select to_jsonb(n) into target_after from public.knowledge_nodes n where id=leaf;
+  perform pg_temp.assert_true(target_after-'updated_at'=target_before-'updated_at','leaf rollback restores original source and metadata');
+  perform pg_temp.assert_true((select count(*)=1 from uid_rule_private.decisions where proposal_id=p),'rollback preserves immutable decision history');
+  raise exception sqlstate 'ZX001';
+ exception when sqlstate 'ZX001' then null; end;
+end $$;
+
 -- Atomic successful structural merge and exact idempotent retry. No evaluation,
 -- manual-review checkbox or image evidence is created by this path.
 create temp table accepted as select pg_temp.accept_rule(proposal,actor,context->>'candidate_hash',context#>>'{direct_rule,rule_hash}') result from test_state;

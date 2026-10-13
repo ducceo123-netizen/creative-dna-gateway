@@ -34,10 +34,11 @@ export type OwnerRuleAddition = {
  schema_version:string;id:string;proposal_id:string;decision_kind:string;
  canonical_text:string;declared_scope:string;scope:{brands:string[];branches:string[]};
  rule_class:string;confidence:string;precedence:string;semantic_consistency:string;visual_qc_performed:false;
- source:{node:string;locator:string;canonical_text_hash:string};accepted_source_hashes:{branch:string;brand_dna:string};
+ source:{node:string;locator:string;canonical_text_hash:string};accepted_source_hashes?:{branch:string;brand_dna:string};
  target_node_ids:string[];affected_brands:string[];
 };
 export type DirectRulePlan = {
+ plan_kind?:"compiled_supplement"|"canonical_append"|null;compiler_version?:string|null;compiled?:unknown[];
  eligible:boolean;plan_hash:string|null;blockers:Array<{code:string;message:string;next_action:string}>;
  additions:OwnerRuleAddition[];semantic_consistency:"NOT_PROVEN_BY_DETERMINISTIC_CHECKS";visual_qc_performed:false;
 };
@@ -51,6 +52,14 @@ export function validateDirectRulePlan(value:unknown,data:{proposal:FeedbackProp
    typeof a.precedence!=="string"||!a.precedence||!Array.isArray(a.target_node_ids)||!a.target_node_ids.length||
    a.target_node_ids.some(id=>!data.targets.some(t=>t.id===id))||!Array.isArray(a.affected_brands)||!a.affected_brands.length))
   throw Error("Bản hướng dẫn rule chưa đầy đủ hoặc không khớp thay đổi. Hãy tải lại.");
+ if(plan.plan_kind!==undefined&&plan.plan_kind!==null&&!['compiled_supplement','canonical_append'].includes(plan.plan_kind))
+  throw Error("Loại bản cập nhật rule chưa được hỗ trợ. Hãy tải lại.");
+ if(plan.eligible&&plan.plan_kind==='canonical_append'&&(plan.compiler_version!==null||!Array.isArray(plan.compiled)||plan.compiled.length>0||
+  plan.additions.some(a=>a.schema_version!=='uid.owner-canonical-append.v1'||a.decision_kind!=='owner_direct_rule'||Object.hasOwn(a,'accepted_source_hashes'))||
+  data.targets.some(t=>['onepage-system','brand-dna'].includes(t.slug))))
+  throw Error("Bản thêm rule thuần văn bản không được nhận là đã biên dịch chất lượng. Hãy tải lại.");
+ if(plan.eligible&&plan.plan_kind==='compiled_supplement'&&plan.additions.some(a=>a.schema_version!=='uid.owner-supplemental-rule.v1'))
+  throw Error("Hướng dẫn rule đã biên dịch không đúng định dạng. Hãy tải lại.");
  if(plan.eligible&&data.targets.some(t=>!plan.additions.some(a=>a.target_node_ids.includes(t.id))))
   throw Error("Bản hướng dẫn rule chưa bao phủ toàn bộ phạm vi. Hãy tải lại.");
  return plan;
