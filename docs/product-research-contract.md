@@ -1,0 +1,32 @@
+# Product research before creative output
+
+All UID Brands materials receive `research_contract`, `research_validation` and effective `readiness`. This is a host-executed workflow with structural evidence validation, not a server scraper or source-authenticity service. Existing read-only resolver/compiler calls remain valid with no extra input: they initialize policy and return `AWAITING_RESEARCH` / `REQUIRES_RESEARCH`. No new tool, human checklist, schema migration, credentials or canonical metadata write is required.
+
+## Execution
+
+1. Resolve rules (Onepage: compile first). Inspect the target source; ambiguous URL patterns require inspection. Shopify `/collections/.../products/...` is a PDP.
+2. The host automatically reads PDP descriptions, specifications, options, personalization, care/use limits, reviews and customer questions. It researches marketplace analogues, competitor PDPs and matching supplier evidence, recording failed/partial discovery honestly. Review pagination, filters and sample size remain explicit.
+3. Build the compact object described by `research_contract.input_shape`. Call `compile_onepage_job` again with optional `research`, or `resolve_creative_dna` with optional `source_url`, `source_type`, `research`. MCP and POST `/api/resolve`, `/api/tools/resolve_creative_dna`, `/api/tools/compile_onepage_job` support these fields. The direct Supabase resolver and compiler accept them too. Muse GET remains initialization-only: do not put research evidence in query strings; use the existing POST resolver for validation.
+4. Analyze buyer concerns, supported answers/benefits, section/visual implications, unknowns and contradictions before creative output. Omit unsupported claims, qualify limited claims, or stop the affected essential work. Only ask the user for essential unavailable inputs.
+5. A structurally valid packet yields `READY` or `READY_WITH_LIMITATIONS` in research_validation. Effective content readiness stays `REQUIRES_HOST_EVIDENCE_REVIEW`, because the host must check the meaning and applicability of every source and claim. This is never certification that a source is authentic, complete or true. Existing canonical quality, content approval, product pixel and artistic review gates remain independent. Missing/invalid research yields `REQUIRES_RESEARCH`; blocked canonical policy remains `BLOCKED`.
+
+## Evidence and scope
+
+- Every selected product identity includes its exact variant/version scope. Exact sources bind `product_versions` to those identities. Target PDP sources must match the selected PDP URL. Variant query strings are deliberately preserved. If two URLs really identify the same PDP, the host should use a consistently verified canonical URL and explain redirects/aliases in coverage notes; URL equivalence is not guessed.
+- Supplier facts require exact matching product/version identities and a concrete `match_basis`, not just `match: exact`. The server checks consistency and presence only; supplier identity and source semantics remain caller-reported and require host review.
+- Reviews support attributed customer experiences only. Marketplace/competitor evidence informs concerns and analogues, never target product specifications. Sampled or partial evidence must remain qualified. Missing SKU-level reviews are explicitly listed even when another collection member has reviews.
+- Collection-wide claims require declared complete inventory coverage plus matching evidence for every selected product. Incomplete inventory or nonuniversal attributes require a named, qualified subset. Inventory completeness is caller-reported; neither a design count nor a source count proves universal applicability. The host must verify the claimed universe and its variants.
+- All listed source categories require an access/search outcome. No arbitrary number of sources is a quality guarantee. Unavailable secondary sources yield visible limitations and allow narrower supported output. Essential missing PDP description/section inspection blocks validation; an absent optional specification/care field can be marked `not_present` only after inspection. Unresolved contradictions cannot be hidden behind confidence labels.
+- Invalid packets fail closed; no stored readiness token is accepted. Each call recomputes against the supplied source context and current product/source/claim identities. There is no persistent job registry or independently verified freshness guarantee.
+
+## Limits
+
+The gateway does not execute browser research, independently compare excerpts to fetched pages, verify review authenticity, or control host text/image generation. Review widgets cannot prevent the host from emitting content directly. The contract and effective readiness guide host execution; the evaluator rejects detectable structural inconsistencies. Honest host observation and semantic review are still required. Raw research is handled as request data, not persisted to canonical DNA or promoted to training rules. Do not submit sensitive private information in this public research surface.
+
+## Compatibility and rollout
+
+Canonical quality hashes and their existing schemas remain unchanged: task-specific research is a separate envelope. Existing policy-only gates describe policy status, not completed research; effective top-level readiness must be checked. Optional inspiration remains optional. Existing approval/feedback UI and Review & Merge behavior are unchanged.
+
+For a complete release, deploy both Supabase functions (`creative-dna-public`, `creative-dna-compile-onepage`) with `_shared/product-research.ts` and the updated Onepage packet, plus the gateway from the same commit. No migration or canonical rule edit is required. Gateway-only deployment provides local evaluation/guidance but an older upstream Onepage packet still has old source classification/execution steps; direct Supabase consumers would also lack the new contract. Treat that as partial rollout. Preserve current public read-only/JWT settings. Verify all three brands, one non-Onepage route and the virtual combo route, nested PDP classification, initialization, invalid and valid limited research, existing quality blockers and gateway/edge result parity.
+
+Run `npm test`, `npm run lint`, `npm run build`. Unit fixtures are synthetic and do not establish live website research or generated creative quality. No push or deployment is part of local implementation verification.

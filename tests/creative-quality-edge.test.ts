@@ -1,3 +1,4 @@
+import { attachResearch } from '../supabase/functions/_shared/product-research.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -12,7 +13,7 @@ async function invoke(slug:string, payload:unknown, data:unknown, method='POST')
   const Deno={env:{get:(key:string)=>key==='SUPABASE_URL'?'https://example.supabase.co':key==='SUPABASE_SERVICE_ROLE_KEY'?'test-only':undefined},serve:(fn:any)=>{handler=fn}};
   const rpcCalls:any[]=[];
   const createClient=()=>({rpc:async(...args:any[])=>{rpcCalls.push(args);return {data,error:null}}});
-  new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket',compiled)(Deno,createClient,compileCreativeQuality,buildOnepagePacket);
+  new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket','attachResearch',compiled)(Deno,createClient,compileCreativeQuality,buildOnepagePacket,attachResearch);
   const response=await handler!(new Request('https://example.test',{method,headers:{'Content-Type':'application/json'},...(method==='POST'?{body:JSON.stringify(payload)}:{})}));
   return {response,body:await response.json(),rpcCalls};
 }
@@ -66,4 +67,25 @@ test('resolver, compiler and gateway preserve optional-reference readiness for a
     }
     assert.match(resolver.body.instruction,/unavailable example does not block creation/);
   }
+});
+
+test('edge resolver attaches research to legacy routes and compiler classifies nested PDPs before content',async()=>{
+  for(const brand of ['pawfecthouse','giftsoul','soulprise']) {
+    const dna={brand:{slug:brand},branch:{slug:'home-hero',content_md:'Unchanged legacy rules',metadata:{}},brand_dna:{slug:'brand-dna',content_md:'brand',metadata:{}}};
+    const result=await invoke('creative-dna-public',{brand,branch:'Home Hero'},dna);
+    assert.equal(result.body.research_validation.status,'AWAITING_RESEARCH');
+    assert.equal(result.body.readiness.content_authoring,'REQUIRES_RESEARCH');
+    assert.equal(result.body.branch.content_md,dna.branch.content_md);
+  }
+  const dna={brand:{slug:'pawfecthouse'},branch:{slug:'onepage-system',content_md:'rules',metadata:{}},brand_dna:{slug:'brand-dna',content_md:'brand',metadata:{}}};
+  const packet=await invoke('creative-dna-compile-onepage',{brand:'PawfectHouse',source_url:'https://store.example/collections/gifts/products/mug'},dna);
+  assert.equal(packet.body.dynamic_job.source_type,'product');
+  assert.equal(packet.body.acquisition_contract.diversity_gate,'N/A_BY_SINGLE_PDP');
+  assert.equal(packet.body.research_validation.status,'AWAITING_RESEARCH');
+  assert.ok(packet.body.execution.indexOf('VALIDATE_RESEARCH_BEFORE_CONTENT')<packet.body.execution.indexOf('BUILD_CONTENT_MAP'));
+  const unknown=await invoke('creative-dna-compile-onepage',{brand:'PawfectHouse',source_url:'https://store.example/custom-path'},dna);
+  assert.equal(unknown.body.dynamic_job.source_type,'unknown');
+  assert.equal(unknown.body.acquisition_contract.diversity_gate,'REQUIRES_SOURCE_CLASSIFICATION');
+  const invalid=await invoke('creative-dna-public',{brand:'PawfectHouse',branch:'Onepage',research:{}},dna);
+  assert.equal(invalid.body.research_validation.status,'NEEDS_EVIDENCE');
 });

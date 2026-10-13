@@ -12,6 +12,6 @@ Deno.serve(async(req)=>{
  const brand=String(b.brand||"").trim(), sourceUrl=String(b.source_url||"").trim(), sourceType=String(b.source_type||"auto").trim().toLowerCase(), theme=String(b.theme||"").trim();
  if(!brand)return out({error:"brand is required"},400);
  const {data:r,error}=await admin.rpc("resolve_creative_dna_alias",{p_brand:brand,p_branch:"onepage-system"}); if(error)return out({error:"Resolver unavailable"},500); if(!r?.brand||!r?.branch)return out({error:"Onepage route not found"},404);
- try { return out(await buildOnepagePacket(r,{source_url:sourceUrl,source_type:sourceType,theme})); }
+ try { return out(await buildOnepagePacket(r,{source_url:sourceUrl,source_type:sourceType,theme,research:b.research})); }
  catch { return out({error:"Unable to compile quality contract; check source_type and canonical contract"},422); }
 });
