@@ -45,3 +45,8 @@ jobs:
             psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f "$migration"
           done
           psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/governance_covered_resolution.sql
+          psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/uid_direct_rule_accept.sql
+      - name: Verify owner decision concurrency in disposable PostgreSQL
+        run: |
+          npm install --prefix /tmp/uid-pg-test-client --no-save --ignore-scripts pg@8.16.3
+          PGHOST=127.0.0.1 PGPORT=5432 PGUSER=postgres PGDATABASE=governance_test UID_TEST_PG_MODULE=/tmp/uid-pg-test-client/node_modules/pg/lib/index.js node tests/sql/uid_direct_rule_accept_concurrency.mjs

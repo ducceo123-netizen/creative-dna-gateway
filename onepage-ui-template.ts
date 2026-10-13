@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, stableJson } from './supabase/functions/_shared/creative-quality.ts';
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
 
 const canvasCss = `
@@ -67,7 +68,22 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
   const branchSlug = String(data.resolved?.branch || branch).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (!['pawfecthouse', 'giftsoul', 'soulprise'].includes(brandSlug) || !['onepage', 'onepagesystem'].includes(branchSlug)) return data;
   const quality = data.creative_quality_contract;
-  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && quality.compiler_version === '2026-10-11-v2' &&
+  const currentCompiler = quality?.compiler_version === QUALITY_COMPILER;
+  const hasSupplementEnvelope = quality && (Object.hasOwn(quality, 'owner_supplemental_rules') || Object.hasOwn(quality, 'owner_supplemental_policy')) || Object.hasOwn(data, 'owner_supplemental_contract');
+  const { contract_hash: _claimedHash, ...hashableQuality } = quality && typeof quality === 'object' ? quality : {};
+  const supplementValid = currentCompiler && Array.isArray(quality?.owner_supplemental_rules)
+    && quality.owner_supplemental_rules.length <= MAX_OWNER_SUPPLEMENTS
+    && quality.owner_supplemental_rules.every((rule: any) => ownerSupplementalShapeValid(rule,brandSlug,'onepage-system')
+      && createHash('sha256').update(rule.canonical_text).digest('hex') === rule.source.canonical_text_hash)
+    && new Set(quality.owner_supplemental_rules.map((r: any) => r.id)).size === quality.owner_supplemental_rules.length
+    && quality.owner_supplemental_policy?.layer === 'OWNER_APPROVED_VERBATIM_SUPPLEMENT'
+    && quality.owner_supplemental_policy?.precedence === OWNER_SUPPLEMENTAL_PRECEDENCE
+    && quality.owner_supplemental_policy?.visual_qc_performed === false
+    && quality.owner_supplemental_policy?.semantic_consistency === 'NOT_PROVEN_BY_DETERMINISTIC_CHECKS'
+    && createHash('sha256').update(stableJson(hashableQuality)).digest('hex') === quality.contract_hash
+    && (!data.owner_supplemental_contract || stableJson(data.owner_supplemental_contract) === stableJson({ ...quality.owner_supplemental_policy, rules: quality.owner_supplemental_rules }));
+  const compilerSupported = currentCompiler ? supplementValid : quality?.compiler_version === '2026-10-11-v2' && !hasSupplementEnvelope;
+  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && compilerSupported &&
     /^[a-f0-9]{64}$/.test(String(quality.contract_hash || '')) && ['COMPILED','BLOCKED'].includes(quality.status) &&
     (quality.status === 'BLOCKED' || (typeof quality.revision === 'string' && !!quality.revision.trim())) &&
     quality.route?.brand === brandSlug && quality.route?.branch === 'onepage-system' &&

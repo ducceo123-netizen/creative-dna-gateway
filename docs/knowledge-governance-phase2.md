@@ -7,7 +7,14 @@
 - Canonical knowledge content was not modified during deployment.
 - Governance baselines and evaluations initially contain **zero approved cases**; production Accept/Merge is deliberately **blocked** until approved baseline cases and a passed evaluation exist.
 
-## Admin workflow
+## Current guided review
+
+The in-card merge flow now collects existing evidence and reruns checks automatically.
+See [Guided feedback processing](guided-feedback-review.md) for its exact scope,
+blocked states and the still-required authenticated host-review integration.
+No autonomous media runner is installed by this change.
+
+## Legacy manual API / baseline preparation workflow
 1. Open `/admin/feedback` and expand **Knowledge Governance**.
 2. Register approved baseline case(s) for Brand / Material: original brief, approved output and enforceable assertions. Use a new case_key version for updates; baselines are append-only.
 3. For Onepage shared structural merges, create at least one approved baseline per affected brand.

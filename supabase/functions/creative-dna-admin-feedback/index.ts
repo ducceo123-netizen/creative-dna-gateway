@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { assessReviewCandidates, reviewReadiness, REVIEW_EVALUATOR_VERSION } from "../_shared/feedback-review.ts";
+import { buildOwnerRulePlan } from "../_shared/owner-rule-plan.ts";
+import { assessReviewCandidates, reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, REVIEW_EVALUATOR_VERSION } from "../_shared/feedback-review.ts";
 
 export default {
   fetch: async (req: Request) => {
@@ -31,12 +32,77 @@ export default {
 
     const body = await req.json();
 
-    // Read-only review snapshot; SQL is the authority for targets, scope and fingerprints.
+    // The displayed patch, full trigger scope and owner-bound rule hash come
+    // from ONE SQL snapshot. The effective plan is derived only on the server.
     if (body.mode === "review_preflight") {
-      const { data, error } = await adminDb.rpc("uid_governance_review_context", { p_proposal_id: body.proposal_id });
+      const { data, error } = await adminDb.rpc("uid_rule_preflight", { p_proposal_id: body.proposal_id,p_actor_user_id:user.id });
       if (error) return Response.json({ error: error.message }, { status: 409 });
-      if (!data?.proposal?.id) return Response.json({ error: "Proposal not found" }, { status: 404 });
-      return Response.json(reviewReadiness(data), { headers: { "Cache-Control": "no-store" } });
+      if (data?.proposal?.id !== body.proposal_id) return Response.json({ error: "Proposal not found" }, { status: 404 });
+      const compiled = await buildOwnerRulePlan(data);
+      const {plan:_plan,...direct_rule_plan}=compiled;
+      const {compiler_context:_compilerContext,...visible}=reviewReadiness(data);
+      return Response.json({ ...visible, direct_rule_plan,
+        direct_rule:data.direct_rule ? {...data.direct_rule,eligible:data.direct_rule.eligible===true&&compiled.eligible,
+          blockers:[...(data.direct_rule.blockers||[]),...compiled.blockers]} : undefined,
+        automatic_review: prepareGuidedOutcomeReview(data) }, { headers: { "Cache-Control": "no-store" } });
+    }
+    // This deliberately records owner authority over the displayed creative
+    // rule, never visual QC. Forged client plans/actors are never used.
+    if(body.mode === "accept_rule") {
+      if(body.approve_rule!==true||!body.proposal_id||![body.candidate_hash,body.rule_hash,body.plan_hash].every(value=>typeof value==="string"&&value.length>0))
+        return Response.json({error:"Explicit approval of the displayed rule, effective guidance and current scope is required."},{status:422});
+      const {data:context,error:contextError}=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      if(contextError||context?.proposal?.id!==body.proposal_id)
+        return Response.json({error:contextError?.message||"Proposal not found. Reload before retrying."},{status:409});
+      let plan:unknown=null;
+      const receipt=context.direct_rule_receipt;
+      if(context.proposal.status==="merged"&&receipt) {
+        if(receipt.proposal_id!==body.proposal_id||receipt.status!=="merged"||receipt.decision_kind!=="owner_direct_rule"||receipt.visual_qc_performed!==false||typeof receipt.rule_decision_id!=="string"||!receipt.rule_decision_id||typeof receipt.merged_at!=="string"||!Number.isFinite(Date.parse(receipt.merged_at))||
+           receipt.candidate_hash!==body.candidate_hash||receipt.rule_hash!==body.rule_hash||receipt.plan_hash!==body.plan_hash)
+          return Response.json({error:"The completed rule does not match this approval. Reload to inspect its audit."},{status:409});
+      } else {
+        if(context.proposal.status!=="pending"||context.direct_rule?.eligible!==true||context.direct_rule.owner_authorized!==true||
+           context.candidate_hash!==body.candidate_hash||context.direct_rule.rule_hash!==body.rule_hash)
+          return Response.json({error:"The rule, scope, owner authority or canonical version changed. Reload before approving."},{status:409});
+        const compiled=await buildOwnerRulePlan(context);
+        if(!compiled.eligible||!compiled.plan||compiled.plan_hash!==body.plan_hash)
+          return Response.json({error:"The effective rule plan is blocked or changed. Reload and review the current guidance.",issues:compiled.blockers.map(item=>item.message)},{status:409});
+        plan=compiled.plan;
+      }
+      const {data,error}=await adminDb.rpc("uid_rule_accept",{
+        p_proposal_id:body.proposal_id,p_actor_user_id:user.id,
+        p_expected_candidate_hash:body.candidate_hash,p_expected_rule_hash:body.rule_hash,p_plan:plan,p_expected_plan_hash:body.plan_hash,
+      });
+      if(error)return Response.json({error:error.message},{status:409});
+      if(data?.proposal_id!==body.proposal_id||data.status!=="merged"||data.decision_kind!=="owner_direct_rule"||
+         data.visual_qc_performed!==false||typeof data.rule_decision_id!=="string"||!data.rule_decision_id||typeof data.merged_at!=="string"||!Number.isFinite(Date.parse(data.merged_at))||data.candidate_hash!==body.candidate_hash||data.rule_hash!==body.rule_hash||data.plan_hash!==body.plan_hash)
+        return Response.json({error:"Cannot verify the rule merge receipt. Reload to inspect the saved outcome; do not submit again blindly."},{status:502});
+      return Response.json({...data,proposal:{id:data.proposal_id,status:data.status,merged_at:data.merged_at},canonical_changed:true},{headers:{"Cache-Control":"no-store"}});
+    }
+    // A single explicit intent; only EXISTING verified evidence can reach merge.
+    // Client-supplied runs, review flags, actor and evaluation IDs are ignored.
+    if (body.mode === "process_review") {
+      if (body.approve !== true || typeof body.candidate_hash !== "string" || !body.proposal_id)
+        return Response.json({error:"Explicit approval of the current feedback is required."},{status:422});
+      const {data:context,error:contextError}=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      if (contextError || context?.proposal?.status !== "pending")
+        return Response.json({error:contextError?.message || "Pending proposal required. Reload before retrying."},{status:409});
+      if (body.candidate_hash !== context.candidate_hash)
+        return Response.json({error:"The proposal, scope, canonical rules or baselines changed. Reload before approving."},{status:409});
+      const automatic_review=prepareGuidedOutcomeReview(context);
+      if (automatic_review.status !== "ready_to_merge" || !automatic_review.evaluation_id)
+        return Response.json({status:automatic_review.status,automatic_review,canonical_changed:false,
+          approval_recorded:false,background_task_started:false},{headers:{"Cache-Control":"no-store"}});
+      // SQL rechecks scope, exact hash, full case coverage and stored genuine
+      // Admin review under lock. No synthetic evaluation or self-attestation.
+      const {data,error}=await adminDb.rpc("uid_governance_accept_merge",{
+        p_proposal_id:body.proposal_id,p_actor_user_id:user.id,p_evaluation_id:automatic_review.evaluation_id,
+        p_review_note:"Admin approved processing this exact feedback. Existing stored review and automatic mechanical checks verified; guarded merge requested.",
+      });
+      if(error)return Response.json({error:error.message},{status:409});
+      return Response.json({status:"merged",proposal:{id:data.proposal_id,status:data.status,merged_at:data.merged_at},
+        merged_nodes:data.merged_nodes,cross_brand_sync:data.cross_brand_sync,evaluation_id:automatic_review.evaluation_id,
+        canonical_changed:true});
     }
     if (body.mode === "resolve_covered") {
       if (!body.proposal_id || !body.covered_proposal_id || !body.candidate_hash || !body.covered_hash

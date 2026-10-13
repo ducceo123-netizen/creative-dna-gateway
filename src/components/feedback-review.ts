@@ -7,7 +7,7 @@ export type FeedbackProposal = {
   resolved_at?: string; resolution_kind?: string; resolution?: Record<string, unknown>;
   context_images?: Array<{ role:string; image_url?:string|null; reference_id?:string|null; caption?:string|null }>;
 };
-export type ReviewTarget = { id:string; brand_id:string; brand_name:string; slug:string; title:string; content_md:string; node_hash:string; version?:number|string };
+export type ReviewTarget = { id:string; brand_id:string; brand_name:string; slug:string; title:string; content_md:string; node_hash:string; version?:number|string;status?:string };
 export type ReviewBaseline = {
   id:string; brand_id:string; brand_name?:string; case_key:string; branch_slug:string; approved_at?:string|null;
   source_brief?:Record<string,unknown>; approved_output?:Record<string,unknown>; expected_assertions?:Record<string,unknown>; is_reference_only?:boolean;
@@ -20,9 +20,57 @@ export type ReviewEvaluation = {
   [key:string]:unknown;
 };
 export type CoveredCandidate = { id:string; summary:string; text:string; merged_at:string; candidate_hash:string; brand_names?:string[] };
+export type AutomaticReview = {
+  status:"ready_to_merge"|"needs_baseline"|"needs_candidate"|"needs_actual_review"|"checks_failed"|"blocked";
+  candidate_hash:string; evaluation_id:string|null;
+  checks:{mechanical:"passed"|"failed"|"blocked";actual_review:"verified"|"required"};
+  blockers:Array<{code:string;message:string;next_action:string}>;
+  evidence:Array<{kind:string;reference_id?:string|null;url?:string|null;caption?:string}>;
+  candidate_runs:Array<{baseline_id:string;source_run_id?:string;artifact_url?:string;output?:Record<string,unknown>}>;
+  mechanical_results:EvaluationResult[]; mechanical_issues:string[];
+  host_review:{available:false;packet_version:string;instruction:string;required_capabilities:string[];packet:Record<string,unknown>};
+};
+export type OwnerRuleAddition = {
+ schema_version:string;id:string;proposal_id:string;decision_kind:string;
+ canonical_text:string;declared_scope:string;scope:{brands:string[];branches:string[]};
+ rule_class:string;confidence:string;precedence:string;semantic_consistency:string;visual_qc_performed:false;
+ source:{node:string;locator:string;canonical_text_hash:string};accepted_source_hashes:{branch:string;brand_dna:string};
+ target_node_ids:string[];affected_brands:string[];
+};
+export type DirectRulePlan = {
+ eligible:boolean;plan_hash:string|null;blockers:Array<{code:string;message:string;next_action:string}>;
+ additions:OwnerRuleAddition[];semantic_consistency:"NOT_PROVEN_BY_DETERMINISTIC_CHECKS";visual_qc_performed:false;
+};
+export function validateDirectRulePlan(value:unknown,data:{proposal:FeedbackProposal;targets:ReviewTarget[]}):DirectRulePlan {
+ const plan=value as DirectRulePlan;
+ if(!plan||typeof plan.eligible!=="boolean"||plan.visual_qc_performed!==false||plan.semantic_consistency!=="NOT_PROVEN_BY_DETERMINISTIC_CHECKS"||
+  !Array.isArray(plan.blockers)||plan.blockers.some(b=>typeof b?.message!=="string"||typeof b?.next_action!=="string")||!Array.isArray(plan.additions)||
+  (plan.eligible&&(typeof plan.plan_hash!=="string"||!plan.plan_hash||plan.blockers.length||!plan.additions.length))||
+  plan.additions.some(a=>!a||a.proposal_id!==data.proposal.id||typeof a.canonical_text!=="string"||!a.canonical_text||
+   a.canonical_text!==proposalAddition(data.proposal)||a.declared_scope!==data.proposal.proposed_scope||a.visual_qc_performed!==false||
+   typeof a.precedence!=="string"||!a.precedence||!Array.isArray(a.target_node_ids)||!a.target_node_ids.length||
+   a.target_node_ids.some(id=>!data.targets.some(t=>t.id===id))||!Array.isArray(a.affected_brands)||!a.affected_brands.length))
+  throw Error("Bản hướng dẫn rule chưa đầy đủ hoặc không khớp thay đổi. Hãy tải lại.");
+ if(plan.eligible&&data.targets.some(t=>!plan.additions.some(a=>a.target_node_ids.includes(t.id))))
+  throw Error("Bản hướng dẫn rule chưa bao phủ toàn bộ phạm vi. Hãy tải lại.");
+ return plan;
+}
+export type DirectRuleReview = {
+ schema_version:"uid.owner-rule-eligibility.v1";eligible:boolean;rule_hash:string;rule_class:string|null;
+ blockers:Array<{code:string;message:string;next_action:string}>;owner_authorized:boolean;
+ check_scope:"STRUCTURE_SCOPE_AND_DETECTABLE_CONFLICTS_ONLY";visual_qc_performed:false;
+};
+export function validateDirectRule(value:unknown):DirectRuleReview {
+ const rule=value as DirectRuleReview;
+ if(!rule||rule.schema_version!=="uid.owner-rule-eligibility.v1"||typeof rule.eligible!=="boolean"||typeof rule.rule_hash!=="string"||!rule.rule_hash||
+  typeof rule.owner_authorized!=="boolean"||rule.visual_qc_performed!==false||rule.check_scope!=="STRUCTURE_SCOPE_AND_DETECTABLE_CONFLICTS_ONLY"||
+  !Array.isArray(rule.blockers)||rule.blockers.some(b=>typeof b?.message!=="string"||typeof b?.next_action!=="string")||
+  (rule.eligible&&(!rule.owner_authorized||rule.blockers.length)))throw Error("Kết quả kiểm tra rule chưa đầy đủ. Hãy tải lại.");
+ return rule;
+}
 export type FeedbackPreflight = {
   proposal:FeedbackProposal; candidate_hash:string; targets:ReviewTarget[]; baselines:ReviewBaseline[];
-  evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null;
+  evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null; automatic_review?:AutomaticReview; direct_rule?:DirectRuleReview; direct_rule_plan?:DirectRulePlan;
 };
 export type ReviewChecks = { scope:boolean; productTruth:boolean; visual:boolean; conflicts:boolean; zeroRegressions:boolean };
 export const emptyReviewChecks = ():ReviewChecks => ({scope:false,productTruth:false,visual:false,conflicts:false,zeroRegressions:false});
@@ -44,7 +92,23 @@ export function validatePreflight(value:unknown, proposalId:string):FeedbackPref
     data.covered_candidates.some(candidate=>!candidate?.id||typeof candidate.text!=="string"||!candidate.candidate_hash)) {
     throw Error("Preflight trả về chưa đầy đủ hoặc không đúng feedback. Hãy tải lại.");
   }
+  if(data.automatic_review)validateAutomaticReview(data.automatic_review,data.candidate_hash);
+  if(data.direct_rule)validateDirectRule(data.direct_rule);
+  if(data.direct_rule_plan)validateDirectRulePlan(data.direct_rule_plan,data);
+  if(data.direct_rule?.eligible&&!data.direct_rule_plan?.eligible)throw Error("Chưa có bản hướng dẫn rule hợp lệ. Hãy tải lại.");
   return data;
+}
+export function validateAutomaticReview(value:unknown, candidateHash:string):AutomaticReview {
+  const review=value as AutomaticReview;
+  if(!review || review.candidate_hash!==candidateHash ||
+    !["ready_to_merge","needs_baseline","needs_candidate","needs_actual_review","checks_failed","blocked"].includes(review.status) ||
+    !Array.isArray(review.blockers) || !Array.isArray(review.mechanical_results) || !Array.isArray(review.mechanical_issues) ||
+    !Array.isArray(review.evidence) || !Array.isArray(review.candidate_runs) ||
+    !["passed","failed","blocked"].includes(review.checks?.mechanical) || !["verified","required"].includes(review.checks?.actual_review) ||
+    review.blockers.some(item=>typeof item?.message!=="string"||typeof item?.next_action!=="string") ||
+    (review.status==="ready_to_merge"&&(!review.evaluation_id||review.checks.mechanical!=="passed"||review.checks.actual_review!=="verified"||review.blockers.length)))
+    throw Error("Kết quả tự kiểm tra không đầy đủ hoặc đã cũ. Hãy tải lại.");
+  return review;
 }
 export function currentEvaluation(data:FeedbackPreflight):ReviewEvaluation|null {
   const evaluation=data.evaluations.find(item=>item.id===data.automatic_evaluation_id);
