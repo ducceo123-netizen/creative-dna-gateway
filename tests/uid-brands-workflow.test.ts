@@ -738,3 +738,43 @@ test("terminal records are bounded while unknown records are retained",async()=>
  const records:Record<string,any>={};for(let i=0;i<90;i++){const id="request-v2:"+i.toString(16).padStart(32,"0");records[id]={id,status:i<70?"accepted":"unknown",context:{review_id:"old-"+i}};}
  const ui=setup(output(),{timers:fakeClock(),state:{requestRecords:records}});await ui.submit();const saved=JSON.parse(ui.storage.get("uid-brands-request-records")!);assert.equal(Object.values(saved).filter((x:any)=>x.status==="unknown").length,20);assert.ok(Object.values(saved).filter((x:any)=>x.status==="accepted").length<=64);
 });
+
+test("real approval and packaging follow-ups carry factual progress without changing send semantics", async () => {
+  for (const stage of ["content_approval", "asset_review", "packaging"] as const) {
+    const ui = setup(output(stage));
+    if (stage === "asset_review") await ui.choose("package"); else await ui.submit();
+    assert.equal(ui.messages.length, 1);
+    const prompt = ui.messages[0].prompt;
+    assert.equal(prompt.split("PROGRESS:").length - 1, 1);
+    assert.match(prompt, /Research gates creative deliverables, not progress updates/);
+    assert.match(prompt, /done\/pending\/blocked and next action/);
+    assert.match(prompt, /treat accepted sends as execution/);
+    assert.match(prompt, /Continue authorized work without redundant confirmation/);
+    assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
+    await ui.submit(); assert.equal(ui.messages.length, 1);
+  }
+});
+
+test("new brief progress guidance does not remove the research-before-creative-output gate", async () => {
+  const ui = setup({ stage: "launcher", routes: [{ brand: "PawfectHouse", branch: "onepage-system" }] });
+  ui.$("url").value = "https://example.com/products/mug";
+  await ui.submit();
+  assert.equal(ui.messages.length, 1);
+  assert.match(ui.messages[0].prompt, /RESEARCH BEFORE OUTPUT/);
+  assert.match(ui.messages[0].prompt, /Research gates creative deliverables, not progress updates/);
+  assert.match(ui.messages[0].prompt, /Submit the compact research object through the same resolver\/compiler before creative output/);
+  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
+});
+
+test("unknown-send status checks request partial facts without replay or synthetic completion", async () => {
+  let calls = 0;
+  const ui = setup(output(), { timers: fakeClock(), send: async () => { if (++calls === 1) throw Error("unknown delivery"); } });
+  await ui.submit();
+  await ui.$("checkRequest").click();
+  assert.equal(ui.messages.length, 2);
+  const prompt = ui.messages[1].prompt;
+  assert.match(prompt, /Read and reconcile only/);
+  assert.match(prompt, /Do not replay, generate, package, upload, or write anything/);
+  assert.match(prompt, /done \/ pending \/ blocked and the next safe action/);
+  await ui.submit(); assert.equal(ui.messages.length, 2);
+});
