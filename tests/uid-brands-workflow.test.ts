@@ -8,21 +8,39 @@ import { createReviewContext } from "../uid-brands-review-contract.ts";
 // Execute the actual embedded script. The host bridge is deliberately mocked:
 // these tests do not claim to authenticate a click or execute a ChatGPT task.
 const script = launcherHtml.match(/<script>([\s\S]*?)<\/script>/)![1];
+// Small deterministic DOM model, not a browser/IME implementation. Detaching
+// the focused node or writing its value resets modeled selection/composition.
+// These invariants catch the host-echo regression without claiming real-device QA.
+type FocusDocument = { activeElement: Element | null; body: Element };
 class Element {
-  children: Element[] = []; value = ""; textContent = ""; disabled = false; hidden = false;
-  onclick?: () => any; oninput?: () => any; onchange?: () => any;
+  children: Element[] = []; textContent = ""; disabled = false; hidden = false;
+  private currentValue = ""; valueWrites = 0; selectionStart = 0; selectionEnd = 0; composing = false;
+  parentNode: Element | null = null;
+  onclick?: () => any; oninput?: (event?: any) => any; onchange?: () => any;
   attributes: Record<string, string> = {};
   classList = { toggle() {}, add() {} };
   listeners: Record<string, ((event: any) => void)[]> = {};
   files: any[] = [];
-  constructor(public tag = "div") {}
+  constructor(public tag = "div", private document?: FocusDocument) {}
+  get value() { return this.currentValue; }
+  set value(value: string) { this.currentValue = value; this.valueWrites++; this.selectionStart = this.selectionEnd = value.length; this.composing = false; }
+  get isConnected(): boolean { return this.document?.body === this || !!this.parentNode?.isConnected; }
+  contains(node: Element): boolean { return this === node || this.children.some(child => child.contains(node)); }
+  focus() { if (this.document && this.isConnected) this.document.activeElement = this; }
+  setSelectionRange(start: number, end: number) { this.selectionStart = start; this.selectionEnd = end; }
+  remove() {
+    const focused = this.document?.activeElement;
+    if (focused && this.contains(focused)) { focused.composing = false; this.document!.activeElement = null; }
+    if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(child => child !== this);
+    this.parentNode = null;
+  }
   setAttribute(key: string, value: string) { this.attributes[key] = value; }
   addEventListener(name: string, fn: (event: any) => void) { (this.listeners[name] ||= []).push(fn); }
   removeEventListener() {}
   dispatch(name: string, event: any = {}) { for (const fn of this.listeners[name] || []) fn(event); }
-  replaceChildren(...children: Element[]) { this.children = children; }
-  appendChild(child: Element) { this.children.push(child); }
-  append(...children: Element[]) { this.children.push(...children); }
+  replaceChildren(...children: Element[]) { for (const child of [...this.children]) child.remove(); this.append(...children); }
+  appendChild(child: Element) { child.remove(); child.parentNode = this; this.children.push(child); }
+  append(...children: Element[]) { for (const child of children) this.appendChild(child); }
   querySelectorAll(selector: string): Element[] {
     const tags = selector.split(",").map(x => x.trim());
     return this.children.flatMap(child => [...(tags.includes(child.tag) ? [child] : []), ...child.querySelectorAll(selector)]);
@@ -32,19 +50,30 @@ class Element {
 function output(stage: typeof REVIEW_STAGES[number] = "content_approval", version = "v1", task = "task-A") {
   return { stage, assets: [{ id: "asset-1", element: "Banner", position: "desktop" }], review_context: createReviewContext({ stage, task_id: task, content_version: version }) };
 }
-function setup(data: any = output(), options: { send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any> } = {}) {
+function setup(data: any = output(), options: { send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
+  const document = { activeElement: null } as FocusDocument;
+  document.body = new Element("body", document);
   const nodes = new Map<string, Element>();
-  const $ = (id: string) => { if (!nodes.has(id)) nodes.set(id, new Element(id.includes("Feedback") ? "textarea" : "div")); return nodes.get(id)!; };
+  const $ = (id: string) => {
+    if (!nodes.has(id)) { const node = new Element(id.includes("Feedback") ? "textarea" : "div", document); nodes.set(id, node); document.body.appendChild(node); }
+    return nodes.get(id)!;
+  };
   const storage = options.storage || new Map<string, string>();
   const messages: any[] = []; const events: Record<string, (event: any) => void> = {};
-  const openai: any = { toolOutput: data, widgetState: options.state || {}, setWidgetState(state: any) { this.widgetState = JSON.parse(JSON.stringify(state)); } };
+  const openai: any = { toolOutput: data, widgetState: options.state || {}, setWidgetState(state: any) {
+    this.widgetState = JSON.parse(JSON.stringify(state));
+    if (!options.globalsEcho) return;
+    const globals = { widgetState: this.widgetState, ...(options.globalsEcho === "state-only" ? {} : { toolOutput: JSON.parse(JSON.stringify(this.toolOutput)) }) };
+    const emit = () => events["openai:set_globals"]?.({ detail: { globals } });
+    if (options.globalsEcho === "microtask") queueMicrotask(emit); else emit();
+  } };
   if (options.bridge !== false) openai.sendFollowUpMessage = async (message: any) => { messages.push(message); return options.send?.(message); };
   Object.assign(openai, options.host || {});
   $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
   const window = { openai, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
-  vm.runInNewContext(script, { window, document: { body: new Element(), getElementById: $, createElement: (tag: string) => new Element(tag) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
-  return { $, nodes, messages, openai, storage, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
+  vm.runInNewContext(script, { window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
+  return { $, nodes, messages, openai, storage, document, globals(globals: any) { events["openai:set_globals"]({ detail: { globals } }); }, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
     choose(value: string) { const action = REVIEW_STEPS[openai.toolOutput.stage as typeof REVIEW_STAGES[number]].choices.findIndex(x => x.value === value); return $("reviewChoices").children[action].click(); },
     submit() { return $("run").onclick!(); } };
 }
@@ -458,4 +487,128 @@ test("external link denial is reported without silently bypassing the host", asy
   const anchor = ui.$("resultLinks").children[0].children[0] as any;
   anchor.onclick({ preventDefault() { prevented = true; } });
   assert.equal(prevented, true); assert.match(ui.$("error").textContent, /Host chưa mở được liên kết/);
+});
+
+function groupArea(ui: ReturnType<typeof setup>, index = 0) { return ui.$("variableItems").querySelectorAll("textarea")[index]; }
+function addOverallGroup(ui: ReturnType<typeof setup>) { ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").click(); }
+function enterAtSelection(ui: ReturnType<typeof setup>, text: string, composing = false) {
+  const area = ui.document.activeElement;
+  assert.ok(area?.isConnected && area.tag === "textarea", "typing requires the original connected, focused textarea");
+  const start = area.selectionStart;
+  area.value = area.value.slice(0, start) + text + area.value.slice(area.selectionEnd);
+  area.setSelectionRange(start + text.length, start + text.length); area.composing = composing;
+  area.oninput?.({ target: area, isComposing: composing });
+}
+
+for (const mode of ["feedback", "train"]) for (const echo of ["sync", "microtask", "state-only"] as const) {
+  test(`${mode} keeps its focused textarea and caret across ${echo} widget-state echoes`, async () => {
+    const data = output("asset_review"); const ui = setup(data, { globalsEcho: echo });
+    ui.choose(mode); addOverallGroup(ui); await Promise.resolve();
+    const area = groupArea(ui); area.focus();
+    for (const char of "abcdef") {
+      enterAtSelection(ui, char); await Promise.resolve();
+      assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
+      assert.equal(area.selectionStart, area.value.length); assert.equal(area.selectionEnd, area.value.length);
+    }
+    assert.equal(area.value, "abcdef");
+    area.setSelectionRange(2, 4); enterAtSelection(ui, "XY"); await Promise.resolve();
+    assert.equal(area.value, "abXYef"); assert.deepEqual([area.selectionStart, area.selectionEnd], [4, 4]);
+    // A selection deletion models Backspace without refocusing the control.
+    area.setSelectionRange(3, 4); enterAtSelection(ui, ""); await Promise.resolve();
+    assert.equal(area.value, "abXef"); assert.equal(area.selectionStart, 3);
+    const draft = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id];
+    assert.equal(draft.variableItems[0].text, "abXef"); assert.equal(ui.messages.length, 0);
+  });
+}
+
+test("text paste and Vietnamese composition retain the same node, selection and latest draft", async () => {
+  const data = output("asset_review"); const ui = setup(data, { globalsEcho: "microtask" });
+  ui.choose("feedback"); addOverallGroup(ui); await Promise.resolve();
+  const area = groupArea(ui); area.focus(); let prevented = false;
+  ui.$("reviewFields").dispatch("paste", { clipboardData: { files: [], items: [{ kind: "string", type: "text/plain" }] }, preventDefault() { prevented = true; } });
+  assert.equal(prevented, false, "ordinary text paste must not be consumed by attachment handling");
+  enterAtSelection(ui, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); await Promise.resolve();
+  assert.equal(area.value, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
+  area.setSelectionRange(0, 3); enterAtSelection(ui, "Gó", true); await Promise.resolve();
+  const writes = area.valueWrites;
+  ui.update({ ...data, result_content: "Updated outcome context during composition" });
+  assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.equal(area.valueWrites, writes);
+  assert.equal(area.composing, true); assert.deepEqual([area.selectionStart, area.selectionEnd], [2, 2]);
+  area.setSelectionRange(0, 2); enterAtSelection(ui, "Góp", false); await Promise.resolve();
+  assert.equal(area.value, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
+  assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems[0].text, area.value);
+  assert.equal(ui.messages.length, 0);
+});
+
+test("equal cloned, wrapped and reordered tool outputs do not rebuild the review", () => {
+  const data = { ...output("asset_review"), result_content: "Current outcome" }; const ui = setup(data);
+  ui.choose("feedback"); addOverallGroup(ui); const area = groupArea(ui); area.focus(); enterAtSelection(ui, "Draft");
+  const choice = ui.$("reviewChoices").children[0]; const step = ui.$("workflowSteps").children[0];
+  function reverseKeys(value: any): any { return Array.isArray(value) ? value.map(reverseKeys) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).reverse().map(([key, item]) => [key, reverseKeys(item)])) : value; }
+  ui.update({ structuredContent: reverseKeys(JSON.parse(JSON.stringify(data))) });
+  assert.ok(ui.$("reviewChoices").children[0] === choice, "DOM identity/focus must stay unchanged"); assert.ok(ui.$("workflowSteps").children[0] === step, "DOM identity/focus must stay unchanged");
+  ui.globals({ theme: "dark", widgetState: ui.openai.widgetState });
+  assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged"); assert.equal(ui.messages.length, 0);
+});
+
+test("genuine same-review metadata and ordered asset changes update without rewriting an active group", () => {
+  const data = output("asset_review"); const ui = setup(data, { globalsEcho: "sync" });
+  ui.choose("feedback"); addOverallGroup(ui); const area = groupArea(ui); area.focus(); enterAtSelection(ui, "Original draft");
+  area.setSelectionRange(2, 5); const writes = area.valueWrites;
+  const assets = [{ id: "asset-1", element: "Banner", position: "mobile" }, { id: "asset-2", element: "Banner", position: "desktop" }];
+  ui.update({ ...data, assets, result_content: "Genuinely updated outcome", result_links: [{ label: "New result", url: "https://example.com/new-result" }] });
+  assert.equal(ui.$("resultContent").textContent, "Genuinely updated outcome");
+  assert.equal(ui.$("resultLinks").children[0].children[0].textContent, "New result");
+  assert.match(ui.$("variableKeys").querySelectorAll("button").map(x => x.textContent).join("|"), /mobile/);
+  assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.equal(area.valueWrites, writes); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
+  assert.deepEqual([area.selectionStart, area.selectionEnd], [2, 5]);
+  ui.update({ ...data, assets: [...assets].reverse() });
+  const labels = ui.$("variableKeys").querySelectorAll("button").map(x => x.textContent);
+  assert.ok(labels.findIndex(x => x.includes("desktop")) < labels.findIndex(x => x.includes("mobile")), "array reordering is a real output update");
+  assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.equal(area.valueWrites, writes); assert.equal(ui.messages.length, 0);
+});
+
+test("multi-select and removing or adding other groups preserve the active textarea despite legacy ID collisions", () => {
+  const data = { ...output("asset_review"), assets: [{ id: "asset-1", element: "Banner", position: "desktop" }, { id: "asset-2", element: "Banner", position: "mobile" }] };
+  const ui = setup(data, { globalsEcho: "sync" }); ui.choose("feedback"); addOverallGroup(ui); addOverallGroup(ui);
+  const active = groupArea(ui, 1); active.focus(); enterAtSelection(ui, "Keep group two"); active.setSelectionRange(2, 6);
+  ui.$("variableItems").querySelectorAll("button")[0].click();
+  assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === active, "DOM identity/focus must stay unchanged");
+  // group-1 already survives; adding now produces the same persisted key.
+  addOverallGroup(ui); assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.notEqual(groupArea(ui, 1), active);
+  const groups = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems;
+  assert.equal(groups[0].key, groups[1].key); assert.equal(groups[0].text, "Keep group two"); assert.equal(groups[1].text, "");
+  ui.$("variableKeys").querySelectorAll("button").find(x => x.textContent.includes("Chọn cả nhóm"))!.click();
+  assert.match(ui.$("targetCount").textContent, /Đã chọn 2 mục/); ui.$("createSharedFeedback").click();
+  assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.deepEqual([active.selectionStart, active.selectionEnd], [2, 6]);
+  const latest = ui.openai.widgetState.privateContent.reviewDrafts[data.review_context.review_id].variableItems;
+  assert.deepEqual(Array.from(latest[2].targets), ["asset-1", "asset-2"]);
+  ui.$("variableItems").querySelectorAll("button")[1].click();
+  assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.equal(active.value, "Keep group two");
+  ui.$("modeTrain").click(); ui.$("modeFeedback").click(); ui.$("backToReview").click(); ui.choose("feedback");
+  assert.ok(groupArea(ui) === active, "DOM identity/focus must stay unchanged"); assert.equal(active.value, "Keep group two"); assert.equal(ui.messages.length, 0);
+});
+
+test("real task, version and retry transitions isolate drafts, then restore only the exact earlier review", () => {
+  const first = output("asset_review"); const ui = setup(first, { globalsEcho: "sync" });
+  ui.choose("train"); addOverallGroup(ui); groupArea(ui).focus(); enterAtSelection(ui, "Draft for first review");
+  for (const next of [output("asset_review", "v2"), output("asset_review", "v1", "task-B"), { ...first, review_context: createReviewContext({ stage: "asset_review", task_id: "task-A", content_version: "v1", retry_id: "attempt-2" }) }]) {
+    ui.update(next); ui.choose("feedback"); assert.equal(ui.$("variableItems").querySelectorAll("textarea").length, 0);
+    assert.equal(ui.$("run").disabled, false); assert.equal(ui.messages.length, 0);
+  }
+  ui.update(first); assert.equal(groupArea(ui).value, "Draft for first review"); assert.equal(ui.$("run").textContent, "Gửi đề xuất Train");
+  const restored = setup(first, { state: ui.openai.widgetState, globalsEcho: "sync" });
+  assert.equal(groupArea(restored).value, "Draft for first review"); assert.equal(restored.messages.length, 0);
+});
+
+test("pending and failed attachments with globals echoes never replace a focused feedback draft or submit it", async () => {
+  const upload = deferred(); const ui = setup(output("asset_review"), { globalsEcho: "microtask", host: { uploadFile: async () => { await upload.promise; throw Error("Synthetic upload failure"); } } });
+  ui.choose("feedback"); addOverallGroup(ui); await Promise.resolve(); const area = groupArea(ui); area.focus(); enterAtSelection(ui, "Keep this draft");
+  const input = fileInput(ui); input.files = [new File(["image"], "synthetic.png", { type: "image/png" })]; input.onchange!();
+  await flushAttachmentWork(); assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
+  await ui.submit(); assert.equal(ui.messages.length, 0);
+  upload.resolve(); await flushAttachmentWork(); assert.ok(groupArea(ui) === area, "DOM identity/focus must stay unchanged"); assert.equal(area.value, "Keep this draft");
+  // Submitting may temporarily disable and blur an input in a real browser.
+  // After that attempt, assert retained node/text rather than modeled focus.
+  await ui.submit(); assert.equal(ui.messages.length, 0);
 });

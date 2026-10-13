@@ -74,7 +74,8 @@ const initial=initialHostState.privateContent||initialHostState;
 ${ATTACHMENT_UI_SCRIPT}
 let attachments;
 const reviewDrafts=Object.assign(Object.create(null),initial.reviewDrafts||{});
-let fieldsInitialized=false;
+let fieldsInitialized=false, lastOutputSignature=null;
+const variableViews=new Map();
 let lastError="", resultSummary="", resultContent="", resultLinks=[], resultImages=[], outcomeEpoch=0;
 // Persist each meaningful edit without rebuilding the focused textarea.
 const reviewSteps=${JSON.stringify(REVIEW_STEPS)};
@@ -205,16 +206,29 @@ function renderVariables(){
  });
  $("createSharedFeedback").disabled=!selectedTargets.size;
  $("targetCount").textContent="Đã chọn "+selectedTargets.size+" mục · "+variableItems.length+" nhóm feedback";
- const root=$("variableItems");root.replaceChildren();
+ // Keep each live textarea in place. Rebuilding or moving it breaks focus,
+ // selection and IME composition, even when its saved text is restored.
+ const root=$("variableItems"),activeItems=new Set(variableItems);
+ for(const [item,view] of variableViews){if(!activeItems.has(item)){view.box.remove();variableViews.delete(item);}}
  variableItems.forEach(item=>{
-  const box=document.createElement("div");box.className="variable-item";
-  const head=document.createElement("div");head.className="variable-item-head";
-  const name=document.createElement("span");const display=availableVariables().find(v=>v.key===item.key);name.textContent=item.targets?("Feedback chung · "+item.targets.length+" targets"):(display?display.label:"Asset không còn trong danh sách");
-  const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.setAttribute("aria-label","Bỏ "+item.key);
-  remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();save();renderSubmissionState();};
-  head.append(name,remove);
-  const area=document.createElement("textarea");area.rows=2;area.placeholder=item.targets?"Feedback chung cho tất cả targets đã chọn…":"Feedback cho "+(display?.label||"asset đã chọn")+"…";area.value=item.text;area.oninput=()=>{item.text=area.value;save();renderSubmissionState();};
-  box.appendChild(head);if(item.targets){const names=document.createElement("p");names.className="group-targets";names.textContent=item.targets.map(k=>availableVariables().find(v=>v.key===k)?.label||"Asset").join(" · ");box.appendChild(names);}box.appendChild(area);root.appendChild(box);
+  let view=variableViews.get(item);
+  if(!view){
+   const box=document.createElement("div");box.className="variable-item";
+   const head=document.createElement("div");head.className="variable-item-head";
+   const name=document.createElement("span"),names=document.createElement("p");names.className="group-targets";
+   const remove=document.createElement("button");remove.type="button";remove.textContent="×";
+   remove.onclick=()=>{variableItems=variableItems.filter(x=>x!==item);renderVariables();save();renderSubmissionState();};
+   const area=document.createElement("textarea");area.rows=2;area.value=item.text;
+   area.oninput=()=>{item.text=area.value;save();renderSubmissionState();};
+   head.append(name,remove);box.append(head,names,area);root.appendChild(box);
+   view={box,name,names,remove,area};variableViews.set(item,view);
+  }
+  const display=availableVariables().find(v=>v.key===item.key);
+  view.name.textContent=item.targets?("Feedback chung · "+item.targets.length+" targets"):(display?display.label:"Asset không còn trong danh sách");
+  view.remove.setAttribute("aria-label","Bỏ "+item.key);
+  view.area.placeholder=item.targets?"Feedback chung cho tất cả targets đã chọn…":"Feedback cho "+(display?.label||"asset đã chọn")+"…";
+  view.names.hidden=!item.targets;
+  view.names.textContent=item.targets?item.targets.map(k=>availableVariables().find(v=>v.key===k)?.label||"Asset").join(" · "):"";
  });
 }
 $("createSharedFeedback").onclick=()=>{const targets=[...selectedTargets];if(!targets.length)return;variableItems.push({key:"group-"+variableItems.length,targets,text:""});selectedTargets.clear();renderVariables();save();renderSubmissionState();};
@@ -243,9 +257,17 @@ function renderStage(){
  $("attachmentSection").hidden=review&&!currentAction()?.requiresFeedback;
  renderSubmissionState();
 }
+function outputSignature(data){
+ // Host state saves can echo a cloned toolOutput. Ignore equal JSON content,
+ // including reordered object keys, but preserve array order and real updates.
+ try{return JSON.stringify(data,(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);}catch{return null;}
+}
 function load(output){
  let data=output||{};
  if(data.structuredContent)data=data.structuredContent;
+ const signature=outputSignature(data);
+ if(signature!==null&&signature===lastOutputSignature)return;
+ lastOutputSignature=signature;
  rememberDraft();
  const previousStage=stage;
  if(["launcher","content_approval","asset_review","packaging","complete"].includes(data.stage))stage=data.stage;
