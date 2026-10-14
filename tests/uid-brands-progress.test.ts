@@ -160,3 +160,29 @@ test("partial outcomes preserve actual evidence and one next-action contract, ne
   assert.match(UID_PROGRESS_GUIDANCE, /Continue authorized work without redundant confirmation/);
   assert.throws(() => uidProgressTool("unlisted_tool", { description: "new tool" }), /Missing invocation labels/);
 });
+
+test("route failure followed by review is phase-scoped, never blanket form failure or verified rendering", async () => {
+  await withMcp(async rpc => {
+    const launcher=await rpc("tools/call",{name:"launch_creative_dna",arguments:{}});
+    assert.equal(launcher.isError,true);
+    assert.equal(launcher.structuredContent.ui_status.routing,"degraded");
+    assert.equal(launcher.structuredContent.ui_status.render,"unverified");
+    assert.match(launcher.content[0].text,/does not prove the form failed to render/);
+    const review=await rpc("tools/call",{name:"show_uid_brands_review",arguments:{stage:"content_approval",task_id:"task-A",content_version:"v1",result_content:"Content v1"}});
+    assert.notEqual(review.isError,true);
+    assert.equal(review.structuredContent.ui_status.stage,"content_approval");
+    assert.equal(review.structuredContent.ui_status.render,"unverified");
+    assert.match(review.content[0].text,/earlier launcher or route error belongs to that earlier stage/);
+    assert.match(review.content[0].text,/Do not create another panel/);
+    const init=await rpc("initialize",{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"stage-test",version:"1"}});
+    assert.match(init.instructions,/do not repeat an earlier launcher error as a current blanket form failure/);
+  },async()=>Response.json({error:"unavailable"},{status:503,headers:{"Retry-After":"0"}}));
+});
+
+test("research and market work retain natural chat updates before the final artifact",()=>{
+ assert.match(UID_PROGRESS_GUIDANCE,/Keep ordinary conversational acknowledgement and progress visible while the embedded UI is open/);
+ assert.match(UID_PROGRESS_GUIDANCE,/verified PDP\/specification checks, review findings, market\/comparison coverage and missing sources/);
+ assert.match(UID_PROGRESS_GUIDANCE,/before the final artifact/);
+ assert.match(UID_PROGRESS_REMINDER,/Full-result deduplication must not suppress these updates/);
+ assert.match(UID_PROGRESS_REMINDER,/distinguish planned work from checked sources/);
+});

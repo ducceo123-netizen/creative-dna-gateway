@@ -596,8 +596,8 @@ export function createMcpServer(): McpServer {
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
     _meta: REVIEW_UI_META,
   }), async (input) => withUidProgress({
-    content: [{ type: "text" as const, text: "UID Brands outcome and actions ready. The full supplied result appears above the action buttons. Actions send once on click; feedback/Train require completing and sending the form. Sending a request does not mean it completed." }],
-    structuredContent: { ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], review_context: createReviewContext(input) },
+    content: [{ type: "text" as const, text: "UID Brands review response prepared for the requested stage. The UI is designed to show the full supplied result above the action buttons; host rendering is not verified by this response. Any earlier launcher or route error belongs to that earlier stage, not this review response. Do not create another panel just to report status. Actions send once on click; feedback/Train require completing and sending the form. Sending a request does not mean it completed." }],
+    structuredContent: { ui_status: { response: "prepared", render: "unverified", stage: input.stage }, ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], review_context: createReviewContext(input) },
   }));
   server.registerTool("get_uid_brands_native_workflow", uidProgressTool("get_uid_brands_native_workflow", {
     title: "UID Brands Native Workflow",
@@ -632,9 +632,9 @@ export function createMcpServer(): McpServer {
   }), async ({ navigation_id }) => {
     try {
       const upstream = await loadLauncherData();
-      return withUidProgress({ content: [{ type: "text" as const, text: upstream.ok ? "UID Brands launcher ready. Use the integrated task form." : "UID Brands routes could not load. Keep your input and retry the read." }], isError: !upstream.ok, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", ...upstream.data } });
+      return withUidProgress({ content: [{ type: "text" as const, text: upstream.ok ? "UID Brands launcher response prepared with routes. Host rendering is not verified; do not call again just to produce a status message." : "UID Brands route lookup failed; launcher UI data is still supplied with fallback choices. This does not prove the form failed to render. Keep the current panel/input and retry route lookup in that panel, not by opening another launcher." }], isError: !upstream.ok, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", ...upstream.data, ui_status: { response: "prepared", render: "unverified", stage: "launcher", routing: upstream.ok ? "available" : "degraded" } } });
     } catch (err) {
-      return withUidProgress({ content: [{ type: "text" as const, text: "Creative DNA launcher could not load routes right now. Try again shortly." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } });
+      return withUidProgress({ content: [{ type: "text" as const, text: "UID Brands route lookup failed; launcher UI data is still supplied with fallback choices. This does not prove the form failed to render. Retry route lookup in the current panel, not by opening another launcher." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", ui_status: { response: "prepared", render: "unverified", stage: "launcher", routing: "degraded" }, routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } });
     }
   });
 
