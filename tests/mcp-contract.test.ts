@@ -15,7 +15,8 @@ test("launcher tool and resource remain registered", () => {
   assert.match(source, /server\.registerTool\("launch_creative_dna"/);
   assert.match(source, /server\.registerResource\("uid-brands-workflow-ui"/);
   assert.match(source, /name: "launch_creative_dna"/);
-  assert.match(launcher, /sendFollowUpMessage/);
+  assert.doesNotMatch(launcher, /sendFollowUpMessage/);
+  assert.match(launcher, /copyPrompt/);
 });
 
 test("launcher routes remain dynamic and do not mutate canonical", () => {

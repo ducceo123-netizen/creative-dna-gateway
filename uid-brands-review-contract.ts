@@ -12,7 +12,7 @@ export const REVIEW_ASSET_SCHEMA = z.object({
   name: z.string().optional(), position: z.string().optional(),
 });
 const contextShape = {
-  result_content: z.string().max(120000).optional().describe("Complete text of the actual outcome under review, displayed before its actions in the same widget. Include the full content, not a teaser or summary. Keep generated images and downloadable files attached in the conversation. Never invent results."),
+  result_content: z.string().max(120000).optional().describe("Optional compatibility field for outcome text. Keep full results in chat; avoid copying large outcomes into the compact Prompt Master. Its collapsed preview may show only an excerpt. Never invent results."),
   result_links: z.array(z.object({
     label: z.string().trim().min(1).max(200),
     url: z.url().max(4000).refine(value => { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; }, "Use a verified HTTPS delivery URL without embedded credentials."),
@@ -20,8 +20,8 @@ const contextShape = {
   result_images: z.array(z.object({
     file_id: z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9_-]+$/),
     label: z.string().trim().min(1).max(200),
-  })).max(24).optional().describe("Optional plugin-authorized host image file IDs and labels for previews above actions. Use real IDs already authorized through host file params, tool file references, upload or selection, never Library IDs, URLs or invented values. Images remain attached in the conversation; mentioning an ID alone does not grant preview access."),
-  result_summary: z.string().max(12000).optional().describe("Legacy plain-text summary. Prefer result_content with the complete outcome so results precede actions. Do not invent execution/progress. Full files and images stay attached in the conversation."),
+  })).max(24).optional().describe("Optional plugin-authorized host image file IDs and labels for compatibility with previous panels. Prompt Master does not fetch image previews. Use real IDs already authorized through host file params, tool file references, upload or selection, never Library IDs, URLs or invented values. Images remain attached in the conversation; mentioning an ID alone does not grant preview access."),
+  result_summary: z.string().max(12000).optional().describe("Brief plain-text summary identifying the current outcome in the compact Prompt Master. Keep full content in chat. Do not invent execution/progress. Full files and images stay attached in the conversation."),
   task_id: identity.optional().describe("Stable task ID. Supply with content_version for a version-bound review."),
   content_version: identity.optional().describe("Exact outcome revision or content hash. Change after every content or asset revision."),
   retry_id: identity.optional().describe("New explicit attempt after a verified operation failure or a user-requested retry. Keep stable on ordinary reopens; never use to replay automatically."),
