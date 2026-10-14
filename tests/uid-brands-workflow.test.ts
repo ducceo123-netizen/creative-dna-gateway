@@ -778,3 +778,76 @@ test("unknown-send status checks request partial facts without replay or synthet
   assert.match(prompt, /done \/ pending \/ blocked and the next safe action/);
   await ui.submit(); assert.equal(ui.messages.length, 2);
 });
+
+test("activity survives mode changes and preserves every outstanding action in the same review", async () => {
+  const ui=setup(output("asset_review")); await ui.choose("package");
+  ui.choose("feedback");
+  assert.equal(ui.$("requestActivity").hidden,false);
+  assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Đóng gói: Đã gửi/);
+  assert.equal(ui.$("checkRequest").hidden,false);
+  await ui.$("checkRequest").click();
+  assert.equal(ui.messages.length,2);assert.match(ui.messages[1].prompt,/Read and reconcile only/);
+  assert.match(ui.messages[1].prompt,/"action":"package"/);
+  ui.update(output("asset_review","v2"));assert.equal(ui.$("requestActivity").hidden,true);
+});
+
+test("local acknowledgement precedes persistence and dispatch without claiming execution", async () => {
+  const gate=deferred(); const ui=setup(output(),{host:{setWidgetState:()=>gate.promise}});
+  const submit=ui.choose("approve");
+  assert.equal(ui.messages.length,0);
+  assert.match(ui.$("requestActivityItems").children[0].textContent,/Đã nhận thao tác · Đang lưu/);
+  gate.resolve();await submit;
+  assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/chưa xác nhận thực thi/);
+  assert.doesNotMatch(ui.$("flowState").textContent,/ChatGPT đã nhận/);
+});
+
+test("unknown delivery remount shows honest labels and manual read-only reconnect instructions", async () => {
+  const data=output();const ui=setup(data,{send:async()=>{throw Error("connection lost");}});await ui.choose("approve");
+  const reloaded=setup(data,{state:ui.snapshot(),bridge:false});
+  assert.match(reloaded.$("reviewChoices").children[0].textContent,/Chờ kiểm tra/);
+  assert.match(reloaded.$("requestRecoveryHint").textContent,/chưa kết nối/);
+  assert.equal(reloaded.$("checkRequest").disabled,true);
+  assert.match(reloaded.$("requestRecoveryText").value,/Do not replay, generate, package, upload, or write anything/);
+  assert.match(reloaded.$("requestActivityItems").children[0].textContent,/Chưa rõ/);
+  assert.equal(reloaded.messages.length,0);
+});
+
+test("failed route initialization retries only a route read in place and preserves the brief", async () => {
+  const calls:any[]=[];const ui=setup({stage:"launcher",routes:[]},{host:{callTool:async(name:string,args:any)=>{calls.push([name,args]);return {content:[{type:"text",text:JSON.stringify({routes:[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"},{brand:"giftsoul",branch:"home-hero",title:"Hero"}]})}]};}}});
+  ui.$("url").value="https://example.com/product";ui.$("custom").value="Keep this brief";
+  assert.equal(ui.$("refreshRoutes").hidden,false);await ui.$("refreshRoutes").click();
+  assert.equal(calls.length,1);assert.equal(calls[0][0],"list_creative_dna_routes");
+  assert.equal(ui.$("url").value,"https://example.com/product");assert.equal(ui.$("custom").value,"Keep this brief");
+  assert.equal(ui.$("refreshRoutes").hidden,true);assert.equal(ui.messages.length,0);
+});
+
+test("late route refresh cannot replace a newer review", async () => {
+  const gate=deferred();const ui=setup({stage:"launcher",routes:[]},{host:{callTool:async()=>{await gate.promise;return {structuredContent:{routes:[{brand:"giftsoul",branch:"home-hero"}]}};}}});
+  const refresh=ui.$("refreshRoutes").click();ui.update(output());gate.resolve();await refresh;
+  assert.match(ui.$("stageTitle").textContent,/Duyệt content/);assert.equal(ui.$("launchFields").hidden,true);
+});
+
+test("visible action instruction persists through host rerender and remount without raw tool payloads",async()=>{
+ const data=output();const ui=setup(data);ui.choose("revise");ui.$("reviewFeedback").value="Shorten headline and keep product facts.";await ui.submit();
+ const receipt=()=>ui.$("requestActivityItems").children.map(x=>x.textContent).join(" ");
+ assert.match(receipt(),/Lệnh đã yêu cầu: Chỉnh sửa content/);assert.match(receipt(),/Shorten headline/);
+ assert.doesNotMatch(receipt(),/PROGRESS:|correlation only|Attachment evidence|RESEARCH/);
+ ui.update(JSON.parse(JSON.stringify(data)));assert.match(receipt(),/Shorten headline/);
+ const reloaded=setup(data,{state:ui.snapshot()});
+ assert.match(reloaded.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Shorten headline/);
+});
+
+test("late failed route lookup cannot claim an already sent brief was not sent",async()=>{
+ const gate=deferred();const ui=setup({stage:"launcher",routes:[]},{host:{callTool:()=>gate.promise}});
+ ui.$("url").value="https://example.com/product";const refresh=ui.$("refreshRoutes").click();await ui.submit();
+ assert.equal(ui.messages.length,1);gate.reject(Error("route unavailable"));await refresh;
+ assert.doesNotMatch(ui.$("routeStatus").textContent,/chưa gửi tác vụ/i);
+ assert.match(ui.$("flowState").textContent,/Đã gửi tin nhắn/);
+});
+
+test("late failed route lookup does not annotate a newer launcher response",async()=>{
+ const gate=deferred();const ui=setup({stage:"launcher",routes:[]},{host:{callTool:()=>gate.promise}});
+ const refresh=ui.$("refreshRoutes").click();ui.update({stage:"launcher",routes:[{brand:"giftsoul",branch:"home-hero"}]});
+ gate.reject(Error("route unavailable"));await refresh;
+ assert.equal(ui.$("routeStatus").textContent,"");assert.equal(ui.$("refreshRoutes").hidden,true);
+});
