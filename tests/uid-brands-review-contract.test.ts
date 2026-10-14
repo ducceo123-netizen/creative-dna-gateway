@@ -88,11 +88,13 @@ test("live local MCP advertises and executes matching review/native contracts, m
     assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
     assert.equal(resource.contents[0].text, launcherHtml);
     for (const stage of REVIEW_STAGES) {
-      const args = { stage, task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
+      const args = { stage, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });
       const native = await rpc("tools/call", { name: "get_uid_brands_native_workflow", arguments: args });
       assert.equal(review.isError, undefined); assert.equal(native.isError, undefined);
       assert.deepEqual(review.structuredContent.assets, args.assets);
+      assert.equal(review.structuredContent.review_context.branch, "onepage-system");
+      assert.equal(native.structuredContent.review_context.branch, "onepage-system");
       assert.equal(review.structuredContent.result_summary, args.result_summary);
       assert.equal(native.structuredContent.result_summary, args.result_summary);
       for (const key of ["result_content", "result_links", "result_images"] as const) {
@@ -112,4 +114,12 @@ test("live local MCP advertises and executes matching review/native contracts, m
     const invalid = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "launcher" } });
     assert.equal(invalid.isError, true);
   } finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+});
+
+test("optional canonical branch binds Onepage tabs without guessing for legacy calls",()=>{
+ const input=REVIEW_INPUT_SCHEMA.parse({stage:"asset_review",task_id:"task",content_version:"v1",branch:" onepage-system "});
+ assert.equal(input.branch,"onepage-system");assert.equal(createReviewContext(input).branch,"onepage-system");
+ assert.equal(createReviewContext({...input,branch:undefined}).branch,undefined);
+ for(const branch of ["Onepage","onepage system","<script>",""]){assert.equal(REVIEW_INPUT_SCHEMA.safeParse({...input,branch}).success,false);}
+ assert.equal(REVIEW_INPUT_SCHEMA.safeParse({...input,branch:"ldp-system"}).success,true);
 });

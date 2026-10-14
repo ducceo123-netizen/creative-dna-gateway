@@ -232,7 +232,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  const validated=validateResolveInput(brand,"onepage-system");
  const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
  const data = response.data;
- return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,research}) : data};
+ return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,research,require_pdp_coverage:true}) : data};
 }
 
 // Core gateway functions
@@ -373,7 +373,7 @@ export async function resolveCreativeDna(brand: string, branch: string, research
     brand: validated.brand,
     branch: validated.branch,
   });
-  return { ...result, data: result.ok ? attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),researchContext) : result.data };
+  return { ...result, data: result.ok ? attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}) : result.data };
 }
 
 export async function listCreativeDnaRoutes() {
@@ -589,7 +589,7 @@ export function createMcpServer(): McpServer {
     }
   });
 
-  server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"UID Brands task and review UI"},async()=>({contents:[{uri:LAUNCHER_URI,mimeType:LAUNCHER_MIME,text:launcherHtml,_meta:{"openai/widgetDescription":"Displays the supplied complete outcome before UID Brands action buttons. Avoid repeating the same full text after this widget; keep original images and files attached. Buttons request the next action; sent status is not execution completion."}}]}));
+  server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"UID Brands task and review UI"},async()=>({contents:[{uri:LAUNCHER_URI,mimeType:LAUNCHER_MIME,text:launcherHtml,_meta:{"openai/widgetDescription":"Prompt Master prepares editable prompts for manual copy/paste only. Onepage can use task and feedback tabs with the same supplied task/version and actual assets. Keep full results and original files in chat. Preparing or copying never submits or executes."}}]}));
   server.registerTool("show_uid_brands_review", uidProgressTool("show_uid_brands_review", {
     title: "UID Brands Review", description: REVIEW_TOOL_DESCRIPTION,
     inputSchema: REVIEW_INPUT_SCHEMA.shape,
@@ -604,7 +604,7 @@ export function createMcpServer(): McpServer {
     description: NATIVE_WORKFLOW_DESCRIPTION,
     inputSchema: NATIVE_INPUT_SCHEMA.shape,
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
-  }), async ({ stage, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images }) => {
+  }), async ({ stage, branch, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images }) => {
     let routes: any[] = [];
     let routeFailure: Record<string, unknown> = {};
     if (!stage || stage === "launcher") {
@@ -618,7 +618,7 @@ export function createMcpServer(): McpServer {
     return withUidProgress({
       content: [{ type: "text" as const, text: NATIVE_FALLBACK_TEXT }],
       structuredContent: { ...UID_NATIVE_WORKFLOW, stage: currentStage, form: UID_NATIVE_WORKFLOW.steps[currentStage], routes, ...routeFailure, assets: assets || [], result_summary: result_summary || "", result_content: result_content || "", result_links: result_links || [], result_images: result_images || [],
-        ...(currentStage !== "launcher" ? { review_context: createReviewContext({ stage: currentStage, task_id, content_version, retry_id, assets }) } : {}) },
+        ...(currentStage !== "launcher" ? { review_context: createReviewContext({ stage: currentStage, branch, task_id, content_version, retry_id, assets }) } : {}) },
     });
   });
 
