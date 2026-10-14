@@ -12,6 +12,7 @@ export const REVIEW_ASSET_SCHEMA = z.object({
   name: z.string().optional(), position: z.string().optional(),
 });
 const contextShape = {
+  branch: z.string().trim().min(1).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional().describe("Actual canonical material/branch for this task. Supply onepage-system only for a real Onepage task to enable its two-tab Prompt Master. Omit if unknown; never guess from assets or brand."),
   result_content: z.string().max(120000).optional().describe("Optional compatibility field for outcome text. Keep full results in chat; avoid copying large outcomes into the compact Prompt Master. Its collapsed preview may show only an excerpt. Never invent results."),
   result_links: z.array(z.object({
     label: z.string().trim().min(1).max(200),
@@ -39,10 +40,11 @@ export function discoverySchema(schema: z.ZodType) {
 export function createReviewContext(input: z.infer<typeof REVIEW_INPUT_SCHEMA>) {
   const bound = Boolean(input.task_id && input.content_version);
   const review_id = bound
-    ? `review:${createHash("sha256").update(JSON.stringify([input.stage, input.task_id, input.content_version, input.retry_id || null])).digest("hex")}`
+    ? `review:${createHash("sha256").update(JSON.stringify([input.stage, input.task_id, input.content_version, input.retry_id || null, ...(input.branch ? [input.branch] : [])])).digest("hex")}`
     : `review:${randomUUID()}`;
   return {
     review_id, stage: input.stage,
+    ...(input.branch ? { branch: input.branch } : {}),
     ...(input.task_id ? { task_id: input.task_id } : {}),
     ...(input.content_version ? { content_version: input.content_version } : {}),
     ...(input.retry_id ? { retry_id: input.retry_id } : {}),

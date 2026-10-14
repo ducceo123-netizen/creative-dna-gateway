@@ -71,8 +71,10 @@ function setup(data: any = output(), options: { timers?: { setTimeout: any; clea
   } };
   if (options.bridge !== false) openai.sendFollowUpMessage = async (message: any) => { messages.push(message); return options.send?.(message); };
   Object.assign(openai, options.host || {});
-  $("actionablePanel").append($("launchFields"), $("reviewFields"), $("attachmentSection"), $("run"));
-  $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
+  $("actionablePanel").append($("taskTabPanel"), $("feedbackTabPanel"), $("attachmentSection"), $("run"));
+  $("taskTabPanel").append($("launchFields"),$("reviewFields"));
+  $("reviewFields").append($("primaryActions"));$("primaryActions").append($("reviewChoices"));
+  $("feedbackTabPanel").append($("assetFeedbackFields"),$("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
   const window = { ...(options.sizing?{ResizeObserver: class { constructor(callback:()=>void){options.sizing!.callback=callback;} observe(){} },requestAnimationFrame:(callback:()=>void)=>options.sizing!.frames.push(callback)}:{}), openai, navigator: { clipboard: options.clipboard }, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { const previous=events[name];events[name]=(event:any)=>{previous?.(event);fn(event);}; } };
   vm.runInNewContext(script, { setTimeout: options.timers?.setTimeout || setTimeout, clearTimeout: options.timers?.clearTimeout || clearTimeout, window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
@@ -121,7 +123,7 @@ test("text paste and Vietnamese composition retain the same node, selection and 
   const data = output("asset_review"); const ui = setup(data, { globalsEcho: "microtask" });
   ui.choose("feedback"); addOverallGroup(ui); await Promise.resolve();
   const area = groupArea(ui); area.focus(); let prevented = false;
-  ui.$("reviewFields").dispatch("paste", { clipboardData: { files: [], items: [{ kind: "string", type: "text/plain" }] }, preventDefault() { prevented = true; } });
+  ui.$("feedbackTabPanel").dispatch("paste", { clipboardData: { files: [], items: [{ kind: "string", type: "text/plain" }] }, preventDefault() { prevented = true; } });
   assert.equal(prevented, false, "ordinary text paste must not be consumed by attachment handling");
   enterAtSelection(ui, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); await Promise.resolve();
   assert.equal(area.value, "Góp ý tiếng Việt\nGiữ đúng màu sắc."); assert.ok(ui.document.activeElement === area, "DOM identity/focus must stay unchanged");
@@ -459,4 +461,58 @@ test("late clipboard failure cannot reopen or focus a collapsed composer",async(
  const wait=deferred();const ui=setup(output(),{clipboard:{writeText:()=>wait.promise}});await ui.choose("approve");
  const copy=ui.$("copyPrompt").click();ui.$("toggleComposer").click();const before=ui.$("copyStatus").textContent;
  wait.reject(new Error("denied"));await copy;assert.equal(ui.$("composerBody").hidden,true);assert.equal(ui.$("copyStatus").textContent,before);
+});
+
+function onepageOutput(stage: typeof REVIEW_STAGES[number] = "asset_review", version = "v1") {
+ const data=output(stage,version); return {...data,review_context:{...data.review_context,branch:"onepage-system"}};
+}
+test("Onepage alone has two keyboard-accessible tabs; launcher Feedback is empty and never runs a brief",async()=>{
+ const ui=setup({stage:"launcher"});assert.equal(ui.$("masterTabs").hidden,false);
+ ui.$("url").value="https://example.com/product";ui.$("feedbackTab").click();
+ assert.equal(ui.$("taskTabPanel").hidden,true);assert.equal(ui.$("feedbackEmpty").hidden,false);assert.equal(ui.$("run").disabled,true);
+ await ui.submit();assert.equal(ui.$("promptDock").hidden,true);assert.equal(ui.messages.length,0);
+ ui.$("feedbackTab").dispatch("keydown",{key:"Home",preventDefault(){}});
+ assert.equal(ui.$("taskTab").attributes["aria-selected"],"true");assert.equal(ui.$("feedbackTab").attributes.tabindex,"-1");assert.equal(ui.$("url").value,"https://example.com/product");
+ for(const branch of [undefined,"ldp-system","home-hero"]){const data=output("asset_review");const other=setup({...data,review_context:{...data.review_context,branch}});assert.equal(other.$("masterTabs").hidden,true);other.choose("feedback");assert.equal(other.$("feedbackTabPanel").hidden,false);}
+});
+test("Onepage group feedback consolidates real targets and preserves draft, identity and edited prompt across tabs",async()=>{
+ const data={...onepageOutput(),assets:[{id:"desktop",section:"Banner",position:"desktop"},{id:"mobile",section:"Banner",position:"mobile"}]};
+ const ui=setup(data,{globalsEcho:"sync"});ui.$("feedbackTab").click();
+ assert.equal(ui.$("assetFeedbackFields").hidden,false);assert.equal(ui.$("modeTrain").hidden,true);
+ ui.$("variableKeys").querySelectorAll("button").find(x=>x.textContent.includes("Chọn cả nhóm"))!.click();ui.$("createSharedFeedback").click();
+ groupArea(ui).value="Căn giữa typo";groupArea(ui).oninput?.();await ui.submit();
+ assert.match(ui.$("promptText").value,/desktop/);assert.match(ui.$("promptText").value,/mobile/);assert.match(ui.$("promptText").value,/Căn giữa typo/);assert.match(ui.$("promptText").value,/task-A/);assert.match(ui.$("promptText").value,/v1/);assert.doesNotMatch(ui.$("promptText").value,/submit_training_feedback/);
+ ui.$("promptText").value+="\nGiữ màu gốc";ui.$("promptText").oninput?.();const edited=ui.$("promptText").value;
+ ui.$("taskTab").click();assert.equal(ui.$("promptDock").hidden,true);ui.$("feedbackTab").click();assert.equal(groupArea(ui).value,"Căn giữa typo");assert.equal(ui.$("promptText").value,edited);assert.equal(ui.$("promptDock").hidden,false);
+ const state=ui.snapshot();assert.equal(state.privateContent.reviewSelection.review_id,data.review_context.review_id);assert.equal(state.modelContent.stage,"asset_review");assert.equal(ui.messages.length,0);
+ const restored=setup(data,{state});assert.equal(restored.$("feedbackTab").attributes["aria-selected"],"true");assert.equal(groupArea(restored).value,"Căn giữa typo");
+});
+test("Onepage version changes reset stale targets and hide earlier generated prompt",async()=>{
+ const ui=setup(onepageOutput());ui.$("feedbackTab").click();addOverallGroup(ui);groupArea(ui).value="old";groupArea(ui).oninput?.();await ui.submit();
+ ui.update(onepageOutput("asset_review","v2"));ui.$("feedbackTab").click();assert.equal(ui.$("variableItems").children.length,0);assert.equal(ui.$("promptDock").hidden,true);await ui.submit();assert.match(ui.$("error").textContent,/nhập feedback/);assert.equal(ui.messages.length,0);
+});
+test("Onepage content feedback and delivered assets reuse exact scope without switching stage",async()=>{
+ const content=setup(onepageOutput("content_approval"));content.choose("revise");assert.equal(content.$("feedbackTab").attributes["aria-selected"],"true");content.$("reviewFeedback").value="Shorter title";await content.submit();assert.match(content.$("promptText").value,/Shorter title/);assert.match(content.$("promptText").value,/content_approval/);
+ const delivered=setup(onepageOutput("complete"));delivered.$("feedbackTab").click();addOverallGroup(delivered);groupArea(delivered).value="Improve artwork";groupArea(delivered).oninput?.();await delivered.submit();assert.match(delivered.$("promptText").value,/Improve artwork/);assert.match(delivered.$("promptText").value,/complete/);assert.match(delivered.$("promptText").value,/"action":"feedback"/);
+});
+test("Onepage missing identity or actual inventory cannot invent selectable assets or generate feedback",async()=>{
+ for(const data of [{...onepageOutput(),assets:[]},{...onepageOutput(),review_context:{branch:"onepage-system",review_id:"unbound"}}]){const ui=setup(data);ui.$("feedbackTab").click();assert.equal(ui.$("feedbackEmpty").hidden,false);assert.equal(ui.$("assetFeedbackFields").hidden,true);assert.equal(ui.$("run").disabled,true);await ui.submit();assert.equal(ui.$("promptDock").hidden,true);assert.equal(ui.messages.length,0);}
+});
+test("switching Onepage tabs cannot preserve a hidden Train action under generic feedback",async()=>{
+ const ui=setup(onepageOutput());ui.choose("train");addOverallGroup(ui);groupArea(ui).value="Old training";groupArea(ui).oninput?.();
+ ui.$("feedbackTab").click();groupArea(ui).value="Only revise these assets";groupArea(ui).oninput?.();await ui.submit();assert.doesNotMatch(ui.$("promptText").value,/submit_training_feedback/);
+ ui.$("taskTab").click();assert.equal(ui.$("run").hidden,true);assert.equal(ui.$("feedbackTabPanel").hidden,true);assert.equal(ui.$("reviewChoices").hidden,false);
+ await ui.submit();assert.doesNotMatch(ui.$("promptText").value,/submit_training_feedback/);assert.equal(ui.messages.length,0);
+});
+test("launcher restores selected tab once and a route refresh cannot override a newer tab choice",()=>{
+ const ui=setup({stage:"launcher"},{state:{privateContent:{masterTab:"feedback",masterReviewKey:"",branch:"onepage-system"}}});assert.equal(ui.$("feedbackTab").attributes["aria-selected"],"true");ui.$("taskTab").click();ui.update({stage:"launcher",routes:[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}]});assert.equal(ui.$("taskTab").attributes["aria-selected"],"true");
+});
+test("PR82 legacy saved edited prompts remain reachable after upgrading without Onepage metadata",()=>{
+ function oldFingerprint(value:string){let a=2166136261,b=2246822507,c=3266489909,d=668265263;for(let i=0;i<value.length;i++){const n=value.charCodeAt(i);a=Math.imul(a^n,16777619);b=Math.imul(b^n,2246822519);c=Math.imul(c^n,3266489917);d=Math.imul(d^n,668265263);}return "request-v2:"+[a,b,c,d].map(x=>(x>>>0).toString(16).padStart(8,"0")).join("");}
+ const data=output("content_approval"),key=data.review_context.review_id;
+ const request=oldFingerprint(JSON.stringify([key,"revise","Original feedback"]));
+ const presentation=oldFingerprint(JSON.stringify([data.stage,key,"","",[],[],data.assets]));
+ const binding=oldFingerprint(JSON.stringify([request,presentation]));
+ const ui=setup(data,{state:{privateContent:{reviewDrafts:{[key]:{decision:"revise",feedback:"Original feedback",variableItems:[],selectedTargets:[]}},promptDrafts:{[binding]:"My manually edited PR82 prompt"}}}});
+ assert.equal(ui.$("promptDock").hidden,false);assert.equal(ui.$("promptText").value,"My manually edited PR82 prompt");assert.equal(ui.$("masterTabs").hidden,true);
 });

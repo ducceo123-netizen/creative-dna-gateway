@@ -19,7 +19,7 @@ Deno.serve(async(req)=>{
  if(!brand||!branch)return out({error:"brand and branch are required",examples:["PawfectHouse / Onepage","GiftSoul / LDP Hero","SoulPrise / Onepage"]},400);
  const {data,error}=await admin.rpc("resolve_creative_dna_alias",{p_brand:String(brand),p_branch:String(branch)});
  if(error)return out({error:"Resolver unavailable"},500);if(!data?.brand||!data?.branch)return out({error:"Creative DNA route not found"},404);
- const researchContext={source_url:b.source_url??u.searchParams.get("source_url")??undefined,source_type:b.source_type??u.searchParams.get("source_type")??undefined,research:b.research};
+ const researchContext={source_url:b.source_url??u.searchParams.get("source_url")??undefined,source_type:b.source_type??u.searchParams.get("source_type")??undefined,research:b.research,require_pdp_coverage:data.branch.slug==="onepage-system"};
  const withResearch=(value:any)=>attachResearch(value,researchContext);
  // Preserve legacy behavior for branches outside this reviewed Onepage rollout.
  if(data.branch.slug!=="onepage-system" && !data.branch.metadata?.creative_quality_contract) return out(withResearch({api_version:"1.1",mode:"read_only",generate:false,requested:{brand,branch},resolved:{brand:data.brand?.slug,branch:data.branch?.slug},instruction:"Current Creative DNA runtime context. Read-only: never train, approve, update, or delete.",...data}));

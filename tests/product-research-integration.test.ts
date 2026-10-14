@@ -11,12 +11,13 @@ test('gateway overlays research on every brand/material including virtual routes
   try {
     globalThis.fetch=async(_url:any,init:any)=>{
       const request=JSON.parse(init.body);requests.push(request);
-      return Response.json({brand:{slug:request.brand},branch:{slug:request.branch,content_md:'Original canonical rules'},instruction:'Original rule guidance'});
+      return Response.json({brand:{slug:request.brand},branch:{slug:request.branch==='Onepage'?'onepage-system':request.branch,content_md:'Original canonical rules'},instruction:'Original rule guidance'});
     };
     for(const brand of ['PawfectHouse','GiftSoul','SoulPrise']) for(const branch of ['Home Hero','Onepage']) {
       const result=await resolveCreativeDna(brand,branch,{source_url:source});
       assert.equal(result.data.research_validation.status,'AWAITING_RESEARCH');
       assert.equal(result.data.research_contract.schema_version,RESEARCH_VERSION);
+      assert.equal(result.data.research_validation.pdp_coverage,branch==='Onepage'?'REQUIRED_HOST_REPORTED_ONLY':'NOT_REQUIRED_FOR_THIS_ROUTE');
       assert.ok(['REQUIRES_RESEARCH','BLOCKED'].includes(result.data.readiness.content_authoring));
       assert.equal(result.data.branch.content_md,'Original canonical rules');
     }
@@ -58,4 +59,16 @@ test('launcher and shared continuation use one research policy without changing 
   const launcher=readFileSync('uid-brands-workflow.ts','utf8'),actions=readFileSync('uid-brands-actions.ts','utf8');
   assert.match(launcher,/JSON.stringify\(RESEARCH_GUIDANCE\)/);
   assert.match(actions,/REVIEW_EXECUTION_GUIDANCE = RESEARCH_GUIDANCE/);
+});
+
+test('PDP coverage follows canonical resolver identity, not caller alias or override',async()=>{
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>Response.json({resolved:{brand:'pawfecthouse',branch:'onepage-system'}});
+  const alias=await resolveCreativeDna('PawfectHouse','Custom Onepage Alias',{source_url:source,require_pdp_coverage:false} as any);
+  assert.equal(alias.data.research_validation.pdp_coverage,'REQUIRED_HOST_REPORTED_ONLY');
+  globalThis.fetch=async()=>Response.json({branch:{slug:'home-hero'}});
+  const other=await resolveCreativeDna('PawfectHouse','Onepage',{source_url:source,require_pdp_coverage:true} as any);
+  assert.equal(other.data.research_validation.pdp_coverage,'NOT_REQUIRED_FOR_THIS_ROUTE');
+ }finally{globalThis.fetch=original;}
 });
