@@ -394,7 +394,7 @@ function load(output){
  const restoredSubmittedPresentation=savedPresentation&&savedPresentation!==presentationKey()&&scopedRecords().some(record=>record.presentation_id===savedPresentation);
  if(restoredSubmittedPresentation||(previousSubmitted&&previousPresentation!==presentationKey()&&previousStage===stage&&previousReviewKey===reviewKey)){feedbackStep=false;decision=reviewSteps[stage]?.choices[0].value||decision;panelExpandedFor="";lastError="";$("error").textContent="";save();}
  if(stage==="asset_review"&&!["feedback","train","package"].includes(decision))decision="package";
- if(Array.isArray(data.routes)&&data.routes.length){routes=data.routes.filter(r=>r&&r.brand&&r.branch);fallbackActive=false;}
+ if(Array.isArray(data.routes)){const validRoutes=data.routes.filter(r=>r&&r.brand&&r.branch);routes=validRoutes.length?validRoutes:fallback;fallbackActive=!validRoutes.length;routeMessage="";}
  if(!routes.length)routes=fallback;
  const brands=[...new Set(routes.map(x=>x.brand))];
  const select=$("brand"); const current=brands.includes(select.value)?select.value:initial.brand&&brands.includes(initial.brand)?initial.brand:(brands.includes("pawfecthouse")?"pawfecthouse":brands[0]);
@@ -475,12 +475,12 @@ async function submitCurrentAction(){
   // Read-only screen navigation has a real registered handler. It never asks
   // the model to confirm opening another screen, and never starts generation.
   if(stage==="complete"&&typeof window.openai?.callTool==="function"){
-   const sentKey=reviewKey,sentStage=stage,tool=decision==="new_task"?"launch_creative_dna":"show_uid_brands_review";
+   const sentKey=reviewKey,sentStage=stage,sentPresentation=presentationKey(),tool=decision==="new_task"?"launch_creative_dna":"show_uid_brands_review";
    const navigation_id="navigation-"+(window.crypto?.randomUUID?.()||Date.now()+"-"+Math.random().toString(36).slice(2));
    const args=decision==="new_task"?{navigation_id}:{navigation_id,stage:"asset_review",...(reviewContext?.task_id?{task_id:reviewContext.task_id}:{}),...(reviewContext?.content_version?{content_version:reviewContext.content_version}:{}),...(reviewContext?.retry_id?{retry_id:reviewContext.retry_id}:{}),assets:taskAssets,result_content:resultContent,result_summary:resultSummary,result_links:resultLinks,result_images:resultImages};
    pendingReviews.add(sentKey);renderSubmissionState();
-   try{const result=await bounded(()=>window.openai.callTool(tool,args),"Mở màn hình");const data=result?.structuredContent||result;if(result?.isError||!data||data.stage!==(tool==="launch_creative_dna"?"launcher":"asset_review"))throw new Error("Host chưa trả về màn hình cần mở.");if(reviewKey===sentKey&&stage===sentStage)load(data);}
-   catch(error){if(reviewKey===sentKey&&stage===sentStage)showError("Chưa mở được màn hình. "+(error?.message||"Bấm lại để thử."));}
+   try{const result=await bounded(()=>window.openai.callTool(tool,args),"Mở màn hình");const data=result?.structuredContent||result;const degradedLauncher=tool==="launch_creative_dna"&&data?.stage==="launcher"&&data?.operation==="routes"&&Array.isArray(data?.routes)&&data?.ui_status?.response==="prepared"&&data?.ui_status?.stage==="launcher"&&data?.ui_status?.routing==="degraded";if((result?.isError&&!degradedLauncher)||!data||data.stage!==(tool==="launch_creative_dna"?"launcher":"asset_review"))throw new Error("Host chưa trả về màn hình cần mở.");if(reviewKey===sentKey&&stage===sentStage&&presentationKey()===sentPresentation)load(data);}
+   catch(error){if(reviewKey===sentKey&&stage===sentStage&&presentationKey()===sentPresentation)showError("Chưa mở được màn hình. "+(error?.message||"Bấm lại để thử."));}
    finally{pendingReviews.delete(sentKey);renderSubmissionState();}
    return;
   }

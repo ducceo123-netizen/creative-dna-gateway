@@ -1002,3 +1002,28 @@ test("six document excerpts survive remount and are delivered once each without 
   }
   assert.ok(JSON.stringify(state.modelContent).length < 3000, "model-visible state scales with metadata, not document text");
 });
+
+test("prepared degraded launcher navigation keeps usable form and scoped route warning",async()=>{
+ const ui=setup(output("complete"),{host:{callTool:async()=>({isError:true,structuredContent:{stage:"launcher",routes:[],operation:"routes",ui_status:{response:"prepared",render:"unverified",stage:"launcher",routing:"degraded"}}})}});
+ await ui.choose("new_task");assert.equal(ui.$("launchFields").hidden,false);assert.equal(ui.$("error").textContent,"");assert.match(ui.$("routeStatus").textContent,/dự phòng/);assert.equal(ui.messages.length,0);
+});
+test("same-version new presentation cannot be overwritten by a late navigation response",async()=>{
+ const gate=deferred();const ui=setup({...output("complete"),result_content:"Old package"},{host:{callTool:async()=>{await gate.promise;return {structuredContent:{stage:"launcher"}};}}});
+ const pending=ui.choose("new_task");ui.update({...output("complete"),result_content:"New verified package receipt"});gate.resolve();await pending;assert.equal(ui.$("resultContent").textContent,"New verified package receipt");assert.equal(ui.$("launchFields").hidden,true);
+});
+
+test("degraded launcher after previously loaded routes never presents stale choices as live",async()=>{
+ const ui=setup({stage:"launcher",routes:[{brand:"giftsoul",branch:"home-hero"}]});ui.update(output("complete"));
+ ui.openai.callTool=async()=>({isError:true,structuredContent:{stage:"launcher",routes:[],operation:"routes",ui_status:{response:"prepared",stage:"launcher",routing:"degraded"}}});
+ await ui.choose("new_task");assert.match(ui.$("routeStatus").textContent,/dự phòng/);assert.equal(ui.$("refreshRoutes").hidden,false);assert.equal(ui.$("brand").value,"pawfecthouse");
+});
+test("only explicit prepared route degradation allows navigation despite isError",async()=>{
+ for(const patch of [{operation:"forbidden"},{ui_status:{response:"failed",stage:"launcher",routing:"degraded"}},{routes:null}]){
+ const ui=setup({...output("complete"),result_content:"Keep result"},{host:{callTool:async()=>({isError:true,structuredContent:{stage:"launcher",routes:[],operation:"routes",ui_status:{response:"prepared",stage:"launcher",routing:"degraded"},...patch}})}});
+ await ui.choose("new_task");assert.equal(ui.$("resultContent").textContent,"Keep result");assert.match(ui.$("error").textContent,/Chưa mở được/);assert.equal(ui.messages.length,0);
+ }
+});
+test("late navigation failure cannot label a newer same-version presentation as failed",async()=>{
+ const gate=deferred();const ui=setup({...output("complete"),result_content:"Old"},{host:{callTool:async()=>{await gate.promise;throw Error("late failure");}}});
+ const pending=ui.choose("new_task");ui.update({...output("complete"),result_content:"New verified receipt"});gate.resolve();await pending;assert.equal(ui.$("error").textContent,"");assert.equal(ui.$("resultContent").textContent,"New verified receipt");
+});
