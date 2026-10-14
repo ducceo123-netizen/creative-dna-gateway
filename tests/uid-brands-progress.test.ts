@@ -40,7 +40,7 @@ test("all nine discovered and registered tools share supported bounded labels an
     const initialized = await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "progress-test", version: "1" } });
     assert.ok(initialized.instructions.startsWith(UID_PROGRESS_GUIDANCE));
     assert.match(initialized.instructions.slice(0, 512), /Research-before-output gates creative deliverables, not progress updates/);
-    assert.ok(initialized.instructions.includes(RESEARCH_GUIDANCE));
+    assert.equal(initialized.instructions.split(RESEARCH_GUIDANCE).length - 1, 1, "canonical research guidance appears exactly once");
     const { tools } = await rpc("tools/list", {});
     assert.equal(tools.length, 9);
     assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).sort());
