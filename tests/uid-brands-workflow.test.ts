@@ -13,6 +13,8 @@ const script = launcherHtml.match(/<script>([\s\S]*?)<\/script>/)![1];
 // These invariants catch the host-echo regression without claiming real-device QA.
 type FocusDocument = { activeElement: Element | null; body: Element };
 class Element {
+  layoutHeight=360;
+  getBoundingClientRect(){return {height:this.layoutHeight};}
   children: Element[] = []; textContent = ""; disabled = false; hidden = false; open = true;
   private currentValue = ""; valueWrites = 0; selectionStart = 0; selectionEnd = 0; composing = false;
   parentNode: Element | null = null;
@@ -50,7 +52,7 @@ class Element {
 function output(stage: typeof REVIEW_STAGES[number] = "content_approval", version = "v1", task = "task-A") {
   return { stage, assets: [{ id: "asset-1", element: "Banner", position: "desktop" }], review_context: createReviewContext({ stage, task_id: task, content_version: version }) };
 }
-function setup(data: any = output(), options: { timers?: { setTimeout: any; clearTimeout: any }; send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; clipboard?: { writeText: (text: string) => Promise<void> }; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
+function setup(data: any = output(), options: { timers?: { setTimeout: any; clearTimeout: any }; send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; clipboard?: { writeText: (text: string) => Promise<void> }; sizing?: { callback?: () => void; frames: Array<() => void> }; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
   const document = { activeElement: null } as FocusDocument;
   document.body = new Element("body", document);
   const nodes = new Map<string, Element>();
@@ -72,7 +74,7 @@ function setup(data: any = output(), options: { timers?: { setTimeout: any; clea
   $("actionablePanel").append($("launchFields"), $("reviewFields"), $("attachmentSection"), $("run"));
   $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
-  const window = { openai, navigator: { clipboard: options.clipboard }, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
+  const window = { ...(options.sizing?{ResizeObserver: class { constructor(callback:()=>void){options.sizing!.callback=callback;} observe(){} },requestAnimationFrame:(callback:()=>void)=>options.sizing!.frames.push(callback)}:{}), openai, navigator: { clipboard: options.clipboard }, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { const previous=events[name];events[name]=(event:any)=>{previous?.(event);fn(event);}; } };
   vm.runInNewContext(script, { setTimeout: options.timers?.setTimeout || setTimeout, clearTimeout: options.timers?.clearTimeout || clearTimeout, window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
   return { $, nodes, messages, openai, storage, document, snapshot() { events.pagehide({}); return openai.widgetState; }, globals(globals: any) { events["openai:set_globals"]({ detail: { globals } }); }, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
     choose(value: string) { const action = REVIEW_STEPS[openai.toolOutput.stage as typeof REVIEW_STAGES[number]].choices.findIndex(x => x.value === value); return $("reviewChoices").children[action].click(); },
@@ -302,7 +304,7 @@ test("new version cannot leave a ready prompt bound to stale result",async()=>{
  const ui=setup(output());await ui.choose("approve");ui.update(output("content_approval","v2"));assert.equal(ui.$("promptDock").hidden,true);await ui.choose("approve");assert.match(ui.$("promptText").value,/"content_version":"v2"/);
 });
 test("composer has compact disclosures and no model dispatch API",()=>{
- assert.doesNotMatch(script,/sendFollowUpMessage/);assert.match(launcherHtml,/max-height:min\(58vh,480px\)/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not require or automatically open/);
+ assert.doesNotMatch(script,/sendFollowUpMessage/);assert.doesNotMatch(launcherHtml,/58vh/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not require or automatically open/);
 });
 
 test("edited prompt drafts survive exact-review remount and remain private",async()=>{
@@ -394,4 +396,67 @@ test("late failed route lookup does not annotate a newer launcher response",asyn
 
 test("clipboard fallback expands prompt disclosure before selecting text",async()=>{
  const ui=setup(output());await ui.choose("approve");ui.$("promptDetails").open=false;await ui.$("copyPrompt").click();assert.equal(ui.$("promptDetails").open,true);assert.equal(ui.$("promptText").selectionEnd,ui.$("promptText").value.length);assert.match(ui.$("copyStatus").textContent,/Chưa sao chép/);
+});
+
+
+test("panel intrinsic sizing follows content, deduplicates observer echoes and remains copy-only",()=>{
+ const heights:number[]=[],sizing:{callback?:()=>void;frames:Array<()=>void>}={frames:[]};
+ const ui=setup({routes:[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}]},{sizing,host:{notifyIntrinsicHeight:(height:number)=>heights.push(height)}});
+ assert.equal(sizing.frames.length,1);sizing.frames.shift()!();assert.deepEqual(heights,[388]);
+ sizing.callback!();sizing.callback!();assert.equal(sizing.frames.length,1);sizing.frames.shift()!();assert.deepEqual(heights,[388]);
+ ui.$("widgetContent").layoutHeight=520;sizing.callback!();sizing.frames.shift()!();assert.deepEqual(heights,[388,548]);
+ ui.update(output("asset_review"));assert.equal(ui.$("launchFields").hidden,true);
+ assert.equal(ui.messages.length,0);
+});
+test("height reporting is optional and host rejection does not break the composer",()=>{
+ const ui=setup(undefined,{host:{notifyIntrinsicHeight:()=>{throw new Error("host unavailable");}}});
+ ui.choose("approve");assert.equal(ui.$("promptDock").hidden,false);assert.equal(ui.messages.length,0);
+});
+test("panel form stays natural-height with compact optional controls",()=>{
+ assert.doesNotMatch(launcherHtml,/#actionablePanel\{[^}]*max-height/);
+ assert.match(launcherHtml,/#actionablePanel\{[^}]*overflow:visible/);
+ assert.match(launcherHtml,/<details class="optional-brief" id="optionalBrief"><summary>Theme/);
+ assert.equal((launcherHtml.match(/id="branches"/g)||[]).length,1);
+ assert.match(launcherHtml,/window.ResizeObserver/);
+});
+
+
+test("restored optional brief instructions stay visible",()=>{
+ const ui=setup({routes:[{brand:"pawfecthouse",branch:"onepage-system",title:"Onepage"}]},{state:{theme:"Christmas",custom:"Keep product truthful"}});
+ assert.equal(ui.$("optionalBrief").open,true);
+});
+test("clipboard denial exposes a selected, editable manual fallback",async()=>{
+ const ui=setup(output(),{clipboard:{writeText:async()=>{throw new Error("NotAllowedError");}}});await ui.choose("approve");
+ ui.$("promptText").value+=" Edited";await ui.$("copyPrompt").click();
+ assert.match(ui.$("copyStatus").textContent,/Chưa sao chép/);assert.equal(ui.$("copyPrompt").disabled,false);
+ ui.$("selectPrompt").click();assert.equal(ui.$("promptText").selectionEnd,ui.$("promptText").value.length);assert.match(ui.$("copyStatus").textContent,/Đã chọn prompt/);assert.equal(ui.messages.length,0);
+});
+test("stalled clipboard promptly exposes manual copying without overlapping automatic writes",async()=>{
+ const pending=deferred(),timers=new Map<number,()=>void>();let id=0,calls=0;
+ const ui=setup(output(),{timers:{setTimeout:(fn:()=>void,ms:number)=>{const key=++id;if(ms===1500)timers.set(key,fn);return key;},clearTimeout:(key:number)=>timers.delete(key)},clipboard:{writeText:()=>{calls++;return pending.promise;}}});
+ await ui.choose("approve");const copy=ui.$("copyPrompt").click();assert.match(ui.$("copyStatus").textContent,/Đang chờ/);
+ for(const fn of [...timers.values()])fn();assert.match(ui.$("copyStatus").textContent,/chưa xác nhận/);assert.equal(ui.$("selectPrompt").disabled,false);
+ ui.$("selectPrompt").click();const manual=ui.$("copyStatus").textContent;await ui.$("copyPrompt").onclick?.();assert.equal(calls,1);
+ pending.resolve();await copy;assert.equal(ui.$("copyStatus").textContent,manual);assert.equal(ui.$("copyPrompt").disabled,false);
+});
+
+
+test("whole panel collapse retains prompt and selections and persists privately",async()=>{
+ const ui=setup(output());await ui.choose("approve");ui.$("promptText").value+=" Keep this edit";ui.$("promptText").oninput?.();
+ const prompt=ui.$("promptText").value;ui.$("toggleComposer").click();assert.equal(ui.$("composerBody").hidden,true);assert.equal(ui.$("toggleComposer").attributes["aria-expanded"],"false");
+ const state=ui.snapshot();assert.equal(state.privateContent.composerCollapsed,true);assert.equal(state.modelContent.composerCollapsed,undefined);
+ const restored=setup(output(),{state});assert.equal(restored.$("composerBody").hidden,true);restored.$("toggleComposer").click();
+ assert.equal(restored.$("composerBody").hidden,false);assert.equal(restored.$("promptText").value,prompt);assert.equal(restored.messages.length,0);
+});
+test("natural height reporting shrinks when the panel collapses",()=>{
+ const heights:number[]=[],sizing:{callback?:()=>void;frames:Array<()=>void>}={frames:[]};
+ const ui=setup(output(),{sizing,host:{notifyIntrinsicHeight:(height:number)=>heights.push(height)}});sizing.frames.shift()!();
+ ui.$("toggleComposer").click();ui.$("widgetContent").layoutHeight=36;sizing.callback!();sizing.frames.shift()!();assert.deepEqual(heights,[388,64]);
+});
+
+
+test("late clipboard failure cannot reopen or focus a collapsed composer",async()=>{
+ const wait=deferred();const ui=setup(output(),{clipboard:{writeText:()=>wait.promise}});await ui.choose("approve");
+ const copy=ui.$("copyPrompt").click();ui.$("toggleComposer").click();const before=ui.$("copyStatus").textContent;
+ wait.reject(new Error("denied"));await copy;assert.equal(ui.$("composerBody").hidden,true);assert.equal(ui.$("copyStatus").textContent,before);
 });
