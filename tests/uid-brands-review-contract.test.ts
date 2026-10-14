@@ -1,9 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createApp, TOOL_DEFINITIONS } from "../server.ts";
 import { REVIEW_STEPS, REVIEW_STAGES, NATIVE_FALLBACK_TEXT } from "../uid-brands-actions.ts";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "../uid-brands-review-contract.ts";
 import { LAUNCHER_MIME, LAUNCHER_URI, launcherHtml } from "../uid-brands-workflow.ts";
+import { LEGACY_LAUNCHER_URI } from "../uid-brands-ui-resource.ts";
+
+test("Onepage tabs publish a fresh cache key without changing the approved widget bundle", () => {
+  assert.equal(LAUNCHER_URI, "ui://uid-brands/workflow-v3.html");
+  assert.equal(LEGACY_LAUNCHER_URI, "ui://uid-brands/workflow-v2.html");
+  assert.notEqual(LAUNCHER_URI, LEGACY_LAUNCHER_URI);
+  // PR83 approved bundle. A future intentional UI change must update this pin and URI together.
+  assert.equal(createHash("sha256").update(launcherHtml).digest("hex"), "0256aa49163fc897a6a71b85fbeba8183668d7f54a4045fe46777206ba6535e3");
+});
 
 test("review correlation is stable per task/version/stage, changes after revision, and labels legacy callers unbound", () => {
   const input = { stage: "content_approval" as const, task_id: "task-A", content_version: "v1" };
@@ -85,8 +95,16 @@ test("live local MCP advertises and executes matching review/native contracts, m
     for (const key of ["ui", "openai/outputTemplate", "openai/widgetAccessible"]) assert.deepEqual(launcherMeta[key], reviewTool._meta[key]);
     assert.notEqual(launcherMeta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
     const resource = await rpc("resources/read", { uri: LAUNCHER_URI });
+    assert.equal(resource.contents[0].uri, LAUNCHER_URI);
     assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
     assert.equal(resource.contents[0].text, launcherHtml);
+    const { resources } = await rpc("resources/list", {});
+    for (const uri of [LAUNCHER_URI, LEGACY_LAUNCHER_URI]) assert.ok(resources.some((item: any) => item.uri === uri));
+    const legacyResource = await rpc("resources/read", { uri: LEGACY_LAUNCHER_URI });
+    assert.equal(legacyResource.contents[0].uri, LEGACY_LAUNCHER_URI);
+    assert.equal(legacyResource.contents[0].mimeType, LAUNCHER_MIME);
+    assert.equal(legacyResource.contents[0].text, launcherHtml);
+    assert.deepEqual(legacyResource.contents[0]._meta, resource.contents[0]._meta);
     for (const stage of REVIEW_STAGES) {
       const args = { stage, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });

@@ -7,7 +7,7 @@ import { ATTACHMENT_UI_SCRIPT, ATTACHMENT_UI_STYLES } from "./uid-brands-attachm
  * UID Brands task launcher embedded as an MCP Apps resource.
  * UI only prepares a brief; canonical resolution stays on the existing server.
  */
-export const LAUNCHER_URI = "ui://uid-brands/workflow-v2.html";
+export { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";
 export const LAUNCHER_MIME = "text/html;profile=mcp-app";
 
 export const launcherHtml = String.raw`<!doctype html>

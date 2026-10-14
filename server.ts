@@ -10,6 +10,7 @@ import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
 import { validateRegressionAttestation } from "./src/governance-regression.ts";
 import { launcherHtml, LAUNCHER_MIME, LAUNCHER_URI } from "./uid-brands-workflow.ts";
+import { LEGACY_LAUNCHER_URI } from "./uid-brands-ui-resource.ts";
 import { UID_NATIVE_WORKFLOW, REVIEW_TOOL_DESCRIPTION, NATIVE_WORKFLOW_DESCRIPTION, NATIVE_FALLBACK_TEXT, REVIEW_UI_META, REVIEW_EXECUTION_GUIDANCE } from "./uid-brands-actions.ts";
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA, LAUNCHER_INPUT_SCHEMA, discoverySchema, createReviewContext } from "./uid-brands-review-contract.ts";
 import { registerPrivateReferenceRoutes } from "./uid-private-reference-proxy.ts";
@@ -589,7 +590,9 @@ export function createMcpServer(): McpServer {
     }
   });
 
-  server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"UID Brands task and review UI"},async()=>({contents:[{uri:LAUNCHER_URI,mimeType:LAUNCHER_MIME,text:launcherHtml,_meta:{"openai/widgetDescription":"Prompt Master prepares editable prompts for manual copy/paste only. Onepage can use task and feedback tabs with the same supplied task/version and actual assets. Keep full results and original files in chat. Preparing or copying never submits or executes."}}]}));
+  const workflowResource = (uri: string) => ({contents:[{uri,mimeType:LAUNCHER_MIME,text:launcherHtml,_meta:{"openai/widgetDescription":"Prompt Master prepares editable prompts for manual copy/paste only. Onepage can use task and feedback tabs with the same supplied task/version and actual assets. Keep full results and original files in chat. Preparing or copying never submits or executes."}}]});
+  server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"UID Brands task and review UI"},async()=>workflowResource(LAUNCHER_URI));
+  server.registerResource("uid-brands-workflow-ui-legacy",LEGACY_LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"Compatibility resource for existing UID Brands tool descriptors"},async()=>workflowResource(LEGACY_LAUNCHER_URI));
   server.registerTool("show_uid_brands_review", uidProgressTool("show_uid_brands_review", {
     title: "UID Brands Review", description: REVIEW_TOOL_DESCRIPTION,
     inputSchema: REVIEW_INPUT_SCHEMA.shape,
