@@ -1,3 +1,4 @@
+import { ONEPAGE_PACKAGING_CONTRACT } from './onepage-packaging.ts';
 import { attachResearch, classifySource, type ResearchContext } from './product-research.ts';
 import { compileCreativeQuality, QUALITY_COMPILER, type ResolvedDna } from './creative-quality.ts';
 const assets=[
@@ -64,6 +65,11 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
   }:null,
   execution:["ACQUIRE_SOURCE","BUILD_VERIFIED_PRODUCT_POOL","CHECK_DIVERSITY_GATE","BUILD_CONTENT_MAP","CONTENT_APPROVAL_GATE","BUILD_ASSET_MANIFEST","ALLOCATE_PRODUCTS_VARIANTS_CAST_TO_ASSETS","GENERATE_SLOT_BY_SLOT","QA_EACH_SLOT","BUILD_UI_MAPPING_PREVIEW"],
   assets: assets.map(asset => ({...asset, ...(asset.slot.startsWith("gtk_") ? {condition:"ONLY_WHEN_GTK_SELECTED"} : {}), ...(asset.slot === "ui_mapping_preview" ? {format:ruleValue("delivery.mapping_format"),delivery_rule_ids:ruleIds("delivery.mapping_format","delivery.final_package")} : {})})),
+  packaging_contract: {
+    ...ONEPAGE_PACKAGING_CONTRACT,
+    status: creative_quality_contract.status === "COMPILED" && ruleValue("delivery.final_package") === "WEBP_ASSETS_PLUS_ONE_PNG_MAPPING" && ruleValue("delivery.mapping_format") === "PNG" ? "READY_AFTER_EXPLICIT_APPROVAL" : "BLOCKED_INCOMPATIBLE_DELIVERY_RULES",
+    delivery_rule_ids: ruleIds("delivery.final_package", "delivery.mapping_format"),
+  },
   template_asset_bindings: {occasion_story_01:"occasion_01",occasion_story_02:"occasion_02",occasion_story_01_mobile:"detail_main"},
   template_binding_note:"The legacy template name occasion_story_01_mobile belongs to Product Details picture source; bind the same anchor-SKU detail_main asset there. Never replace it with a different Occasion SKU. Other slots bind by identical names.",
   context_policy:{static_dynamic_split:true,reuse_product_pool:true,reuse_product_asset_allocation:true,do_not_repeat_full_dna_per_slot:true,load_slot_relevant_rules_only:true,never_drop_hard_gates_for_token_savings:true},
