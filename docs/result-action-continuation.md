@@ -1,3 +1,5 @@
+> Historical contract: automatic dispatch and mandatory result-panel rules below are superseded by [Prompt Master](prompt-master.md). Retain only unrelated validation, attachment safety and canonical governance requirements.
+
 # Result-first UID action flow
 
 ## Problem and supported fix

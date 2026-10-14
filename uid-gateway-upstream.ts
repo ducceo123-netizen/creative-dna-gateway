@@ -49,7 +49,8 @@ export async function gatewayJson(url: string, init: RequestInit, options: {
       clearTimeout(timer!);
       if (result.ok) return result;
       const retryAfterMs = parseRetryAfter(response?.headers.get("retry-after") || null);
-      if (readOnly && attempt + 1 < attempts && [429, 502, 503, 504].includes(result.status)) {
+      // A successful HTTP response with a business/quality rejection is not a transient outage.
+      if (readOnly && response && !response.ok && attempt + 1 < attempts && [429, 502, 503, 504].includes(result.status)) {
         const delay = retryAfterMs ?? 150;
         if (Date.now() + delay + 50 < budget.deadline) { await new Promise(r => setTimeout(r, delay)); continue; }
       }

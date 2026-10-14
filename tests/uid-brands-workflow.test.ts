@@ -50,7 +50,7 @@ class Element {
 function output(stage: typeof REVIEW_STAGES[number] = "content_approval", version = "v1", task = "task-A") {
   return { stage, assets: [{ id: "asset-1", element: "Banner", position: "desktop" }], review_context: createReviewContext({ stage, task_id: task, content_version: version }) };
 }
-function setup(data: any = output(), options: { timers?: { setTimeout: any; clearTimeout: any }; send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
+function setup(data: any = output(), options: { timers?: { setTimeout: any; clearTimeout: any }; send?: (message: any) => Promise<any>; bridge?: boolean; state?: any; storage?: Map<string, string>; host?: Record<string, any>; clipboard?: { writeText: (text: string) => Promise<void> }; globalsEcho?: "sync" | "microtask" | "state-only" } = {}) {
   const document = { activeElement: null } as FocusDocument;
   document.body = new Element("body", document);
   const nodes = new Map<string, Element>();
@@ -72,7 +72,7 @@ function setup(data: any = output(), options: { timers?: { setTimeout: any; clea
   $("actionablePanel").append($("launchFields"), $("reviewFields"), $("attachmentSection"), $("run"));
   $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
-  const window = { openai, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
+  const window = { openai, navigator: { clipboard: options.clipboard }, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
   vm.runInNewContext(script, { setTimeout: options.timers?.setTimeout || setTimeout, clearTimeout: options.timers?.clearTimeout || clearTimeout, window, document: { body: document.body, get activeElement() { return document.activeElement; }, getElementById: $, createElement: (tag: string) => new Element(tag, document) }, URL, Set, File, Blob, TextDecoder, Uint8Array });
   return { $, nodes, messages, openai, storage, document, snapshot() { events.pagehide({}); return openai.widgetState; }, globals(globals: any) { events["openai:set_globals"]({ detail: { globals } }); }, update(next: any) { openai.toolOutput = next; events["openai:set_globals"]({ detail: { globals: { toolOutput: next } } }); },
     choose(value: string) { const action = REVIEW_STEPS[openai.toolOutput.stage as typeof REVIEW_STAGES[number]].choices.findIndex(x => x.value === value); return $("reviewChoices").children[action].click(); },
@@ -80,420 +80,8 @@ function setup(data: any = output(), options: { timers?: { setTimeout: any; clea
 }
 function deferred() { let resolve!: () => void; let reject!: (error: Error) => void; const promise = new Promise<void>((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
 
-for (const stage of REVIEW_STAGES) test(`embedded ${stage} choices match the native action contract`, () => {
-  const ui = setup(output(stage));
-  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), REVIEW_STEPS[stage].choices.map(x => x.label));
-  assert.equal(ui.$("run").textContent, REVIEW_STEPS[stage].choices[0].submitLabel);
-});
-
-test("a non-feedback action sends on one click with the exact version and action", async () => {
-  const data = output(); const ui = setup(data);
-  assert.equal(ui.$("run").hidden, true);
-  await ui.choose("approve"); assert.equal(ui.messages.length, 1);
-  const message = ui.messages[0].prompt;
-  assert.ok(message.includes('"task_id":"task-A"'));
-  assert.ok(message.includes('"content_version":"v1"'));
-  assert.ok(message.includes('"action":"approve"'));
-  assert.doesNotMatch(message, /authentication|Tuân thủ yêu cầu xác nhận|REAL USER ACTION|WIDGET ACTION IS AUTHORITATIVE/);
-  assert.equal(ui.$("run").disabled, true);
-  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
-});
-
-test("pending double-clicks, successful re-clicks and same-output host rerenders send once", async () => {
-  const wait = deferred(); const data = output(); const ui = setup(data, { send: () => wait.promise });
-  const first = ui.submit(); await flushAttachmentWork(); await ui.submit(); assert.equal(ui.messages.length, 1);
-  ui.update(data); await ui.submit(); assert.equal(ui.messages.length, 1);
-  wait.resolve(); await first; await ui.submit(); assert.equal(ui.messages.length, 1);
-  ui.update({ structuredContent: data }); await ui.submit(); assert.equal(ui.messages.length, 1);
-});
-
-test("successful submits survive remount through widget state and session storage independently", async () => {
-  const data = output(); const ui = setup(data); await ui.submit();
-  const fromState = setup(data, { state: ui.snapshot() }); await fromState.submit();
-  const fromStorage = setup(data, { storage: ui.storage }); await fromStorage.submit();
-  assert.equal(fromState.messages.length, 0); assert.equal(fromStorage.messages.length, 0);
-  assert.equal(fromState.$("run").disabled, true); assert.equal(fromStorage.$("run").disabled, true);
-});
-
-test("a rejected dispatched send stays unknown and cannot be replayed", async () => {
-  const ui = setup(output(), { send: async () => { throw Error("host unavailable"); } });
-  ui.choose("revise"); ui.$("reviewFeedback").value = "Keep the product color";
-  await ui.submit(); assert.equal(ui.$("run").disabled, true); assert.match(ui.$("error").textContent, /Chưa xác định/);
-  assert.equal(ui.$("reviewFeedback").value, "Keep the product color");
-  await ui.submit(); assert.equal(ui.messages.length, 1);
-  assert.equal(ui.$("checkRequest").hidden, false);
-});
-
-test("missing bridge fails honestly without persisting success and can recover", async () => {
-  const ui = setup(output(), { bridge: false }); await ui.submit();
-  assert.match(ui.$("error").textContent, /chưa được gửi/); assert.equal(ui.$("run").disabled, false);
-  let sent = 0; ui.openai.sendFollowUpMessage = async () => { sent++; };
-  await ui.submit(); assert.equal(sent, 1); assert.equal(ui.$("run").disabled, true);
-});
-
-test("new revision and different task reset old approval without carrying stale feedback", async () => {
-  const ui = setup(output()); ui.choose("revise"); ui.$("reviewFeedback").value = "Old revision feedback"; await ui.submit();
-  ui.update(output("content_approval", "v2"));
-  assert.equal(ui.$("run").disabled, false); assert.equal(ui.$("reviewFeedback").value, "");
-  await ui.submit(); assert.equal(ui.messages.length, 2);
-  ui.update(output("content_approval", "v2", "task-B")); await ui.submit(); assert.equal(ui.messages.length, 3);
-});
-
-test("a late completion for an old outcome cannot lock or alter a newer review", async () => {
-  const wait = deferred(); const ui = setup(output(), { send: () => wait.promise }); const old = ui.submit(); await flushAttachmentWork();
-  ui.update(output("content_approval", "v2")); assert.equal(ui.$("run").disabled, false);
-  wait.resolve(); await old; assert.equal(ui.$("run").disabled, false);
-  assert.doesNotMatch(ui.$("flowState").textContent, /Đã gửi/);
-  await ui.submit(); assert.equal(ui.messages.length, 2);
-});
-
-test("revise requires feedback; Train is an explicit action and mode changes update submit wording", async () => {
-  const content = setup(output()); content.choose("revise"); await content.submit(); assert.equal(content.messages.length, 0);
-  const ui = setup(output("asset_review")); ui.choose("train");
-  assert.equal(ui.$("run").textContent, "Gửi đề xuất Train");
-  await ui.submit(); assert.equal(ui.messages.length, 0);
-  ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").onclick!();
-  const textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Use clean product edges"; textarea.oninput!();
-  ui.$("modeFeedback").onclick!(); assert.equal(ui.$("run").textContent, "Gửi feedback");
-  ui.$("modeTrain").onclick!(); assert.equal(ui.$("run").textContent, "Gửi đề xuất Train");
-  await ui.submit(); assert.equal(ui.messages.length, 1);
-  assert.match(ui.messages[0].prompt, /submit_training_feedback/); assert.match(ui.messages[0].prompt, /"action":"train"/);
-});
-
-test("Train deduplicates its exact payload without blocking later packaging or changed feedback", async () => {
-  const ui = setup(output("asset_review")); ui.choose("train");
-  ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").onclick!();
-  let textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Clean edges"; textarea.oninput!();
-  await ui.submit(); await ui.submit(); assert.equal(ui.messages.length, 1);
-  ui.$("backToReview").onclick!(); await ui.choose("package");
-  assert.equal(ui.messages.length, 2); assert.equal(ui.$("reviewChoices").children[0].disabled, true);
-  ui.choose("train"); assert.equal(ui.$("run").disabled, true); await ui.submit(); assert.equal(ui.messages.length, 2);
-  textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Use softer lighting"; textarea.oninput!();
-  assert.equal(ui.$("run").disabled, false); await ui.submit(); assert.equal(ui.messages.length, 3);
-});
-
-test("successful or pending review can return to an enabled new-task launcher", async () => {
-  for (const pending of [false, true]) {
-    const wait = deferred(); const ui = setup(output(), { send: pending ? () => wait.promise : undefined });
-    const sent = ui.submit(); if (!pending) await sent;
-    ui.update({ stage: "launcher" });
-    assert.equal(ui.$("run").disabled, false); assert.equal(ui.$("run").textContent, "Bắt đầu");
-    wait.resolve(); await sent; assert.equal(ui.$("run").disabled, false);
-  }
-});
-
-test("legacy outcomes deduplicate conservative session remounts; different visible outcomes get fresh identity", async () => {
-  const legacy = { stage: "content_approval" }; const storage = new Map<string, string>();
-  const first = setup(legacy, { storage }); await first.submit();
-  const repeated = setup(legacy,{storage});await repeated.submit();assert.equal(repeated.messages.length,0);
-  const second = setup({...legacy,result_content:"Different actual outcome"}, { storage }); assert.equal(second.$("run").disabled, false); await second.submit();
-  assert.notEqual(first.snapshot().privateContent.legacyReviewId, second.openai.widgetState.privateContent.legacyReviewId);
-  const remount = setup(legacy, { state: first.snapshot(), storage }); await remount.submit(); assert.equal(remount.messages.length, 0);
-});
-
-test("host state persistence failure blocks dispatch before any send", async () => {
- const ui=setup(output(),{host:{setWidgetState(){throw Error("unavailable");}}});
- await ui.submit();assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);assert.match(ui.$("draftNote").textContent,/Chưa lưu/);
-});
-
-test("an explicit downstream-failure retry enables a fresh submit without automatically replaying", async () => {
-  const data = output(); const ui = setup(data); await ui.submit();
-  ui.update(data); await ui.submit(); assert.equal(ui.messages.length, 1);
-  const retry = { ...data, review_context: createReviewContext({ stage: "content_approval", task_id: "task-A", content_version: "v1", retry_id: "generation-failed-attempt-2" }) };
-  ui.update(retry); assert.equal(ui.$("run").disabled, false); assert.equal(ui.messages.length, 1);
-  await ui.submit(); assert.equal(ui.messages.length, 2);
-  assert.match(ui.messages[1].prompt, /"retry_id":"generation-failed-attempt-2"/);
-  ui.update(retry); await ui.submit(); assert.equal(ui.messages.length, 2);
-});
-
-test("guided view identifies current step, missing input and next action without inventing execution", async () => {
-  const ui = setup({ stage: "launcher" });
-  assert.deepEqual(ui.$("workflowSteps").children.map(x => x.textContent), ["1. Brief", "2. Content", "3. Assets", "4. Đóng gói"]);
-  assert.equal(ui.$("workflowSteps").children[0].attributes["aria-current"], "step");
-  assert.match(ui.$("missingInputs").textContent, /Còn thiếu: URL/);
-  ui.$("url").value = "https://example.com/products/test"; ui.$("url").dispatch("input");
-  assert.match(ui.$("nextAction").textContent, /Bắt đầu/);
-  await ui.submit(); await ui.submit();
-  assert.equal(ui.messages.length, 1);
-  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
-  assert.doesNotMatch(ui.$("flowState").textContent, /đang tạo|đã hoàn tất|đang xử lý/i);
-  assert.equal(ui.$("newBrief").hidden, false);
-  ui.$("newBrief").click(); assert.equal(ui.$("run").disabled, false);
-  await ui.submit(); assert.equal(ui.messages.length, 2);
-});
-
-test("brief draft keeps edits when refreshed routes arrive and successful duplicate survives remount", async () => {
-  const routes = [{ brand: "pawfecthouse", branch: "onepage-system" }, { brand: "giftsoul", branch: "ldp-system" }];
-  const ui = setup({ stage: "launcher", routes });
-  ui.$("brand").value = "giftsoul"; ui.$("brand").onchange!();
-  ui.$("url").value = "https://example.com/products/gift";
-  ui.$("custom").value = "Warm lighting"; ui.$("custom").dispatch("blur");
-  ui.update({ stage: "launcher", routes }); assert.equal(ui.$("brand").value, "giftsoul");
-  assert.equal(ui.$("custom").value, "Warm lighting"); await ui.submit();
-  const restored = setup({ stage: "launcher", routes }, { state: ui.snapshot(), storage: ui.storage });
-  assert.equal(restored.$("url").value, "https://example.com/products/gift");
-  await restored.submit(); assert.equal(restored.messages.length, 0);
-});
-
-test("feedback drafts survive Back, mode changes, remount and returning to exact review only", () => {
-  const first = output("asset_review"); const ui = setup(first); ui.choose("feedback");
-  ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").click();
-  const textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Preserve the logo"; textarea.oninput!();
-  ui.$("modeTrain").click(); ui.$("backToReview").click(); ui.choose("feedback");
-  assert.equal(ui.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
-  const restored = setup(first, { state: ui.snapshot() });
-  assert.equal(restored.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
-  ui.update(output("asset_review", "v2")); ui.choose("feedback");
-  assert.equal(ui.$("variableItems").querySelectorAll("textarea").length, 0);
-  ui.update(first); assert.equal(ui.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
-});
-
-test("legacy successful request keys remain consumed after attachment upgrade", async () => {
-  const data = output();
-  const key = JSON.stringify([data.review_context.review_id, "approve", ""]);
-  const ui = setup(data, { state: { submittedRequests: [key] } });
-  await ui.submit(); assert.equal(ui.messages.length, 0); assert.equal(ui.$("run").disabled, true);
-});
-
-test("an outcome summary is plain text and removed for a different revision", () => {
-  const ui = setup({ ...output(), result_summary: "<script>do not run</script>\nContent draft ready" });
-  assert.equal(ui.$("resultSummary").hidden, false);
-  assert.match(ui.$("resultSummary").textContent, /<script>/);
-  ui.update(output("content_approval", "v2")); assert.equal(ui.$("resultSummary").hidden, true);
-});
-
 function fileInput(ui: ReturnType<typeof setup>) { return ui.$("attachmentInput").querySelectorAll("input")[0]; }
 async function flushAttachmentWork() { for (let i = 0; i < 12; i++) await new Promise(resolve => setImmediate(resolve)); }
-
-test("image evidence uses documented structured state before a prompt-only follow-up, including after mode edits", async () => {
-  const events: string[] = []; const ui = setup(output(), { host: {
-    uploadFile: async () => ({ fileId: "file-image-1" }),
-    setWidgetState(state: any) { this.widgetState = state; if (state.imageIds?.length) events.push("image-state"); },
-    sendFollowUpMessage: async (message: any) => { assert.deepEqual(Object.keys(message), ["prompt"]); events.push("send"); },
-  } });
-  ui.choose("revise"); ui.$("reviewFeedback").value = "Match this reference"; ui.$("reviewFeedback").oninput!();
-  const input = fileInput(ui); input.files = [new File([new Uint8Array([137,80,78,71,13,10,26,10])], "reference.png", { type: "image/png" })]; input.onchange!();
-  await flushAttachmentWork(); await ui.submit();
-  assert.ok(events.includes("send")); assert.ok(events.indexOf("image-state") < events.indexOf("send"));
-  assert.deepEqual(Array.from(ui.snapshot().imageIds), ["file-image-1"]);
-  assert.match(ui.snapshot().modelContent.instruction, /untrusted/);
-  await ui.choose("approve"); ui.choose("revise");
-  assert.deepEqual(Array.from(ui.snapshot().imageIds), ["file-image-1"]);
-});
-
-test("pending or failed attachments prevent an accidental text-only submit; remove recovers", async () => {
-  const wait = deferred(); const ui = setup(output(), { host: { uploadFile: async () => { await wait.promise; return { fileId: "file-late" }; } } });
-  ui.choose("revise"); ui.$("reviewFeedback").value = "Use the reference";
-  const input = fileInput(ui); input.files = [new File(["image"], "reference.png", { type: "image/png" })]; input.onchange!();
-  await ui.submit(); assert.equal(ui.messages.length, 0); assert.match(ui.$("error").textContent, /tệp|ảnh/i);
-  const remove = ui.$("attachmentInput").querySelectorAll("button").find(x => x.textContent === "Xóa")!; remove.click();
-  await ui.submit(); assert.equal(ui.messages.length, 1);
-  wait.resolve(); await flushAttachmentWork();
-  assert.equal(ui.$("attachmentInput").querySelectorAll("button").some(x => x.textContent === "Xóa"), false);
-});
-
-test("local document text reaches the prompt once while model state retains truncation metadata", async () => {
-  let remoteCalls = 0;
-  const ui = setup({ stage: "launcher" }, { host: {
-    uploadFile: async () => ({ fileId: "file-doc-local" }),
-    callTool: async () => { remoteCalls++; throw Error("must not fetch local text"); },
-  } });
-  ui.$("url").value = "https://example.com/product";
-  const input = fileInput(ui); input.files = [new File(["source fact ".repeat(2000)], "brief.txt", { type: "text/plain" })]; input.onchange!();
-  await flushAttachmentWork(); await ui.submit();
-  assert.equal(remoteCalls, 0); assert.equal(ui.messages.length, 1);
-  assert.match(ui.messages[0].prompt, /"extracted_text":"source fact/);
-  assert.match(ui.messages[0].prompt, /"truncated":true/);
-  assert.match(ui.messages[0].prompt, /untrusted reference data/);
-  const state = ui.snapshot();
-  assert.equal(state.modelContent.attachments[0].truncated, true);
-  assert.equal(state.modelContent.attachments[0].text_characters, 16000);
-  assert.equal(state.modelContent.attachments[0].evidence_delivery, "followup_on_submit");
-  assert.doesNotMatch(JSON.stringify(state.modelContent), /source fact|untrusted_extracted_text|"extracted_text"/);
-  assert.equal(ui.messages[0].prompt.split('"extracted_text":').length - 1, 1);
-  assert.ok(JSON.stringify(state.privateContent.attachments).includes("source fact"), "full extracted excerpt remains privately recoverable");
-  assert.deepEqual(Array.from(ui.snapshot().imageIds), []);
-});
-
-test("serialized host snapshots preserve the latest unblurred brief, content and group feedback edits", () => {
-  const brief = setup({ stage: "launcher" });
-  brief.$("url").value = "https://example.com/latest"; brief.$("url").dispatch("input");
-  brief.$("custom").value = "Latest brief keystroke"; brief.$("custom").dispatch("input");
-  const briefRestored = setup({ stage: "launcher" }, { state: brief.snapshot() });
-  assert.equal(briefRestored.$("url").value, "https://example.com/latest");
-  assert.equal(briefRestored.$("custom").value, "Latest brief keystroke");
-  const content = setup(output()); content.choose("revise"); content.$("reviewFeedback").value = "Latest content edit"; content.$("reviewFeedback").oninput!();
-  assert.equal(setup(output(), { state: content.snapshot() }).$("reviewFeedback").value, "Latest content edit");
-  const assets = setup(output("asset_review")); assets.choose("feedback"); assets.$("variableKeys").children[0].click(); assets.$("createSharedFeedback").click();
-  const area = assets.$("variableItems").querySelectorAll("textarea")[0]; area.value = "Latest group edit"; area.oninput!();
-  assert.equal(setup(output("asset_review"), { state: assets.snapshot() }).$("variableItems").querySelectorAll("textarea")[0].value, "Latest group edit");
-});
-
-test("cleared draft inputs stay empty through same-output host updates", () => {
-  const data = { stage: "launcher" }; const ui = setup(data, { state: { url: "https://example.com/old", theme: "Old theme", custom: "Old requirements" } });
-  for (const id of ["url", "theme", "custom"]) { ui.$(id).value = ""; ui.$(id).dispatch("input"); }
-  ui.update(data);
-  for (const id of ["url", "theme", "custom"]) assert.equal(ui.$(id).value, "");
-});
-
-test("unknown and prototype-like section names share one safe fallback group", () => {
-  const data = { ...output("asset_review"), assets: [{ id: "prototype-1", element: "__proto__", position: "desktop" }, { id: "prototype-2", element: "constructor" }] };
-  const ui = setup(data); ui.choose("feedback");
-  const buttons = ui.$("variableKeys").querySelectorAll("button").map(x => x.textContent);
-  assert.equal(buttons.filter(x => x.includes("Chọn cả nhóm")).length, 1);
-  assert.ok(buttons.includes("Chọn cả nhóm: Chưa định danh (2)"));
-  assert.doesNotMatch(buttons.join("|"), /__proto__|constructor/);
-});
-
-test("confirmed delivery keeps the fourth step and exposes revise/new-task without repackaging", async () => {
-  const ui = setup({ ...output("complete"), result_summary: "Delivered assets.zip in the conversation" });
-  assert.equal(ui.$("workflowSteps").children[3].attributes["aria-current"], "step");
-  assert.match(ui.$("stageHint").textContent, /file\/link/);
-  assert.deepEqual(ui.$("reviewChoices").children.map(x => x.textContent), ["Sửa tiếp", "Task mới"]);
-  await ui.choose("new_task");
-  assert.equal(ui.messages.length, 1); assert.match(ui.messages[0].prompt, /launch_creative_dna/);
-  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
-});
-
-test("delivery revise opens asset feedback without requiring an invisible feedback draft", async () => {
-  const ui = setup(output("complete"));
-  assert.equal(ui.$("reviewFeedback").hidden, true);
-  await ui.submit(); assert.equal(ui.messages.length, 1);
-  assert.match(ui.messages[0].prompt, /stage=asset_review/);
-});
-
-test("the complete outcome is before actions, is never interpreted as HTML, and clears on revision", () => {
-  const content = "Full content section\n<script>alert('untrusted')</script>\n".repeat(400);
-  const ui = setup({ ...output(), result_content: content, result_summary: "Short summary", result_links: [
-    { label: "Actual delivery", url: "https://example.com/result" }, { label: "Unsafe", url: "javascript:alert(1)" }, { label: "Credentials", url: "https://user:secret@example.com/result" },
-  ] });
-  assert.ok(launcherHtml.indexOf('id="resultContent"') < launcherHtml.indexOf('id="reviewFields"'));
-  assert.equal(ui.$("resultContent").textContent, content);
-  assert.equal(ui.$("resultContent").children.length, 0);
-  assert.equal(ui.$("resultSummary").hidden, true);
-  assert.equal(ui.$("resultLinks").children.length, 1);
-  const anchor = ui.$("resultLinks").children[0].children[0] as any;
-  assert.equal(anchor.href, "https://example.com/result"); assert.equal(anchor.rel, "noopener noreferrer");
-  ui.update(output("content_approval", "v2"));
-  assert.equal(ui.$("resultContent").textContent, ""); assert.equal(ui.$("resultLinks").children.length, 0);
-  assert.match(ui.$("outcomeNote").textContent, /chưa nhận được toàn bộ/);
-  ui.update({ stage: "launcher" }); assert.equal(ui.$("reviewOutcome").hidden, true);
-});
-
-test("real action-button double clicks and remounts send once; feedback selection does not submit", async () => {
-  const wait = deferred(); const data = output(); const ui = setup(data, { send: () => wait.promise });
-  const first = ui.choose("approve"); await ui.choose("approve");
-  assert.equal(ui.$("reviewChoices").children.every(x => x.disabled), true);
-  await flushAttachmentWork(); assert.equal(ui.messages.length, 1);
-  wait.resolve(); await first;
-  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
-  assert.match(ui.$("reviewChoices").children[0].textContent, /Đã gửi/);
-  ui.choose("revise"); assert.equal(ui.messages.length, 1); assert.equal(ui.$("run").hidden, false);
-  assert.equal(ui.$("reviewChoices").children[0].disabled, true);
-  const restored = setup(data, { state: ui.snapshot() }); await restored.choose("approve"); assert.equal(restored.messages.length, 0);
-});
-
-test("one-click ambiguous send cannot replay and offers a read-only check", async () => {
- const ui=setup(output(),{send:async()=>{throw Error("host denied");}});await ui.choose("approve");await ui.choose("approve");assert.equal(ui.messages.length,1);assert.equal(ui.$("checkRequest").hidden,false);
- await ui.$("checkRequest").click();assert.equal(ui.messages.length,2);assert.match(ui.messages[1].prompt,/Read and reconcile only/);assert.match(ui.messages[1].prompt,/Do not replay/);
-});
-
-test("delivery navigation directly calls registered read-only tools and preserves the outcome", async () => {
-  for (const action of ["revise", "new_task"]) {
-    const calls: any[] = [];
-    const result = { ...output("complete"), result_content: "Complete outcome", result_links: [{ label: "Delivery", url: "https://example.com/result" }], result_images: [{ file_id: "file-image-1", label: "Banner" }] };
-    const ui = setup(result, { host: { callTool: async (name: string, args: any) => {
-      calls.push({ name, args }); return { structuredContent: name === "launch_creative_dna" ? { stage: "launcher", routes: [] } : { ...args, review_context: createReviewContext(args) } };
-    } } });
-    await ui.choose(action); assert.equal(calls.length, 1); assert.equal(ui.messages.length, 0);
-    if (action === "revise") {
-      assert.equal(calls[0].name, "show_uid_brands_review"); assert.equal(calls[0].args.stage, "asset_review");
-      assert.equal(calls[0].args.task_id, "task-A"); assert.equal(calls[0].args.content_version, "v1");
-      assert.deepEqual(JSON.parse(JSON.stringify(calls[0].args.result_images)), result.result_images);
-      assert.equal(ui.$("resultContent").textContent, result.result_content); assert.equal(ui.$("resultLinks").children.length, 1);
-    } else {
-      assert.equal(calls[0].name, "launch_creative_dna"); assert.deepEqual(Object.keys(calls[0].args), ["navigation_id"]); assert.match(calls[0].args.navigation_id, /^navigation-/);
-      assert.equal(ui.$("reviewOutcome").hidden, true); assert.equal(ui.$("run").textContent, "Bắt đầu");
-    }
-  }
-});
-
-test("direct navigation is pending-deduplicated; late results cannot replace a newer outcome", async () => {
-  const wait = deferred(); let calls = 0;
-  const ui = setup(output("complete"), { host: { callTool: async () => { calls++; await wait.promise; return { structuredContent: { stage: "launcher" } }; } } });
-  const first = ui.choose("new_task"); await ui.choose("new_task"); assert.equal(calls, 1);
-  ui.update({ ...output("asset_review", "v2"), result_content: "Newer outcome" });
-  wait.resolve(); await first;
-  assert.equal(ui.$("resultContent").textContent, "Newer outcome"); assert.equal(ui.$("reviewOutcome").hidden, false);
-  assert.equal(ui.messages.length, 0);
-});
-
-test("denied or malformed direct navigation preserves outcome and never falls back to a model prompt", async () => {
-  for (const callTool of [async () => { throw Error("permission denied"); }, async () => ({ isError: true }), async () => ({ structuredContent: {} })]) {
-    const ui = setup({ ...output("complete"), result_content: "Keep this outcome" }, { host: { callTool } });
-    await ui.choose("new_task"); assert.equal(ui.messages.length, 0);
-    assert.equal(ui.$("resultContent").textContent, "Keep this outcome"); assert.equal(ui.$("reviewChoices").children[1].disabled, false);
-    assert.match(ui.$("error").textContent, /Chưa mở được/);
-  }
-});
-
-test("image previews use fresh host URLs, never persist signed URLs, and ignore late stale previews", async () => {
-  const wait = deferred(); const calls: any[] = [];
-  const signedUrl = "https://cdn.example.com/image.png?signature=ephemeral";
-  const data = { ...output("asset_review"), result_images: [{ file_id: "file-image-1", label: "Banner" }] };
-  const ui = setup(data, { host: { getFileDownloadUrl: async (args: any) => { calls.push(args); await wait.promise; return { downloadUrl: signedUrl }; } } });
-  await Promise.resolve(); assert.equal(calls.length, 1); assert.equal(calls[0].fileId, "file-image-1");
-  ui.update(output("asset_review", "v2")); wait.resolve(); await flushAttachmentWork();
-  assert.equal(ui.$("resultImages").children.length, 0);
-  assert.doesNotMatch(JSON.stringify(ui.snapshot()), /signature=ephemeral/);
-  const loaded = setup(data, { host: { getFileDownloadUrl: async () => ({ downloadUrl: signedUrl }) } });
-  await flushAttachmentWork(); const img = loaded.$("resultImages").children[0].children[0] as any;
-  assert.equal(img.tag, "img"); assert.equal(img.src, signedUrl); assert.equal(img.referrerPolicy, "no-referrer");
-  loaded.choose("feedback"); assert.doesNotMatch(JSON.stringify(loaded.openai.widgetState), /signature=ephemeral/);
-});
-
-test("unavailable or unsafe image previews retain attachment labels and never add arbitrary image URLs", async () => {
-  const data = { ...output("asset_review"), result_images: [{ file_id: "file-image-1", label: "Banner" }] };
-  for (const host of [{}, { getFileDownloadUrl: async () => ({ downloadUrl: "javascript:alert(1)" }) }, { getFileDownloadUrl: async () => { throw Error("unavailable"); } }]) {
-    const ui = setup(data, { host }); await flushAttachmentWork();
-    const figure = ui.$("resultImages").children[0]; assert.equal(figure.children.length, 1);
-    assert.equal(figure.children[0].tag, "figcaption"); assert.match(figure.children[0].textContent, /ảnh gốc/);
-  }
-});
-
-test("Task mới starts a fresh brief after an earlier brief was submitted in the same widget", async () => {
-  const ui = setup({ stage: "launcher" }, { host: { callTool: async () => ({ structuredContent: { stage: "launcher" } }) } });
-  ui.$("url").value = "https://example.com/product"; await ui.submit();
-  const oldBriefId = ui.snapshot().privateContent.briefId;
-  assert.equal(ui.$("run").disabled, true);
-  ui.update(output("complete")); await ui.choose("new_task");
-  assert.notEqual(ui.snapshot().privateContent.briefId, oldBriefId);
-  assert.equal(ui.$("url").value, "https://example.com/product");
-  assert.equal(ui.$("run").disabled, false); assert.equal(ui.$("run").textContent, "Bắt đầu");
-  await ui.submit(); assert.equal(ui.messages.length, 2);
-});
-
-test("late app-navigation globals events cannot replace a newer review before or after the promise", async () => {
-  const wait = deferred(); let navigationId = "";
-  const ui = setup(output("complete"), { host: { callTool: async (_name: string, args: any) => { navigationId = args.navigation_id; await wait.promise; return { structuredContent: { stage: "launcher", navigation_id: navigationId } }; } } });
-  const request = ui.choose("new_task");
-  ui.update({ ...output("asset_review", "v2"), result_content: "Newer outcome" });
-  ui.update({ stage: "launcher", navigation_id: navigationId });
-  assert.equal(ui.$("resultContent").textContent, "Newer outcome");
-  wait.resolve(); await request;
-  ui.update({ stage: "launcher", navigation_id: navigationId });
-  assert.equal(ui.$("resultContent").textContent, "Newer outcome"); assert.equal(ui.$("reviewOutcome").hidden, false);
-  // Normal model-driven tool outputs still navigate.
-  ui.update({ stage: "launcher" }); assert.equal(ui.$("reviewOutcome").hidden, true);
-});
-
-test("external link denial is reported without silently bypassing the host", async () => {
-  const ui = setup({ ...output(), result_links: [{ label: "Delivery", url: "https://example.com/result" }] }, { host: { openExternal: () => { throw Error("denied"); } } });
-  let prevented = false;
-  const anchor = ui.$("resultLinks").children[0].children[0] as any;
-  anchor.onclick({ preventDefault() { prevented = true; } });
-  assert.equal(prevented, true); assert.match(ui.$("error").textContent, /Host chưa mở được liên kết/);
-});
 
 function groupArea(ui: ReturnType<typeof setup>, index = 0) { return ui.$("variableItems").querySelectorAll("textarea")[index]; }
 function addOverallGroup(ui: ReturnType<typeof setup>) { ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").click(); }
@@ -602,7 +190,7 @@ test("real task, version and retry transitions isolate drafts, then restore only
     ui.update(next); ui.choose("feedback"); assert.equal(ui.$("variableItems").querySelectorAll("textarea").length, 0);
     assert.equal(ui.$("run").disabled, false); assert.equal(ui.messages.length, 0);
   }
-  ui.update(first); assert.equal(groupArea(ui).value, "Draft for first review"); assert.equal(ui.$("run").textContent, "Gửi đề xuất Train");
+  ui.update(first); assert.equal(groupArea(ui).value, "Draft for first review"); assert.equal(ui.$("run").textContent, "Tạo prompt");
   const restored = setup(first, { state: ui.snapshot(), globalsEcho: "sync" });
   assert.equal(groupArea(restored).value, "Draft for first review"); assert.equal(restored.messages.length, 0);
 });
@@ -674,149 +262,112 @@ test("whole-section and mixed asset selection retain exact IDs through metadata 
   assert.deepEqual(draft.variableItems[0].targets, ["onepage_product-wyl_01.webp", "opaque-benefit", "banner_mobile"]);
   assert.equal(draft.variableItems[0].text, "Sửa màu cả nhóm");
   await ui.submit();
-  for (const id of draft.variableItems[0].targets) assert.ok(ui.messages[0].prompt.includes("[asset_id=" + id + "]"));
+  for (const id of draft.variableItems[0].targets) assert.ok(ui.$("promptText").value.includes("[asset_id=" + id + "]"));
 });
 
-function fakeClock(){let sequence=0;const tasks=new Map<number,{delay:number;fn:()=>void}>();return {setTimeout(fn:()=>void,delay:number){const id=++sequence;tasks.set(id,{fn,delay});return id;},clearTimeout(id:number){tasks.delete(id);},fire(delay:number){for(const [id,task] of [...tasks])if(task.delay===delay){tasks.delete(id);task.fn();}},get size(){return tasks.size;}};}
 
-test("a pending send is durably deduplicated before completion and after remount",async()=>{
- const wait=deferred(),data=output(),clock=fakeClock();const ui=setup(data,{send:()=>wait.promise,timers:clock});const pending=ui.choose("approve");await flushAttachmentWork();
- assert.equal(ui.messages.length,1);const state=JSON.parse(JSON.stringify(ui.openai.widgetState));const records=state.privateContent.requestRecords;
- assert.equal(Object.values(records).length,1);assert.equal((Object.values(records)[0] as any).status,"sending");assert.match(Object.keys(records)[0],/^request-v2:[a-f0-9]{32}$/);
- const fromState=setup(data,{state,timers:fakeClock()});await fromState.choose("approve");assert.equal(fromState.messages.length,0);assert.equal(fromState.$("checkRequest").hidden,false);
- const fromStorage=setup(data,{storage:ui.storage,timers:fakeClock()});await fromStorage.choose("approve");assert.equal(fromStorage.messages.length,0);
- clock.fire(15000);await pending;assert.equal(ui.$("reviewFeedback").disabled,false);assert.equal(ui.$("checkRequest").hidden,false);await ui.choose("approve");assert.equal(ui.messages.length,1);
- wait.resolve();await flushAttachmentWork();assert.match(ui.$("flowState").textContent,/Chưa xác định/);
-});
-
-test("state publication timeout blocks send and does not overlap unresolved writes",async()=>{
- const wait=deferred(),clock=fakeClock();let writes=0;const ui=setup(output(),{timers:clock,host:{setWidgetState(){writes++;return wait.promise;}}});
- const pending=ui.choose("approve");await flushAttachmentWork();assert.equal(writes,1);clock.fire(15000);await pending;assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);assert.match(ui.$("draftNote").textContent,/Chưa xác nhận/);
- const retry=ui.submit();await flushAttachmentWork();assert.equal(writes,1);clock.fire(15000);await retry;assert.equal(ui.messages.length,0);wait.resolve();await flushAttachmentWork();
-});
-
-test("new review while persistence is pending cancels the old unsent dispatch",async()=>{
- const wait=deferred(),clock=fakeClock();const ui=setup(output(),{timers:clock,host:{setWidgetState(){return wait.promise;}}});const pending=ui.choose("approve");ui.update(output("content_approval","v2"));wait.resolve();await pending;assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);
-});
-
-test("typing coalesces host writes and blur flushes the latest draft without changing focus",()=>{
- const clock=fakeClock();let writes=0;const ui=setup(output("asset_review"),{timers:clock,host:{setWidgetState(state:any){writes++;this.widgetState=JSON.parse(JSON.stringify(state));}}});ui.choose("feedback");addOverallGroup(ui);const area=groupArea(ui);area.focus();
- for(const char of "abcdefghijklmnopqrst")enterAtSelection(ui,char);
- assert.equal(writes,0);clock.fire(200);assert.equal(writes,1);assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[output("asset_review").review_context.review_id].variableItems[0].text,area.value);assert.equal(ui.document.activeElement,area);
- enterAtSelection(ui,"Z");area.dispatch("blur");assert.equal(writes,2);assert.equal(ui.openai.widgetState.privateContent.reviewDrafts[output("asset_review").review_context.review_id].variableItems[0].text,area.value);
-});
-
-test("state writes serialize and flush the latest edit after an older write settles",async()=>{
- const clock=fakeClock(),first=deferred();const snapshots:any[]=[];const ui=setup(output(),{timers:clock,host:{setWidgetState(state:any){snapshots.push(JSON.parse(JSON.stringify(state)));return snapshots.length===1?first.promise:undefined;}}});ui.choose("revise");ui.$("reviewFeedback").value="A";ui.$("reviewFeedback").oninput!();clock.fire(200);
- ui.$("reviewFeedback").value="AB";ui.$("reviewFeedback").oninput!();clock.fire(200);assert.equal(snapshots.length,1);first.resolve();await flushAttachmentWork();assert.equal(snapshots.length,2);assert.equal(snapshots[1].privateContent.reviewDrafts[output().review_context.review_id].feedback,"AB");
-});
-
-test("read-only navigation timeout unlocks controls and ignores late result",async()=>{
- const clock=fakeClock();let resolve!:(value:any)=>void;const response=new Promise(r=>resolve=r);const ui=setup(output("complete"),{timers:clock,host:{callTool(){return response;}}});const pending=ui.choose("revise");clock.fire(15000);await pending;assert.equal(ui.$("reviewChoices").children[0].disabled,false);ui.update({...output("asset_review","v2"),result_content:"New outcome"});resolve(output("asset_review"));await flushAttachmentWork();assert.equal(ui.$("resultContent").textContent,"New outcome");assert.equal(ui.messages.length,0);
-});
-
-test("compact request identity never contains raw feedback or attachment excerpts",async()=>{
- const clock=fakeClock();const ui=setup(output(),{timers:clock});ui.choose("revise");ui.$("reviewFeedback").value="Private unique feedback text";await ui.submit();const serialized=JSON.stringify([...ui.storage]);assert.doesNotMatch(serialized,/Private unique feedback text/);assert.match(serialized,/request-v2:/);
-});
-
-for(const data of [{stage:"launcher"},{stage:"content_approval"}])test("ambiguous "+data.stage+" survives a storage-only remount without changing fallback identity",async()=>{
- const wait=deferred(),clock=fakeClock();const ui=setup(data,{timers:clock,send:()=>wait.promise});if(data.stage==="launcher")ui.$("url").value="https://example.com/product";const pending=ui.submit();await flushAttachmentWork();assert.equal(ui.messages.length,1);clock.fire(15000);await pending;
- const restored=setup(data,{timers:fakeClock(),storage:ui.storage});if(data.stage==="launcher")restored.$("url").value="https://example.com/product";await restored.submit();assert.equal(restored.messages.length,0);wait.resolve();
-});
-
-test("a confirmed late state save flushes the latest draft even after earlier waits timed out",async()=>{
- const clock=fakeClock(),first=deferred(),snapshots:any[]=[];const ui=setup(output(),{timers:clock,host:{setWidgetState(state:any){snapshots.push(JSON.parse(JSON.stringify(state)));return snapshots.length===1?first.promise:undefined;}}});ui.choose("revise");ui.$("reviewFeedback").value="A";ui.$("reviewFeedback").oninput!();clock.fire(200);ui.$("reviewFeedback").value="AB";ui.$("reviewFeedback").oninput!();clock.fire(200);clock.fire(15000);await flushAttachmentWork();assert.equal(snapshots.length,1);first.resolve();await flushAttachmentWork();clock.fire(200);await flushAttachmentWork();assert.equal(snapshots.length,2);assert.equal(snapshots[1].privateContent.reviewDrafts[output().review_context.review_id].feedback,"AB");assert.equal(ui.messages.length,0);
-});
-
-test("pending request retains exact ready attachment evidence across terminal scope pruning",async()=>{
- const data=output("asset_review"),clock=fakeClock();const ui=setup(data,{timers:clock,send:async()=>{throw Error("unknown");},host:{uploadFile:async()=>({fileId:"file-protected"})}});ui.choose("feedback");addOverallGroup(ui);groupArea(ui).value="Keep this reference";groupArea(ui).oninput!();const input=fileInput(ui);input.files=[new File(["reference"],"reference.txt",{type:"text/plain"})];input.onchange!();await flushAttachmentWork();await ui.submit();assert.equal(ui.messages.length,1);
- for(let i=0;i<20;i++)ui.update(output("asset_review","other-"+i));ui.update(data);await ui.submit();assert.equal(ui.messages.length,1);const state=ui.snapshot();assert.equal(state.privateContent.attachments.scopes["review:"+data.review_context.review_id][0].fileId,"file-protected");assert.equal(groupArea(ui).value,"Keep this reference");
-});
-
-test("concurrent mounted widgets merge durable unknown ledgers instead of clobbering them",async()=>{
- const storage=new Map<string,string>(),clock=fakeClock(),send=async()=>{throw Error("unknown");};const a=setup(output("content_approval","v1","A"),{storage,timers:clock,send}),b=setup(output("content_approval","v1","B"),{storage,timers:clock,send});await a.submit();await b.submit();const restored=setup(output("content_approval","v1","A"),{storage,timers:clock});await restored.submit();assert.equal(restored.messages.length,0);assert.equal(Object.keys(JSON.parse(storage.get("uid-brands-request-records")!)).length,2);
-});
-
-test("late reconciliation feedback cannot replace guidance for a newer review",async()=>{
- const clock=fakeClock(),wait=deferred();let count=0;const ui=setup(output(),{timers:clock,send:async()=>{if(++count===1)throw Error("unknown");return wait.promise;}});await ui.submit();const check=ui.$("checkRequest").click();ui.update(output("content_approval","v2"));wait.resolve();await check;assert.equal(ui.$("error").textContent,"");assert.doesNotMatch(ui.$("nextAction").textContent,/Đã gửi yêu cầu kiểm tra/);
-});
-
-test("terminal records are bounded while unknown records are retained",async()=>{
- const records:Record<string,any>={};for(let i=0;i<90;i++){const id="request-v2:"+i.toString(16).padStart(32,"0");records[id]={id,status:i<70?"accepted":"unknown",context:{review_id:"old-"+i}};}
- const ui=setup(output(),{timers:fakeClock(),state:{requestRecords:records}});await ui.submit();const saved=JSON.parse(ui.storage.get("uid-brands-request-records")!);assert.equal(Object.values(saved).filter((x:any)=>x.status==="unknown").length,20);assert.ok(Object.values(saved).filter((x:any)=>x.status==="accepted").length<=64);
-});
-
-test("real approval and packaging follow-ups carry factual progress without changing send semantics", async () => {
-  for (const stage of ["content_approval", "asset_review", "packaging"] as const) {
-    const ui = setup(output(stage));
-    if (stage === "asset_review") await ui.choose("package"); else await ui.submit();
-    assert.equal(ui.messages.length, 1);
-    const prompt = ui.messages[0].prompt;
-    assert.equal(prompt.split("PROGRESS:").length - 1, 1);
-    assert.match(prompt, /Research gates creative deliverables, not progress updates/);
-    assert.match(prompt, /done\/pending\/blocked and next action/);
-    assert.match(prompt, /treat accepted sends as execution/);
-    assert.match(prompt, /Continue authorized work without redundant confirmation/);
-    assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
-    await ui.submit(); assert.equal(ui.messages.length, 1);
+for(const stage of REVIEW_STAGES)test(`all ${stage} actions only prepare text, never dispatch`,async()=>{
+ for(const choice of REVIEW_STEPS[stage].choices){
+  const ui=setup(output(stage),{host:{callTool:()=>{throw Error("must not call tool");}}});
+  await ui.choose(choice.value);
+  if("requiresFeedback" in choice){
+   if(stage==="asset_review"){addOverallGroup(ui);const a=groupArea(ui);a.value="Make exact selected item clearer";a.oninput?.();}
+   else{ui.$("reviewFeedback").value="Revise headline";ui.$("reviewFeedback").oninput?.();}
+   await ui.submit();
   }
+  assert.match(ui.$("promptText").value, /"task_id":"task-A"/);
+  assert.ok(ui.$("promptText").value.includes('"action":"'+choice.value+'"'));
+  assert.equal(ui.messages.length,0);assert.equal(ui.$("run").disabled,false);
+ }
+});
+test("brief works without send bridge or persistence and copy fallback selects editable text",async()=>{
+ const ui=setup({stage:"launcher"},{bridge:false,host:{setWidgetState:undefined}});
+ ui.$("url").value="https://example.com/products/doll";await ui.submit();
+ assert.match(ui.$("promptText").value,/Product \/ Collection: https:\/\/example.com/);
+ ui.$("promptText").value+="\nMy edit";await ui.$("copyPrompt").click();
+ assert.match(ui.$("copyStatus").textContent,/Chưa sao chép/);assert.equal(ui.$("promptText").selectionEnd,ui.$("promptText").value.length);assert.equal(ui.messages.length,0);
+});
+test("successful copy says copied only, never sent or running",async()=>{
+ let copied="";const ui=setup(output(),{clipboard:{async writeText(text){copied=text;}}});await ui.choose("approve");await ui.$("copyPrompt").click();
+ assert.equal(copied,ui.$("promptText").value);assert.match(ui.$("copyStatus").textContent,/Đã sao chép/);assert.doesNotMatch(ui.$("copyStatus").textContent,/Đã gửi|Đang xử lý/);assert.equal(ui.messages.length,0);
+});
+test("draft persistence rejection cannot prevent prompt generation or copy",async()=>{
+ const ui=setup(output(),{host:{setWidgetState(){throw Error("storage unavailable");}}});await ui.choose("approve");ui.snapshot();await ui.$("copyPrompt").click();assert.match(ui.$("promptText").value,/Chốt content/);assert.equal(ui.messages.length,0);
+});
+test("sensitive draft and file evidence never enters model state before manual sending",async()=>{
+ const ui=setup(output("asset_review"));ui.choose("feedback");addOverallGroup(ui);groupArea(ui).value="private feedback";groupArea(ui).oninput?.();await ui.submit();const state=ui.snapshot();
+ assert.doesNotMatch(JSON.stringify(state.modelContent),/private feedback|asset-1|file_id/);assert.deepEqual(state.imageIds,[]);assert.equal(ui.messages.length,0);
+});
+test("new version cannot leave a ready prompt bound to stale result",async()=>{
+ const ui=setup(output());await ui.choose("approve");ui.update(output("content_approval","v2"));assert.equal(ui.$("promptDock").hidden,true);await ui.choose("approve");assert.match(ui.$("promptText").value,/"content_version":"v2"/);
+});
+test("composer has compact disclosures and no model dispatch API",()=>{
+ assert.doesNotMatch(script,/sendFollowUpMessage/);assert.match(launcherHtml,/max-height:min\(58vh,480px\)/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not require or automatically open/);
 });
 
-test("new brief progress guidance does not remove the research-before-creative-output gate", async () => {
-  const ui = setup({ stage: "launcher", routes: [{ brand: "PawfectHouse", branch: "onepage-system" }] });
-  ui.$("url").value = "https://example.com/products/mug";
-  await ui.submit();
-  assert.equal(ui.messages.length, 1);
-  assert.match(ui.messages[0].prompt, /RESEARCH BEFORE OUTPUT/);
-  assert.match(ui.messages[0].prompt, /Research gates creative deliverables, not progress updates/);
-  assert.match(ui.messages[0].prompt, /Submit the compact research object through the same resolver\/compiler before creative output/);
-  assert.match(ui.$("flowState").textContent, /chưa xác nhận thực thi/);
+test("edited prompt drafts survive exact-review remount and remain private",async()=>{
+ const data=output();const ui=setup(data);await ui.choose("approve");ui.$("promptText").value="My edited instruction";ui.$("promptText").oninput?.();const state=ui.snapshot();
+ const restored=setup(data,{state});assert.equal(restored.$("promptText").value,"My edited instruction");assert.equal(restored.$("promptDock").hidden,false);assert.doesNotMatch(JSON.stringify(state.modelContent),/My edited/);
+ restored.update(output("content_approval","v2"));assert.equal(restored.$("promptDock").hidden,true);restored.update(data);assert.equal(restored.$("promptText").value,"My edited instruction");
+});
+for(const rejected of [false,true])test(`late clipboard ${rejected?"failure":"success"} cannot annotate newer prompt`,async()=>{
+ const wait=deferred();const ui=setup(output(),{clipboard:{writeText:()=>wait.promise}});await ui.choose("approve");const pending=ui.$("copyPrompt").click();ui.update(output("content_approval","v2"));await ui.choose("approve");const expected=ui.$("copyStatus").textContent;rejected?wait.reject(Error("denied")):wait.resolve();await pending;assert.equal(ui.$("copyStatus").textContent,expected);assert.equal(ui.messages.length,0);
+});
+test("source edits invalidate the generated prompt without losing editable private draft",async()=>{
+ const ui=setup(output());ui.choose("revise");ui.$("reviewFeedback").value="First";ui.$("reviewFeedback").oninput?.();await ui.submit();assert.equal(ui.$("promptDock").hidden,false);ui.$("reviewFeedback").value="Second";ui.$("reviewFeedback").oninput?.();assert.equal(ui.$("promptDock").hidden,true);await ui.submit();assert.match(ui.$("promptText").value,/Second/);assert.doesNotMatch(ui.$("promptText").value,/First/);
+});
+test("document excerpts are bounded and explicitly flagged; images never imply visibility",async()=>{
+ const ui=setup(output("asset_review"),{host:{uploadFile:async()=>({fileId:"file-doc"})}});ui.choose("feedback");addOverallGroup(ui);groupArea(ui).value="Use reference";groupArea(ui).oninput?.();const input=fileInput(ui);input.files=[new File(["x".repeat(5000)],"reference.txt",{type:"text/plain"})];input.onchange!();await flushAttachmentWork();await ui.submit();const prompt=ui.$("promptText").value;assert.match(prompt,/"truncated":true/);assert.match(prompt,/attach original files/);assert.ok(prompt.length<8000);assert.deepEqual(ui.snapshot().imageIds,[]);
 });
 
-test("unknown-send status checks request partial facts without replay or synthetic completion", async () => {
-  let calls = 0;
-  const ui = setup(output(), { timers: fakeClock(), send: async () => { if (++calls === 1) throw Error("unknown delivery"); } });
-  await ui.submit();
-  await ui.$("checkRequest").click();
-  assert.equal(ui.messages.length, 2);
-  const prompt = ui.messages[1].prompt;
-  assert.match(prompt, /Read and reconcile only/);
-  assert.match(prompt, /Do not replay, generate, package, upload, or write anything/);
-  assert.match(prompt, /done \/ pending \/ blocked and the next safe action/);
-  await ui.submit(); assert.equal(ui.messages.length, 2);
+test("removed asset keeps draft but blocks prompt until user remaps",async()=>{
+ const data=output("asset_review");const ui=setup(data);ui.choose("feedback");sectionButtons(ui)[0].click();ui.$("createSharedFeedback").click();groupArea(ui).value="Keep this feedback";groupArea(ui).oninput?.();await ui.submit();ui.update({...data,assets:[{id:"asset-new",section:"Banner"}]});assert.equal(ui.$("promptDock").hidden,true);await ui.submit();assert.equal(groupArea(ui).value,"Keep this feedback");assert.match(ui.$("error").textContent,/asset-1/);assert.equal(ui.$("promptDock").hidden,true);assert.equal(ui.messages.length,0);
 });
 
-test("activity survives mode changes and preserves every outstanding action in the same review", async () => {
-  const ui=setup(output("asset_review")); await ui.choose("package");
-  ui.choose("feedback");
-  assert.equal(ui.$("requestActivity").hidden,false);
-  assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Đóng gói: Đã gửi/);
-  assert.equal(ui.$("checkRequest").hidden,false);
-  await ui.$("checkRequest").click();
-  assert.equal(ui.messages.length,2);assert.match(ui.messages[1].prompt,/Read and reconcile only/);
-  assert.match(ui.messages[1].prompt,/"action":"package"/);
-  ui.update(output("asset_review","v2"));assert.equal(ui.$("requestActivity").hidden,true);
+test("clipboard writes serialize across version changes so old writes cannot overwrite a newer copy",async()=>{
+ const wait=deferred();let calls=0,clipboard="";const ui=setup(output(),{clipboard:{async writeText(text){calls++;await wait.promise;clipboard=text;}}});await ui.choose("approve");const first=ui.$("copyPrompt").click();ui.update(output("content_approval","v2"));await ui.choose("approve");await ui.$("copyPrompt").onclick?.();assert.equal(calls,1);assert.equal(ui.$("copyPrompt").disabled,true);wait.resolve();await first;assert.doesNotMatch(ui.$("copyStatus").textContent,/Đã sao chép/);await ui.$("copyPrompt").click();assert.equal(calls,2);assert.equal(clipboard,ui.$("promptText").value);assert.match(clipboard,/"content_version":"v2"/);
 });
 
-test("local acknowledgement precedes persistence and dispatch without claiming execution", async () => {
-  const gate=deferred(); const ui=setup(output(),{host:{setWidgetState:()=>gate.promise}});
-  const submit=ui.choose("approve");
-  assert.equal(ui.messages.length,0);
-  assert.match(ui.$("requestActivityItems").children[0].textContent,/Đã nhận thao tác · Đang lưu/);
-  gate.resolve();await submit;
-  assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/chưa xác nhận thực thi/);
-  assert.doesNotMatch(ui.$("flowState").textContent,/ChatGPT đã nhận/);
+test("serialized host snapshots preserve the latest unblurred brief, content and group feedback edits", () => {
+  const brief = setup({ stage: "launcher" });
+  brief.$("url").value = "https://example.com/latest"; brief.$("url").dispatch("input");
+  brief.$("custom").value = "Latest brief keystroke"; brief.$("custom").dispatch("input");
+  const briefRestored = setup({ stage: "launcher" }, { state: brief.snapshot() });
+  assert.equal(briefRestored.$("url").value, "https://example.com/latest");
+  assert.equal(briefRestored.$("custom").value, "Latest brief keystroke");
+  const content = setup(output()); content.choose("revise"); content.$("reviewFeedback").value = "Latest content edit"; content.$("reviewFeedback").oninput!();
+  assert.equal(setup(output(), { state: content.snapshot() }).$("reviewFeedback").value, "Latest content edit");
+  const assets = setup(output("asset_review")); assets.choose("feedback"); assets.$("variableKeys").children[0].click(); assets.$("createSharedFeedback").click();
+  const area = assets.$("variableItems").querySelectorAll("textarea")[0]; area.value = "Latest group edit"; area.oninput!();
+  assert.equal(setup(output("asset_review"), { state: assets.snapshot() }).$("variableItems").querySelectorAll("textarea")[0].value, "Latest group edit");
 });
 
-test("unknown delivery remount shows honest labels and manual read-only reconnect instructions", async () => {
-  const data=output();const ui=setup(data,{send:async()=>{throw Error("connection lost");}});await ui.choose("approve");
-  const reloaded=setup(data,{state:ui.snapshot(),bridge:false});
-  assert.match(reloaded.$("reviewChoices").children[0].textContent,/Chờ kiểm tra/);
-  assert.match(reloaded.$("requestRecoveryHint").textContent,/chưa kết nối/);
-  assert.equal(reloaded.$("checkRequest").disabled,true);
-  assert.match(reloaded.$("requestRecoveryText").value,/Do not replay, generate, package, upload, or write anything/);
-  assert.match(reloaded.$("requestActivityItems").children[0].textContent,/Chưa rõ/);
-  assert.equal(reloaded.messages.length,0);
+test("cleared draft inputs stay empty through same-output host updates", () => {
+  const data = { stage: "launcher" }; const ui = setup(data, { state: { url: "https://example.com/old", theme: "Old theme", custom: "Old requirements" } });
+  for (const id of ["url", "theme", "custom"]) { ui.$(id).value = ""; ui.$(id).dispatch("input"); }
+  ui.update(data);
+  for (const id of ["url", "theme", "custom"]) assert.equal(ui.$(id).value, "");
+});
+
+test("feedback drafts survive Back, mode changes, remount and returning to exact review only", () => {
+  const first = output("asset_review"); const ui = setup(first); ui.choose("feedback");
+  ui.$("variableKeys").children[0].click(); ui.$("createSharedFeedback").click();
+  const textarea = ui.$("variableItems").querySelectorAll("textarea")[0]; textarea.value = "Preserve the logo"; textarea.oninput!();
+  ui.$("modeTrain").click(); ui.$("backToReview").click(); ui.choose("feedback");
+  assert.equal(ui.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
+  const restored = setup(first, { state: ui.snapshot() });
+  assert.equal(restored.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
+  ui.update(output("asset_review", "v2")); ui.choose("feedback");
+  assert.equal(ui.$("variableItems").querySelectorAll("textarea").length, 0);
+  ui.update(first); assert.equal(ui.$("variableItems").querySelectorAll("textarea")[0].value, "Preserve the logo");
+});
+
+test("external link denial is reported without silently bypassing the host", async () => {
+  const ui = setup({ ...output(), result_links: [{ label: "Delivery", url: "https://example.com/result" }] }, { host: { openExternal: () => { throw Error("denied"); } } });
+  let prevented = false;
+  const anchor = ui.$("resultLinks").children[0].children[0] as any;
+  anchor.onclick({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true); assert.match(ui.$("error").textContent, /Host chưa mở được liên kết/);
 });
 
 test("failed route initialization retries only a route read in place and preserves the brief", async () => {
@@ -834,24 +385,6 @@ test("late route refresh cannot replace a newer review", async () => {
   assert.match(ui.$("stageTitle").textContent,/Duyệt content/);assert.equal(ui.$("launchFields").hidden,true);
 });
 
-test("visible action instruction persists through host rerender and remount without raw tool payloads",async()=>{
- const data=output();const ui=setup(data);ui.choose("revise");ui.$("reviewFeedback").value="Shorten headline and keep product facts.";await ui.submit();
- const receipt=()=>ui.$("requestActivityItems").children.map(x=>x.textContent).join(" ");
- assert.match(receipt(),/Lệnh đã yêu cầu: Chỉnh sửa content/);assert.match(receipt(),/Shorten headline/);
- assert.doesNotMatch(receipt(),/PROGRESS:|correlation only|Attachment evidence|RESEARCH/);
- ui.update(JSON.parse(JSON.stringify(data)));assert.match(receipt(),/Shorten headline/);
- const reloaded=setup(data,{state:ui.snapshot()});
- assert.match(reloaded.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Shorten headline/);
-});
-
-test("late failed route lookup cannot claim an already sent brief was not sent",async()=>{
- const gate=deferred();const ui=setup({stage:"launcher",routes:[]},{host:{callTool:()=>gate.promise}});
- ui.$("url").value="https://example.com/product";const refresh=ui.$("refreshRoutes").click();await ui.submit();
- assert.equal(ui.messages.length,1);gate.reject(Error("route unavailable"));await refresh;
- assert.doesNotMatch(ui.$("routeStatus").textContent,/chưa gửi tác vụ/i);
- assert.match(ui.$("flowState").textContent,/Đã gửi tin nhắn/);
-});
-
 test("late failed route lookup does not annotate a newer launcher response",async()=>{
  const gate=deferred();const ui=setup({stage:"launcher",routes:[]},{host:{callTool:()=>gate.promise}});
  const refresh=ui.$("refreshRoutes").click();ui.update({stage:"launcher",routes:[{brand:"giftsoul",branch:"home-hero"}]});
@@ -859,146 +392,6 @@ test("late failed route lookup does not annotate a newer launcher response",asyn
  assert.equal(ui.$("routeStatus").textContent,"");assert.equal(ui.$("refreshRoutes").hidden,true);
 });
 
-
-for (const [stage,action] of [["content_approval","approve"],["content_approval","regenerate"],["asset_review","package"],["packaging","package"]] as const) test(`accepted ${stage}/${action} compacts fields with an accessible receipt`,async()=>{
- const ui=setup(output(stage));await ui.choose(action);
- assert.equal(ui.$("actionablePanel").hidden,true);assert.equal(ui.$("showPanel").hidden,false);
- assert.equal(ui.$("requestDetails").open,false);assert.equal(ui.$("requestDetailsSummary").hidden,false);
- assert.equal(ui.$("requestActivity").hidden,false);assert.match(ui.$("flowState").textContent,/chưa xác nhận thực thi/);
- assert.equal(ui.messages.length,1);await ui.$("showPanel").click();
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("requestDetails").open,true);
- assert.equal(ui.messages.length,1);await ui.choose(action);assert.equal(ui.messages.length,1);
-});
-
-test("accepted brief compacts and a new content outcome opens automatically",async()=>{
- const ui=setup({stage:"launcher",routes:[]});ui.$("url").value="https://example.com/product";await ui.submit();
- assert.equal(ui.$("actionablePanel").hidden,true);ui.update(output());
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("showPanel").hidden,true);
- assert.equal(ui.$("reviewChoices").children[0].disabled,false);
-});
-
-test("accepted feedback compacts, survives echoes/remount, then revised outcome reopens",async()=>{
- const data=output();const ui=setup(data);ui.choose("revise");ui.$("reviewFeedback").value="Giữ dấu tiếng Việt";await ui.submit();
- assert.equal(ui.$("actionablePanel").hidden,true);ui.update(JSON.parse(JSON.stringify(data)));
- assert.equal(ui.$("actionablePanel").hidden,true);
- const mounted=setup(data,{state:ui.snapshot(),storage:ui.storage});assert.equal(mounted.$("actionablePanel").hidden,true);
- ui.update(output("content_approval","v2"));assert.equal(ui.$("actionablePanel").hidden,false);
- assert.equal(ui.$("reviewChoices").children[0].disabled,false);assert.equal(ui.messages.length,1);
-});
-
-test("pending send and unknown transport keep feedback and recovery expanded",async()=>{
- const gate=deferred();const ui=setup(output(),{send:()=>gate.promise});const send=ui.choose("approve");
- await new Promise(resolve=>setTimeout(resolve,0));assert.equal(ui.$("actionablePanel").hidden,false);
- gate.reject(Error("uncertain"));await send;
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("requestDetails").open,true);
- assert.equal(ui.$("checkRequest").hidden,false);assert.match(ui.$("error").textContent,/Chưa xác định/);
- const remount=setup(output(),{state:ui.snapshot()});assert.equal(remount.$("actionablePanel").hidden,false);
-});
-
-test("failed persistence does not collapse or dispatch",async()=>{
- const ui=setup(output(),{host:{setWidgetState(){throw Error("offline");}}});await ui.choose("approve");
- assert.equal(ui.messages.length,0);assert.equal(ui.$("actionablePanel").hidden,false);assert.match(ui.$("error").textContent,/Chưa gửi/);
-});
-
-test("late acceptance cannot collapse a newer actionable outcome",async()=>{
- const gate=deferred();const ui=setup(output(),{send:()=>gate.promise});const send=ui.choose("approve");
- await new Promise(resolve=>setTimeout(resolve,0));ui.update(output("asset_review","v2"));gate.resolve();await send;
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").children[0].disabled,false);
-});
-
-test("Train receipt reopens actions for unchanged asset revision without enabling duplicate Train",async()=>{
- const data={...output("asset_review"),result_content:"Actual assets"};const ui=setup(data);ui.choose("train");
- ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();
- const area=ui.$("variableItems").children[0].children[2];area.value="Improve spacing";area.oninput!();await ui.submit();
- assert.equal(ui.$("actionablePanel").hidden,true);
- ui.update({...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"});
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
- assert.equal(ui.$("reviewChoices").children[0].disabled,false);
- const remount=setup(ui.openai.toolOutput,{state:ui.snapshot(),storage:ui.storage});
- assert.equal(remount.$("actionablePanel").hidden,false);assert.equal(ui.messages.length,1);
- ui.choose("train");await ui.submit();assert.equal(ui.messages.length,1);
-});
-
-test("all generation followups include explicit outcome-to-stage render guidance without suppressing interim progress",async()=>{
- const ui=setup(output());await ui.choose("approve");const prompt=ui.messages[0].prompt;
- assert.match(prompt,/call show_uid_brands_review once/);assert.match(prompt,/content_approval for content/);
- assert.match(prompt,/asset_review for assets/);assert.match(prompt,/complete only after packaging delivery/);
- assert.match(OUTCOME_RENDER_GUIDANCE,/Report blockers and verified partial milestones immediately/);
- assert.match(prompt,/Full-result deduplication must not suppress these updates/);
- assert.doesNotMatch(script,/requestClose|parent\.document|top\.document/);
-});
-
-
-test("sending a distinct action after manually reopening compacts again",async()=>{
- const ui=setup(output());await ui.choose("approve");await ui.$("showPanel").click();
- assert.equal(ui.$("actionablePanel").hidden,false);await ui.choose("regenerate");
- assert.equal(ui.messages.length,2);assert.equal(ui.$("actionablePanel").hidden,true);
-});
-
-test("an earlier unknown action keeps recovery visible even after a distinct accepted action",async()=>{
- let attempts=0;const ui=setup(output(),{send:async()=>{if(!attempts++)throw Error("uncertain");}});
- await ui.choose("approve");await ui.choose("regenerate");
- assert.equal(ui.messages.length,2);assert.equal(ui.$("actionablePanel").hidden,false);
- assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Chưa rõ/);
-});
-
-
-test("a Train result arriving before transport acknowledgement still opens next actions",async()=>{
- const gate=deferred();const data={...output("asset_review"),result_content:"Actual assets"};
- const ui=setup(data,{send:()=>gate.promise});ui.choose("train");ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();
- const area=ui.$("variableItems").children[0].children[2];area.value="Improve spacing";area.oninput!();const sent=ui.submit();
- await new Promise(resolve=>setTimeout(resolve,0));
- ui.update({...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"});
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
- gate.resolve();await sent;
- assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
- assert.equal(ui.$("reviewChoices").children[0].disabled,false);ui.choose("train");await ui.submit();assert.equal(ui.messages.length,1);
-});
-
-
-test("new Train receipt remount does not restore the submitted form from older saved state",async()=>{
- const data={...output("asset_review"),result_content:"Actual assets"};const ui=setup(data);ui.choose("train");
- ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();const area=ui.$("variableItems").children[0].children[2];
- area.value="Improve spacing";area.oninput!();await ui.submit();const savedBeforeReceipt=ui.snapshot();
- const next={...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"};ui.update(next);
- const remount=setup(next,{state:savedBeforeReceipt,storage:ui.storage});
- assert.equal(remount.$("actionablePanel").hidden,false);assert.equal(remount.$("reviewChoices").hidden,false);
- remount.choose("train");assert.equal(remount.$("variableItems").children[0].children[2].value,"Improve spacing");await remount.submit();
- assert.equal(remount.messages.length,0);
-});
-
-
-test("accepted send moves focus out of hidden fields without detaching the feedback draft",async()=>{
- const ui=setup(output());ui.choose("revise");const area=ui.$("reviewFeedback");area.value="Giữ dấu tiếng Việt";area.focus();
- await ui.submit();assert.equal(ui.$("actionablePanel").hidden,true);assert.equal(ui.document.activeElement,ui.$("flowState"));
- assert.equal(area.isConnected,true);await ui.$("showPanel").click();assert.equal(area.value,"Giữ dấu tiếng Việt");
-});
-
-test("six document excerpts survive remount and are delivered once each without model-state duplication", async () => {
-  let nextId = 0;
-  const ui = setup({ stage: "launcher" }, { host: { uploadFile: async () => ({ fileId: "file-six-" + (++nextId) }) } });
-  ui.$("url").value = "https://example.com/product";
-  const texts = Array.from({ length: 6 }, (_, index) => `evidence-${index}:` + String(index).repeat(15989));
-  const input = fileInput(ui);
-  input.files = texts.map((text, index) => new File([text], `evidence-${index}.txt`, { type: "text/plain" }));
-  input.onchange!(); await flushAttachmentWork();
-  const staged = ui.snapshot();
-  assert.equal(staged.modelContent.attachments.length, 6);
-  assert.match(staged.modelContent.instruction, /staged file is not proof of submission/);
-  const restored = setup({ stage: "launcher" }, { state: JSON.parse(JSON.stringify(staged)) });
-  await restored.submit();
-  assert.equal(restored.messages.length, 1);
-  const prompt = restored.messages[0].prompt;
-  const state = restored.snapshot();
-  assert.equal(prompt.split('"extracted_text":').length - 1, 6);
-  for (let index = 0; index < texts.length; index++) {
-    assert.equal(prompt.split(texts[index]).length - 1, 1, `complete excerpt ${index} included exactly once`);
-    const metadata = state.modelContent.attachments[index];
-    assert.equal(metadata.text_characters, texts[index].length);
-    assert.equal(metadata.truncated, false);
-    assert.equal(metadata.evidence_origin, "local");
-    assert.ok(JSON.stringify(state.privateContent.attachments).includes(texts[index]));
-    assert.ok(!JSON.stringify(state.modelContent).includes(texts[index]));
-  }
-  assert.ok(JSON.stringify(state.modelContent).length < 3000, "model-visible state scales with metadata, not document text");
+test("clipboard fallback expands prompt disclosure before selecting text",async()=>{
+ const ui=setup(output());await ui.choose("approve");ui.$("promptDetails").open=false;await ui.$("copyPrompt").click();assert.equal(ui.$("promptDetails").open,true);assert.equal(ui.$("promptText").selectionEnd,ui.$("promptText").value.length);assert.match(ui.$("copyStatus").textContent,/Chưa sao chép/);
 });

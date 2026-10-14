@@ -101,3 +101,18 @@ test('HTTP and MCP expose safe recovery details instead of claiming launcher rea
     const wire=await mcp.text(); assert.match(wire,/"isError":true/);assert.match(wire,/navigation-test/);assert.match(wire,/retry_read/);assert.doesNotMatch(wire,/launcher ready|secret upstream/);
   } finally { globalThis.fetch=original;await new Promise<void>((r,j)=>app.close(e=>e?j(e):r())); }
 });
+
+ test('HTTP 200 quality rejection is returned once without transient transport retry',async()=>{
+ let calls=0;await mockFetch(async()=>{calls++;return Response.json({ok:false,quality_gate:{passed:false},issues:['Missing evidence']});},async()=>{
+ const result=await gatewayJson(url,{}, {operation:'compile',timeoutMs:500,readOnly:true});
+ assert.equal(calls,1);assert.equal(result.ok,false);assert.equal(result.status,502);assert.deepEqual(result.data.issues,['Missing evidence']);
+ });
+ });
+
+test('initialization guidance avoids native probing and route-to-render failure inference',async()=>{
+ const {readFile}=await import('node:fs/promises');const server=await readFile(new URL('../server.ts',import.meta.url),'utf8');
+ assert.match(server,/Do not probe get_uid_brands_native_workflow before the registered launcher\/review tool/);
+ assert.doesNotMatch(server,/manual input as a fallback if the tool actually fails/);
+ const {NATIVE_WORKFLOW_DESCRIPTION,NATIVE_FALLBACK_TEXT}=await import('../uid-brands-actions.ts');
+ assert.match(NATIVE_WORKFLOW_DESCRIPTION,/not a prerequisite or capability probe/);assert.match(NATIVE_FALLBACK_TEXT,/degraded route lookup with prepared launcher UI is not a rendering failure/);
+});

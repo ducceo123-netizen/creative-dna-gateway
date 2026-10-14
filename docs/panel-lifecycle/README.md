@@ -1,3 +1,5 @@
+> Historical lifecycle: automatic dispatch/collapse and mandatory result-panel behavior are superseded by [Prompt Master](../prompt-master.md).
+
 # Accepted-send panel lifecycle
 
 ## Scope and verified baseline
