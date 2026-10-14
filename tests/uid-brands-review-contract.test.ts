@@ -1,18 +1,36 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createApp, TOOL_DEFINITIONS } from "../server.ts";
 import { REVIEW_STEPS, REVIEW_STAGES, NATIVE_FALLBACK_TEXT } from "../uid-brands-actions.ts";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "../uid-brands-review-contract.ts";
 import { LAUNCHER_MIME, LAUNCHER_URI, launcherHtml } from "../uid-brands-workflow.ts";
 import { LEGACY_LAUNCHER_URI } from "../uid-brands-ui-resource.ts";
 
-test("Onepage tabs publish a fresh cache key without changing the approved widget bundle", () => {
+test("Onepage tabs publish a fresh cache key without changing approved widget source inputs", () => {
   assert.equal(LAUNCHER_URI, "ui://uid-brands/workflow-v3.html");
   assert.equal(LEGACY_LAUNCHER_URI, "ui://uid-brands/workflow-v2.html");
   assert.notEqual(LAUNCHER_URI, LEGACY_LAUNCHER_URI);
-  // PR83 approved bundle. A future intentional UI change must update this pin and URI together.
-  assert.equal(createHash("sha256").update(launcherHtml).digest("hex"), "0256aa49163fc897a6a71b85fbeba8183668d7f54a4045fe46777206ba6535e3");
+  // Pin all source inputs to the approved PR84 baseline, undoing ONLY this patch's
+  // URI wiring. This guard is runtime-independent and preserves PR84 packaging
+  // guidance too. Intentional future source changes must review these pins.
+  const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const hash = (text: string) => createHash("sha256").update(text).digest("hex");
+  const workflow = source("uid-brands-workflow.ts").replace('export { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";', 'export const LAUNCHER_URI = "ui://uid-brands/workflow-v2.html";');
+  const actions = source("uid-brands-actions.ts")
+    .replace('import { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";\n', "")
+    .replace('resourceUri: LAUNCHER_URI', 'resourceUri: "ui://uid-brands/workflow-v2.html"')
+    .replace('"openai/outputTemplate": LAUNCHER_URI', '"openai/outputTemplate": "ui://uid-brands/workflow-v2.html"');
+  assert.equal(hash(workflow), "52b86f732a2c021b99067f1c6ccf3627ce248e94abec940d0edaf15f74633a5d");
+  assert.equal(hash(actions), "51c2c6795ca57b1efe0d0c3ca679fbcd4add5f0677e931d40f1832e76bb73e6c");
+  assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "b3d4a6456b26d77a088c1e05cb0636b2748f340b68018615f723dae8a4a9302d");
+  // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
+  // during transpilation, so its emitted bytes differ even on the approved base.
+  // Do not normalize that difference or bless a second output hash. The exact
+  // source pins above apply to BOTH runtimes; retain the production-byte guard.
+  if (!process.versions.bun) assert.equal(hash(launcherHtml), "0256aa49163fc897a6a71b85fbeba8183668d7f54a4045fe46777206ba6535e3");
 });
 
 test("review correlation is stable per task/version/stage, changes after revision, and labels legacy callers unbound", () => {
