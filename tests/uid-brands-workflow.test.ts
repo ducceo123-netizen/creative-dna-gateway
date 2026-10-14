@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { launcherHtml } from "../uid-brands-workflow.ts";
-import { REVIEW_STEPS, REVIEW_STAGES } from "../uid-brands-actions.ts";
+import { REVIEW_STEPS, REVIEW_STAGES, OUTCOME_RENDER_GUIDANCE } from "../uid-brands-actions.ts";
 import { createReviewContext } from "../uid-brands-review-contract.ts";
 
 // Execute the actual embedded script. The host bridge is deliberately mocked:
@@ -13,7 +13,7 @@ const script = launcherHtml.match(/<script>([\s\S]*?)<\/script>/)![1];
 // These invariants catch the host-echo regression without claiming real-device QA.
 type FocusDocument = { activeElement: Element | null; body: Element };
 class Element {
-  children: Element[] = []; textContent = ""; disabled = false; hidden = false;
+  children: Element[] = []; textContent = ""; disabled = false; hidden = false; open = true;
   private currentValue = ""; valueWrites = 0; selectionStart = 0; selectionEnd = 0; composing = false;
   parentNode: Element | null = null;
   onclick?: () => any; oninput?: (event?: any) => any; onchange?: () => any;
@@ -69,6 +69,7 @@ function setup(data: any = output(), options: { timers?: { setTimeout: any; clea
   } };
   if (options.bridge !== false) openai.sendFollowUpMessage = async (message: any) => { messages.push(message); return options.send?.(message); };
   Object.assign(openai, options.host || {});
+  $("actionablePanel").append($("launchFields"), $("reviewFields"), $("attachmentSection"), $("run"));
   $("reviewFields").append($("reviewChoices"), $("assetFeedbackFields"), $("reviewFeedback"));
   $("assetFeedbackFields").append($("variableKeys"), $("variableItems"));
   const window = { openai, sessionStorage: { getItem: (key: string) => storage.get(key), setItem: (key: string, value: string) => storage.set(key, value) }, addEventListener: (name: string, fn: any) => { events[name] = fn; } };
@@ -291,7 +292,7 @@ test("pending or failed attachments prevent an accidental text-only submit; remo
   assert.equal(ui.$("attachmentInput").querySelectorAll("button").some(x => x.textContent === "Xóa"), false);
 });
 
-test("local document extracted content and truncation reach prompt and model state without remote ingestion", async () => {
+test("local document text reaches the prompt once while model state retains truncation metadata", async () => {
   let remoteCalls = 0;
   const ui = setup({ stage: "launcher" }, { host: {
     uploadFile: async () => ({ fileId: "file-doc-local" }),
@@ -304,7 +305,13 @@ test("local document extracted content and truncation reach prompt and model sta
   assert.match(ui.messages[0].prompt, /"extracted_text":"source fact/);
   assert.match(ui.messages[0].prompt, /"truncated":true/);
   assert.match(ui.messages[0].prompt, /untrusted reference data/);
-  assert.equal(ui.snapshot().modelContent.attachments[0].truncated, true);
+  const state = ui.snapshot();
+  assert.equal(state.modelContent.attachments[0].truncated, true);
+  assert.equal(state.modelContent.attachments[0].text_characters, 16000);
+  assert.equal(state.modelContent.attachments[0].evidence_delivery, "followup_on_submit");
+  assert.doesNotMatch(JSON.stringify(state.modelContent), /source fact|untrusted_extracted_text|"extracted_text"/);
+  assert.equal(ui.messages[0].prompt.split('"extracted_text":').length - 1, 1);
+  assert.ok(JSON.stringify(state.privateContent.attachments).includes("source fact"), "full extracted excerpt remains privately recoverable");
   assert.deepEqual(Array.from(ui.snapshot().imageIds), []);
 });
 
@@ -850,4 +857,148 @@ test("late failed route lookup does not annotate a newer launcher response",asyn
  const refresh=ui.$("refreshRoutes").click();ui.update({stage:"launcher",routes:[{brand:"giftsoul",branch:"home-hero"}]});
  gate.reject(Error("route unavailable"));await refresh;
  assert.equal(ui.$("routeStatus").textContent,"");assert.equal(ui.$("refreshRoutes").hidden,true);
+});
+
+
+for (const [stage,action] of [["content_approval","approve"],["content_approval","regenerate"],["asset_review","package"],["packaging","package"]] as const) test(`accepted ${stage}/${action} compacts fields with an accessible receipt`,async()=>{
+ const ui=setup(output(stage));await ui.choose(action);
+ assert.equal(ui.$("actionablePanel").hidden,true);assert.equal(ui.$("showPanel").hidden,false);
+ assert.equal(ui.$("requestDetails").open,false);assert.equal(ui.$("requestDetailsSummary").hidden,false);
+ assert.equal(ui.$("requestActivity").hidden,false);assert.match(ui.$("flowState").textContent,/chưa xác nhận thực thi/);
+ assert.equal(ui.messages.length,1);await ui.$("showPanel").click();
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("requestDetails").open,true);
+ assert.equal(ui.messages.length,1);await ui.choose(action);assert.equal(ui.messages.length,1);
+});
+
+test("accepted brief compacts and a new content outcome opens automatically",async()=>{
+ const ui=setup({stage:"launcher",routes:[]});ui.$("url").value="https://example.com/product";await ui.submit();
+ assert.equal(ui.$("actionablePanel").hidden,true);ui.update(output());
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("showPanel").hidden,true);
+ assert.equal(ui.$("reviewChoices").children[0].disabled,false);
+});
+
+test("accepted feedback compacts, survives echoes/remount, then revised outcome reopens",async()=>{
+ const data=output();const ui=setup(data);ui.choose("revise");ui.$("reviewFeedback").value="Giữ dấu tiếng Việt";await ui.submit();
+ assert.equal(ui.$("actionablePanel").hidden,true);ui.update(JSON.parse(JSON.stringify(data)));
+ assert.equal(ui.$("actionablePanel").hidden,true);
+ const mounted=setup(data,{state:ui.snapshot(),storage:ui.storage});assert.equal(mounted.$("actionablePanel").hidden,true);
+ ui.update(output("content_approval","v2"));assert.equal(ui.$("actionablePanel").hidden,false);
+ assert.equal(ui.$("reviewChoices").children[0].disabled,false);assert.equal(ui.messages.length,1);
+});
+
+test("pending send and unknown transport keep feedback and recovery expanded",async()=>{
+ const gate=deferred();const ui=setup(output(),{send:()=>gate.promise});const send=ui.choose("approve");
+ await new Promise(resolve=>setTimeout(resolve,0));assert.equal(ui.$("actionablePanel").hidden,false);
+ gate.reject(Error("uncertain"));await send;
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("requestDetails").open,true);
+ assert.equal(ui.$("checkRequest").hidden,false);assert.match(ui.$("error").textContent,/Chưa xác định/);
+ const remount=setup(output(),{state:ui.snapshot()});assert.equal(remount.$("actionablePanel").hidden,false);
+});
+
+test("failed persistence does not collapse or dispatch",async()=>{
+ const ui=setup(output(),{host:{setWidgetState(){throw Error("offline");}}});await ui.choose("approve");
+ assert.equal(ui.messages.length,0);assert.equal(ui.$("actionablePanel").hidden,false);assert.match(ui.$("error").textContent,/Chưa gửi/);
+});
+
+test("late acceptance cannot collapse a newer actionable outcome",async()=>{
+ const gate=deferred();const ui=setup(output(),{send:()=>gate.promise});const send=ui.choose("approve");
+ await new Promise(resolve=>setTimeout(resolve,0));ui.update(output("asset_review","v2"));gate.resolve();await send;
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").children[0].disabled,false);
+});
+
+test("Train receipt reopens actions for unchanged asset revision without enabling duplicate Train",async()=>{
+ const data={...output("asset_review"),result_content:"Actual assets"};const ui=setup(data);ui.choose("train");
+ ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();
+ const area=ui.$("variableItems").children[0].children[2];area.value="Improve spacing";area.oninput!();await ui.submit();
+ assert.equal(ui.$("actionablePanel").hidden,true);
+ ui.update({...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"});
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
+ assert.equal(ui.$("reviewChoices").children[0].disabled,false);
+ const remount=setup(ui.openai.toolOutput,{state:ui.snapshot(),storage:ui.storage});
+ assert.equal(remount.$("actionablePanel").hidden,false);assert.equal(ui.messages.length,1);
+ ui.choose("train");await ui.submit();assert.equal(ui.messages.length,1);
+});
+
+test("all generation followups include explicit outcome-to-stage render guidance without suppressing interim progress",async()=>{
+ const ui=setup(output());await ui.choose("approve");const prompt=ui.messages[0].prompt;
+ assert.match(prompt,/call show_uid_brands_review once/);assert.match(prompt,/content_approval for content/);
+ assert.match(prompt,/asset_review for assets/);assert.match(prompt,/complete only after packaging delivery/);
+ assert.match(OUTCOME_RENDER_GUIDANCE,/Report blockers and verified partial milestones immediately/);
+ assert.match(prompt,/Full-result deduplication must not suppress these updates/);
+ assert.doesNotMatch(script,/requestClose|parent\.document|top\.document/);
+});
+
+
+test("sending a distinct action after manually reopening compacts again",async()=>{
+ const ui=setup(output());await ui.choose("approve");await ui.$("showPanel").click();
+ assert.equal(ui.$("actionablePanel").hidden,false);await ui.choose("regenerate");
+ assert.equal(ui.messages.length,2);assert.equal(ui.$("actionablePanel").hidden,true);
+});
+
+test("an earlier unknown action keeps recovery visible even after a distinct accepted action",async()=>{
+ let attempts=0;const ui=setup(output(),{send:async()=>{if(!attempts++)throw Error("uncertain");}});
+ await ui.choose("approve");await ui.choose("regenerate");
+ assert.equal(ui.messages.length,2);assert.equal(ui.$("actionablePanel").hidden,false);
+ assert.match(ui.$("requestActivityItems").children.map(x=>x.textContent).join(" "),/Chưa rõ/);
+});
+
+
+test("a Train result arriving before transport acknowledgement still opens next actions",async()=>{
+ const gate=deferred();const data={...output("asset_review"),result_content:"Actual assets"};
+ const ui=setup(data,{send:()=>gate.promise});ui.choose("train");ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();
+ const area=ui.$("variableItems").children[0].children[2];area.value="Improve spacing";area.oninput!();const sent=ui.submit();
+ await new Promise(resolve=>setTimeout(resolve,0));
+ ui.update({...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"});
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
+ gate.resolve();await sent;
+ assert.equal(ui.$("actionablePanel").hidden,false);assert.equal(ui.$("reviewChoices").hidden,false);
+ assert.equal(ui.$("reviewChoices").children[0].disabled,false);ui.choose("train");await ui.submit();assert.equal(ui.messages.length,1);
+});
+
+
+test("new Train receipt remount does not restore the submitted form from older saved state",async()=>{
+ const data={...output("asset_review"),result_content:"Actual assets"};const ui=setup(data);ui.choose("train");
+ ui.$("variableKeys").children[0].click();ui.$("createSharedFeedback").click();const area=ui.$("variableItems").children[0].children[2];
+ area.value="Improve spacing";area.oninput!();await ui.submit();const savedBeforeReceipt=ui.snapshot();
+ const next={...data,result_content:"Actual assets\nTrain proposal proposal-123: Pending Admin Review"};ui.update(next);
+ const remount=setup(next,{state:savedBeforeReceipt,storage:ui.storage});
+ assert.equal(remount.$("actionablePanel").hidden,false);assert.equal(remount.$("reviewChoices").hidden,false);
+ remount.choose("train");assert.equal(remount.$("variableItems").children[0].children[2].value,"Improve spacing");await remount.submit();
+ assert.equal(remount.messages.length,0);
+});
+
+
+test("accepted send moves focus out of hidden fields without detaching the feedback draft",async()=>{
+ const ui=setup(output());ui.choose("revise");const area=ui.$("reviewFeedback");area.value="Giữ dấu tiếng Việt";area.focus();
+ await ui.submit();assert.equal(ui.$("actionablePanel").hidden,true);assert.equal(ui.document.activeElement,ui.$("flowState"));
+ assert.equal(area.isConnected,true);await ui.$("showPanel").click();assert.equal(area.value,"Giữ dấu tiếng Việt");
+});
+
+test("six document excerpts survive remount and are delivered once each without model-state duplication", async () => {
+  let nextId = 0;
+  const ui = setup({ stage: "launcher" }, { host: { uploadFile: async () => ({ fileId: "file-six-" + (++nextId) }) } });
+  ui.$("url").value = "https://example.com/product";
+  const texts = Array.from({ length: 6 }, (_, index) => `evidence-${index}:` + String(index).repeat(15989));
+  const input = fileInput(ui);
+  input.files = texts.map((text, index) => new File([text], `evidence-${index}.txt`, { type: "text/plain" }));
+  input.onchange!(); await flushAttachmentWork();
+  const staged = ui.snapshot();
+  assert.equal(staged.modelContent.attachments.length, 6);
+  assert.match(staged.modelContent.instruction, /staged file is not proof of submission/);
+  const restored = setup({ stage: "launcher" }, { state: JSON.parse(JSON.stringify(staged)) });
+  await restored.submit();
+  assert.equal(restored.messages.length, 1);
+  const prompt = restored.messages[0].prompt;
+  const state = restored.snapshot();
+  assert.equal(prompt.split('"extracted_text":').length - 1, 6);
+  for (let index = 0; index < texts.length; index++) {
+    assert.equal(prompt.split(texts[index]).length - 1, 1, `complete excerpt ${index} included exactly once`);
+    const metadata = state.modelContent.attachments[index];
+    assert.equal(metadata.text_characters, texts[index].length);
+    assert.equal(metadata.truncated, false);
+    assert.equal(metadata.evidence_origin, "local");
+    assert.ok(JSON.stringify(state.privateContent.attachments).includes(texts[index]));
+    assert.ok(!JSON.stringify(state.modelContent).includes(texts[index]));
+  }
+  assert.ok(JSON.stringify(state.modelContent).length < 3000, "model-visible state scales with metadata, not document text");
 });
