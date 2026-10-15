@@ -1,3 +1,5 @@
+import { attachLdpFigmaAdapter } from "./uid-ldp-figma.ts";
+import { attachLdpWorkflow } from "./uid-ldp-planner.ts";
 import { UID_PROGRESS_GUIDANCE, uidProgressTool, withUidProgress } from "./uid-brands-progress.ts";
 import { attachResearch, RESEARCH_GUIDANCE, RESEARCH_INPUT_SCHEMA, type ResearchContext } from "./supabase/functions/_shared/product-research.ts";
 import { UID_ATTACHMENT_OUTPUT_SCHEMA, UID_ATTACHMENT_INPUT_SCHEMA, UID_ATTACHMENT_META, UID_ATTACHMENT_DESCRIPTION, ingestUidAttachment, UidAttachmentError } from "./uid-brands-attachments.ts";
@@ -374,7 +376,7 @@ export async function resolveCreativeDna(brand: string, branch: string, research
     brand: validated.brand,
     branch: validated.branch,
   });
-  return { ...result, data: result.ok ? attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}) : result.data };
+  return { ...result, data: result.ok ? attachLdpFigmaAdapter(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data };
 }
 
 export async function listCreativeDnaRoutes() {
