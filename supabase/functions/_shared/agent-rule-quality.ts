@@ -37,10 +37,11 @@ export async function compileRuleQuality(dna: any, context: any = {}) {
   const errors: string[] = [];
   if ((b?.schema_version === RULE_QUALITY_SCHEMA && (!Array.isArray(raw) || !raw.length)) || (raw !== undefined && b?.schema_version !== RULE_QUALITY_SCHEMA)) errors.push('RULE_REVIEW_SCHEMA_INVALID');
   if (raw !== undefined && (!Array.isArray(raw) || rules.length > MAX_OWNER_SUPPLEMENTS || !rules.every(r => ruleSupplementValid(r,dna.brand?.slug,dna.branch?.slug)))) errors.push('RULE_REVIEW_SUPPLEMENT_INVALID');
-  const all = [...(b?.owner_supplemental_rules || []),...(b?.agent_reviewed_supplemental_rules || []),...rules];
+  for (const key of ['owner_supplemental_rules','agent_reviewed_supplemental_rules']) if (b?.[key] !== undefined && !Array.isArray(b[key])) errors.push('PRIOR_SUPPLEMENT_ARRAY_INVALID');
+  const all = [...(Array.isArray(b?.owner_supplemental_rules) ? b.owner_supplemental_rules : []),...(Array.isArray(b?.agent_reviewed_supplemental_rules) ? b.agent_reviewed_supplemental_rules : []),...rules];
   if (all.length > MAX_OWNER_SUPPLEMENTS || new Set(all.map(r=>r?.proposal_id)).size !== all.length || new Set(all.map(r=>r?.id)).size !== all.length) errors.push('RULE_REVIEW_SUPPLEMENT_COLLISION');
   for (const r of rules) if (ruleSupplementValid(r,dna.brand?.slug,dna.branch?.slug)) {
-    if (await sha256(r.canonical_text) !== r.source.canonical_text_hash || !dna.branch.content_md.includes(r.canonical_text)) errors.push('RULE_REVIEW_SOURCE_DRIFT');
+    if (await sha256(r.canonical_text) !== r.source.canonical_text_hash || (typeof dna.branch?.content_md !== 'string' || !dna.branch.content_md.includes(r.canonical_text))) errors.push('RULE_REVIEW_SOURCE_DRIFT');
   }
   const base = await compileCreativeQuality({...dna,branch:{...dna.branch,metadata:stripRuleCatalog(dna.branch?.metadata || {})}},context);
   const {contract_hash: _old, ...contract} = base;

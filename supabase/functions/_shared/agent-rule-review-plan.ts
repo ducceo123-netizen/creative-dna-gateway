@@ -73,6 +73,12 @@ export async function buildAgentRuleReviewPlan(claim:any, review:any) {
       const result=await compileRuleQuality({brand,branch:t,brand_dna:dna,visual_references:[]});
       if(result.status!=='COMPILED') fail('preexisting_quality_blocked',result.errors.join(', '));
     }
+    // The old projection adapter strips v4 provenance. Compare the complete
+    // original catalogs first so it cannot repair or overwrite divergent history.
+    const originalCatalog=c.targets[0]?.metadata?.creative_quality_contract;
+    if(!object(originalCatalog)||c.targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog))
+      || c.compiler_context.projected_targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog)))
+      fail('rule_catalog_mirror_drift','Every target and projected target must retain the identical complete prior catalog and provenance.');
     const adapted=clone(c);
     adapted.targets.forEach((t:any)=>{t.metadata=stripRuleCatalog(t.metadata);});
     adapted.compiler_context.projected_targets.forEach((t:any)=>{t.metadata=stripRuleCatalog(t.metadata);});

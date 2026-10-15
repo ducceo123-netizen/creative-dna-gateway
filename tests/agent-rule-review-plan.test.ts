@@ -104,21 +104,36 @@ test('second distinct pilot addition preserves the first v4 rule-only history',a
  const result=await buildAgentRuleReviewPlan(next.claim,next.review);assert.equal(result.status,'COMPILED',JSON.stringify(result.blockers));
  assert.equal(result.compiler_plan!.targets[0].metadata.creative_quality_contract.contracts.pawfecthouse.agent_rule_reviewed_supplemental_rules.length,2);
 });
+for(const mutation of ['changed provenance','removed history','additional history','projected history']) test(`v4 mirror drift blocks: ${mutation}`,async()=>{
+ const first=await fixture(),r=await buildAgentRuleReviewPlan(first.claim,first.review);assert.equal(r.status,'COMPILED');
+ const c=clone(first.c);c.proposal.id='00000000-0000-4000-8000-000000000002';c.proposal.proposed_content_md=PILOT_RULES['onepage.banner-product-keyword.v1'];
+ c.targets=c.targets.map((t:any)=>({...t,...r.compiler_plan!.targets.find(n=>n.node_id===t.id)}));
+ const rules=c.targets[1].metadata.creative_quality_contract.contracts.giftsoul.agent_rule_reviewed_supplemental_rules;
+ if(mutation==='changed provenance') rules[0].review_hash='c'.repeat(64);
+ if(mutation==='removed history') rules.pop();
+ if(mutation==='additional history') rules.push({...clone(rules[0]),id:'agent-rule:00000000-0000-4000-8000-000000000077:1',request_id:'00000000-0000-4000-8000-000000000077',attempt_id:'00000000-0000-4000-8000-000000000077:1'});
+ c.compiler_context.merge_block_text='\n\n## ACCEPTED ADMIN FEEDBACK — 2026-10-15\n'+c.proposal.proposed_content_md+'\n';
+ c.compiler_context.projected_targets=c.targets.map((t:any)=>({...clone(t),content_md:t.content_md+c.compiler_context.merge_block_text}));
+ if(mutation==='projected history') c.compiler_context.projected_targets[1].metadata.creative_quality_contract.contracts.giftsoul.agent_rule_reviewed_supplemental_rules[0].review_hash='c'.repeat(64);
+ const next=await fixture(c,'onepage.banner-product-keyword.v1');next.claim.request_id='00000000-0000-4000-8000-000000000056';next.claim.attempt_id=next.claim.request_id+':1';
+ const out=await buildAgentRuleReviewPlan(next.claim,next.review);assert.equal(out.status,'BLOCKED');assert.equal(out.compiler_plan,null);
+ if(mutation==='changed provenance'||mutation==='projected history') assert.equal(out.blockers[0].code,'rule_catalog_mirror_drift');
+});
 test('Node24 CLI verifies separate source manifest and emits the real plan',async()=>{
- const manifestRun=spawnSync(process.execPath,['scripts/compile-agent-rule-review-plan.mjs','--print-manifest'],{encoding:'utf8'});assert.equal(manifestRun.status,0,manifestRun.stdout);
+ const manifestRun=spawnSync('node',['scripts/compile-agent-rule-review-plan.mjs','--print-manifest'],{encoding:'utf8'});assert.equal(manifestRun.status,0,manifestRun.stdout);
  const capability=JSON.parse(manifestRun.stdout);assert.equal(capability.source_manifest.length,9);
  const x=await fixture();Object.assign(x.claim.snapshot.compiler_capability,capability);
- const run=spawnSync(process.execPath,['scripts/compile-agent-rule-review-plan.mjs'],{input:JSON.stringify({claim:x.claim,review:x.review}),encoding:'utf8'});
+ const run=spawnSync('node',['scripts/compile-agent-rule-review-plan.mjs'],{input:JSON.stringify({claim:x.claim,review:x.review}),encoding:'utf8'});
  assert.equal(run.status,0,run.stdout);const result=JSON.parse(run.stdout);assert.equal(result.status,'COMPILED');assert.equal(result.compiler_receipt.compiler_bundle_hash,capability.compiler_bundle_hash);
 });
 test('tampered bundle rejected before any dynamic import',async()=>{
- const manifest=JSON.parse(spawnSync(process.execPath,['scripts/compile-agent-rule-review-plan.mjs','--print-manifest'],{encoding:'utf8'}).stdout);
+ const manifest=JSON.parse(spawnSync('node',['scripts/compile-agent-rule-review-plan.mjs','--print-manifest'],{encoding:'utf8'}).stdout);
  const dir=mkdtempSync(join(tmpdir(),'uid-rule-cli-'));
  try {
   for(const entry of manifest.source_manifest){const path=join(dir,entry.path);mkdirSync(dirname(path),{recursive:true});copyFileSync(entry.path,path);}
   writeFileSync(join(dir,'scripts/agent-rule-review-compiler.bundle.mjs'),'throw new Error("MUST_NOT_EXECUTE");');
   const x=await fixture();Object.assign(x.claim.snapshot.compiler_capability,manifest);
-  const run=spawnSync(process.execPath,[join(dir,'scripts/compile-agent-rule-review-plan.mjs')],{input:JSON.stringify({claim:x.claim,review:x.review}),encoding:'utf8'});
+  const run=spawnSync('node',[join(dir,'scripts/compile-agent-rule-review-plan.mjs')],{input:JSON.stringify({claim:x.claim,review:x.review}),encoding:'utf8'});
   assert.equal(run.status,2);assert.equal(JSON.parse(run.stdout).blockers[0].code,'compiler_source_mismatch');assert.equal(run.stderr.includes('MUST_NOT_EXECUTE'),false);
  } finally{rmSync(dir,{recursive:true,force:true});}
 });
@@ -138,4 +153,17 @@ test('v4 packet and gateway retain exact delegated text; altered or downgraded e
  }
  const tampered=clone(dna);tampered.branch.metadata.creative_quality_contract.contracts.pawfecthouse.agent_rule_reviewed_supplemental_rules[0].visual_qc_performed=true;
  const bad=await compileRuleQuality(tampered);assert.equal(bad.status,'BLOCKED');assert.equal(bad.gates.asset_generation,'BLOCKED');assert.equal(bad.rules.length,0);
+});
+
+for(const field of ['owner_supplemental_rules','agent_reviewed_supplemental_rules']) test(`v4 reader blocks malformed ${field} without throwing`,async()=>{
+ const x=await fixture(),r=await buildAgentRuleReviewPlan(x.claim,x.review);assert.equal(r.status,'COMPILED');
+ const dna={brand:x.c.compiler_context.brands[0],branch:{...x.c.targets[0],...r.compiler_plan!.targets[0]},brand_dna:x.c.compiler_context.brand_dna_nodes[0]};
+ dna.branch.metadata.creative_quality_contract.contracts.pawfecthouse[field]={};
+ const result=await compileRuleQuality(dna);assert.equal(result.status,'BLOCKED');assert.ok(result.errors.includes('PRIOR_SUPPLEMENT_ARRAY_INVALID'));assert.equal(result.rules.length,0);assert.equal(result.gates.asset_generation,'BLOCKED');
+});
+
+test('v4 reader blocks non-string canonical source without throwing',async()=>{
+ const x=await fixture(),r=await buildAgentRuleReviewPlan(x.claim,x.review);assert.equal(r.status,'COMPILED');
+ const dna={brand:x.c.compiler_context.brands[0],branch:{...x.c.targets[0],...r.compiler_plan!.targets[0]},brand_dna:x.c.compiler_context.brand_dna_nodes[0]};
+ dna.branch.content_md={};const result=await compileRuleQuality(dna);assert.equal(result.status,'BLOCKED');assert.ok(result.errors.includes('RULE_REVIEW_SOURCE_DRIFT'));assert.equal(result.rules.length,0);
 });
