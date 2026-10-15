@@ -1,9 +1,37 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createApp, TOOL_DEFINITIONS } from "../server.ts";
 import { REVIEW_STEPS, REVIEW_STAGES, NATIVE_FALLBACK_TEXT } from "../uid-brands-actions.ts";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "../uid-brands-review-contract.ts";
 import { LAUNCHER_MIME, LAUNCHER_URI, launcherHtml } from "../uid-brands-workflow.ts";
+import { LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI } from "../uid-brands-ui-resource.ts";
+
+test("Feedback context fixes publish v4 and pin reviewed widget source inputs", () => {
+  assert.equal(LAUNCHER_URI, "ui://uid-brands/workflow-v4.html");
+  assert.equal(LEGACY_LAUNCHER_URI, "ui://uid-brands/workflow-v2.html");
+  assert.notEqual(LAUNCHER_URI, LEGACY_LAUNCHER_URI);
+  // Pin the integrated feedback context source inputs, undoing ONLY this patch's
+  // URI wiring. This guard is runtime-independent and preserves PR84 packaging
+  // guidance too. Intentional future source changes must review these pins.
+  const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const hash = (text: string) => createHash("sha256").update(text).digest("hex");
+  const workflow = source("uid-brands-workflow.ts").replace('export { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";', 'export const LAUNCHER_URI = "ui://uid-brands/workflow-v2.html";');
+  const actions = source("uid-brands-actions.ts")
+    .replace('import { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";\n', "")
+    .replace('resourceUri: LAUNCHER_URI', 'resourceUri: "ui://uid-brands/workflow-v2.html"')
+    .replace('"openai/outputTemplate": LAUNCHER_URI', '"openai/outputTemplate": "ui://uid-brands/workflow-v2.html"');
+  assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
+  assert.equal(hash(actions), "59042d5b83d09d26d037e1f7eefdf886ad59b3bd5e7e4318d8cf3e3398f136cb");
+  assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "b3d4a6456b26d77a088c1e05cb0636b2748f340b68018615f723dae8a4a9302d");
+  // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
+  // during transpilation, so its emitted bytes differ even on the approved base.
+  // Do not normalize that difference or bless a second output hash. The exact
+  // source pins above apply to BOTH runtimes; retain the production-byte guard.
+  if (!process.versions.bun) assert.equal(hash(launcherHtml), "2fe2b841067abf7b23cb11ef0f98134bae86992b32e15add5e01fe266fea1953");
+});
 
 test("review correlation is stable per task/version/stage, changes after revision, and labels legacy callers unbound", () => {
   const input = { stage: "content_approval" as const, task_id: "task-A", content_version: "v1" };
@@ -57,6 +85,8 @@ test("live local MCP advertises and executes matching review/native contracts, m
     const initialize = await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "local-contract-test", version: "1" } });
     assert.doesNotMatch(initialize.instructions, /only for explicit requests in a later turn|WIDGET ACTION IS AUTHORITATIVE|REAL USER ACTION/);
     assert.match(initialize.instructions, /does not itself prove authenticated user approval/);
+    assert.match(initialize.instructions, /Existing outcome review and Feedback take precedence/);
+    assert.doesNotMatch(initialize.instructions, /Whenever the user invokes UID Brands without a complete brief/);
     const { tools } = await rpc("tools/list", {});
     for (const name of ["launch_creative_dna", "show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
       const runtime = tools.find((tool: any) => tool.name === name);
@@ -76,7 +106,12 @@ test("live local MCP advertises and executes matching review/native contracts, m
     const denied = await rpc("tools/call", { name: "ingest_uid_brands_attachment", arguments: { file: { file_id: "file-test", download_url: "http://127.0.0.1/forbidden?token=redacted", file_name: "brief.txt", mime_type: "text/plain" } } });
     assert.equal(denied.isError, true); assert.equal(denied.structuredContent.ok, false);
     assert.doesNotMatch(JSON.stringify(denied), /127\.0\.0\.1|token=redacted/);
+    const launchTool = tools.find((tool: any) => tool.name === "launch_creative_dna");
+    assert.match(launchTool.description, /CONTEXT FIRST/);
+    assert.match(launchTool.description, /execute within its authorized scope without inserting an unnecessary panel/);
+    assert.match(launchTool.description, /show_uid_brands_review, never launch_creative_dna/);
     const reviewTool = tools.find((tool: any) => tool.name === "show_uid_brands_review");
+    assert.match(reviewTool.description, /do not invent IDs, versions or assets/);
     assert.equal(reviewTool._meta.ui.resourceUri, LAUNCHER_URI);
     assert.equal(reviewTool._meta["openai/outputTemplate"], LAUNCHER_URI);
     assert.equal(reviewTool._meta["openai/widgetAccessible"], true);
@@ -85,8 +120,16 @@ test("live local MCP advertises and executes matching review/native contracts, m
     for (const key of ["ui", "openai/outputTemplate", "openai/widgetAccessible"]) assert.deepEqual(launcherMeta[key], reviewTool._meta[key]);
     assert.notEqual(launcherMeta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
     const resource = await rpc("resources/read", { uri: LAUNCHER_URI });
+    assert.equal(resource.contents[0].uri, LAUNCHER_URI);
     assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
     assert.equal(resource.contents[0].text, launcherHtml);
+    const { resources } = await rpc("resources/list", {});
+    for (const uri of [LAUNCHER_URI, LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI]) assert.ok(resources.some((item: any) => item.uri === uri));
+    const legacyResource = await rpc("resources/read", { uri: LEGACY_LAUNCHER_URI });
+    assert.equal(legacyResource.contents[0].uri, LEGACY_LAUNCHER_URI);
+    assert.equal(legacyResource.contents[0].mimeType, LAUNCHER_MIME);
+    assert.equal(legacyResource.contents[0].text, launcherHtml);
+    assert.deepEqual(legacyResource.contents[0]._meta, resource.contents[0]._meta);
     for (const stage of REVIEW_STAGES) {
       const args = { stage, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });
