@@ -131,7 +131,7 @@ test('v4 packet and gateway retain exact delegated text; altered or downgraded e
  const x=await fixture(),r=await buildAgentRuleReviewPlan(x.claim,x.review);assert.equal(r.status,'COMPILED',JSON.stringify(r.blockers));
  const dna={brand:x.c.compiler_context.brands[0],branch:{...x.c.targets[0],...r.compiler_plan!.targets[0]},brand_dna:x.c.compiler_context.brand_dna_nodes[0]};
  const packet=await buildOnepagePacket(dna);
- assert.equal(packet.compiler_version,RULE_COMPILER);assert.equal(packet.agent_rule_reviewed_supplemental_contract.rules[0].canonical_text,x.c.proposal.proposed_content_md);
+ assert.equal(packet.compiler_version,RULE_COMPILER);assert.equal(packet.agent_rule_reviewed_supplemental_contract!.rules[0].canonical_text,x.c.proposal.proposed_content_md);
  assert.equal(attachOnepageUiTemplate(packet,'PawfectHouse','Onepage').quality_execution_guard.status,'COMPILED');
  for(const attack of [(p:any)=>p.creative_quality_contract.compiler_version='2026-10-13-agent-supplement-v1',(p:any)=>p.agent_rule_reviewed_supplemental_contract.rules[0].visual_qc_performed=true,(p:any)=>p.creative_quality_contract.agent_rule_reviewed_supplemental_rules[0].canonical_text+=' forged']) {
   const bad=clone(packet);attack(bad);assert.equal(attachOnepageUiTemplate(bad,'PawfectHouse','Onepage').quality_execution_guard.status,'BLOCKED');

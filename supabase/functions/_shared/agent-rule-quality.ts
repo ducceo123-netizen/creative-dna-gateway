@@ -55,7 +55,7 @@ export async function compileRuleQuality(dna: any, context: any = {}) {
 }
 /** Reader dispatch is format-based, not a grant to create or approve a v4 record.
  * Older catalogs retain their exact compiler output and hash. */
-export async function compileCompatibleQuality(dna: any, context: any = {}): Promise<any> {
+export async function compileCompatibleQuality(dna: any, context: any = {}): Promise<Awaited<ReturnType<typeof compileCreativeQuality>> & {agent_rule_reviewed_supplemental_rules?: any[]; agent_rule_reviewed_supplemental_policy?: Record<string,any>}> {
   const stored=dna.branch?.metadata?.creative_quality_contract;
   const bundles=stored?.schema_version===QUALITY_CATALOG_SCHEMA?Object.values(stored.contracts||{}):[stored];
   const v4=bundles.some((b:any)=>b?.schema_version===RULE_QUALITY_SCHEMA||(obj(b)&&Object.hasOwn(b,'agent_rule_reviewed_supplemental_rules')));
