@@ -1,41 +1,36 @@
-# Delegated rule review v3 — pilot, not activated
+# Delegated rule review v3 — general creative rules, not activated
 
 This is a separate rule-semantics route. It does not replace the v2 source/media
 QC contract, authorize a production migration, change the scheduled host's pinned
 release, or enqueue pending proposals. Existing v2 requests retain their original
 meaning and expiry. No existing request is silently upgraded.
 
-## Pilot boundary
+## General scoped creative-rule boundary
 
-Two release-reviewed, exact canonical operations are specified in
-`agent-rule-policy.ts` and mirrored in `tests/fixtures/agent-rule-pilot-policy.json`:
+The operation is `creative_rule_supplement.v1`. It accepts the exact normalized
+creative-rule patch delegated by the configured owner for supported canonical
+branches. It is not limited to the two initial Onepage fixture texts. Those
+fixtures remain regression coverage for diversity and typography; no policy seed
+or fixed-text matching authorizes real decisions.
 
-- `onepage.distinct-product-design.v1`: verified non-PD allocation diversity,
-  responsive pairs counted once, stable design-family identity, exact PD anchor,
-  explicit source shortages and actual output inspection before visual claims.
-- `onepage.banner-product-keyword.v1`: approved product-line wording has primary
-  typographic emphasis, subordinate supporting copy, active brand style preserved.
+AI judges meaning, brand fit and conflicts using the actual canonical sources.
+The deterministic compiler validates the actual scope and projection, preserving
+hard constraints and prior provenance. Pure creative instructions do not need
+output baselines. Factual claims need genuine evidence; unknowns block rather
+than acquiring fabricated approval. Account, security, publishing and other
+non-creative operations cannot be expressed as expanded mutation authority.
 
-Both apply only to the complete PawfectHouse/GiftSoul/SoulPrise Onepage closure.
-The compiler matches exact text, scope and operation, not a model-supplied
-STRUCTURAL label or a keyword blacklist. A product claim appended to an allowed
-rule fails closed. The current pilot has no arbitrary text parameters. This is
-intentionally narrower than automatic acceptance of every free-form feedback.
-
-Fixture text is a proposed reviewable policy, not a production seed or owner
-approval. If an existing proposal differs, do not rewrite its approved patch to
-fit a template or re-enqueue it silently. Show the exact new patch and obtain a
-new bounded delegation through the normal owner flow. An exact-policy rollout
-must be reviewed before activation. A future structured operation DSL may expose
-bounded numeric/enumerated parameters with independently reviewed semantics;
-free-form instruction fields must not become an escape hatch.
+The patch and target closure remain exact. A changed patch requires a fresh
+explicit delegation; general judgment does not grant authority to rewrite the
+owner's proposal or add unrelated brands. Supported uncompiled leaf branches use
+an exact canonical append without inventing quality catalogs.
 
 ## Separate authority and provenance
 
 New explicit delegation creates `uid.review-intent.v3` with `review_mode:
 agent_rule_review`, the operation, owner, exact proposal/source/patch/scope and
 sorted target ID/brand/slug closure. The server, never proposal text or the host,
-selects eligible operation policy. The owner must remain the configured active
+validates the supported creative operation and actual target closure. The owner must remain the configured active
 admin. The protocol retains intent expiry, 900-second fenced leases, cancellation,
 revocation, immutable attempt identity, snapshot revalidation, idempotent replay,
 transactional scope checks and audit before/after snapshots.
@@ -85,19 +80,19 @@ candidates and media. Existing eligible evidence can be gathered automatically;
 no evidence approval is manufactured. Duplicate resolution preserves history and
 requires exact evidence of coverage, not similarity alone.
 
-No automatic migration of v2 intents is part of this pilot. Any future transition
+No automatic migration of v2 intents is part of this route. Any future transition
 must name the affected still-valid requests, preserve their exact patch/scope,
 record a separate explicit authorization, and invalidate old attempts. Expired,
 cancelled or merely pending proposals cannot enter that transition.
 
 ## Release checklist
 
-1. Review exact pilot policy texts, scope and consumer compatibility.
+1. Review general scoped creative semantics, fixtures and consumer compatibility.
 2. Review independent SQL eligibility/delta/audit/fencing enforcement and race tests.
 3. Test disabled capability, owner revocation, intent and lease expiry, cancellation,
    stale/replayed attempts, patch/scope drift and cross-brand trigger changes.
-4. Test both pilot rules end to end without fake visual/baseline records; test every
-   excluded or mixed product-truth rule is blocked or remains on outcome QC.
+4. Test unseen creative rules and both regression fixtures end to end without fake
+   visual/baseline records; verify missing facts and conflicts block.
 5. Review migration and rollback separately. No production writes during prototype.
 6. Approve immutable v3 compiler release and independently verify every source hash.
 7. Coordinate consumer deployment, server capability and approved host protocol.
@@ -106,4 +101,9 @@ cancelled or merely pending proposals cannot enter that transition.
 
 ## Implementation status of this phase
 
-Implemented: pure pilot compiler, separate source-verifying CLI, v4 read compatibility, adversarial/compatibility tests and proposed exact-policy fixtures. Not implemented/activated: v3 SQL queue/finalizer/audit tables, owner handoff UI/API, production policy seed, scheduler protocol migration or live merge. This draft must not be represented as end-to-end automation.
+Implemented locally: general compiler, source-verifying CLI, v4 readers, and
+inactive SQL lifecycle/finalizer prototypes. Compiler tests, typecheck and build
+pass. SQL parity/race execution and independent clearance remain required;
+authenticated UI/API is developed separately. No production grants, release
+activation, scheduler protocol update or live merge has occurred. See
+uid-agent-rule-review-v3-transactions.md for the coordinated runner rollout.

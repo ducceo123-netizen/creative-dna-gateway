@@ -8,7 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildAgentRuleReviewPlan,ruleReviewSourceRecords} from '../supabase/functions/_shared/agent-rule-review-plan.ts';
 import {compileRuleQuality} from '../supabase/functions/_shared/agent-rule-quality.ts';
-import {PILOT_SCOPE,PILOT_RULES,PILOT_BRANDS,RULE_COMPILER,RULE_REVIEW_MODE,RULE_REVIEW_SCOPE,RULE_REVIEW_EVALUATOR} from '../supabase/functions/_shared/agent-rule-policy.ts';
+import {PILOT_SCOPE,PILOT_RULES,PILOT_BRANDS,RULE_OPERATION,RULE_COMPILER,RULE_REVIEW_MODE,RULE_REVIEW_SCOPE,RULE_REVIEW_EVALUATOR} from '../supabase/functions/_shared/agent-rule-policy.ts';
 import {OWNER_RULE_PLAN_SCHEMA} from '../supabase/functions/_shared/owner-rule-plan.ts';
 import {compileCreativeQuality,sourceHashes,sha256,stableJson,QUALITY_CATALOG_SCHEMA,QUALITY_SCHEMA,type QualityRule} from '../supabase/functions/_shared/creative-quality.ts';
 const proposalId = '00000000-0000-4000-8000-000000000001';
@@ -44,11 +44,11 @@ async function fixture(context = undefined as any, operation = 'onepage.distinct
  const claim:any={request_id:request,proposal_id:c.proposal.id,owner_user_id:owner,attempt_id:request+':1',lease_version:1,
   evaluator_version:RULE_REVIEW_EVALUATOR,candidate_hash:c.candidate_hash,snapshot_hash:'sha256:'+'a'.repeat(64),
   leased_at:new Date(now-10000).toISOString(),lease_expires_at:new Date(now+890000).toISOString(),expires_at:new Date(now+86400000).toISOString(),
-  intent:{schema_version:'uid.review-intent.v3',review_mode:RULE_REVIEW_MODE,owner_user_id:owner,proposal_id:c.proposal.id,operation,
+  intent:{schema_version:'uid.review-intent.v3',review_mode:RULE_REVIEW_MODE,owner_user_id:owner,proposal_id:c.proposal.id,operation:RULE_OPERATION,
    source_node_id:c.proposal.knowledge_node_id,proposed_content_md:c.proposal.proposed_content_md,proposed_scope:c.proposal.proposed_scope,
    targets:c.targets.map((t:any)=>({id:t.id,brand_id:t.brand_id,slug:t.slug})).sort((a:any,b:any)=>a.id.localeCompare(b.id))},
   snapshot:{candidate_hash:c.candidate_hash,rule_context:c,compiler_capability:{review_mode:RULE_REVIEW_MODE,compiler_version:RULE_COMPILER,compiler_bundle_hash:'b'.repeat(64)},
-   rule_policy:{enabled:true,operation,canonical_sha256:await sha256(c.proposal.proposed_content_md),brand_slugs:PILOT_BRANDS,target_node_ids:c.targets.map((t:any)=>t.id).sort()}}};
+   rule_policy:{enabled:true,operation:RULE_OPERATION,canonical_sha256:await sha256(c.proposal.proposed_content_md),brand_slugs:c.targets.map((t:any)=>t.brand_slug).sort(),target_node_ids:c.targets.map((t:any)=>t.id).sort()}}};
  const records=ruleReviewSourceRecords(c);
  const review:any={schema_version:'uid.agent-rule-review.v1',decision:'passed',review_note:'Synthetic test review only; this test does not assert any real source or media inspection.',visual_qc_performed:false,review_scope:RULE_REVIEW_SCOPE,
   source_receipts:await Promise.all(records.map(async r=>({node_id:r.id,record_sha256:await sha256(stableJson(r)),read_at:new Date(now-8000).toISOString(),revalidated_at:new Date(now-5000).toISOString(),note:'Synthetic test source receipt; no production record has been reviewed.'}))),
@@ -166,4 +166,30 @@ test('v4 reader blocks non-string canonical source without throwing',async()=>{
  const x=await fixture(),r=await buildAgentRuleReviewPlan(x.claim,x.review);assert.equal(r.status,'COMPILED');
  const dna={brand:x.c.compiler_context.brands[0],branch:{...x.c.targets[0],...r.compiler_plan!.targets[0]},brand_dna:x.c.compiler_context.brand_dna_nodes[0]};
  dna.branch.content_md={};const result=await compileRuleQuality(dna);assert.equal(result.status,'BLOCKED');assert.ok(result.errors.includes('RULE_REVIEW_SOURCE_DRIFT'));assert.equal(result.rules.length,0);
+});
+
+test('general delegated creative rule outside both pilot texts compiles',async()=>{
+ const c=await ruleFixture(canonical('Group category links by shopping intent and keep labels concise.','Use a distinct, accurate category label for each section.','- Duplicate section labels that hide different shopping intents.'));
+ const {claim,review}=await fixture(c);const r=await buildAgentRuleReviewPlan(claim,review);
+ assert.equal(r.status,'COMPILED',JSON.stringify(r.blockers));
+ assert.equal(r.compiler_plan!.targets[0].metadata.creative_quality_contract.contracts.pawfecthouse.agent_rule_reviewed_supplemental_rules[0].canonical_text,c.proposal.proposed_content_md);
+});
+test('general rule remains blocked when semantic evidence is missing or conflicts',async()=>{
+ for(const result of ['unknown','failed']) {
+  const {claim,review}=await fixture(await ruleFixture(canonical()));
+  review.findings[0].result=result; review.findings[0].note='Synthetic missing evidence or canonical conflict; no factual approval is asserted.';
+  const r=await buildAgentRuleReviewPlan(claim,review);assert.equal(r.status,'BLOCKED');
+ }
+});
+test('uncompiled supported brand leaf uses exact canonical append without inventing catalog',async()=>{
+ const c:any=await ruleFixture(canonical());const localScope='PawfectHouse / LDP Hero';
+ c.proposal.knowledge_node_id='node-0';c.proposal.proposed_scope=localScope;c.proposal.proposed_content_md=c.proposal.proposed_content_md.replace(scope,localScope);
+ c.targets=[c.targets[0]];c.targets[0].slug='ldp-hero';c.targets[0].metadata={preserve:'actual metadata'};
+ c.scope={branch_slug:'ldp-hero',cross_brand:false,structural:false,proposed_scope:localScope,source_node_id:'node-0',target_node_ids:['node-0']};
+ c.compiler_context.brands=[c.compiler_context.brands[0]];c.compiler_context.brand_dna_nodes=[c.compiler_context.brand_dna_nodes[0]];
+ c.compiler_context.merge_block_text=`\n\n## ACCEPTED ADMIN FEEDBACK — 2026-10-13\n${c.proposal.proposed_content_md}\n`;
+ c.compiler_context.projected_targets=[{...clone(c.targets[0]),content_md:c.targets[0].content_md+c.compiler_context.merge_block_text}];
+ const {claim,review}=await fixture(c);const r=await buildAgentRuleReviewPlan(claim,review);
+ assert.equal(r.status,'COMPILED',JSON.stringify(r.blockers));assert.equal(r.compiler_receipt!.compiled[0].mode,'canonical_append');
+ assert.deepEqual(r.compiler_plan!.targets[0].metadata,{preserve:'actual metadata'});
 });

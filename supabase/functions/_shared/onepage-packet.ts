@@ -92,7 +92,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    visual_proof_contract: creative_quality_contract.rules.filter(r => r.category === 'proof' || r.category === 'banner').map(r => r.id),
    delivery_contract: creative_quality_contract.rules.filter(r => r.category === 'delivery').map(r => r.id),
    brand_expression: { ...packet.brand_expression, rule_ids: creative_quality_contract.rules.filter(r => r.category === 'brand_style').map(r => r.id) },
-   execution: ['VALIDATE_QUALITY_CONTRACT', 'READ_OWNER_SUPPLEMENTS_WITH_CANONICAL_PRECEDENCE', 'READ_AGENT_REVIEWED_SUPPLEMENTS_WITH_PINNED_EVIDENCE_SCOPE', ...packet.execution.slice(0,3), 'INSPECT_DESCRIPTIONS_AND_REVIEW_COVERAGE', 'RESEARCH_MARKETPLACE_COMPETITOR_SUPPLIER', 'ANALYZE_BUYER_CONCERNS_AND_SCOPED_CLAIMS', 'VALIDATE_RESEARCH_BEFORE_CONTENT', ...packet.execution.slice(3,7), 'INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS', ...packet.execution.slice(7)],
+   execution: ['VALIDATE_QUALITY_CONTRACT', 'READ_OWNER_SUPPLEMENTS_WITH_CANONICAL_PRECEDENCE', 'READ_AGENT_REVIEWED_SUPPLEMENTS_WITH_PINNED_EVIDENCE_SCOPE', ...packet.execution.slice(0,3), 'INSPECT_DESCRIPTIONS_AND_REVIEW_COVERAGE', 'RESEARCH_MARKETPLACE_COMPETITOR_SUPPLIER', 'RESEARCH_PINTEREST_PRODUCT_THEME_MARKET_REFERENCES', 'ANALYZE_BUYER_CONCERNS_AND_SCOPED_CLAIMS', 'VALIDATE_RESEARCH_BEFORE_CONTENT', ...packet.execution.slice(3,7), 'INSPECT_PRODUCT_AND_EXPLICITLY_REQUIRED_EVIDENCE_PIXELS', ...packet.execution.slice(7)],
    readiness: creative_quality_contract.gates,
  }, {...input, require_pdp_coverage:true});
 }

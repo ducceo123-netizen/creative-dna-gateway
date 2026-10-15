@@ -2,7 +2,7 @@
 import {prepareCanonicalRuleProjection} from './owner-rule-plan.ts';
 import {stableJson,sha256,sourceHashes,MAX_OWNER_SUPPLEMENTS,OWNER_SUPPLEMENTAL_PRECEDENCE} from './creative-quality.ts';
 import {compileRuleQuality,stripRuleCatalog,RULE_QUALITY_SCHEMA,RULE_SUPPLEMENT_SCHEMA} from './agent-rule-quality.ts';
-import {PILOT_RULES,PILOT_SCOPE,PILOT_BRANDS,RULE_REVIEW_MODE,RULE_REVIEW_SCOPE,RULE_REVIEW_EVALUATOR,RULE_COMPILER} from './agent-rule-policy.ts';
+import {RULE_OPERATION,RULE_REVIEW_MODE,RULE_REVIEW_SCOPE,RULE_REVIEW_EVALUATOR,RULE_COMPILER} from './agent-rule-policy.ts';
 const object = (v:any) => !!v && typeof v==='object' && !Array.isArray(v);
 const uuid = (v:any) => typeof v==='string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);
 const hash = (v:any) => typeof v==='string' && /^[a-f0-9]{64}$/.test(v);
@@ -37,12 +37,10 @@ export async function buildAgentRuleReviewPlan(claim:any, review:any) {
       fail('intent_mode_scope_mismatch','The exact delegated v3 rule patch and target closure must match the snapshot; v2 is not upgradeable by the host.');
     if(capability?.review_mode!==RULE_REVIEW_MODE||capability?.compiler_version!==RULE_COMPILER||!hash(capability?.compiler_bundle_hash)) fail('compiler_capability_missing','The server must pin the separate rule-review compiler capability.');
     const policy=s.rule_policy, op=policy?.operation;
-    if(!Object.hasOwn(PILOT_RULES,op||'')||policy?.enabled!==true||intent.operation!==op
-      || c.proposal.proposed_content_md!==(PILOT_RULES as any)[op] || c.proposal.proposed_scope!==PILOT_SCOPE
+    if(op!==RULE_OPERATION||policy?.enabled!==true||intent.operation!==op
       || policy.canonical_sha256!==await sha256(c.proposal.proposed_content_md)
-      || !equal(policy.brand_slugs,PILOT_BRANDS)||!equal(sorted(c.targets.map((t:any)=>t.brand_slug)),PILOT_BRANDS)
-      || c.scope?.branch_slug!=='onepage-system'||c.scope.cross_brand!==true||c.scope.structural!==true
-      || !equal(policy.target_node_ids,sorted(c.targets.map((t:any)=>t.id)))) fail('unsupported_rule_policy','Only an explicitly activated exact pilot operation and its complete three-brand Onepage scope may use rule-only review.');
+      || !equal(policy.brand_slugs,sorted(c.targets.map((t:any)=>t.brand_slug)))
+      || !equal(policy.target_node_ids,sorted(c.targets.map((t:any)=>t.id)))) fail('unsupported_rule_scope','The server must bind this exact delegated creative rule and current target scope.');
     if(!exact(review,['schema_version','decision','review_note','source_receipts','findings','visual_qc_performed','review_scope'])
       || review.schema_version!=='uid.agent-rule-review.v1'||review.decision!=='passed'||!prose(review.review_note)
       || review.visual_qc_performed!==false||review.review_scope!==RULE_REVIEW_SCOPE||!Array.isArray(review.source_receipts)||!Array.isArray(review.findings))
@@ -70,24 +68,33 @@ export async function buildAgentRuleReviewPlan(claim:any, review:any) {
     // the unchanged v2 projection primitive. Source hashes exclude the catalog itself.
     for(const t of c.targets) {
       const brand=c.compiler_context.brands.find((b:any)=>b.id===t.brand_id),dna=c.compiler_context.brand_dna_nodes.find((d:any)=>d.brand_id===t.brand_id);
+      if(!Object.hasOwn(t.metadata||{},'creative_quality_contract')) continue;
       const result=await compileRuleQuality({brand,branch:t,brand_dna:dna,visual_references:[]});
       if(result.status!=='COMPILED') fail('preexisting_quality_blocked',result.errors.join(', '));
     }
     // The old projection adapter strips v4 provenance. Compare the complete
     // original catalogs first so it cannot repair or overwrite divergent history.
     const originalCatalog=c.targets[0]?.metadata?.creative_quality_contract;
-    if(!object(originalCatalog)||c.targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog))
-      || c.compiler_context.projected_targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog)))
+    if(originalCatalog!==undefined&&(!object(originalCatalog)||c.targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog))
+      || c.compiler_context.projected_targets.some((t:any)=>!equal(t.metadata?.creative_quality_contract,originalCatalog))))
       fail('rule_catalog_mirror_drift','Every target and projected target must retain the identical complete prior catalog and provenance.');
     const adapted=clone(c);
     adapted.targets.forEach((t:any)=>{t.metadata=stripRuleCatalog(t.metadata);});
     adapted.compiler_context.projected_targets.forEach((t:any)=>{t.metadata=stripRuleCatalog(t.metadata);});
     const p=await prepareCanonicalRuleProjection(adapted);
-    if(p.canonicalAppend||!p.isOnepage) fail('compiled_onepage_required','Pilot rules require the existing three-brand Onepage quality catalog.');
+
     const originals=new Map(c.compiler_context.projected_targets.map((t:any)=>[t.id,t]));
     p.projected.forEach((t:any)=>{t.metadata=clone((originals.get(t.id) as any).metadata);});
-    const masterOriginal=c.targets.find((t:any)=>t.id===p.master.id),catalog=clone(masterOriginal.metadata.creative_quality_contract);
     const reviewHash=await sha256(stableJson(review)),canonicalHash=await sha256(p.canonical),id=`agent-rule:${claim.attempt_id}`;
+    const compiled:any[]=[];
+    if(p.canonicalAppend) {
+      for(let i=0;i<p.projected.length;i++) {
+        const t=p.projected[i];
+        compiled.push({mode:'canonical_append',node_id:t.id,brand_slug:p.brands[i].slug,
+          projection_hash:await sha256(stableJson({node_id:t.id,content_md:t.content_md,metadata:t.metadata,version:t.version,input_schema:t.input_schema,status:t.status,confidence:t.confidence}))});
+      }
+    } else {
+    const masterOriginal=c.targets.find((t:any)=>t.id===p.master.id),catalog=clone(masterOriginal.metadata.creative_quality_contract);
     for(let i=0;i<p.projected.length;i++) {
       const bundle=catalog.contracts[p.brands[i].slug];
       const prior=[...(bundle.owner_supplemental_rules||[]),...(bundle.agent_reviewed_supplemental_rules||[]),...(bundle.agent_rule_reviewed_supplemental_rules||[])];
@@ -103,11 +110,12 @@ export async function buildAgentRuleReviewPlan(claim:any, review:any) {
       bundle.source_hashes=hashes;bundle.revision=id;
     }
     p.projected.forEach((t:any)=>{t.metadata.creative_quality_contract=clone(catalog);});
-    const compiled=[];
+
     for(let i=0;i<p.projected.length;i++) {
       const result=await compileRuleQuality({brand:p.brands[i],branch:p.projected[i],brand_dna:p.dnas[i],visual_references:[]});
       if(result.status!=='COMPILED'||!result.agent_rule_reviewed_supplemental_rules.some((r:any)=>r.id===id)) fail('proposed_quality_blocked',result.errors.join(', '));
-      compiled.push({node_id:p.projected[i].id,brand_slug:p.brands[i].slug,source_hashes:result.source_hashes,contract_hash:result.contract_hash,added_supplement_ids:[id]});
+      compiled.push({mode:'quality_catalog',node_id:p.projected[i].id,brand_slug:p.brands[i].slug,source_hashes:result.source_hashes,contract_hash:result.contract_hash,added_supplement_ids:[id]});
+    }
     }
     const identity={request_id:claim.request_id,attempt_id:claim.attempt_id,proposal_id:claim.proposal_id,candidate_hash:claim.candidate_hash,snapshot_hash:claim.snapshot_hash,review_hash:reviewHash};
     const plan={schema_version:'uid.agent-rule-review-plan.v1',...identity,targets:p.projected.map(t=>({node_id:t.id,content_md:t.content_md,metadata:t.metadata,version:t.version,input_schema:t.input_schema,status:t.status,confidence:t.confidence}))};

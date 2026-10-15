@@ -19,12 +19,13 @@ test("Historical interactive workflow remains unchanged but is never imported or
   assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
   assert.doesNotMatch(source("server.ts"), /from ["']\.\/uid-brands-workflow(?:\.ts)?["']|launcherHtml|REVIEW_UI_META/);
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
-  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "b3d4a6456b26d77a088c1e05cb0636b2748f340b68018615f723dae8a4a9302d");
+  // Pinterest contract changes research bytes embedded by the historical launcher; keep exact pins.
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "3941ed0419ce7d54a56f7b963b6221bb2f884796998f6754654ab7d0b3b78993");
   // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
   // during transpilation, so its emitted bytes differ even on the approved base.
   // Do not normalize that difference or bless a second output hash. The exact
   // source pins above apply to BOTH runtimes; retain the production-byte guard.
-  if (!process.versions.bun) assert.equal(hash(launcherHtml), "2fe2b841067abf7b23cb11ef0f98134bae86992b32e15add5e01fe266fea1953");
+  if (!process.versions.bun) assert.equal(hash(launcherHtml), "10bbf36ab5c5bcfd27855cb4f818568ddd9f1dcf8bd83883805ad6058c352226");
 });
 
 test("seven public schemas remain exact; review/native extend the baseline additively", () => {

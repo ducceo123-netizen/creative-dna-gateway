@@ -1,0 +1,50 @@
+name: Inactive V3 SQL Prototype
+on:
+  pull_request:
+    paths:
+      - 'tests/sql/prototypes/**'
+      - 'tests/sql/uid_agent_rule_v3_prototype.mjs'
+      - 'tests/sql/uid_agent_rule_v3_races.mjs'
+      - '.github/workflows/agent-rule-v3-prototype.yml'
+permissions:
+  contents: read
+jobs:
+  inactive-foundation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: governance_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check prototype storage only in disposable PostgreSQL
+        run: |
+          psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f tests/sql/governance_fixture.sql
+          for migration in supabase/migrations/*.sql; do
+            psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          { printf 'BEGIN;\n'; cat tests/sql/prototypes/uid_agent_rule_v3_foundation.sql tests/sql/prototypes/uid_agent_rule_v3_context.sql tests/sql/prototypes/uid_agent_rule_v3_queue.sql tests/sql/prototypes/uid_agent_rule_v3_finalize.sql tests/sql/prototypes/uid_agent_rule_v3_foundation_assertions.sql; printf '\nROLLBACK;\n'; } | psql -h localhost -U postgres -d governance_test -v ON_ERROR_STOP=1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check inactive SQL and standalone compiler parity
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGDATABASE: governance_test
+          UID_TEST_PG_MODULE: /tmp/uid-governance-test/node_modules/pg/lib/index.js
+        run: |
+          npm install --prefix /tmp/uid-governance-test --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
+          node tests/sql/uid_agent_rule_v3_prototype.mjs
+          node tests/sql/uid_agent_rule_v3_races.mjs

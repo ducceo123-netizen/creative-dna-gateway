@@ -1,9 +1,10 @@
-/** Release-reviewed pilot vocabulary. No free-text field can extend these operations.
+/** General delegated creative-rule protocol. Pilot texts below are regression fixtures only.
  * This does not enable production or reclassify any existing v2 intent. */
 export const RULE_REVIEW_MODE = 'agent_rule_review' as const;
 export const RULE_REVIEW_SCOPE = 'RULE_SEMANTICS_AND_COMPILATION_NOT_OUTPUT_QC' as const;
 export const RULE_REVIEW_EVALUATOR = 'dot-agent-v3-rule-semantics' as const;
-export const RULE_COMPILER = '2026-10-15-agent-rule-pilot-v1';
+export const RULE_COMPILER = '2026-10-15-agent-rule-general-v1';
+export const RULE_OPERATION = 'creative_rule_supplement.v1';
 export const PILOT_SCOPE = 'STRUCTURAL shared Onepage: PawfectHouse, GiftSoul, SoulPrise; brand expression and verified product truth remain unchanged.';
 export const PILOT_BRANDS = ['giftsoul', 'pawfecthouse', 'soulprise'];
 const canonical = (rule: string, behavior: string, reject: string[]) => `## Generalized Rule\n${rule}\n\n## Expected Behavior\n${behavior}\n\n## Reject Conditions\n${reject.map(x => '- ' + x).join('\n')}\n\n## Scope\n${PILOT_SCOPE}\n\n## Rule Class\nSTRUCTURAL\n\n## Confidence\nHIGH`;

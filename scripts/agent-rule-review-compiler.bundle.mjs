@@ -406,9 +406,9 @@ async function prepareCanonicalRuleProjection(snapshot) {
 var RULE_REVIEW_MODE = "agent_rule_review";
 var RULE_REVIEW_SCOPE = "RULE_SEMANTICS_AND_COMPILATION_NOT_OUTPUT_QC";
 var RULE_REVIEW_EVALUATOR = "dot-agent-v3-rule-semantics";
-var RULE_COMPILER = "2026-10-15-agent-rule-pilot-v1";
+var RULE_COMPILER = "2026-10-15-agent-rule-general-v1";
+var RULE_OPERATION = "creative_rule_supplement.v1";
 var PILOT_SCOPE = "STRUCTURAL shared Onepage: PawfectHouse, GiftSoul, SoulPrise; brand expression and verified product truth remain unchanged.";
-var PILOT_BRANDS = ["giftsoul", "pawfecthouse", "soulprise"];
 var canonical = (rule, behavior, reject) => `## Generalized Rule
 ${rule}
 
@@ -535,7 +535,7 @@ async function buildAgentRuleReviewPlan(claim, review) {
       fail2("intent_mode_scope_mismatch", "The exact delegated v3 rule patch and target closure must match the snapshot; v2 is not upgradeable by the host.");
     if (capability?.review_mode !== RULE_REVIEW_MODE || capability?.compiler_version !== RULE_COMPILER || !hash2(capability?.compiler_bundle_hash)) fail2("compiler_capability_missing", "The server must pin the separate rule-review compiler capability.");
     const policy = s.rule_policy, op = policy?.operation;
-    if (!Object.hasOwn(PILOT_RULES, op || "") || policy?.enabled !== true || intent.operation !== op || c.proposal.proposed_content_md !== PILOT_RULES[op] || c.proposal.proposed_scope !== PILOT_SCOPE || policy.canonical_sha256 !== await sha256(c.proposal.proposed_content_md) || !equal2(policy.brand_slugs, PILOT_BRANDS) || !equal2(sorted(c.targets.map((t) => t.brand_slug)), PILOT_BRANDS) || c.scope?.branch_slug !== "onepage-system" || c.scope.cross_brand !== true || c.scope.structural !== true || !equal2(policy.target_node_ids, sorted(c.targets.map((t) => t.id)))) fail2("unsupported_rule_policy", "Only an explicitly activated exact pilot operation and its complete three-brand Onepage scope may use rule-only review.");
+    if (op !== RULE_OPERATION || policy?.enabled !== true || intent.operation !== op || policy.canonical_sha256 !== await sha256(c.proposal.proposed_content_md) || !equal2(policy.brand_slugs, sorted(c.targets.map((t) => t.brand_slug))) || !equal2(policy.target_node_ids, sorted(c.targets.map((t) => t.id)))) fail2("unsupported_rule_scope", "The server must bind this exact delegated creative rule and current target scope.");
     if (!exact(review, ["schema_version", "decision", "review_note", "source_receipts", "findings", "visual_qc_performed", "review_scope"]) || review.schema_version !== "uid.agent-rule-review.v1" || review.decision !== "passed" || !prose(review.review_note) || review.visual_qc_performed !== false || review.review_scope !== RULE_REVIEW_SCOPE || !Array.isArray(review.source_receipts) || !Array.isArray(review.findings))
       fail2("invalid_rule_review", "A genuine scoped semantic review is required; image-QC or owner-decision claims are not permitted.");
     const start = Date.parse(claim.leased_at), end = Date.parse(claim.lease_expires_at), expires = Date.parse(claim.expires_at), now = Date.now();
@@ -557,11 +557,12 @@ async function buildAgentRuleReviewPlan(claim, review) {
     }
     for (const t of c.targets) {
       const brand = c.compiler_context.brands.find((b) => b.id === t.brand_id), dna = c.compiler_context.brand_dna_nodes.find((d) => d.brand_id === t.brand_id);
+      if (!Object.hasOwn(t.metadata || {}, "creative_quality_contract")) continue;
       const result = await compileRuleQuality({ brand, branch: t, brand_dna: dna, visual_references: [] });
       if (result.status !== "COMPILED") fail2("preexisting_quality_blocked", result.errors.join(", "));
     }
     const originalCatalog = c.targets[0]?.metadata?.creative_quality_contract;
-    if (!object3(originalCatalog) || c.targets.some((t) => !equal2(t.metadata?.creative_quality_contract, originalCatalog)) || c.compiler_context.projected_targets.some((t) => !equal2(t.metadata?.creative_quality_contract, originalCatalog)))
+    if (originalCatalog !== void 0 && (!object3(originalCatalog) || c.targets.some((t) => !equal2(t.metadata?.creative_quality_contract, originalCatalog)) || c.compiler_context.projected_targets.some((t) => !equal2(t.metadata?.creative_quality_contract, originalCatalog))))
       fail2("rule_catalog_mirror_drift", "Every target and projected target must retain the identical complete prior catalog and provenance.");
     const adapted = clone3(c);
     adapted.targets.forEach((t) => {
@@ -571,51 +572,62 @@ async function buildAgentRuleReviewPlan(claim, review) {
       t.metadata = stripRuleCatalog(t.metadata);
     });
     const p = await prepareCanonicalRuleProjection(adapted);
-    if (p.canonicalAppend || !p.isOnepage) fail2("compiled_onepage_required", "Pilot rules require the existing three-brand Onepage quality catalog.");
     const originals = new Map(c.compiler_context.projected_targets.map((t) => [t.id, t]));
     p.projected.forEach((t) => {
       t.metadata = clone3(originals.get(t.id).metadata);
     });
-    const masterOriginal = c.targets.find((t) => t.id === p.master.id), catalog = clone3(masterOriginal.metadata.creative_quality_contract);
     const reviewHash = await sha256(stableJson(review)), canonicalHash = await sha256(p.canonical), id = `agent-rule:${claim.attempt_id}`;
-    for (let i = 0; i < p.projected.length; i++) {
-      const bundle = catalog.contracts[p.brands[i].slug];
-      const prior = [...bundle.owner_supplemental_rules || [], ...bundle.agent_reviewed_supplemental_rules || [], ...bundle.agent_rule_reviewed_supplemental_rules || []];
-      if (prior.length >= MAX_OWNER_SUPPLEMENTS || prior.some((r) => r.proposal_id === claim.proposal_id || r.canonical_text === p.canonical)) fail2("supplement_collision", "Capacity or an existing exact rule prevents adding a second supplemental decision.");
-      const hashes = await sourceHashes({ brand: p.brands[i], branch: p.projected[i], brand_dna: p.dnas[i] });
-      bundle.schema_version = RULE_QUALITY_SCHEMA;
-      bundle.agent_rule_reviewed_supplemental_rules = [...bundle.agent_rule_reviewed_supplemental_rules || [], {
-        schema_version: RULE_SUPPLEMENT_SCHEMA,
-        id,
-        proposal_id: claim.proposal_id,
-        request_id: claim.request_id,
-        attempt_id: claim.attempt_id,
-        decision_kind: RULE_REVIEW_MODE,
-        evaluator_version: RULE_REVIEW_EVALUATOR,
-        snapshot_hash: claim.snapshot_hash,
-        review_hash: reviewHash,
-        review_scope: RULE_REVIEW_SCOPE,
-        visual_qc_performed: false,
-        canonical_text: p.canonical,
-        declared_scope: p.rule.scope,
-        scope: { brands: p.brandSlugs, branches: [p.scope.branch_slug] },
-        rule_class: p.rule.rule_class,
-        confidence: p.rule.confidence,
-        source: { node: "branch", locator: `agent-rule:${claim.proposal_id}:${claim.attempt_id}`, canonical_text_hash: canonicalHash },
-        accepted_source_hashes: hashes,
-        precedence: OWNER_SUPPLEMENTAL_PRECEDENCE
-      }];
-      bundle.source_hashes = hashes;
-      bundle.revision = id;
-    }
-    p.projected.forEach((t) => {
-      t.metadata.creative_quality_contract = clone3(catalog);
-    });
     const compiled = [];
-    for (let i = 0; i < p.projected.length; i++) {
-      const result = await compileRuleQuality({ brand: p.brands[i], branch: p.projected[i], brand_dna: p.dnas[i], visual_references: [] });
-      if (result.status !== "COMPILED" || !result.agent_rule_reviewed_supplemental_rules.some((r) => r.id === id)) fail2("proposed_quality_blocked", result.errors.join(", "));
-      compiled.push({ node_id: p.projected[i].id, brand_slug: p.brands[i].slug, source_hashes: result.source_hashes, contract_hash: result.contract_hash, added_supplement_ids: [id] });
+    if (p.canonicalAppend) {
+      for (let i = 0; i < p.projected.length; i++) {
+        const t = p.projected[i];
+        compiled.push({
+          mode: "canonical_append",
+          node_id: t.id,
+          brand_slug: p.brands[i].slug,
+          projection_hash: await sha256(stableJson({ node_id: t.id, content_md: t.content_md, metadata: t.metadata, version: t.version, input_schema: t.input_schema, status: t.status, confidence: t.confidence }))
+        });
+      }
+    } else {
+      const masterOriginal = c.targets.find((t) => t.id === p.master.id), catalog = clone3(masterOriginal.metadata.creative_quality_contract);
+      for (let i = 0; i < p.projected.length; i++) {
+        const bundle = catalog.contracts[p.brands[i].slug];
+        const prior = [...bundle.owner_supplemental_rules || [], ...bundle.agent_reviewed_supplemental_rules || [], ...bundle.agent_rule_reviewed_supplemental_rules || []];
+        if (prior.length >= MAX_OWNER_SUPPLEMENTS || prior.some((r) => r.proposal_id === claim.proposal_id || r.canonical_text === p.canonical)) fail2("supplement_collision", "Capacity or an existing exact rule prevents adding a second supplemental decision.");
+        const hashes = await sourceHashes({ brand: p.brands[i], branch: p.projected[i], brand_dna: p.dnas[i] });
+        bundle.schema_version = RULE_QUALITY_SCHEMA;
+        bundle.agent_rule_reviewed_supplemental_rules = [...bundle.agent_rule_reviewed_supplemental_rules || [], {
+          schema_version: RULE_SUPPLEMENT_SCHEMA,
+          id,
+          proposal_id: claim.proposal_id,
+          request_id: claim.request_id,
+          attempt_id: claim.attempt_id,
+          decision_kind: RULE_REVIEW_MODE,
+          evaluator_version: RULE_REVIEW_EVALUATOR,
+          snapshot_hash: claim.snapshot_hash,
+          review_hash: reviewHash,
+          review_scope: RULE_REVIEW_SCOPE,
+          visual_qc_performed: false,
+          canonical_text: p.canonical,
+          declared_scope: p.rule.scope,
+          scope: { brands: p.brandSlugs, branches: [p.scope.branch_slug] },
+          rule_class: p.rule.rule_class,
+          confidence: p.rule.confidence,
+          source: { node: "branch", locator: `agent-rule:${claim.proposal_id}:${claim.attempt_id}`, canonical_text_hash: canonicalHash },
+          accepted_source_hashes: hashes,
+          precedence: OWNER_SUPPLEMENTAL_PRECEDENCE
+        }];
+        bundle.source_hashes = hashes;
+        bundle.revision = id;
+      }
+      p.projected.forEach((t) => {
+        t.metadata.creative_quality_contract = clone3(catalog);
+      });
+      for (let i = 0; i < p.projected.length; i++) {
+        const result = await compileRuleQuality({ brand: p.brands[i], branch: p.projected[i], brand_dna: p.dnas[i], visual_references: [] });
+        if (result.status !== "COMPILED" || !result.agent_rule_reviewed_supplemental_rules.some((r) => r.id === id)) fail2("proposed_quality_blocked", result.errors.join(", "));
+        compiled.push({ mode: "quality_catalog", node_id: p.projected[i].id, brand_slug: p.brands[i].slug, source_hashes: result.source_hashes, contract_hash: result.contract_hash, added_supplement_ids: [id] });
+      }
     }
     const identity = { request_id: claim.request_id, attempt_id: claim.attempt_id, proposal_id: claim.proposal_id, candidate_hash: claim.candidate_hash, snapshot_hash: claim.snapshot_hash, review_hash: reviewHash };
     const plan = { schema_version: "uid.agent-rule-review-plan.v1", ...identity, targets: p.projected.map((t) => ({ node_id: t.id, content_md: t.content_md, metadata: t.metadata, version: t.version, input_schema: t.input_schema, status: t.status, confidence: t.confidence })) };
