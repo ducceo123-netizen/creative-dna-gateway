@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'public/onepage-panel.*'
+      - 'uid-brands-chat.ts'
+      - 'uid-brands-feedback-index.ts'
+      - 'uid-brands-progress.ts'
+      - 'uid-brands-ui-resource.ts'
+      - 'vercel.json'
       - 'uid-brands-workflow.ts'
       - 'uid-brands-actions.ts'
       - 'uid-brands-review-contract.ts'
