@@ -13,10 +13,11 @@ export const LDP_CONTRACT = {
   implementation: 'HOST_EXECUTED_WITH_PURE_GATEWAY_PLANNING_AND_VALIDATION',
   scope: 'pawfecthouse/ldp-system',
   intake: 'Existing resolve_creative_dna research object; optional research.ldp_job. No new tool or Onepage overload.',
-  required_inputs: ['brand', 'niche_or_audience', 'verified_collection_or_product_pool'],
+  required_inputs: ['collection_url'],
+  host_intake: { user_supplies: 'One collection URL is sufficient. Optional user constraints only.', discovery: 'Infer brand and niche from the actual collection; resolve current canonical LDP rules first, discover authoritative live brand UI/LDP references, then research the real pool. Do not ask the user to supply a separate reference URL or write the plan.', execution: 'For an authenticated end-to-end user request, the host builds and validates the plan then continues within its existing tool permissions. Ask only for essential unresolved inputs, explicit user-requested checkpoints, material scope changes or permission-required actions.', material_rules: 'Resolve every selected material route freshly before production; do not replace current canonical instructions with this workflow guidance.' },
   design_role: 'Act as a UI/UX designer: explain the shopper journey, original idea, hierarchy, intentional layout variation and mobile decisions. Live web provides brand/UI grammar, not a rigid template to copy mechanically.',
   source_priority: ['current accepted scoped rules and user locks', 'live brand website UI/layout/style', 'Figma examples for editable demonstration only'],
-  phases: ['research', 'page_plan', 'plan_approval', 'asset_generation', 'asset_inspection', 'figma_assembly', 'responsive_qc', 'human_review', 'handoff'],
+  phases: ['research', 'page_plan', 'authorization_scope_check', 'asset_generation', 'asset_inspection', 'figma_assembly', 'responsive_qc', 'human_review', 'handoff'],
   material_routes: MATERIAL_ROUTES,
   hero: { desktop: { width: 2560, height: 800 }, mobile: { width: 750, height: 954 }, rule_basis: 'Accepted PawfectHouse LDP Hero 2026-10-05; independently corroborated live source markup 2026-10-15', stale_schema: 'Legacy 21:9 must not override the accepted desktop/mobile rule. This task contract does not mutate canonical records.', adaptation: 'Same story/SKU, recompose instead of merely cropping', applies_to: 'hero only; featured slots have separate live-source dimensions' },
   integrity: ['Full media/detail evidence for selected SKU variants; enumeration is not pixel inspection.', 'No invented products, reviews, customer identities, prices, ranking, policies or destinations.', 'Generated UGC is commercial imagery, never authenticated customer proof.', 'Combo composition is not a purchasable bundle unless verified.', 'Live reference defects are negative evidence, never blindly copied.'],
@@ -46,6 +47,8 @@ export const LDP_JOB_SCHEMA = z.object({
   page_manifest: z.object({ scope: z.enum(['complete_ldp','section_prototype']), required_section_ids: z.array(id).min(1).max(40) }).strict(),
   sections: z.array(section).min(1).max(40), assets: z.array(asset).max(100),
   evidence: z.array(z.object({ id, kind: z.enum(['destination','sales_ranking','freshness','customer_review','policy']), url: httpsUrl, observed_at: z.string().datetime({ offset: true }), product_ids: z.array(id).max(100), observation: text }).strict()).max(100),
+  review_policy: z.enum(['autonomous','user_checkpoint']).default('autonomous'),
+  execution_authority: z.object({ task_id: id, source_message_id: id, origin: z.literal('authenticated_user_instruction'), scope: z.literal('end_to_end_ldp') }).strict().optional(),
   plan_approval: z.object({ task_id: id, content_version: digest, source_message_id: id }).strict().optional(),
 }).strict();
 export type LdpJob = z.infer<typeof LDP_JOB_SCHEMA>;
