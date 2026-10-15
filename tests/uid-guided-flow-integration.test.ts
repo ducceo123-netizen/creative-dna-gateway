@@ -4,10 +4,16 @@ import { createApp } from "../server.ts";
 import { UID_EXTERNAL_PANEL_URL, UID_EXTERNAL_PANEL } from "../uid-brands-chat.ts";
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA } from "../uid-brands-review-contract.ts";
 
+// Bun shares imported modules across test files, including the production limiter.
+// Give each local fixture a stable simulated proxy IP from TEST-NET-2 instead of
+// sharing the suite-wide loopback bucket. The real limiter still runs on every call.
+let fixtureNumber = 0;
+
 async function withMcp(work: (call: (args: any, name?: string) => Promise<any>) => Promise<void>, allowRoutes = false) {
   const app = createApp().listen(0, "127.0.0.1");
   await new Promise<void>(resolve => app.once("listening", resolve));
   const origin = `http://127.0.0.1:${(app.address() as any).port}`;
+  const clientIp = `198.51.100.${++fixtureNumber}`;
   const original = globalThis.fetch;
   let external = 0, id = 0;
   globalThis.fetch = async (_url, init) => {
@@ -16,8 +22,10 @@ async function withMcp(work: (call: (args: any, name?: string) => Promise<any>) 
   };
   try {
     await work(async (args, name = "show_uid_brands_review") => {
-      const response = await original(origin + "/api/mcp", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method: "tools/call", params: { name, arguments: args } }) });
+      const response = await original(origin + "/api/mcp", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", "X-Forwarded-For": clientIp }, body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method: "tools/call", params: { name, arguments: args } }) });
       assert.equal(response.status, 200);
+      assert.equal(response.headers.get("RateLimit-Limit"), "120");
+      assert.equal(response.headers.get("RateLimit-Remaining"), String(120 - id));
       const wire = await response.text();
       const packet = JSON.parse(wire.startsWith("{") ? wire : wire.split("\n").find(line => line.startsWith("data: "))!.slice(6));
       assert.equal(packet.error, undefined);
