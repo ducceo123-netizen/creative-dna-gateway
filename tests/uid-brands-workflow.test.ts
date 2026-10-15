@@ -516,3 +516,34 @@ test("PR82 legacy saved edited prompts remain reachable after upgrading without 
  const ui=setup(data,{state:{privateContent:{reviewDrafts:{[key]:{decision:"revise",feedback:"Original feedback",variableItems:[],selectedTargets:[]}},promptDrafts:{[binding]:"My manually edited PR82 prompt"}}}});
  assert.equal(ui.$("promptDock").hidden,false);assert.equal(ui.$("promptText").value,"My manually edited PR82 prompt");assert.equal(ui.$("masterTabs").hidden,true);
 });
+
+test("missing feedback context has truthful guidance and a copy-only recovery path",async()=>{
+ const calls:any[]=[];
+ const ui=setup({stage:"launcher"},{host:{callTool:(...args:any[])=>calls.push(args)}});
+ ui.$("url").value="https://example.com/product";ui.$("feedbackTab").click();
+ assert.match(ui.$("missingInputs").textContent,/chưa nhận được task/);
+ assert.doesNotMatch(ui.$("missingInputs").textContent,/Đã đủ/);
+ assert.doesNotMatch(ui.$("feedbackEmpty").textContent,/Chưa có kết quả/);
+ assert.match(ui.$("taskContext").textContent,/Chưa gắn task/);assert.equal(ui.$("workflowSteps").hidden,true);
+ assert.equal(ui.$("recoverFeedbackContext").hidden,false);
+ ui.$("recoverFeedbackContext").click();
+ assert.equal(ui.$("promptDock").hidden,false);
+ assert.match(ui.$("promptText").value,/show_uid_brands_review/);
+ assert.match(ui.$("promptText").value,/hỏi tôi đúng thông tin còn thiếu/);
+ assert.match(ui.$("promptText").value,/Không tự tạo ID/);
+ assert.match(ui.$("promptText").value,/không gửi Train/);
+ assert.equal(ui.messages.length,0);assert.equal(calls.length,0);assert.equal(ui.$("run").disabled,true);
+ ui.$("taskTab").click();assert.equal(ui.$("workflowSteps").hidden,false);assert.equal(ui.$("recoverFeedbackContext").hidden,true);assert.equal(ui.$("promptDock").hidden,true);
+ ui.$("feedbackTab").click();assert.equal(ui.$("promptDock").hidden,false);
+ ui.update(onepageOutput());ui.$("feedbackTab").click();
+ assert.equal(ui.$("recoverFeedbackContext").hidden,true);assert.equal(ui.$("promptDock").hidden,true);
+ assert.equal(ui.$("assetFeedbackFields").hidden,false);
+});
+test("partial review identity and missing inventory never display ready feedback guidance",()=>{
+ for(const data of [{...onepageOutput(),assets:[]},{...onepageOutput(),review_context:{branch:"onepage-system",review_id:"unbound"}}]){
+  const ui=setup(data);ui.$("feedbackTab").click();
+  assert.equal(ui.$("missingInputs").textContent,ui.$("feedbackEmpty").textContent);
+  assert.doesNotMatch(ui.$("missingInputs").textContent,/Đã đủ/);
+  ui.$("recoverFeedbackContext").click();assert.equal(ui.$("promptDock").hidden,false);assert.equal(ui.messages.length,0);
+ }
+});
