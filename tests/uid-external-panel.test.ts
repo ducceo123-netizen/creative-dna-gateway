@@ -27,7 +27,7 @@ test("public panel has no embedded app, network bridge, storage or private conte
   assert.match(html, /name="referrer" content="no-referrer"/);
   const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/g)];
   assert.deepEqual(scripts.map(match => match[1]), ["/onepage-panel.js"]);
-  assert.match(html, /không phải ảnh (?:xem trước|đã tạo)/);
+  assert.match(html, /Chỉ áp dụng cho các mục có trong kết quả Onepage đang xem/);
   assert.match(html, /không gửi (?:yêu cầu sửa, tạo hàng đợi hay Train)|không gửi, không chạy sửa, không tạo hàng đợi hay Train/);
 });
 
@@ -53,7 +53,7 @@ function panelHarness(clipboard?: { writeText: (text: string) => Promise<void> }
   class Element {
     tag: string; children: Element[] = []; dataset: Record<string, string> = {}; events: Record<string, ((event: any) => any)[]> = {}; parentElement?: Element;
     textContent = ""; className = ""; type = ""; value = ""; checked = false; disabled = false; hidden = false; title = "";
-    selectionStart = 0; selectionEnd = 0;
+    selectionStart = 0; selectionEnd = 0; open = false;
     constructor(tag: string) { this.tag = tag; }
     set id(value: string) { ids.set(value, this); }
     append(...nodes: Element[]) { for (const node of nodes) node.parentElement = this; this.children.push(...nodes); }
@@ -310,4 +310,49 @@ test("inferable creative fields do not block copy and source/theme/custom drafts
   assert.doesNotMatch(h.$('prompt-output').value,/product-a|Campaign A|Direction A/);
   await h.fill('brand','PawfectHouse');
   assert.equal(h.$('url').value,'https://example.com/product-a'); assert.equal(h.$('theme').value,'Campaign A'); assert.equal(h.$('custom').value,'Direction A');
+});
+
+test("compact task defaults keep only Brand, Material, source and conditional essential recipient/niches outside optional details", async () => {
+  const html = source('html');
+  assert.match(html, /<details[^>]*id="optionalBrief"[^>]*><summary>Tuỳ chọn thêm/);
+  assert.doesNotMatch(html, /<details[^>]*id="(?:optionalBrief|taskInfo)"[^>]*\bopen\b/);
+  assert.match(html, /id="taskInfo"[^]*id="task-format"[^]*<\/details>/);
+  const snapshot = JSON.parse(readFileSync(new URL('../docs/panel-route-snapshot.json', import.meta.url), 'utf8'));
+  for (const route of snapshot.routes) {
+    const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand',route.brand); await h.fill('branches',route.branch);
+    const core = h.$('task-fields').children.filter(x => x.tag === 'textarea');
+    assert.ok(core.length <= 1, route.brand + '/' + route.branch);
+    for (const child of core) assert.ok(['Người nhận / mối quan hệ','Các niche (mỗi dòng một niche)'].includes(child.getAttribute('aria-label')!));
+    for (const key of ['quantity','ratio','dimensions','custom_dimensions','custom_ratio','idea','context','product']) {
+      if (!Object.hasOwn(route.fields,key)) continue;
+      assert.equal(h.$('task-' + key).parentElement,h.$('task-advanced-fields'),key);
+    }
+    await h.fill('url','https://example.com/product');
+    if (route.fields.recipient) await h.fill('task-recipient','Grandparents');
+    if (route.fields.niches) await h.fill('task-niches','Gardening');
+    assert.ok(h.$('prompt-output').value,'No hidden required-field dead end: ' + route.brand + '/' + route.branch);
+  }
+});
+
+test("technical descriptions are not rendered as input hints and feedback remains picker/group/copy", async () => {
+  const h = panelHarness(); await h.fill('brand','GiftSoul'); await h.fill('branches','ugc-image');
+  assert.equal(h.$('task-fields').children.length,0);
+  assert.equal(h.$('task-advanced-fields').children.filter(x=>x.tag==='small').length,0);
+  assert.doesNotMatch(source('html'), /18 vị trí canonical|Chọn variables/);
+  assert.match(source('html'), /Chọn mục → thêm góp ý chung → copy về chat/);
+  await h.$('slot-banner_desktop').click(); await h.fill('instruction','More whitespace'); await h.$('save-block').click();
+  assert.match(h.$('prompt-output').value,/More whitespace/);
+  assert.doesNotMatch(h.$('prompt-output').value,/Số lượng ảnh|Kích thước px/);
+});
+
+
+test("invalid optional values reveal the collapsed section instead of blocking copy invisibly", async () => {
+  const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand','GiftSoul'); await h.fill('branches','ugc-image');
+  assert.equal(h.$('optionalBrief').open,false);
+  await h.fill('url','https://example.com/product'); assert.ok(h.$('prompt-output').value);
+  await h.fill('task-quantity','-1');
+  assert.equal(h.$('optionalBrief').open,true); assert.equal(h.$('prompt-output').value,'');
+  assert.match(h.$('brief-status').textContent,/Số lượng/);
+  await h.fill('task-quantity','2'); assert.ok(h.$('prompt-output').value);
+  await h.fill('branches','onepage-system'); assert.equal(h.$('optionalBrief').open,false);
 });
