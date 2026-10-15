@@ -1,0 +1,22 @@
+{
+  "production_enabled": false,
+  "review_required": true,
+  "scope": "STRUCTURAL shared Onepage: PawfectHouse, GiftSoul, SoulPrise; brand expression and verified product truth remain unchanged.",
+  "brands": [
+    "giftsoul",
+    "pawfecthouse",
+    "soulprise"
+  ],
+  "operations": [
+    {
+      "operation": "onepage.distinct-product-design.v1",
+      "canonical_text": "## Generalized Rule\nPlan product and design diversity across non-Product-Details Onepage assets using verified products relevant to the brief. Product Details preserves its one exact product anchor.\n\n## Expected Behavior\nBefore generation, allocate each product-bearing asset to its verified product URL, SKU, variant and evidence-backed design family. Record its section, responsive creative group and any reuse reason. Prefer relevant unused verified products and designs across non-PD groups when available. Desktop/mobile versions of one creative count as one selection. Changes to personalization names, uploaded photos, sizes, angles or backgrounds alone do not establish a distinct design family. Keep the Product Details quartet on one exact SKU, design, variant and construction; exclude this intentional repetition from non-PD diversity counts. Report unique products/design families and repeated selections with evidence-backed reasons. Inspect generated assets against the allocation before claiming visual compliance. If the verified pool is insufficient, report that limitation without inventing products or specifications. Preserve single-product task scope; do not force product imagery into text-only or icon-only sections.\n\n## Reject Conditions\n- Unexplained repeated product/design selection when a relevant verified unused choice exists.\n- Counting responsive pairs or personalization-only changes as new designs.\n- Breaking the PD anchor or importing another product into a single-product task.\n- Claiming image QC from an allocation table or inventing products to meet a quota.\n\n## Scope\nSTRUCTURAL shared Onepage: PawfectHouse, GiftSoul, SoulPrise; brand expression and verified product truth remain unchanged.\n\n## Rule Class\nSTRUCTURAL\n\n## Confidence\nHIGH",
+      "canonical_sha256": "6227ada327d412505a995520b4684bf5667e55564a492899bc4b5e328a8e0d77"
+    },
+    {
+      "operation": "onepage.banner-product-keyword.v1",
+      "canonical_text": "## Generalized Rule\nIn Onepage banners, the approved product-line keyword is the primary typographic focus, ahead of supporting copy.\n\n## Expected Behavior\nUse the verified, approved product-line wording as the strongest text emphasis through hierarchy, size, weight, contrast and placement, consistent with the active brand design system. Keep supporting text subordinate and readable on both desktop and mobile. Preserve product truth, approved copy and layout safety; do not add unsupported claims. Inspect the rendered banner before claiming visual compliance.\n\n## Reject Conditions\n- Supporting copy visually dominates the product-line keyword.\n- Invented product wording, claims or specifications.\n- Claiming a rendered banner passes visual QC without inspecting it.\n\n## Scope\nSTRUCTURAL shared Onepage: PawfectHouse, GiftSoul, SoulPrise; brand expression and verified product truth remain unchanged.\n\n## Rule Class\nSTRUCTURAL\n\n## Confidence\nHIGH",
+      "canonical_sha256": "1022e45a738c17fa4361877783de4c64d8427cffabec389eaed783dba9ab2eb2"
+    }
+  ]
+}

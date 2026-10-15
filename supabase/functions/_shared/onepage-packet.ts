@@ -1,6 +1,7 @@
+import { compileCompatibleQuality as compileCreativeQuality } from './agent-rule-quality.ts';
 import { ONEPAGE_PACKAGING_CONTRACT } from './onepage-packaging.ts';
 import { attachResearch, classifySource, type ResearchContext } from './product-research.ts';
-import { compileCreativeQuality, QUALITY_COMPILER, type ResolvedDna } from './creative-quality.ts';
+import { QUALITY_COMPILER, type ResolvedDna } from './creative-quality.ts';
 const assets=[
  {slot:"banner_desktop",size:"2560x960",role:"story_banner"},
  {slot:"banner_mobile",size:"720x700",role:"story_banner_responsive_pair"},
@@ -23,7 +24,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
  const m=r.branch.metadata||{}; const inferred=classifySource(sourceUrl, sourceType);
  const singleProduct=inferred==="product";
  const packet = {
-  api_version:"2.2",mode:"compiled_job",compiler_version:QUALITY_COMPILER,
+  api_version:"2.2",mode:"compiled_job",compiler_version:creative_quality_contract.compiler_version,
   resolved:{brand:r.brand.slug,branch:r.branch.slug,dna_version:r.branch.version,creative_execution_revision:m.onepage_creative_execution_revision||null},
   dynamic_job:{source_url:sourceUrl||null,source_type:inferred,theme:theme||null,user_content_lock:"HARD_EXACT_PRESERVATION",single_product_mode:singleProduct},
   acquisition_contract:{
@@ -76,7 +77,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
   brand_expression:{inherit_brand_dna:true,differences_scope:"STYLE_MOOD_BRAND_DNA_ONLY"},
   post_story_section: {decision:ruleValue("content.post_story_section"),rule_ids:ruleIds("content.post_story_section","content.gtk_insights"),faq_template_status:"REQUIRED_NOT_YET_DEPLOYED",faq_mapping_gate:"BLOCK_MAPPING_UNTIL_VERIFIED_FAQ_VARIANT_AVAILABLE",faq_answers:"ALL_EXPANDED_FOR_REVIEW",gtk_assets:"ONLY_WHEN_GTK_SELECTED",rule:"Select using verified buyer questions, not keyword or brand defaults. Never generate placeholder GTK assets for FAQ mode."},
   angle_policy:{mode:"FEEDBACK_PROGRESSIVE",avoid_duplicate_angles:true,follow_content_and_product_geometry:true},
-  instruction:"Use creative_quality_contract active scoped rules as the creative execution authority. Read owner_supplemental_contract and agent_reviewed_supplemental_contract canonical text verbatim as additional guidance, subordinate to every existing canonical rule, hard gate, safety rule and verified product fact. Stop any conflicting supplemental direction for clarification; owner acceptance does not verify output quality, and agent review covers only pinned evidence, never future output. Do not substitute account memory or superseded historical metadata. Content/typography/banner/proof quality gates are mandatory alongside technical dimensions. Reference Library examples are optional supplementary inspiration; missing examples never block creation or override active brand/product rules. Inspect any selected example before using it. Only explicit required evidence can block the affected asset stage. Human artistic review is still required."
+  instruction:"Use creative_quality_contract active scoped rules as the creative execution authority. Read owner_supplemental_contract, agent_reviewed_supplemental_contract and any agent_rule_reviewed_supplemental_contract canonical text verbatim as additional guidance, subordinate to every existing canonical rule, hard gate, safety rule and verified product fact. Stop any conflicting supplemental direction for clarification; owner acceptance does not verify output quality, and agent review covers only pinned evidence, never future output. Do not substitute account memory or superseded historical metadata. Content/typography/banner/proof quality gates are mandatory alongside technical dimensions. Reference Library examples are optional supplementary inspiration; missing examples never block creation or override active brand/product rules. Inspect any selected example before using it. Only explicit required evidence can block the affected asset stage. Human artistic review is still required."
  };
 
  return attachResearch({ ...packet, creative_quality_contract,
@@ -84,6 +85,7 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    rule_index_note: "Category indexes below refer to complete rules in creative_quality_contract.rules; do not reload full canonical prose or duplicate rules per slot.",
    owner_supplemental_contract: { ...creative_quality_contract.owner_supplemental_policy,
      rules: creative_quality_contract.owner_supplemental_rules },
+   ...(creative_quality_contract.agent_rule_reviewed_supplemental_rules ? {agent_rule_reviewed_supplemental_contract:{...creative_quality_contract.agent_rule_reviewed_supplemental_policy,rules:creative_quality_contract.agent_rule_reviewed_supplemental_rules}} : {}),
    agent_reviewed_supplemental_contract: { ...creative_quality_contract.agent_reviewed_supplemental_policy, rules: creative_quality_contract.agent_reviewed_supplemental_rules },
    content_contract: creative_quality_contract.rules.filter(r => r.category === 'content').map(r => r.id),
    typography_contract: creative_quality_contract.rules.filter(r => r.category === 'typography').map(r => r.id),
