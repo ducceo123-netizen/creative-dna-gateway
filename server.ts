@@ -235,7 +235,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  const validated=validateResolveInput(brand,"onepage-system");
  const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
  const data = response.data;
- return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,research,require_pdp_coverage:true}) : data};
+ return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}) : data};
 }
 
 // Core gateway functions
