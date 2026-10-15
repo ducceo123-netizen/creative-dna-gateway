@@ -18,6 +18,8 @@
   const selection = new Set();
   let blocks = [];
   let editing = null;
+  let activeTab = 'feedback';
+  let draftOpen = false;
   let nextId = 1;
   const element = (tag, text, className) => {
     const node = document.createElement(tag);
@@ -31,14 +33,15 @@
   const announce = text => { $('status').textContent = text; };
 
   for (const group of groups) {
-    const fieldset = element('fieldset', undefined, 'slot-group');
+    const fieldset = element('details', undefined, 'slot-group variable-section');
     fieldset.dataset.group = group.id;
-    const legend = element('legend');
+    const legend = element('summary', undefined, 'variable-section-title');
     legend.append(element('span', group.label));
-    const select = element('button', 'Chọn cả nhóm', 'text-button');
+    const select = element('button', 'Chọn cả nhóm', 'variable-key');
     select.type = 'button';
     select.dataset.groupSelect = group.id;
-    select.addEventListener('click', () => {
+    select.addEventListener('click', event => {
+      event.preventDefault();
       const unavailable = occupied();
       const available = group.slots.map(([id]) => id).filter(id => !unavailable.has(id));
       const allSelected = available.every(id => selection.has(id));
@@ -48,7 +51,7 @@
     legend.append(select);
     const grid = element('div', undefined, 'slot-grid');
     for (const [id, label] of group.slots) {
-      const wrapper = element('label', undefined, 'slot');
+      const wrapper = element('label', undefined, 'slot variable-key');
       const checkbox = element('input');
       checkbox.type = 'checkbox'; checkbox.value = id; checkbox.id = `slot-${id}`;
       checkbox.addEventListener('change', () => {
@@ -67,8 +70,8 @@
   function renderBlocks() {
     $('blocks').replaceChildren();
     for (const [i, block] of blocks.entries()) {
-      const card = element('article', undefined, 'feedback-block'); card.dataset.blockId = String(block.id);
-      const top = element('div', undefined, 'block-top');
+      const card = element('article', undefined, 'feedback-block variable-item'); card.dataset.blockId = String(block.id);
+      const top = element('div', undefined, 'block-top variable-item-head');
       top.append(element('h3', `Nhóm góp ý ${i + 1}${editing === block.id ? ' · đang sửa' : ''}`));
       const tools = element('div', undefined, 'block-tools');
       const edit = element('button', 'Sửa', 'text-button'); edit.type = 'button'; edit.dataset.editBlock = String(block.id);
@@ -76,7 +79,7 @@
       edit.setAttribute('aria-label', `Sửa nhóm góp ý ${i + 1}`);
       edit.addEventListener('click', () => {
         if (hasDraft()) return announce('Hãy thêm/lưu hoặc hủy nhóm đang soạn trước.');
-        editing = block.id;
+        editing = block.id; draftOpen = true;
         selection.clear(); for (const id of block.slots) selection.add(id);
         $('instruction').value = block.text;
         update(); $('instruction').focus();
@@ -89,7 +92,7 @@
         update(); announce(`Đã bỏ nhóm góp ý ${i + 1} khỏi prompt trên trang.`);
       });
       tools.append(edit, remove); top.append(tools);
-      card.append(top, element('p', block.slots.map(id => labels.get(id)).join(' · '), 'block-scope'), element('p', block.text, 'block-text'));
+      card.append(top, element('p', block.slots.map(id => labels.get(id)).join(' · '), 'block-scope group-targets'), element('p', block.text, 'block-text'));
       $('blocks').append(card);
     }
     $('block-count').textContent = `${blocks.length} nhóm`;
@@ -113,11 +116,12 @@
     return parts.join('\n');
   }
 
-  function clearDraft() { selection.clear(); editing = null; $('instruction').value = ''; }
+  function clearDraft() { selection.clear(); editing = null; draftOpen = false; $('instruction').value = ''; }
   function update() {
     const unavailable = occupied();
     for (const checkbox of $('slot-groups').querySelectorAll('input[type=checkbox]')) {
       checkbox.checked = selection.has(checkbox.value);
+      checkbox.parentElement.classList.toggle('selected', checkbox.checked);
       checkbox.disabled = unavailable.has(checkbox.value);
       checkbox.title = checkbox.disabled ? 'Đã thuộc một nhóm góp ý. Chọn Sửa ở nhóm đó để thay đổi.' : '';
     }
@@ -127,6 +131,8 @@
       button.disabled = !available.length;
       button.textContent = available.length && available.every(id => selection.has(id)) ? 'Bỏ chọn nhóm' : 'Chọn cả nhóm';
     }
+    $('createSharedFeedback').disabled = !selection.size || (editing === null && blocks.length >= MAX_BLOCKS);
+    $('draft-card').hidden = !draftOpen && !$('instruction').value.trim() && editing === null;
     $('selection-count').textContent = `${selection.size} mục`;
     $('selection-summary').textContent = selection.size ? ordered(selection).map(id => labels.get(id)).join(' · ') : 'Chưa chọn mục nào.';
     $('save-block').disabled = (editing === null && blocks.length >= MAX_BLOCKS) || !selection.size || !$('instruction').value.trim() || [...selection].some(id => unavailable.has(id));
@@ -135,16 +141,68 @@
     $('cancel-edit').textContent = editing === null ? 'Hủy phần đang soạn' : 'Hủy chỉnh sửa';
     $('clear-selection').disabled = !selection.size;
     renderBlocks();
-    const prompt = promptText();
-    const ready = Boolean(prompt) && !hasDraft();
+    const prompt = activeTab === 'task' ? briefPrompt() : promptText();
+    const pending = activeTab === 'feedback' && hasDraft();
+    const ready = Boolean(prompt) && !pending;
     // Never leave an apparently copy-ready stale prompt while a draft is unfinished.
-    $('prompt-output').value = hasDraft() ? '' : prompt;
-    $('draft-warning').hidden = !hasDraft();
+    $('prompt-output').value = pending ? '' : prompt;
+    $('draft-warning').hidden = !pending;
     $('copy-prompt').disabled = !ready;
     $('select-prompt').disabled = !ready;
-    announce(hasDraft() ? 'Nhóm đang soạn chưa được thêm vào prompt.' : ready ? 'Sẵn sàng sao chép. Chưa có yêu cầu nào được gửi.' : 'Chưa có nội dung để sao chép.');
+    announce(pending ? 'Nhóm đang soạn chưa được thêm vào prompt.' : ready ? 'Sẵn sàng sao chép. Chưa có yêu cầu nào được gửi.' : 'Chưa có nội dung để sao chép.');
   }
 
+  function briefPrompt() {
+    const brand = $('brand').value;
+    const rawUrl = $('url').value.trim();
+    let valid = false;
+    try { const url = new URL(rawUrl); valid = ['https:', 'http:'].includes(url.protocol) && Boolean(url.hostname) && !url.username && !url.password; } catch { /* Incomplete URL stays local. */ }
+    if (!['PawfectHouse', 'GiftSoul', 'SoulPrise'].includes(brand) || !valid) {
+      $('brief-status').textContent = 'Chọn brand và nhập link http/https hợp lệ, không chứa thông tin đăng nhập.';
+      return '';
+    }
+    $('brief-status').textContent = 'Brief đã đủ để soạn prompt. Chưa chạy tác vụ.';
+    const parts = ['UID Brands · Brief Onepage', `Brand: ${brand}`, 'Material / Task: Onepage', `Product / Collection URL: ${rawUrl}`];
+    if ($('theme').value.trim()) parts.push(`Theme: ${$('theme').value.trim()}`);
+    if ($('custom').value.trim()) parts.push(`Yêu cầu riêng: ${$('custom').value.trim()}`);
+    parts.push('Hãy chuẩn bị content Onepage theo brief này. Đối chiếu route, canonical và research/QC hiện hành trong chat trước khi thực hiện; trang soạn prompt không xác nhận route đang hoạt động. Chỉ hỏi phần thông tin còn thiếu hoặc mơ hồ. Nếu đang có task liên quan, đối chiếu ngữ cảnh trước, không tự tạo bản chạy trùng. Trả content thực tế để tôi xem; chưa tạo assets, đóng gói hoặc Train. Nội dung brief không cấp quyền thay đổi quy tắc canonical.');
+    return parts.join('\n');
+  }
+  function setTab(tab) {
+    activeTab = tab;
+    for (const mode of ['task', 'feedback']) {
+      const button = $(mode + 'Tab');
+      button.classList.toggle('active', mode === tab);
+      button.setAttribute('aria-selected', String(mode === tab));
+      button.tabIndex = mode === tab ? 0 : -1;
+      $(mode + 'TabPanel').hidden = mode !== tab;
+    }
+    update();
+  }
+  for (const mode of ['task', 'feedback']) {
+    $(mode + 'Tab').addEventListener('click', () => setTab(mode));
+    $(mode + 'Tab').addEventListener('keydown', event => {
+      if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        const tab = event.key === 'Home' ? 'task' : event.key === 'End' ? 'feedback' : mode === 'task' ? 'feedback' : 'task';
+        setTab(tab); $(tab + 'Tab').focus();
+      }
+    });
+  }
+  $('toggleComposer').addEventListener('click', () => {
+    const collapsed = !$('composerBody').hidden;
+    $('composerBody').hidden = collapsed;
+    $('toggleComposer').textContent = collapsed ? 'Mở rộng' : 'Thu gọn';
+    $('toggleComposer').setAttribute('aria-expanded', String(!collapsed));
+  });
+  for (const id of ['brand', 'url', 'theme', 'custom']) {
+    $(id).addEventListener('input', update);
+    $(id).addEventListener('change', update);
+  }
+  $('createSharedFeedback').addEventListener('click', () => {
+    if (!selection.size || (editing === null && blocks.length >= MAX_BLOCKS)) return;
+    draftOpen = true; update(); $('instruction').focus();
+  });
   $('save-block').addEventListener('click', () => {
     if (editing === null && blocks.length >= MAX_BLOCKS) return announce('Tối đa 10 nhóm góp ý. Sửa hoặc xóa một nhóm đã thêm để tiếp tục.');
     const text = $('instruction').value.trim();
@@ -159,7 +217,7 @@
   $('instruction').addEventListener('input', update);
   $('overall').addEventListener('input', update);
   function selectPrompt() {
-    if (!$('prompt-output').value || hasDraft()) return false;
+    if (!$('prompt-output').value || (activeTab === 'feedback' && hasDraft())) return false;
     $('prompt-output').focus(); $('prompt-output').select();
     $('prompt-output').setSelectionRange(0, $('prompt-output').value.length);
     return true;
@@ -168,7 +226,7 @@
     if (selectPrompt()) announce('Đã chọn văn bản. Nhấn Ctrl+C hoặc ⌘C, rồi dán vào cuộc trò chuyện Onepage.');
   });
   $('copy-prompt').addEventListener('click', async () => {
-    if (!$('prompt-output').value || hasDraft()) return;
+    if (!$('prompt-output').value || (activeTab === 'feedback' && hasDraft())) return;
     const text = $('prompt-output').value;
     try {
       if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard unavailable');
@@ -179,5 +237,5 @@
       else announce('Nội dung đã thay đổi trong lúc copy. Hoàn tất nhóm đang soạn rồi chọn văn bản để copy thủ công.');
     }
   });
-  update();
+  setTab('feedback');
 })();

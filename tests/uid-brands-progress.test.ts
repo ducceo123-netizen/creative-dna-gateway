@@ -182,7 +182,7 @@ test("route failure followed by review is phase-scoped, never blanket form failu
 });
 
 test("research and market work retain natural chat updates before the final artifact",()=>{
- assert.match(UID_PROGRESS_GUIDANCE,/Keep ordinary conversational acknowledgement and progress visible while the embedded UI is open/);
+ assert.match(UID_PROGRESS_GUIDANCE,/Keep ordinary conversational acknowledgement and progress visible while a separate copy-only panel is open/);
  assert.match(UID_PROGRESS_GUIDANCE,/verified PDP\/specification checks, review findings, market\/comparison coverage and missing sources/);
  assert.match(UID_PROGRESS_GUIDANCE,/before the final artifact/);
  assert.match(UID_PROGRESS_REMINDER,/Full-result deduplication must not suppress these updates/);

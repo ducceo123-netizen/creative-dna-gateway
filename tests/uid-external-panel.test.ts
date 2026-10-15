@@ -27,8 +27,8 @@ test("public panel has no embedded app, network bridge, storage or private conte
   assert.match(html, /name="referrer" content="no-referrer"/);
   const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/g)];
   assert.deepEqual(scripts.map(match => match[1]), ["/onepage-panel.js"]);
-  assert.match(html, /không phải ảnh xem trước/);
-  assert.match(html, /không gửi, không chạy sửa, không tạo hàng đợi hay Train/);
+  assert.match(html, /không phải ảnh (?:xem trước|đã tạo)/);
+  assert.match(html, /không gửi (?:yêu cầu sửa, tạo hàng đợi hay Train)|không gửi, không chạy sửa, không tạo hàng đợi hay Train/);
 });
 
 test("copy-only composer provides accessible manual fallback and bounded separate feedback fields", () => {
@@ -51,15 +51,25 @@ test("copy-only composer provides accessible manual fallback and bounded separat
 function panelHarness(clipboard?: { writeText: (text: string) => Promise<void> }) {
   const ids = new Map<string, Element>();
   class Element {
-    tag: string; children: Element[] = []; dataset: Record<string, string> = {}; events: Record<string, (() => any)[]> = {};
+    tag: string; children: Element[] = []; dataset: Record<string, string> = {}; events: Record<string, ((event: any) => any)[]> = {}; parentElement?: Element;
     textContent = ""; className = ""; type = ""; value = ""; checked = false; disabled = false; hidden = false; title = "";
     selectionStart = 0; selectionEnd = 0;
     constructor(tag: string) { this.tag = tag; }
     set id(value: string) { ids.set(value, this); }
-    append(...nodes: Element[]) { this.children.push(...nodes); }
+    append(...nodes: Element[]) { for (const node of nodes) node.parentElement = this; this.children.push(...nodes); }
     replaceChildren(...nodes: Element[]) { this.children = nodes; }
-    addEventListener(event: string, handler: () => any) { (this.events[event] ||= []).push(handler); }
-    setAttribute(_key: string, _value: string) {}
+    addEventListener(event: string, handler: (event: any) => any) { (this.events[event] ||= []).push(handler); }
+    attributes: Record<string, string> = {};
+    classList = {
+      toggle: (name: string, force?: boolean) => {
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+        const add = force ?? !classes.has(name); add ? classes.add(name) : classes.delete(name);
+        this.className = [...classes].join(" "); return add;
+      },
+      contains: (name: string) => this.className.split(/\s+/).includes(name),
+    };
+    setAttribute(key: string, value: string) { this.attributes[key] = value; }
+    getAttribute(key: string) { return this.attributes[key] ?? null; }
     focus() {}
     select() { this.selectionStart = 0; this.selectionEnd = this.value.length; }
     setSelectionRange(start: number, end: number) { this.selectionStart = start; this.selectionEnd = end; }
@@ -72,14 +82,17 @@ function panelHarness(clipboard?: { writeText: (text: string) => Promise<void> }
       throw Error("Unsupported harness selector: " + selector);
     }
     querySelector(selector: string) { return this.querySelectorAll(selector)[0]; }
-    async fire(event: string) { for (const handler of this.events[event] ?? []) await handler(); }
+    async fire(event: string, data: Record<string, unknown> = {}) { for (const handler of this.events[event] ?? []) await handler({ preventDefault() {}, ...data }); }
     async click() { if (this.disabled) return; if (this.type === "checkbox") { this.checked = !this.checked; await this.fire("change"); } else await this.fire("click"); }
   }
-  for (const match of source("html").matchAll(/<(\w+)\b[^>]*id="([^"]+)"[^>]*>/g)) { const element = new Element(match[1]); element.id = match[2]; }
-  const document = { getElementById: (id: string) => ids.get(id), createElement: (tag: string) => new Element(tag) };
-  new Script(source("js")).runInNewContext({ document, navigator: { clipboard } });
+  for (const match of source("html").matchAll(/<(\w+)\b[^>]*id="([^"]+)"[^>]*>/g)) { const element = new Element(match[1]); element.id = match[2];
+    for (const attribute of match[0].matchAll(/([\w-]+)="([^"]*)"/g)) element.setAttribute(attribute[1], attribute[2]);
+    element.hidden = /\shidden(?:\s|>)/.test(match[0]); element.disabled = /\sdisabled(?:\s|>)/.test(match[0]);
+    element.className = element.getAttribute("class") ?? ""; }
+  const document = { body: new Element("body"), getElementById: (id: string) => ids.get(id), createElement: (tag: string) => new Element(tag) };
+  new Script(source("js")).runInNewContext({ document, navigator: { clipboard }, URL });
   const $ = (id: string) => { assert.ok(ids.has(id), id); return ids.get(id)!; };
-  return { $, fill: async (id: string, value: string) => { $(id).value = value; await $(id).fire("input"); }, group: (id: string) => $("slot-groups").querySelector(`[data-group-select="${id}"]`), blocks: () => $("blocks").children };
+  return { $, document, fill: async (id: string, value: string) => { $(id).value = value; await $(id).fire("input"); }, group: (id: string) => $("slot-groups").querySelector(`[data-group-select="${id}"]`), blocks: () => $("blocks").children };
 }
 
 test("shipped composer preserves multiple groups, deselected exclusions, edits and overlap prevention", async () => {
@@ -132,4 +145,90 @@ test("composer caps feedback at ten blocks but permits editing and removing at t
   await h.fill("instruction", "Updated first"); assert.equal(h.$("save-block").disabled, false); await h.$("save-block").click();
   assert.equal(h.blocks().length, 10); assert.match(h.$("prompt-output").value, /Updated first/);
   await h.blocks()[0].querySelector("[data-remove-block]").click(); assert.equal(h.blocks().length, 9);
+});
+
+test("standalone visual source retains the old PromptMaster palette, compact width and pill controls", () => {
+  const old = readFileSync(new URL("../uid-brands-workflow.ts", import.meta.url), "utf8");
+  const css = source("css"), html = source("html");
+  for (const token of ["fg", "muted", "bg", "surface", "input", "border", "active", "accent", "placeholder", "focus"]) {
+    const pattern = new RegExp(`--${token}:([^;}]+)`);
+    const expected = old.match(pattern)?.[1].trim();
+    assert.ok(expected, `Old PromptMaster defines ${token}`);
+    assert.equal(css.match(pattern)?.[1].trim(), expected, `Light palette preserves --${token}`);
+  }
+  assert.match(css, /\.wrap\s*\{[^}]*max-width:\s*600px/);
+  assert.match(css, /\.mode-tabs\s*\{[^}]*border-radius:\s*9999px/);
+  assert.match(css, /\.mode-tab(?:\s*\{[^}]*border-radius:\s*9999px|[^}]*\{)/);
+  assert.match(css, /\.variable-key[^}]*border-radius:\s*9999px/);
+  assert.match(css, /prefers-color-scheme:\s*dark/);
+  assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
+  assert.match(html, /Tạo tác vụ/); assert.match(html, /Feedback/);
+  assert.doesNotMatch(html, /FEEDBACK WORKSPACE|Chọn đúng phần\.|Góp ý rõ ý\./);
+  assert.doesNotMatch(css, /grid-template-columns:\s*minmax\(0,1fr\)\s+\d+px|position:\s*sticky/);
+});
+
+test("PromptMaster tabs and collapse preserve independent local feedback and brief drafts", async () => {
+  const h = panelHarness();
+  assert.equal(h.$("feedbackTab").getAttribute("aria-selected"), "true");
+  await h.group("banner").click(); await h.$("slot-banner_mobile").click();
+  assert.equal(h.$("slot-banner_desktop").parentElement!.classList.contains("selected"), true);
+  assert.equal(h.$("slot-banner_mobile").parentElement!.classList.contains("selected"), false);
+  await h.$("createSharedFeedback").click(); assert.equal(h.$("draft-card").hidden, false);
+  await h.fill("instruction", "Unfinished feedback survives navigation");
+  assert.equal(h.$("copy-prompt").disabled, true);
+  await h.$("taskTab").click();
+  assert.equal(h.$("taskTab").getAttribute("aria-selected"), "true");
+  assert.equal(h.$("feedbackTabPanel").hidden, true);
+  await h.fill("brand", "GiftSoul"); await h.fill("url", "https://example.com/products/verified");
+  await h.fill("theme", "Minimal"); await h.fill("custom", "Keep product details exact");
+  const brief = h.$("prompt-output").value;
+  assert.match(brief, /GiftSoul/); assert.match(brief, /https:\/\/example.com\/products\/verified/);
+  assert.match(brief, /Minimal/); assert.match(brief, /Keep product details exact/);
+  assert.doesNotMatch(brief, /Unfinished feedback survives navigation/);
+  await h.$("toggleComposer").click();
+  assert.equal(h.$("composerBody").hidden, true);
+  assert.equal(h.$("toggleComposer").getAttribute("aria-expanded"), "false");
+  await h.$("toggleComposer").click();
+  assert.equal(h.$("composerBody").hidden, false); assert.equal(h.$("prompt-output").value, brief);
+  await h.$("feedbackTab").click();
+  assert.equal(h.$("instruction").value, "Unfinished feedback survives navigation");
+  assert.equal(h.$("slot-banner_desktop").checked, true); assert.equal(h.$("slot-banner_mobile").checked, false);
+  assert.equal(h.$("copy-prompt").disabled, true); assert.equal(h.$("prompt-output").value, "");
+  await h.$("save-block").click();
+  const feedback = h.$("prompt-output").value;
+  await h.$("taskTab").click(); assert.equal(h.$("prompt-output").value, brief);
+  await h.$("feedbackTab").click(); assert.equal(h.$("prompt-output").value, feedback);
+  assert.doesNotMatch(feedback, /GiftSoul|Keep product details exact/);
+});
+
+test("optional task brief only copies its text and validates required inputs without autoexecution", async () => {
+  const copied: string[] = [];
+  const h = panelHarness({ writeText: async text => { copied.push(text); } });
+  await h.$("taskTab").click();
+  assert.equal(h.$("copy-prompt").disabled, true);
+  await h.fill("brand", "PawfectHouse");
+  assert.equal(h.$("copy-prompt").disabled, true);
+  for (const url of ["javascript:alert(1)", "data:text/plain,brief", "https://user:secret@example.com/private", "not a URL"]) {
+    await h.fill("url", url); assert.equal(h.$("copy-prompt").disabled, true); assert.equal(h.$("prompt-output").value, "");
+  }
+  await h.fill("url", "https://example.com/collections/verified");
+  assert.equal(h.$("copy-prompt").disabled, false);
+  assert.equal(copied.length, 0, "Completing a brief must not send or copy it automatically");
+  await h.$("copy-prompt").click();
+  assert.deepEqual(copied, [h.$("prompt-output").value]);
+  assert.match(copied[0], /PawfectHouse/); assert.match(copied[0], /Onepage/i);
+  assert.match(h.$("status").textContent, /[Dd]án|chat/);
+  assert.equal(h.blocks().length, 0, "Brief does not become an asset feedback block");
+  await h.$("feedbackTab").click(); assert.equal(h.$("prompt-output").value, "");
+  await h.$("taskTab").click(); assert.equal(h.$("prompt-output").value, copied[0]);
+});
+
+ test("tab keyboard navigation retains accessible selection and feedback draft", async () => {
+  const h = panelHarness();
+  await h.$("slot-wyl_01").click(); await h.fill("instruction", "Keyboard draft");
+  await h.$("feedbackTab").fire("keydown", { key: "Home" });
+  assert.equal(h.$("taskTab").getAttribute("aria-selected"), "true");
+  await h.$("taskTab").fire("keydown", { key: "End" });
+  assert.equal(h.$("feedbackTab").getAttribute("aria-selected"), "true");
+  assert.equal(h.$("instruction").value, "Keyboard draft"); assert.equal(h.$("slot-wyl_01").checked, true);
 });
