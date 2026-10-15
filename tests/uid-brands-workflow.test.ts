@@ -306,7 +306,7 @@ test("new version cannot leave a ready prompt bound to stale result",async()=>{
  const ui=setup(output());await ui.choose("approve");ui.update(output("content_approval","v2"));assert.equal(ui.$("promptDock").hidden,true);await ui.choose("approve");assert.match(ui.$("promptText").value,/"content_version":"v2"/);
 });
 test("composer has compact disclosures and no model dispatch API",()=>{
- assert.doesNotMatch(script,/sendFollowUpMessage/);assert.doesNotMatch(launcherHtml,/58vh/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not require or automatically open/);
+ assert.doesNotMatch(script,/sendFollowUpMessage/);assert.doesNotMatch(launcherHtml,/58vh/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not open interactive panels, embedded forms or widgets, even for asset\/group selection/);
 });
 
 test("edited prompt drafts survive exact-review remount and remain private",async()=>{
