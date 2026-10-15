@@ -232,3 +232,82 @@ test("optional task brief only copies its text and validates required inputs wit
   assert.equal(h.$("feedbackTab").getAttribute("aria-selected"), "true");
   assert.equal(h.$("instruction").value, "Keyboard draft"); assert.equal(h.$("slot-wyl_01").checked, true);
 });
+
+test("task catalog matches the verified public snapshot and filters all 22 brand routes", async () => {
+  const snapshot = JSON.parse(readFileSync(new URL('../docs/panel-route-snapshot.json', import.meta.url), 'utf8'));
+  assert.equal(snapshot.routes.length, 22);
+  const h = panelHarness();
+  for (const brand of ['PawfectHouse','GiftSoul','SoulPrise']) {
+    await h.fill('brand', brand);
+    const actual = h.$('branches').children.map(o => o.value).sort();
+    assert.deepEqual(actual, snapshot.routes.filter((r: any) => r.brand === brand.toLowerCase()).map((r: any) => r.branch).sort());
+  }
+  assert.equal(h.$('branches').children.some(o => o.value === 'ugc-image' || o.value === 'ldp-system'), false);
+  await h.fill('branches', 'ugc-image');
+  assert.equal(h.$('branches').value, 'onepage-system', 'unsupported brand route cannot be selected');
+  assert.match(source('html'), /Feedback Onepage/);
+});
+
+test("each catalog route exposes its actual schema fields and requires current route revalidation", async () => {
+  const snapshot = JSON.parse(readFileSync(new URL('../docs/panel-route-snapshot.json', import.meta.url), 'utf8'));
+  for (const route of snapshot.routes) {
+    const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand', route.brand); await h.fill('branches', route.branch);
+    await h.fill('url', 'https://example.com/verified-source'); await h.fill('theme', 'Verified campaign');
+    for (const key of Object.keys(route.fields)) {
+      if (['theme','typo_auto_generate','generation_mode','language'].includes(key)) continue;
+      const field = h.$('task-' + key);
+      assert.ok(field, route.brand + '/' + route.branch + '/' + key);
+      await h.fill('task-' + key, key === 'quantity' ? '3' : ['ratio','custom_ratio'].includes(key) ? '4:5' : ['dimensions','custom_dimensions'].includes(key) ? '800 x 1000' : 'Verified ' + key);
+    }
+    const prompt = h.$('prompt-output').value;
+    assert.ok(prompt, route.brand + '/' + route.branch);
+    assert.match(prompt, /Đối chiếu route và canonical hiện hành/);
+    assert.match(prompt, /không chứng minh route đang hoạt động/);
+    if (route.branch !== 'onepage-system') assert.doesNotMatch(prompt, /chuẩn bị content Onepage|CRC|Onepage/);
+  }
+});
+
+test("UGC quantity and dimensions validate, then preserve per-route draft without leaking into other tasks", async () => {
+  const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand','GiftSoul'); await h.fill('branches','ugc-image');
+  await h.fill('url','https://example.com/product'); await h.fill('task-ratio','4:5');
+  for (const qty of ['0','-1','1.5','many']) { await h.fill('task-quantity',qty); assert.equal(h.$('prompt-output').value,''); }
+  await h.fill('task-quantity','3');
+  for (const dims of ['0 x 800','-1 x 800','800','800 x 1.5']) { await h.fill('task-dimensions',dims); assert.equal(h.$('prompt-output').value,''); }
+  await h.fill('task-dimensions','800 x 1000');
+  assert.match(h.$('prompt-output').value,/Số lượng ảnh: 3/); assert.match(h.$('prompt-output').value,/800 x 1000/);
+  await h.fill('task-ratio','0:5'); assert.equal(h.$('prompt-output').value,''); await h.fill('task-ratio','4:5');
+  await h.fill('branches','onepage-system'); assert.doesNotMatch(h.$('prompt-output').value,/Số lượng ảnh|800 x 1000/);
+  await h.fill('branches','ugc-image'); assert.equal(h.$('task-quantity').value,'3'); assert.equal(h.$('task-dimensions').value,'800 x 1000');
+});
+
+test("recipient briefs do not require a product URL, brand-specific dimensions stay distinct and LDP readiness is qualified", async () => {
+  const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand','SoulPrise'); await h.fill('branches','recipient-image');
+  assert.equal(h.$('prompt-output').value,''); await h.fill('task-recipient','Grandparents');
+  assert.match(h.$('prompt-output').value,/Recipient Image/); assert.match(h.$('task-format').textContent,/800 × 800/);
+  await h.fill('branches','seasonal-banner'); assert.match(h.$('task-format').textContent,/2400 × 800/); assert.match(h.$('task-format').textContent,/720 × 494/);
+  await h.fill('brand','GiftSoul'); assert.match(h.$('task-format').textContent,/1600 × 800/); assert.doesNotMatch(h.$('task-format').textContent,/2400/);
+  await h.fill('branches','ldp-system'); assert.match(h.$('task-format').textContent,/không chứng minh luồng Figma end-to-end đã sẵn sàng/);
+  await h.fill('task-context','Seasonal campaign'); assert.match(h.$('prompt-output').value,/Xác minh khả năng thực thi/);
+});
+
+test("conflicted PawfectHouse dimensions never surface obsolete schema values as current output standards", async () => {
+  const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand','PawfectHouse');
+  for (const branch of ['ldp-hero','seasonal-banner']) {
+    await h.fill('branches',branch);
+    assert.match(h.$('task-format').textContent,/chưa đồng bộ/);
+    assert.doesNotMatch(h.$('task-format').textContent,/21:9|1250|350/);
+    assert.match(h.$('prompt-output').value,/schema kích thước cũ đang mâu thuẫn/);
+    assert.doesNotMatch(h.$('prompt-output').value,/21:9|1250|350/);
+  }
+});
+
+test("inferable creative fields do not block copy and source/theme/custom drafts stay scoped per brand and task", async () => {
+  const h = panelHarness(); await h.$('taskTab').click(); await h.fill('brand','PawfectHouse'); await h.fill('branches','home-hero');
+  await h.fill('url','https://example.com/product-a'); await h.fill('theme','Campaign A'); await h.fill('custom','Direction A');
+  assert.ok(h.$('prompt-output').value, 'idea/campaign may be inferred from source instead of forcing placeholder entry');
+  await h.fill('brand','GiftSoul');
+  for (const id of ['url','theme','custom']) assert.equal(h.$(id).value,'');
+  assert.doesNotMatch(h.$('prompt-output').value,/product-a|Campaign A|Direction A/);
+  await h.fill('brand','PawfectHouse');
+  assert.equal(h.$('url').value,'https://example.com/product-a'); assert.equal(h.$('theme').value,'Campaign A'); assert.equal(h.$('custom').value,'Direction A');
+});

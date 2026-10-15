@@ -7,14 +7,15 @@
 <main class="wrap" id="widgetContent">
 <div class="panel-toolbar"><strong>UID Brands · Prompt Master</strong><button id="toggleComposer" type="button" aria-expanded="true" aria-controls="composerBody">Thu gọn</button></div>
 <div id="composerBody">
-<div id="masterTabs" class="mode-tabs" role="tablist" aria-label="Onepage Prompt Master"><button id="taskTab" class="mode-tab" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="taskTabPanel">Tạo tác vụ</button><button id="feedbackTab" class="mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="feedbackTabPanel">Feedback</button></div>
-<p class="flow-state" id="flowState">Onepage · Soạn prompt trên trang, sao chép và gửi trong chat. Chưa chạy tác vụ.</p>
+<div id="masterTabs" class="mode-tabs" role="tablist" aria-label="UID Brands Prompt Master"><button id="taskTab" class="mode-tab" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="taskTabPanel">Tạo tác vụ</button><button id="feedbackTab" class="mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="feedbackTabPanel">Feedback Onepage</button></div>
+<p class="flow-state" id="flowState">UID Brands · Soạn prompt trên trang, sao chép và gửi trong chat. Chưa chạy tác vụ.</p>
 <noscript><p class="error">Cần bật JavaScript để soạn prompt. Bạn cũng có thể gửi brief hoặc góp ý trực tiếp trong chat.</p></noscript>
 <section id="actionablePanel">
 <div id="taskTabPanel" role="tabpanel" aria-labelledby="taskTab" hidden>
 <div class="launcher-row"><div><label for="brand">Brand</label><select id="brand"><option value="">Chọn brand</option><option value="PawfectHouse">PawfectHouse</option><option value="GiftSoul">GiftSoul</option><option value="SoulPrise">SoulPrise</option></select></div><div><label for="branches">Material / Task</label><select id="branches" aria-label="Select material"><option value="onepage-system">Onepage</option></select></div></div>
-<p class="mode-info">Các lựa chọn là danh mục cố định. Chat cần xác minh route và canonical hiện hành trước khi thực hiện.</p>
+<p class="mode-info">Danh mục xác minh ngày 15/10/2026, lọc theo brand. Link/theme/yêu cầu riêng được giữ riêng cho từng brand và task. Chat sẽ kiểm tra lại route và canonical hiện hành. Không thấy task cần dùng? Hỏi trực tiếp trong chat, không chọn thay một task khác.</p><p id="task-format" class="mode-info"></p>
 <label for="url">Product / Collection URL</label><input id="url" type="url" maxlength="2000" placeholder="https://pawfecthouse.com/collections/...">
+<div id="task-fields"></div>
 <details class="optional-brief" id="optionalBrief"><summary>Theme / yêu cầu riêng (tuỳ chọn)</summary><label for="theme">Theme <span class="optional">(không bắt buộc)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial...">
 <label for="custom">Yêu cầu riêng <span class="optional">(không bắt buộc)</span></label><textarea id="custom" maxlength="4000" placeholder="Nhập yêu cầu sáng tạo hoặc lưu ý riêng..."></textarea></details>
 <p id="brief-status" class="draft-note" role="status">Chọn brand và nhập link sản phẩm hoặc bộ sưu tập để tạo prompt.</p>

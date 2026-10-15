@@ -1,0 +1,447 @@
+{
+  "verified_at": "2026-10-15",
+  "source": "list_creative_dna_routes + resolve_creative_dna (read-only)",
+  "routes": [
+    {
+      "brand": "giftsoul",
+      "branch": "home-hero",
+      "fields": {
+        "idea": "optional",
+        "slot": "Desktop | Mobile | Both; default Both",
+        "theme": "string",
+        "product": "product or collection URL (optional)",
+        "custom_dimensions": "optional user override"
+      },
+      "output": {
+        "mobile": {
+          "width": 780,
+          "height": 480,
+          "aspect_ratio": "13:8"
+        },
+        "desktop": {
+          "width": 1600,
+          "height": 800,
+          "aspect_ratio": "2:1"
+        },
+        "enforcement": "HARD unless user explicitly overrides",
+        "same_concept": true,
+        "default_quantity": 2,
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "ldp-hero",
+      "fields": {
+        "idea": "optional string",
+        "context": "string",
+        "product": "optional string or URL",
+        "content_side": "optional left/right/auto",
+        "recipient_relationship": "optional string"
+      },
+      "output": {
+        "enforcement": "HARD",
+        "orientation": "ultra-wide landscape",
+        "aspect_ratio": "21:9",
+        "native_wide_composition": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "recipient-image",
+      "fields": {
+        "theme": "optional",
+        "quantity": "optional",
+        "recipient": "required",
+        "age_or_relationship_detail": "optional"
+      },
+      "output": {
+        "ratio": "1:1",
+        "background": "white studio",
+        "text_overlay": false,
+        "preferred_people": "1-2"
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "seasonal-banner",
+      "fields": {
+        "idea": "optional",
+        "theme": "string",
+        "product": "product or collection URL (optional)",
+        "custom_dimensions": "optional user override"
+      },
+      "output": {
+        "width": 1600,
+        "height": 800,
+        "enforcement": "HARD unless user explicitly overrides",
+        "aspect_ratio": "2:1",
+        "mobile_behavior": "same responsive asset; dedicated size unverified",
+        "default_quantity": 1,
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "shop-by-product-image",
+      "fields": {
+        "idea": "optional",
+        "ratio": "user-requested ratio e.g. 1:1, 4:5, 16:9, 21:9",
+        "context": "optional",
+        "product": "single product image/link/spec",
+        "products": "optional array for batch",
+        "dimensions": "optional explicit WxH",
+        "function_to_show": "optional"
+      },
+      "output": {
+        "fixed_ratio": false,
+        "aspect_ratio": "USER_CONFIGURABLE",
+        "ratio_enforcement": "HARD_WHEN_SUPPLIED",
+        "pixel_dimensions_supported": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "ugc-image",
+      "fields": {
+        "pet": "optional description",
+        "ratio": "user-requested ratio",
+        "people": "optional description",
+        "context": "optional",
+        "product": "single product image/link/spec",
+        "products": "optional array",
+        "quantity": "optional number of outputs",
+        "shot_type": "optional/auto",
+        "dimensions": "optional explicit WxH"
+      },
+      "output": {
+        "fixed_ratio": false,
+        "aspect_ratio": "USER_CONFIGURABLE",
+        "ratio_enforcement": "HARD_WHEN_SUPPLIED",
+        "pixel_dimensions_supported": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "ldp-system",
+      "fields": {
+        "goal": "optional",
+        "context": "string",
+        "products": "optional array or collection URL",
+        "page_type": "optional",
+        "audience_recipient": "optional"
+      },
+      "output": {
+        "mobile": true,
+        "desktop": true,
+        "ui_direction": true,
+        "content_outline": true,
+        "section_structure": true
+      }
+    },
+    {
+      "brand": "giftsoul",
+      "branch": "onepage-system",
+      "fields": {
+        "context": "optional season/niche/recipient",
+        "product": "optional single product URL/image/spec",
+        "language": "default English storefront copy unless user requests otherwise",
+        "collection": "optional collection URL",
+        "product_line": "optional array of products/URLs",
+        "generation_mode": "content_only / asset_plan / generate_all"
+      },
+      "output": null
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "home-hero",
+      "fields": {
+        "idea": "string",
+        "slot": "Main | Side",
+        "product": "string or URL",
+        "campaign": "string",
+        "typo_content": "optional string",
+        "typo_auto_generate": true
+      },
+      "output": {
+        "main": {
+          "output": {
+            "width": 2688,
+            "height": 1254,
+            "enforcement": "HARD",
+            "orientation": "landscape",
+            "aspect_ratio": 2.1435
+          },
+          "behavior": [
+            "primary campaign hero",
+            "wide lifestyle storytelling",
+            "intentional negative space for headline and CTA",
+            "product integrated naturally but clearly visible",
+            "do not center the primary subject across the full canvas",
+            "do not use square, 4:3, 3:2, portrait or social-post composition"
+          ],
+          "composition": {
+            "text_zone": "left",
+            "enforcement": "HARD",
+            "visual_zone": "right",
+            "text_zone_width": "40-45%",
+            "visual_zone_width": "55-60%"
+          }
+        },
+        "side": {
+          "output": {
+            "width": 1125,
+            "height": 1254,
+            "enforcement": "HARD",
+            "orientation": "portrait-ish",
+            "aspect_ratio": 0.8971
+          },
+          "behavior": [
+            "secondary campaign hero",
+            "re-author composition for narrow canvas; never crop Main Hero",
+            "one clear story",
+            "one focal person or compact group",
+            "one clear product focus",
+            "short headline",
+            "direct CTA",
+            "reduce environment and decorative detail",
+            "keep subject away from unsafe outer edge",
+            "when paired beside Main Hero, subject should preferably face inward toward page content"
+          ],
+          "composition": {
+            "hierarchy": "compressed",
+            "enforcement": "HARD",
+            "safe_margin": "generous",
+            "primary_zone": "center or inward-facing"
+          }
+        }
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "ldp-hero",
+      "fields": {
+        "idea": "optional string",
+        "context": "string",
+        "product": "optional string or URL",
+        "content_side": "optional left/right/auto"
+      },
+      "output": {
+        "enforcement": "HARD",
+        "orientation": "ultra-wide landscape",
+        "aspect_ratio": "21:9"
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "seasonal-banner",
+      "fields": {
+        "idea": "optional string",
+        "context": "string",
+        "product": "optional string or URL"
+      },
+      "output": {
+        "width": 1250,
+        "height": 350,
+        "enforcement": "HARD",
+        "orientation": "ultra-wide landscape",
+        "aspect_ratio": 3.5714285714
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "shop-by-categories",
+      "fields": {
+        "idea": "optional string",
+        "context": "optional string",
+        "product": "optional single product",
+        "products": "optional array of products"
+      },
+      "output": {
+        "asset_only": true,
+        "enforcement": "HARD",
+        "orientation": "square",
+        "aspect_ratio": "1:1"
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "shop-by-product-image",
+      "fields": {
+        "idea": "optional string",
+        "context": "optional season/niche",
+        "product": "image or URL recommended",
+        "product_type": "string"
+      },
+      "output": {
+        "asset_scope": "image only",
+        "enforcement": "HARD",
+        "orientation": "square",
+        "aspect_ratio": "1:1"
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "ugc-image",
+      "fields": {
+        "pet": "optional description",
+        "ratio": "user-requested ratio",
+        "people": "optional description",
+        "context": "optional",
+        "product": "single product image/link/spec",
+        "products": "optional array",
+        "quantity": "optional number of outputs",
+        "shot_type": "optional/auto",
+        "dimensions": "optional explicit WxH"
+      },
+      "output": {
+        "fixed_ratio": false,
+        "aspect_ratio": "USER_CONFIGURABLE",
+        "ratio_enforcement": "HARD_WHEN_SUPPLIED",
+        "pixel_dimensions_supported": true
+      }
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "ldp-system",
+      "fields": {},
+      "output": null
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "onepage-system",
+      "fields": {
+        "context": "optional season/niche/recipient",
+        "product": "optional single product URL/image/spec",
+        "language": "default English storefront copy unless user requests otherwise",
+        "collection": "optional collection URL",
+        "product_line": "optional array of products/URLs",
+        "generation_mode": "content_only / asset_plan / generate_all"
+      },
+      "output": null
+    },
+    {
+      "brand": "soulprise",
+      "branch": "home-hero",
+      "fields": {
+        "slot": "Desktop | Mobile | Both",
+        "theme": "string",
+        "product": "product or collection URL",
+        "custom_dimensions": "optional user override"
+      },
+      "output": {
+        "mobile": {
+          "width": 1920,
+          "height": 1080,
+          "aspect_ratio": "16:9"
+        },
+        "desktop": {
+          "width": 1920,
+          "height": 1080,
+          "aspect_ratio": "16:9"
+        },
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "soulprise",
+      "branch": "recipient-image",
+      "fields": {
+        "theme": "optional",
+        "quantity": "optional",
+        "recipient": "required"
+      },
+      "output": {
+        "width": 800,
+        "height": 800,
+        "aspect_ratio": "1:1",
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "soulprise",
+      "branch": "seasonal-banner",
+      "fields": {
+        "theme": "string",
+        "product": "product URL",
+        "custom_dimensions": "optional user override"
+      },
+      "output": {
+        "mobile": {
+          "width": 720,
+          "height": 494,
+          "aspect_ratio": "360:247"
+        },
+        "desktop": {
+          "width": 2400,
+          "height": 800,
+          "aspect_ratio": "3:1"
+        },
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "soulprise",
+      "branch": "shop-by-product-image",
+      "fields": {
+        "theme": "optional",
+        "product": "required",
+        "quantity": "optional",
+        "product_type": "required"
+      },
+      "output": {
+        "width": 800,
+        "height": 800,
+        "aspect_ratio": "1:1",
+        "standalone_files": true
+      }
+    },
+    {
+      "brand": "soulprise",
+      "branch": "onepage-system",
+      "fields": {
+        "context": "optional season/niche/recipient",
+        "product": "optional single product URL/image/spec",
+        "language": "default English storefront copy unless user requests otherwise",
+        "collection": "optional collection URL",
+        "product_line": "optional array of products/URLs",
+        "generation_mode": "content_only / asset_plan / generate_all"
+      },
+      "output": null
+    },
+    {
+      "brand": "pawfecthouse",
+      "branch": "niche-product-combo",
+      "fields": {
+        "collection_or_product_pool": {
+          "type": "string",
+          "required": true
+        },
+        "theme": {
+          "type": "string",
+          "required": false
+        },
+        "niches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "required": true
+        },
+        "custom_ratio": {
+          "type": "string",
+          "default": "1:1"
+        },
+        "quantity": {
+          "type": "number",
+          "required": false
+        },
+        "custom_style": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "output": null
+    }
+  ]
+}
