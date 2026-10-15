@@ -111,15 +111,18 @@ export function validateLdpJob(raw: unknown, context: ResearchContext, snapshot:
   const approval = job.plan_approval;
   const approval_matches = !!approval && approval.task_id===job.task_id && approval.content_version===expected_version;
   if (approval && !approval_matches) issues.push('STALE_OR_WRONG_TASK_APPROVAL');
-  return { schema_version: LDP_VERSION, task_id:job.task_id, expected_version, status: issues.length?'NEEDS_LDP_PLAN':'REQUIRES_HOST_EVIDENCE_AND_PLAN_REVIEW', issues:[...new Set(issues)], limitations:[...new Set(limitations)], research, approval_matches,
-    delivery_scope:job.page_manifest.scope,complete_page_eligible:job.page_manifest.scope==='complete_ldp'&&!issues.length, approval:'HOST_REPORTED_NOT_AUTHENTICATED', execution:'NOT_EXECUTED', next: issues.length?'Repair only affected inputs and resubmit.':approval_matches?'Host must verify authentic approval and all product pixels before authorized production.':'Present this exact plan revision for user approval after semantic source review.', recommendations:suggestLdpStructure(job.product_matrix) };
+  const authority_matches = !!job.execution_authority && job.execution_authority.task_id===job.task_id;
+  if(job.execution_authority&&!authority_matches) issues.push('WRONG_TASK_EXECUTION_AUTHORITY');
+  const execution_basis_matches = job.review_policy==='user_checkpoint' ? approval_matches : approval_matches || authority_matches;
+  return { schema_version: LDP_VERSION, task_id:job.task_id, expected_version, status: issues.length?'NEEDS_LDP_PLAN':'REQUIRES_HOST_EVIDENCE_AND_PLAN_REVIEW', issues:[...new Set(issues)], limitations:[...new Set(limitations)], research, approval_matches, authority_matches, execution_basis_matches,
+    delivery_scope:job.page_manifest.scope,complete_page_eligible:job.page_manifest.scope==='complete_ldp'&&!issues.length, approval:'HOST_REPORTED_NOT_AUTHENTICATED', execution:'NOT_EXECUTED', next: issues.length?'Host repairs affected inputs and resubmits; ask the user only for essential unresolved information.':execution_basis_matches?'Host verifies the original authenticated user instruction, current scope and tool permissions, inspects all product pixels and continues production. Do not ask for a separate plan approval unless the user requested one or scope/permissions require it.':job.review_policy==='user_checkpoint'?'Honor the requested checkpoint: present this exact plan revision for approval.':'Host binds the original authenticated end-to-end user request as execution_authority, not a fabricated plan approval. If no such request exists, obtain scope authorization.', recommendations:suggestLdpStructure(job.product_matrix) };
 }
 
 export function attachLdpWorkflow<T extends Record<string,any>>(data:T, context:ResearchContext={}):T & Record<string,any> {
   if (!isPawfectHouseLdp(data)) return data;
   const snapshot=canonicalLdpSnapshot(data);
   const raw=isObject(context.research)?context.research.ldp_job:undefined;
-  const validation=raw===undefined?{schema_version:LDP_VERSION,status:'AWAITING_LDP_PLAN',execution:'NOT_EXECUTED'}:validateLdpJob(raw,context,snapshot);
+  const validation=raw===undefined?{schema_version:LDP_VERSION,status:'AUTO_RESEARCH_AND_PLAN_REQUIRED',execution:'NOT_EXECUTED',pending_owner:'EXECUTING_HOST',next:'Use the collection URL to infer brand/niche, resolve current canonical rules, discover live brand references, research products and author research.ldp_job automatically. No user-authored plan or separate reference URL is required.'}:validateLdpJob(raw,context,snapshot);
   const policyBlocked=data.creative_quality_contract?.status==='BLOCKED'||data.quality_execution_guard?.status==='BLOCKED'||data.readiness?.content_authoring==='BLOCKED';
   return {...data,ldp_workflow_contract:{...LDP_CONTRACT,canonical_snapshot:snapshot,research_snapshot:researchEvidenceSnapshot(context.research),input_shape:ldpInputShape},ldp_validation:validation,
     readiness:{...data.readiness,ldp_plan:policyBlocked?'BLOCKED':validation.status,ldp_asset_execution:'HOST_EXECUTION_REQUIRED',ldp_figma_delivery:'REQUIRES_NATIVE_ASSEMBLY_AND_ACTUAL_QC'}};
