@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Onepage · Soạn góp ý | UID Brands</title>
+  <link rel="stylesheet" href="/onepage-panel.css">
+  <script src="/onepage-panel.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/onepage-panel.html" aria-label="UID Brands Onepage"><span class="brand-mark" aria-hidden="true">u.</span> UID Brands <span class="brand-divider">/</span> <span class="subbrand">Onepage</span></a><span class="local-badge"><span aria-hidden="true">●</span> Chỉ soạn prompt</span></header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">FEEDBACK WORKSPACE</p><h1>Chọn đúng phần.<br>Góp ý rõ ý.</h1><p class="intro">Chọn nhiều mục, viết một góp ý chung, rồi thêm nhóm tiếp theo.<br>Sao chép prompt và gửi trong cuộc trò chuyện đang làm Onepage.</p></div><div class="step-guide" aria-label="Các bước"><span><b>1</b> Chọn mục</span><span><b>2</b> Thêm góp ý</span><span><b>3</b> Copy về chat</span></div></div>
+    <aside class="notice"><strong>Đây là danh sách vị trí cố định của mẫu Onepage.</strong> Trang không đọc task, phiên bản hay ảnh đã tạo của bạn. Các ô bên dưới là tên vị trí, không phải ảnh xem trước. Chat sẽ đối chiếu với kết quả thực tế trước khi sửa.</aside>
+    <noscript><p class="notice">Cần bật JavaScript để chọn mục và tạo prompt trên trang này. Bạn cũng có thể góp ý trực tiếp trong chat.</p></noscript>
+    <div class="workspace">
+      <section class="editor" aria-labelledby="picker-title">
+        <div class="section-heading"><div><p class="eyebrow">01 / CHỌN PHẠM VI</p><h2 id="picker-title">Các vị trí trong Onepage</h2></div><button type="button" id="clear-selection" class="text-button">Bỏ chọn</button></div>
+        <p class="muted small">Tối đa 10 nhóm góp ý. Mục đã thuộc một nhóm sẽ được giữ riêng. Chọn “Sửa” ở nhóm đó để thay đổi.</p>
+        <div id="slot-groups" class="slot-groups"></div>
+        <section class="draft-box" aria-labelledby="draft-title">
+          <div class="section-heading"><h2 id="draft-title">Góp ý cho các mục đang chọn</h2><span id="selection-count" class="count">0 mục</span></div>
+          <p id="selection-summary" class="selection-summary" aria-live="polite">Chưa chọn mục nào.</p>
+          <label for="instruction">Bạn muốn thay đổi điều gì?</label>
+          <textarea id="instruction" rows="4" maxlength="4000" placeholder="Ví dụ: tăng khoảng trắng, giữ màu nền và bố cục hiện tại."></textarea>
+          <div class="draft-actions"><button type="button" id="save-block" class="primary" disabled>+ Thêm nhóm góp ý</button><button type="button" id="cancel-edit" class="secondary" hidden>Hủy chỉnh sửa</button><span class="muted small">Chỉ các mục đã chọn được áp dụng góp ý này.</span></div>
+        </section>
+        <section class="overall-box" aria-labelledby="overall-title"><p class="eyebrow">TÙY CHỌN / PHẠM VI RIÊNG</p><h2 id="overall-title">Góp ý tổng thể</h2><label for="overall">Chỉ ghi ở đây nếu bạn muốn thay đổi tổng thể Onepage.</label><textarea id="overall" rows="3" maxlength="4000" placeholder="Ví dụ: thống nhất cách viết tiêu đề trên toàn trang."></textarea><p class="muted small">Góp ý này được ghi thành phạm vi riêng, không tự nhập chung vào các nhóm assets.</p></section>
+      </section>
+      <aside class="review-column" aria-labelledby="review-title">
+        <section class="review-card"><div class="section-heading"><div><p class="eyebrow">02 / KIỂM TRA GÓP Ý</p><h2 id="review-title">Nhóm đã thêm</h2></div><span id="block-count" class="count">0 nhóm</span></div><div id="blocks"></div><div id="empty-state" class="empty-state"><span class="empty-symbol" aria-hidden="true">↗</span><strong>Bắt đầu với một nhóm nhỏ</strong><p>Chọn các mục bên trái và thêm một góp ý. Mỗi nhóm giữ nguyên phạm vi của mình.</p></div></section>
+        <section class="copy-card"><p class="eyebrow">03 / GỬI TRONG CHAT</p><h2>Prompt của bạn</h2><p class="muted small">Copy chỉ đưa văn bản vào clipboard. Trang không gửi, không chạy sửa, không tạo hàng đợi hay Train.</p><label for="prompt-output" class="sr-only">Prompt góp ý để sao chép</label><textarea id="prompt-output" rows="10" readonly placeholder="Prompt sẽ xuất hiện khi bạn thêm nhóm góp ý hoặc góp ý tổng thể."></textarea><p id="draft-warning" class="warning" hidden>Bạn còn nhóm đang soạn. Hãy thêm/lưu nhóm hoặc hủy phần đang soạn trước khi copy.</p><button type="button" id="copy-prompt" class="primary full" disabled>Sao chép prompt</button><button type="button" id="select-prompt" class="secondary full" disabled>Chọn văn bản để copy thủ công</button><p id="status" role="status" aria-live="polite" class="status">Chưa có nội dung để sao chép.</p></section>
+      </aside>
+    </div>
+    <footer>Không đăng nhập · Không lưu nội dung · Không tải dữ liệu task<br><span>Tải lại hoặc đóng trang sẽ mất các góp ý chưa sao chép. 18 vị trí production canonical; GTK chỉ dùng khi kết quả có GTK.</span></footer>
+  </main>
+</body>
+</html>

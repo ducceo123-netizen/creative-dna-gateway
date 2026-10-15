@@ -3,6 +3,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/onepage-panel.html",
+      "destination": "/onepage-panel.html"
+    },
+    {
+      "source": "/onepage-panel.js",
+      "destination": "/onepage-panel.js"
+    },
+    {
+      "source": "/onepage-panel.css",
+      "destination": "/onepage-panel.css"
+    },
+    {
       "source": "/api",
       "destination": "/api"
     },
