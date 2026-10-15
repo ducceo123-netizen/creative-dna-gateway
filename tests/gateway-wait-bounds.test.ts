@@ -109,10 +109,11 @@ test('HTTP and MCP expose safe recovery details instead of claiming launcher rea
  });
  });
 
-test('initialization guidance avoids native probing and route-to-render failure inference',async()=>{
+test('initialization guidance disables automatic rendering and leaves chat commands usable',async()=>{
  const {readFile}=await import('node:fs/promises');const server=await readFile(new URL('../server.ts',import.meta.url),'utf8');
- assert.match(server,/Do not probe get_uid_brands_native_workflow before the registered launcher\/review tool/);
- assert.doesNotMatch(server,/manual input as a fallback if the tool actually fails/);
- const {NATIVE_WORKFLOW_DESCRIPTION,NATIVE_FALLBACK_TEXT}=await import('../uid-brands-actions.ts');
- assert.match(NATIVE_WORKFLOW_DESCRIPTION,/not a prerequisite or capability probe/);assert.match(NATIVE_FALLBACK_TEXT,/degraded route lookup with prepared launcher UI is not a rendering failure/);
+ assert.doesNotMatch(server,/UI-FIRST \/ LAUNCHER INVOCATION|has an attached MCP App outputTemplate|displays the interactive Task Launcher/);
+ const {NATIVE_WORKFLOW_DESCRIPTION,NATIVE_FALLBACK_TEXT,UID_NATIVE_WORKFLOW}=await import('../uid-brands-actions.ts');
+ assert.match(NATIVE_WORKFLOW_DESCRIPTION,/not a prerequisite or capability probe/);
+ assert.match(NATIVE_FALLBACK_TEXT,/chat/i);
+ assert.equal(UID_NATIVE_WORKFLOW.renderer,'chat');
 });

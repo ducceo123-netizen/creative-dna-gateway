@@ -58,7 +58,7 @@ test("all nine discovered and registered tools share supported bounded labels an
       assert.deepEqual(tool.annotations, discovery.annotations);
     }
     assert.deepEqual(tools.find((t: any) => t.name === "ingest_uid_brands_attachment")._meta["openai/fileParams"], ["file"]);
-    assert.equal(tools.find((t: any) => t.name === "launch_creative_dna")._meta["openai/widgetAccessible"], true);
+    assert.equal(tools.find((t: any) => t.name === "launch_creative_dna")._meta["openai/widgetAccessible"], undefined);
     assert.equal(tools.find((t: any) => t.name === "submit_training_feedback").annotations.readOnlyHint, false);
   });
 });
@@ -153,7 +153,7 @@ test("partial outcomes preserve actual evidence and one next-action contract, ne
   assertGuidanceOnce(result);
   const native = withUidProgress({ content: [{ type: "text", text: "Workflow controls" }], structuredContent: UID_NATIVE_WORKFLOW });
   assert.equal(native.content.length, 2);
-  assert.match(native.structuredContent.statusContract, /Keep drafts for the same exact review/);
+  assert.match(native.structuredContent.statusContract, /Guidance alone does not execute anything/);
   assertGuidanceOnce(native);
   assert.match(UID_PROGRESS_GUIDANCE, /done \/ pending \/ blocked and the next action/);
   assert.match(UID_PROGRESS_GUIDANCE, /Never expose private reasoning, invent percentages, timers or completion/);
@@ -166,16 +166,18 @@ test("route failure followed by review is phase-scoped, never blanket form failu
     const launcher=await rpc("tools/call",{name:"launch_creative_dna",arguments:{}});
     assert.equal(launcher.isError,true);
     assert.equal(launcher.structuredContent.ui_status.routing,"degraded");
-    assert.equal(launcher.structuredContent.ui_status.render,"unverified");
-    assert.match(launcher.content[0].text,/does not prove the form failed to render/);
+    assert.equal(launcher.structuredContent.ui_status.render,"disabled");
+    assert.equal(launcher.structuredContent.renderer,"chat");
+    assert.match(launcher.content[0].text,/chat/i);
     const review=await rpc("tools/call",{name:"show_uid_brands_review",arguments:{stage:"content_approval",task_id:"task-A",content_version:"v1",result_content:"Content v1"}});
     assert.notEqual(review.isError,true);
     assert.equal(review.structuredContent.ui_status.stage,"content_approval");
-    assert.equal(review.structuredContent.ui_status.render,"unverified");
-    assert.match(review.content[0].text,/earlier launcher or route error belongs to that earlier stage/);
-    assert.match(review.content[0].text,/Do not create another panel/);
+    assert.equal(review.structuredContent.ui_status.render,"disabled");
+    assert.equal(review.structuredContent.renderer,"chat");
+    assert.ok(review.structuredContent.next_actions.length > 0);
     const init=await rpc("initialize",{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"stage-test",version:"1"}});
-    assert.match(init.instructions,/do not repeat an earlier launcher error as a current blanket form failure/);
+    assert.match(init.instructions,/name actual sources or deliverables only when verified/);
+    assert.equal(review.structuredContent.routes_error,undefined);
   },async()=>Response.json({error:"unavailable"},{status:503,headers:{"Retry-After":"0"}}));
 });
 

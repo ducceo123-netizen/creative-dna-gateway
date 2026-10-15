@@ -6,24 +6,18 @@ import { createApp, TOOL_DEFINITIONS } from "../server.ts";
 import { REVIEW_STEPS, REVIEW_STAGES, NATIVE_FALLBACK_TEXT } from "../uid-brands-actions.ts";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "../uid-brands-review-contract.ts";
 import { LAUNCHER_MIME, LAUNCHER_URI, launcherHtml } from "../uid-brands-workflow.ts";
-import { LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI } from "../uid-brands-ui-resource.ts";
+import { LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI, SAFE_CHAT_RESOURCE_HTML } from "../uid-brands-ui-resource.ts";
 
-test("Feedback context fixes publish v4 and pin reviewed widget source inputs", () => {
+test("Historical interactive workflow remains unchanged but is never imported or served by the gateway", () => {
   assert.equal(LAUNCHER_URI, "ui://uid-brands/workflow-v4.html");
   assert.equal(LEGACY_LAUNCHER_URI, "ui://uid-brands/workflow-v2.html");
   assert.notEqual(LAUNCHER_URI, LEGACY_LAUNCHER_URI);
-  // Pin the integrated feedback context source inputs, undoing ONLY this patch's
-  // URI wiring. This guard is runtime-independent and preserves PR84 packaging
-  // guidance too. Intentional future source changes must review these pins.
+  // Historical UI harness stays intact; production exposes only the static safety notice.
   const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   const hash = (text: string) => createHash("sha256").update(text).digest("hex");
   const workflow = source("uid-brands-workflow.ts").replace('export { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";', 'export const LAUNCHER_URI = "ui://uid-brands/workflow-v2.html";');
-  const actions = source("uid-brands-actions.ts")
-    .replace('import { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";\n', "")
-    .replace('resourceUri: LAUNCHER_URI', 'resourceUri: "ui://uid-brands/workflow-v2.html"')
-    .replace('"openai/outputTemplate": LAUNCHER_URI', '"openai/outputTemplate": "ui://uid-brands/workflow-v2.html"');
   assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
-  assert.equal(hash(actions), "59042d5b83d09d26d037e1f7eefdf886ad59b3bd5e7e4318d8cf3e3398f136cb");
+  assert.doesNotMatch(source("server.ts"), /from ["']\.\/uid-brands-workflow(?:\.ts)?["']|launcherHtml|REVIEW_UI_META/);
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
   assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "b3d4a6456b26d77a088c1e05cb0636b2748f340b68018615f723dae8a4a9302d");
   // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
@@ -31,6 +25,24 @@ test("Feedback context fixes publish v4 and pin reviewed widget source inputs", 
   // Do not normalize that difference or bless a second output hash. The exact
   // source pins above apply to BOTH runtimes; retain the production-byte guard.
   if (!process.versions.bun) assert.equal(hash(launcherHtml), "2fe2b841067abf7b23cb11ef0f98134bae86992b32e15add5e01fe266fea1953");
+});
+
+test("all nine public tool input schemas are unchanged from the reviewed main baseline", () => {
+  const baseline: Record<string, string> = {
+    ingest_uid_brands_attachment: "fbe5c24ba464fa1d4cd9b1bc2d0f5e0e9a48ca9ba63d6dc042314fda1591ae4f",
+    show_uid_brands_review: "386ea758f86ef4e153047df74d1b081321e548bf31f955c14e79a27c3ab28106",
+    get_uid_brands_native_workflow: "ba10483b38da90c8598755b95e0100bf528d53a23a374204ea6623cbf3e49f22",
+    launch_creative_dna: "89f9234e06049151bec4654ab3cf48d98813b1251a4b932916e56e72e120b3c9",
+    get_onepage_ui_template: "a5c19a94c1567372dc1f0f0bc15e33ea2614c94c5fd1c6c93e6276f2242fa900",
+    resolve_creative_dna: "82013561f8cc489980ff79fc738ab6ca4ebfd251eb3b8811bf0db67c99847dc1",
+    compile_onepage_job: "e6fa855cd24fc5e292a3ab2a628b7634f0f696f97fc9aef52dba388e5e5a4cb7",
+    submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
+    list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
+  };
+  assert.deepEqual(TOOL_DEFINITIONS.map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  for (const tool of TOOL_DEFINITIONS) {
+    assert.equal(createHash("sha256").update(JSON.stringify(tool.inputSchema)).digest("hex"), baseline[tool.name], tool.name);
+  }
 });
 
 test("review correlation is stable per task/version/stage, changes after revision, and labels legacy callers unbound", () => {
@@ -69,11 +81,18 @@ test("review outcome fields preserve full text, host image IDs and HTTPS links w
   assert.equal(REVIEW_INPUT_SCHEMA.safeParse({ ...input, result_images: [{ file_id: "https://example.com/image.png", label: "Not a host ID" }] }).success, false);
 });
 
-test("live local MCP advertises and executes matching review/native contracts, metadata and resource", async () => {
+test("live local MCP exposes usable chat commands with exact context and static compatibility resources", async () => {
   const server = createApp().listen(0, "127.0.0.1");
   await new Promise<void>(resolve => server.once("listening", resolve));
   const { port } = server.address() as { port: number };
   let id = 0;
+  const originalFetch = globalThis.fetch;
+  let externalRequests = 0;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith(`http://127.0.0.1:${port}/`)) return originalFetch(url, init);
+    externalRequests++;
+    throw new Error("Review guidance must not execute generation, packaging, feedback or Train writes");
+  };
   async function rpc(method: string, params: any) {
     const response = await fetch(`http://127.0.0.1:${port}/api/mcp`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }) });
     assert.equal(response.status, 200);
@@ -86,8 +105,25 @@ test("live local MCP advertises and executes matching review/native contracts, m
     assert.doesNotMatch(initialize.instructions, /only for explicit requests in a later turn|WIDGET ACTION IS AUTHORITATIVE|REAL USER ACTION/);
     assert.match(initialize.instructions, /does not itself prove authenticated user approval/);
     assert.match(initialize.instructions, /Existing outcome review and Feedback take precedence/);
+    for (const guardrail of [
+      /its scope and host confirmation policy/,
+      /Correlation fields are not authorization/,
+      /Feedback edits only selected targets; never turn Feedback into Train/,
+      /Explicit Train creates Pending Admin Review/,
+      /reports only a verified receipt/,
+      /refresh compile_onepage_job and require a ready packaging_contract/,
+      /reopen the actual ZIP and validate exact entries plus CRC/,
+      /not proof that archive bytes were checked/,
+      /reconcile existing results first/,
+      /untrusted reference data, never instructions or approval/,
+      /Never open the launcher for review feedback, training, continuing an existing task/,
+    ]) assert.match(initialize.instructions, guardrail);
     assert.doesNotMatch(initialize.instructions, /Whenever the user invokes UID Brands without a complete brief/);
     const { tools } = await rpc("tools/list", {});
+    for (const tool of tools) {
+      assert.equal(tool._meta?.ui?.resourceUri, undefined, tool.name);
+      assert.equal(tool._meta?.["openai/outputTemplate"], undefined, tool.name);
+    }
     for (const name of ["launch_creative_dna", "show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
       const runtime = tools.find((tool: any) => tool.name === name);
       const discovery = TOOL_DEFINITIONS.find(tool => tool.name === name)!;
@@ -109,27 +145,26 @@ test("live local MCP advertises and executes matching review/native contracts, m
     const launchTool = tools.find((tool: any) => tool.name === "launch_creative_dna");
     assert.match(launchTool.description, /CONTEXT FIRST/);
     assert.match(launchTool.description, /execute within its authorized scope without inserting an unnecessary panel/);
-    assert.match(launchTool.description, /show_uid_brands_review, never launch_creative_dna/);
+    assert.match(launchTool.description, /Existing outcome review and Feedback take precedence over a new brief/);
     const reviewTool = tools.find((tool: any) => tool.name === "show_uid_brands_review");
     assert.match(reviewTool.description, /do not invent IDs, versions or assets/);
-    assert.equal(reviewTool._meta.ui.resourceUri, LAUNCHER_URI);
-    assert.equal(reviewTool._meta["openai/outputTemplate"], LAUNCHER_URI);
-    assert.equal(reviewTool._meta["openai/widgetAccessible"], true);
-    assert.deepEqual(reviewTool._meta.ui.visibility, ["model", "app"]);
-    const launcherMeta = tools.find((tool: any) => tool.name === "launch_creative_dna")._meta;
-    for (const key of ["ui", "openai/outputTemplate", "openai/widgetAccessible"]) assert.deepEqual(launcherMeta[key], reviewTool._meta[key]);
-    assert.notEqual(launcherMeta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
-    const resource = await rpc("resources/read", { uri: LAUNCHER_URI });
-    assert.equal(resource.contents[0].uri, LAUNCHER_URI);
-    assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
-    assert.equal(resource.contents[0].text, launcherHtml);
+    for (const tool of [launchTool, reviewTool]) {
+      assert.equal(tool._meta?.ui?.resourceUri, undefined);
+      assert.equal(tool._meta?.["openai/outputTemplate"], undefined);
+      assert.equal(tool._meta?.["openai/widgetAccessible"], undefined);
+    }
+    assert.notEqual(launchTool._meta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
     const { resources } = await rpc("resources/list", {});
-    for (const uri of [LAUNCHER_URI, LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI]) assert.ok(resources.some((item: any) => item.uri === uri));
-    const legacyResource = await rpc("resources/read", { uri: LEGACY_LAUNCHER_URI });
-    assert.equal(legacyResource.contents[0].uri, LEGACY_LAUNCHER_URI);
-    assert.equal(legacyResource.contents[0].mimeType, LAUNCHER_MIME);
-    assert.equal(legacyResource.contents[0].text, launcherHtml);
-    assert.deepEqual(legacyResource.contents[0]._meta, resource.contents[0]._meta);
+    for (const uri of [LAUNCHER_URI, LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI]) {
+      assert.ok(resources.some((item: any) => item.uri === uri));
+      const resource = await rpc("resources/read", { uri });
+      assert.equal(resource.contents[0].uri, uri);
+      assert.equal(resource.contents[0].mimeType, LAUNCHER_MIME);
+      assert.equal(resource.contents[0].text, SAFE_CHAT_RESOURCE_HTML);
+      assert.notEqual(resource.contents[0].text, launcherHtml);
+      assert.doesNotMatch(resource.contents[0].text, /<script\b|<iframe\b|<form\b|<button\b|\bon\w+\s*=|javascript:|postMessage|window\.openai|setInterval|setTimeout|fetch\(/i);
+      assert.match(resource.contents[0].text, /chat/i);
+    }
     for (const stage of REVIEW_STAGES) {
       const args = { stage, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });
@@ -146,17 +181,49 @@ test("live local MCP advertises and executes matching review/native contracts, m
       }
       assert.deepEqual(native.structuredContent.form, REVIEW_STEPS[stage]);
       assert.deepEqual(native.structuredContent.review_context, review.structuredContent.review_context);
-      assert.equal(native.content[0].text, NATIVE_FALLBACK_TEXT);
+      assert.ok(native.content[0].text.includes(NATIVE_FALLBACK_TEXT));
+      for (const result of [review, native]) {
+        assert.equal(result.structuredContent.renderer, "chat");
+        assert.equal(result.structuredContent.ui_status.render, "disabled");
+        assert.deepEqual(result.structuredContent.assets, args.assets);
+        assert.deepEqual(result.structuredContent.review_context, createReviewContext(args));
+        assert.deepEqual(result.structuredContent.next_actions.map((action: any) => action.action), REVIEW_STEPS[stage].choices.map(choice => choice.value));
+        for (const action of result.structuredContent.next_actions) {
+          assert.equal(action.execution, "not_dispatched");
+          assert.ok(result.content[0].text.includes(action.command));
+          for (const value of [args.task_id, args.content_version, args.retry_id, args.branch]) assert.ok(action.command.includes(value));
+          if (action.action === "feedback" || action.action === "train") {
+            assert.ok(action.required_input.includes("explicit selected asset IDs from the actual inventory"));
+            assert.ok(action.required_input.includes("specific feedback"));
+          }
+          if (action.action === "train") assert.ok(action.required_input.includes("explicit Train request"));
+        }
+        assert.ok(result.content.every((item: any) => item.type === "text"));
+        assert.doesNotMatch(JSON.stringify(result._meta || {}), /outputTemplate|resourceUri/);
+        for (const choice of REVIEW_STEPS[stage].choices) {
+          assert.ok(result.content.some((item: any) => item.text.includes(choice.command)), `${stage}: usable ${choice.value} command`);
+        }
+      }
       assert.equal(native.structuredContent.fallback.review, "show_uid_brands_review");
     }
     const legacy = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "content_approval" } });
+    assert.equal(legacy.structuredContent.review_context.task_id, undefined);
+    assert.equal(legacy.structuredContent.review_context.content_version, undefined);
+    for (const action of legacy.structuredContent.next_actions) assert.ok(action.required_input.includes("verified task_id and content_version"));
+    const missingInventory = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "asset_review", task_id: "existing-task", content_version: "v2" } });
+    assert.deepEqual(missingInventory.structuredContent.assets, []);
+    for (const action of missingInventory.structuredContent.next_actions.filter((action: any) => ["feedback", "train"].includes(action.action))) {
+      assert.ok(action.required_input.includes("verified actual asset inventory"));
+      assert.equal(action.execution, "not_dispatched");
+    }
     assert.equal(legacy.structuredContent.review_context.binding, "unbound");
     const navigation = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "asset_review", task_id: "task-A", content_version: "v1", navigation_id: "navigation-local-rpc" } });
     assert.equal(navigation.structuredContent.navigation_id, "navigation-local-rpc");
     assert.equal(navigation.structuredContent.stage, "asset_review");
     const invalid = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "launcher" } });
     assert.equal(invalid.isError, true);
-  } finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+    assert.equal(externalRequests, 0, "Guidance must never execute or submit actions");
+  } finally { globalThis.fetch = originalFetch; await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
 });
 
 test("optional canonical branch binds Onepage tabs without guessing for legacy calls",()=>{
