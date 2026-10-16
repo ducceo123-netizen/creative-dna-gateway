@@ -7,8 +7,16 @@ test('real HTTP MCP isolates current session and never accepts a tool-argument i
  // Bun shares the module cache across test files. Isolate this environment-sensitive
  // fixture in the production Node runtime; never change runtime secret loading for tests.
  if(process.env.UID_FIGMA_TRANSPORT_ISOLATED !== '1'){
-  const child=spawnSync('node',['--import','tsx','--test',fileURLToPath(import.meta.url)],{env:{...process.env,UID_FIGMA_TRANSPORT_ISOLATED:'1'},encoding:'utf8',timeout:30000});
+  const env: NodeJS.ProcessEnv={...process.env,UID_FIGMA_TRANSPORT_ISOLATED:'1'};
+  delete env.NODE_TEST_CONTEXT; // A child node:test invocation must not inherit the parent runner context.
+  const child=spawnSync('node',['--import','tsx','--test','--test-reporter=tap',fileURLToPath(import.meta.url)],{env,encoding:'utf8',timeout:30000});
   assert.equal(child.status,0,child.stdout+'\n'+child.stderr);
+  assert.match(child.stdout,/^# tests 1$/m);
+  assert.match(child.stdout,/^# pass 1$/m);
+  assert.match(child.stdout,/^# fail 0$/m);
+  assert.match(child.stdout,/^# skipped 0$/m);
+  assert.match(child.stdout,/UID_FIGMA_HTTP_ASSERTIONS_COMPLETED/);
+  assert.doesNotMatch(child.stderr,/skipping running files|recursively/);
   return;
  }
  const original=globalThis.fetch;
@@ -41,5 +49,6 @@ test('real HTTP MCP isolates current session and never accepts a tool-argument i
   assert.equal(results[0].structuredContent.status,'OK');assert.equal(results[1].structuredContent.status,'AUTHENTICATION_REQUIRED');
   assert.deepEqual(identities.sort(),['Bearer bad.user.jwt','Bearer good.user.jwt','Bearer good.user.jwt']);
   assert.equal((await call(undefined,{file_key:'fileA',token:'fixture-token'})).isError,true);
+  console.log('UID_FIGMA_HTTP_ASSERTIONS_COMPLETED');
  }finally{globalThis.fetch=original;await new Promise<void>((r,j)=>app.close(e=>e?j(e):r()));delete process.env.UID_FIGMA_READ_TOKEN;delete process.env.UID_FIGMA_AUTH_PUBLISHABLE_KEY;delete process.env.UID_FIGMA_FILE_ACCESS_JSON;}
 });
