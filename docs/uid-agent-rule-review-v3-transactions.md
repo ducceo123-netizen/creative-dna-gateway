@@ -145,3 +145,13 @@ consume v3 intents separately from v2 outcome-QC intents. Existing intents keep
 their original route and semantics. Verify one newly delegated test intent end
 to end before describing automation as operational. Until then this is inactive
 implementation, not a completed automatic review service.
+
+### Database compatibility validation
+
+The inactive CI workflow runs independent PostgreSQL 16 and 17 service jobs
+with fail-fast disabled. Both execute foundation assertions, real compiler/SQL
+parity and multi-client race tests. The harness verifies the actual server major
+against the matrix and logs the full server version; a green PG16 job cannot
+stand in for PG17. These are disposable upstream PostgreSQL services, not a
+claim of full Supabase platform parity or exact PostgreSQL 17.6 patch parity.
+No database test result is established until those jobs actually execute.

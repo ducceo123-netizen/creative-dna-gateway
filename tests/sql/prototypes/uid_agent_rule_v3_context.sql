@@ -33,12 +33,12 @@ declare c jsonb:=p_context; catalog jsonb; t jsonb; bundle jsonb; item jsonb; ol
  'schema_version','id','proposal_id','request_id','attempt_id','decision_kind','evaluator_version','snapshot_hash','review_hash',
  'review_scope','canonical_text','declared_scope','scope','rule_class','confidence','source','accepted_source_hashes','precedence','visual_qc_performed'];
 begin
- select t#>'{metadata,creative_quality_contract}' into catalog from jsonb_array_elements(c->'targets') t order by t->>'id' limit 1;
+ select target_row.value#>'{metadata,creative_quality_contract}' into catalog from jsonb_array_elements(c->'targets') as target_row(value) order by target_row.value->>'id' limit 1;
  if catalog is null and not exists(select 1 from jsonb_array_elements(c->'targets') n where n#>'{metadata,creative_quality_contract}' is not null) then return c; end if;
  if catalog->>'schema_version' is distinct from 'uid-creative-quality-catalog/1' or jsonb_typeof(catalog->'contracts') is distinct from 'object'
  then raise exception 'Complete existing catalog required'; end if;
- if exists(select 1 from jsonb_array_elements(c->'targets') t where t#>'{metadata,creative_quality_contract}' is distinct from catalog)
- or exists(select 1 from jsonb_array_elements(c#>'{compiler_context,projected_targets}') t where t#>'{metadata,creative_quality_contract}' is distinct from catalog)
+ if exists(select 1 from jsonb_array_elements(c->'targets') as target_row(value) where target_row.value#>'{metadata,creative_quality_contract}' is distinct from catalog)
+ or exists(select 1 from jsonb_array_elements(c#>'{compiler_context,projected_targets}') as target_row(value) where target_row.value#>'{metadata,creative_quality_contract}' is distinct from catalog)
  then raise exception 'Prior catalog or mirror provenance drift'; end if;
  contracts:=catalog->'contracts';
  for t in select value from jsonb_array_elements(c->'targets') loop
@@ -92,9 +92,9 @@ begin
   end if;
  end loop;
  adapted:=catalog||jsonb_build_object('contracts',contracts);
- select jsonb_agg(jsonb_set(t,'{metadata,creative_quality_contract}',adapted) order by t->>'id') into targets from jsonb_array_elements(c->'targets') t;
+ select jsonb_agg(jsonb_set(target_row.value,'{metadata,creative_quality_contract}',adapted) order by target_row.value->>'id') into targets from jsonb_array_elements(c->'targets') as target_row(value);
  c:=jsonb_set(c,'{targets}',targets);
- select jsonb_agg(jsonb_set(t,'{metadata,creative_quality_contract}',adapted) order by t->>'id') into targets from jsonb_array_elements(c#>'{compiler_context,projected_targets}') t;
+ select jsonb_agg(jsonb_set(target_row.value,'{metadata,creative_quality_contract}',adapted) order by target_row.value->>'id') into targets from jsonb_array_elements(c#>'{compiler_context,projected_targets}') as target_row(value);
  return jsonb_set(c,'{compiler_context,projected_targets}',targets);
 end $$;
 revoke all on all functions in schema uid_rule_v3_private from public,anon,authenticated,service_role;

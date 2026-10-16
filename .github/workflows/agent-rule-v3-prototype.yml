@@ -10,10 +10,15 @@ permissions:
   contents: read
 jobs:
   inactive-foundation:
+    name: Inactive SQL / PostgreSQL ${{ matrix.postgres }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [16, 17]
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: governance_test
@@ -25,6 +30,7 @@ jobs:
           --health-retries 5
     env:
       PGPASSWORD: postgres
+      UID_TEST_PG_MAJOR: ${{ matrix.postgres }}
     steps:
       - uses: actions/checkout@v4
       - name: Check prototype storage only in disposable PostgreSQL

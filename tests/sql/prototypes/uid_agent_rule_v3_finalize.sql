@@ -55,7 +55,7 @@ declare c jsonb:=a.snapshot->'rule_context'; catalog jsonb; contracts jsonb; t j
  supplement jsonb; hashes jsonb; canonical text:=c#>>'{proposal,proposed_content_md}'; spec jsonb; attempt_id text:=a.request_id::text||':'||a.lease_version;
 begin
  perform public.uid_rule_catalog_plan(uid_rule_v3_private.adapt_context(c));
- select t#>'{metadata,creative_quality_contract}' into catalog from jsonb_array_elements(c->'targets') t order by t->>'id' limit 1;
+ select target_row.value#>'{metadata,creative_quality_contract}' into catalog from jsonb_array_elements(c->'targets') as target_row(value) order by target_row.value->>'id' limit 1;
  if catalog is null then return null; end if;
  contracts:=catalog->'contracts'; spec:=public.uid_rule_parse_canonical(canonical);
  for t in select value from jsonb_array_elements(c->'targets') order by value->>'id' loop

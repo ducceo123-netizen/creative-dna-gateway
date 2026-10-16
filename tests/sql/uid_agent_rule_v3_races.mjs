@@ -1,4 +1,4 @@
-/** Disposable localhost PG16 only. Synthetic records and receipts, committed only in disposable CI database.
+/** Disposable localhost PG16/PG17 only. Synthetic records and receipts, committed only in disposable CI database.
  * This is compiler/SQL parity, never a real review or production approval. */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -33,6 +33,11 @@ function compile(claim,review){
  assert.equal(r.status,0,r.stdout+r.stderr);const result=JSON.parse(r.stdout);assert.equal(result.status,'COMPILED');return {...review,compiler_plan:result.compiler_plan,compiler_receipt:result.compiler_receipt};
 }
 try{
+ const serverVersion=(await db.query('show server_version_num')).rows[0].server_version_num;
+ const serverMajor=Math.floor(Number(serverVersion)/10000);
+ assert.ok([16,17].includes(serverMajor),'Disposable PostgreSQL 16 or 17 required');
+ if(process.env.UID_TEST_PG_MAJOR) assert.equal(String(serverMajor),process.env.UID_TEST_PG_MAJOR,'CI matrix/server version mismatch');
+ console.log(`Disposable PostgreSQL version: ${serverVersion} (major ${serverMajor})`);
  const direct=readFileSync(root+'tests/sql/uid_direct_rule_accept.sql','utf8');await db.query(direct.slice(0,direct.indexOf('-- Boundaries:')));
  for(const name of ['foundation','context','queue','finalize']) await db.query(readFileSync(root+`tests/sql/prototypes/uid_agent_rule_v3_${name}.sql`,'utf8'));
  const start=direct.indexOf('  for target in select value',direct.indexOf('-- Compiled Onepage rules')),end=direct.indexOf('  c:=public.uid_rule_preflight',start);
