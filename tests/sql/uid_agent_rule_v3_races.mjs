@@ -74,7 +74,7 @@ try{
   await newProposal(209);
   const driftClaim=await call('claim',[owner,'dot']);assert.equal(driftClaim.proposal_id,id(209));
   const queuedPreviews=new Map();
-  for(const n of [210,211,212])queuedPreviews.set(n,await newProposal(n));
+  for(const n of [210,211,212,213])queuedPreviews.set(n,await newProposal(n));
   assert.equal((await complete(driftClaim,compile(driftClaim,await review(driftClaim)))).status,'merged');
   const blockedState=(await db.query(`select status,next_attempt_at>clock_timestamp() cooling_down
    from uid_rule_v3_private.requests where id=$1`,[blockedClaim.request_id])).rows[0];
@@ -84,14 +84,20 @@ try{
   assert.notEqual('sha256:'+hash(driftedSnapshot),blockedClaim.snapshot_hash,'canonical merge changes blocked snapshot');
   const queuedOrder=(await db.query(`select proposal_id from uid_rule_v3_private.requests
    where status='queued' and owner_user_id=$1 order by created_at,id`,[owner])).rows.map(x=>x.proposal_id);
-  assert.deepEqual(queuedOrder,[210,211,212].map(id));
+  assert.deepEqual(queuedOrder,[210,211,212,213].map(id));
   const firstQueued=await call('claim',[owner,'dot']);
   assert.equal(firstQueued.proposal_id,id(210),'oldest queued request precedes older drifted blocked request');
-  const queuedClaims=await Promise.all(clients.slice(0,2).map(c=>invoke(c,'claim',[owner,'dot'])));
-  assert.deepEqual(queuedClaims.map(c=>c.proposal_id).sort(),[id(211),id(212)],'concurrent claimants drain queued work before retrying blocked work');
-  const activeClaims=[firstQueued,...queuedClaims];
-  assert.equal(new Set(activeClaims.map(c=>c.request_id)).size,3,'each queued request is claimed once');
-  assert.equal(new Set(activeClaims.map(c=>c.lease_token)).size,3,'concurrent claims have distinct fenced tokens');
+  let queuedClaims;
+  await clients[2].query('begin');
+  try{
+   await clients[2].query('select id from uid_rule_v3_private.requests where proposal_id=$1 for update',[id(211)]);
+   queuedClaims=await Promise.all(clients.slice(0,2).map(c=>invoke(c,'claim',[owner,'dot'])));
+   assert.deepEqual(queuedClaims.map(c=>c.proposal_id).sort(),[id(212),id(213)],'concurrent claimants skip the locked queued row and prefer remaining queued work over blocked retry');
+  }finally{await clients[2].query('rollback');}
+  const unlockedQueued=await call('claim',[owner,'dot']);assert.equal(unlockedQueued.proposal_id,id(211),'skipped queued request remains available after its row lock is released');
+  const activeClaims=[firstQueued,...queuedClaims,unlockedQueued];
+  assert.equal(new Set(activeClaims.map(c=>c.request_id)).size,4,'each queued request is claimed once');
+  assert.equal(new Set(activeClaims.map(c=>c.lease_token)).size,4,'concurrent claims have distinct fenced tokens');
   assert.ok(activeClaims.every(c=>c.lease_version===1),'untouched queued requests receive their first lease');
   const blockedRetry=await call('claim',[owner,'dot']);
   assert.equal(blockedRetry.request_id,blockedClaim.request_id,'drifted blocked retry remains available once queue is drained');
