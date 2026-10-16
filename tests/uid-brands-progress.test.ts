@@ -35,14 +35,14 @@ function assertGuidanceOnce(result: any) {
   assert.equal(result.job_status, undefined);
 }
 
-test("all nine discovered and registered tools share supported bounded labels and preserve metadata", async () => {
+test("all ten discovered and registered tools share supported bounded labels and preserve metadata", async () => {
   await withMcp(async rpc => {
     const initialized = await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "progress-test", version: "1" } });
     assert.ok(initialized.instructions.startsWith(UID_PROGRESS_GUIDANCE));
     assert.match(initialized.instructions.slice(0, 512), /Research-before-output gates creative deliverables, not progress updates/);
     assert.equal(initialized.instructions.split(RESEARCH_GUIDANCE).length - 1, 1, "canonical research guidance appears exactly once");
     const { tools } = await rpc("tools/list", {});
-    assert.equal(tools.length, 9);
+    assert.equal(tools.length, 10);
     assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).sort());
     for (const tool of tools) {
       const discovery = TOOL_DEFINITIONS.find(t => t.name === tool.name)!;
@@ -188,3 +188,4 @@ test("research and market work retain natural chat updates before the final arti
  assert.match(UID_PROGRESS_REMINDER,/Full-result deduplication must not suppress these updates/);
  assert.match(UID_PROGRESS_REMINDER,/distinguish planned work from checked sources/);
 });
+

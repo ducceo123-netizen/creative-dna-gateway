@@ -12,6 +12,7 @@ export const UID_PROGRESS_DESCRIPTION = " Give concise factual progress before r
 // Static completion labels describe the end of a call, never success of the task.
 // They remain true for isError, auth failures, missing evidence and unknown outcomes.
 export const UID_TOOL_INVOCATION_LABELS = {
+  read_ldp_figma_comments: ["Reading Figma comments…", "Figma comments call ended"],
   ingest_uid_brands_attachment: ["Reading attachment reference…", "Attachment call ended"],
   show_uid_brands_review: ["Preparing outcome and actions…", "Review call ended"],
   get_uid_brands_native_workflow: ["Loading workflow controls…", "Workflow call ended"],
@@ -60,3 +61,4 @@ export function operationPromptGuide(operation: "research" | "training" | "route
   if (data?.research_validation?.status === "READY") return "Dữ liệu research còn cần đối chiếu bằng chứng; chưa tự chứng minh QC đã đạt. Ví dụ: ‘Đối chiếu nguồn đã kiểm tra, rồi tiếp tục content nếu đủ điều kiện; nêu rõ điểm còn thiếu.’";
   return "Bước tiếp theo là kiểm tra nguồn và điều kiện research trước khi tạo content. Ví dụ: ‘Research sản phẩm ở link đã gửi, chỉ ra bằng chứng và thông tin còn thiếu; khi đủ điều kiện thì tiếp tục yêu cầu của tôi.’";
 }
+
