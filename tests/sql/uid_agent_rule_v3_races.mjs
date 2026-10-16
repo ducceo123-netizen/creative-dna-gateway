@@ -64,6 +64,53 @@ try{
   assert.equal((await db.query('select count(*)::int n from uid_rule_v3_private.audit where request_id=$1',[claim.request_id])).rows[0].n,1);
   console.log('PASS concurrent claims and idempotent concurrent completion');
 
+  // A canonical merge changes an older blocked request's snapshot, making it
+  // retryable before its cooldown. Untouched queued work must still go first.
+  const blockedPreview=await newProposal(208),blockedClaim=await call('claim',[owner,'dot']);
+  assert.equal(blockedClaim.proposal_id,id(208));
+  const blockedReview={...await review(blockedClaim),decision:'blocked'};
+  assert.equal((await complete(blockedClaim,blockedReview)).status,'blocked');
+  assert.equal(await call('claim',[owner,'dot']),null,'unchanged blocked snapshot honors cooldown');
+  await newProposal(209);
+  const driftClaim=await call('claim',[owner,'dot']);assert.equal(driftClaim.proposal_id,id(209));
+  const queuedPreviews=new Map();
+  for(const n of [210,211,212])queuedPreviews.set(n,await newProposal(n));
+  assert.equal((await complete(driftClaim,compile(driftClaim,await review(driftClaim)))).status,'merged');
+  const blockedState=(await db.query(`select status,next_attempt_at>clock_timestamp() cooling_down
+   from uid_rule_v3_private.requests where id=$1`,[blockedClaim.request_id])).rows[0];
+  assert.deepEqual(blockedState,{status:'blocked',cooling_down:true});
+  assert.equal((await call('preview',[id(208),owner])).intent_hash,blockedPreview.intent_hash,'unrelated merge preserves blocked intent');
+  const driftedSnapshot=await call('snapshot',[await call('context',[id(208),owner]),owner]);
+  assert.notEqual('sha256:'+hash(driftedSnapshot),blockedClaim.snapshot_hash,'canonical merge changes blocked snapshot');
+  const queuedOrder=(await db.query(`select proposal_id from uid_rule_v3_private.requests
+   where status='queued' and owner_user_id=$1 order by created_at,id`,[owner])).rows.map(x=>x.proposal_id);
+  assert.deepEqual(queuedOrder,[210,211,212].map(id));
+  const firstQueued=await call('claim',[owner,'dot']);
+  assert.equal(firstQueued.proposal_id,id(210),'oldest queued request precedes older drifted blocked request');
+  const queuedClaims=await Promise.all(clients.slice(0,2).map(c=>invoke(c,'claim',[owner,'dot'])));
+  assert.deepEqual(queuedClaims.map(c=>c.proposal_id).sort(),[id(211),id(212)],'concurrent claimants drain queued work before retrying blocked work');
+  const activeClaims=[firstQueued,...queuedClaims];
+  assert.equal(new Set(activeClaims.map(c=>c.request_id)).size,3,'each queued request is claimed once');
+  assert.equal(new Set(activeClaims.map(c=>c.lease_token)).size,3,'concurrent claims have distinct fenced tokens');
+  assert.ok(activeClaims.every(c=>c.lease_version===1),'untouched queued requests receive their first lease');
+  const blockedRetry=await call('claim',[owner,'dot']);
+  assert.equal(blockedRetry.request_id,blockedClaim.request_id,'drifted blocked retry remains available once queue is drained');
+  assert.equal(blockedRetry.lease_version,blockedClaim.lease_version+1);
+  assert.notEqual(blockedRetry.lease_token,blockedClaim.lease_token);
+  assert.notEqual(blockedRetry.snapshot_hash,blockedClaim.snapshot_hash);
+  activeClaims.push(blockedRetry);
+  const beforeLeases=(await db.query(`select id,lease_version,lease_token,lease_expires_at
+   from uid_rule_v3_private.requests where id=any($1::uuid[]) order by id`,[activeClaims.map(c=>c.request_id)])).rows;
+  assert.deepEqual(await Promise.all(clients.map(c=>invoke(c,'claim',[owner,'dot']))),[null,null,null],'no concurrent claimant may steal a live lease');
+  assert.deepEqual((await db.query(`select id,lease_version,lease_token,lease_expires_at
+   from uid_rule_v3_private.requests where id=any($1::uuid[]) order by id`,[activeClaims.map(c=>c.request_id)])).rows,beforeLeases);
+  const attempts=(await db.query(`select request_id,count(*)::int n from uid_rule_v3_private.attempts
+   where request_id=any($1::uuid[]) group by request_id`,[activeClaims.map(c=>c.request_id)])).rows;
+  for(const c of activeClaims)assert.equal(attempts.find(a=>a.request_id===c.request_id).n,c.lease_version,'no extra attempts from competing claims');
+  await call('cancel',[id(208),owner,blockedPreview.intent_hash,id(708)]);
+  for(const [n,p] of queuedPreviews)await call('cancel',[id(n),owner,p.intent_hash,id(n+500)]);
+  console.log('PASS queued-first after canonical drift, blocked retry after drain, concurrent unique claims and no live lease theft');
+
   const p=await newProposal(204),cancelClaim=await call('claim',[owner,'dot']),cancelReview=compile(cancelClaim,await review(cancelClaim));
   await clients[2].query('begin');await clients[2].query('lock table public.knowledge_nodes in share row exclusive mode');
   const cancelPromise=invoke(clients[0],'cancel',[id(204),owner,p.intent_hash,id(704)]);
