@@ -275,7 +275,7 @@ begin
 end $$;
 revoke all on all functions in schema uid_rule_v3_private from public,anon,authenticated,service_role;
 
--- SOURCE SHA256 fdbdf859d31f57fa743d435cd45782c5a304e697ce3c5426054d95f8199ddf51 tests/sql/prototypes/uid_agent_rule_v3_queue.sql
+-- SOURCE SHA256 dc3803be0f0dda856a6e8fd1eb205324274ffbdbdbf2fe91e2476016ff420246 tests/sql/prototypes/uid_agent_rule_v3_queue.sql
 -- INACTIVE PROTOTYPE: no execute grants, no production migration.
 create function uid_rule_v3_private.lock_authority(p_owner uuid) returns bigint
 language plpgsql security definer set search_path=pg_catalog,public,pg_temp as $$
@@ -382,7 +382,8 @@ begin
  loop
   select * into q from uid_rule_v3_private.requests where owner_user_id=p_owner and not(id=any(seen))
    and (status in ('queued','blocked') or(status='leased' and lease_expires_at<=clock_timestamp()))
-   order by created_at,id limit 1 for update skip locked;
+   -- Fresh queued work precedes retries, including blocked work with snapshot drift.
+   order by case when status='queued' then 0 else 1 end,created_at,id limit 1 for update skip locked;
   exit when not found;
   seen:=array_append(seen,q.id);
   if q.expires_at<=clock_timestamp() then
