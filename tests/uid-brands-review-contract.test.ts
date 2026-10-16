@@ -30,6 +30,7 @@ test("Historical interactive workflow remains unchanged but is never imported or
 
 test("seven public schemas remain exact; review/native extend the baseline additively", () => {
   const baseline: Record<string, string> = {
+    read_ldp_figma_comments: "f7a53b662fe307db1efbe30b60ec77d52e9aaa41061a6216fb35e6b46d806276",
     ingest_uid_brands_attachment: "fbe5c24ba464fa1d4cd9b1bc2d0f5e0e9a48ca9ba63d6dc042314fda1591ae4f",
     show_uid_brands_review: "386ea758f86ef4e153047df74d1b081321e548bf31f955c14e79a27c3ab28106",
     get_uid_brands_native_workflow: "ba10483b38da90c8598755b95e0100bf528d53a23a374204ea6623cbf3e49f22",
@@ -247,3 +248,4 @@ test("optional canonical branch binds Onepage tabs without guessing for legacy c
  for(const branch of ["Onepage","onepage system","<script>",""]){assert.equal(REVIEW_INPUT_SCHEMA.safeParse({...input,branch}).success,false);}
  assert.equal(REVIEW_INPUT_SCHEMA.safeParse({...input,branch:"ldp-system"}).success,true);
 });
+
