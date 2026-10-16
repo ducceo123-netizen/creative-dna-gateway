@@ -184,21 +184,21 @@
     for (const id of ['url','theme','custom']) $(id).value = taskDrafts.get(key)?.common[id] || '';
     visibleFields = [];
     $('task-fields').replaceChildren();
+    $('task-advanced-fields').replaceChildren();
+    $('optionalBrief').open = false;
     $('task-format').textContent = task ? 'Thông số tham chiếu: ' + formatHint(task) : 'Chọn brand để xem các task đã xác minh.';
     if (!task) return;
     if (task.branch === 'ldp-system') $('task-format').textContent += ' LDP hiện có hướng dẫn canonical; danh mục này không chứng minh luồng Figma end-to-end đã sẵn sàng.';
     for (const [key, spec] of Object.entries(task.fields)) {
       if (['theme', 'typo_auto_generate'].includes(key) || typeof spec === 'boolean') continue;
-      const hint = typeof spec === 'string' ? spec : spec.type || '';
-      const required = ['recipient','niches','collection_or_product_pool'].includes(key);
-      const label = element('label', (fieldNames[key] || key) + (required ? ' · cần có hoặc xác định từ nguồn' : ' · tùy chọn'));
+      const required = ['recipient','niches'].includes(key);
+      const label = element('label', (fieldNames[key] || key) + (required ? ' *' : ''));
       label.setAttribute('for', 'task-' + key);
       const input = element('textarea'); input.id = 'task-' + key; input.rows = 2; input.maxLength = 2000;
       input.setAttribute('maxlength', '2000'); input.value = taskDrafts.get(currentTaskKey)?.fields[key] || (key === 'slot' ? (task.brand === 'pawfecthouse' ? 'Main + Side' : 'Both') : '');
       input.setAttribute('aria-label', fieldNames[key] || key);
-      const help = element('small', hint);
       input.addEventListener('input', update);
-      $('task-fields').append(label, input, help); visibleFields.push({key, required});
+      $(required ? 'task-fields' : 'task-advanced-fields').append(label, input); visibleFields.push({key, required});
     }
   }
   function briefPrompt() {
@@ -210,15 +210,19 @@
     const values = Object.fromEntries(visibleFields.map(f => [f.key, $('task-' + f.key).value.trim()]));
     const missing = visibleFields.filter(f => f.required && !values[f.key] && !(rawUrl && ['product','collection_or_product_pool'].includes(f.key))).map(f => fieldNames[f.key] || f.key);
     const sourceRequired = ['onepage-system','ugc-image','shop-by-product-image','shop-by-categories','niche-product-combo'].includes(task.branch) || (typeof task.fields.product === 'string' && !/optional|recommended/i.test(task.fields.product));
-    if (sourceRequired && !rawUrl && !values.product && !values.products && !values.collection && !values.product_line && !values.collection_or_product_pool) missing.push('Link hoặc nguồn sản phẩm trong chat');
+    if (sourceRequired && !rawUrl && !values.product && !values.products && !values.collection && !values.product_line && !values.collection_or_product_pool) missing.push('Link sản phẩm/bộ sưu tập ở trên; nếu dùng ảnh hoặc nguồn đã gửi trong chat, mở Tuỳ chọn thêm để mô tả nguồn');
+    let invalidAdvanced = false;
     for (const [key,value] of Object.entries(values)) {
       if (!value) continue;
+      const countBefore = missing.length;
       if (key === 'quantity' && !/^[1-9]\d{0,3}$/.test(value)) missing.push('Số lượng phải là số nguyên dương (tối đa 9999 trong brief)');
       if (['ratio','custom_ratio'].includes(key) && (!/^\d+(?:\.\d+)?\s*:\s*\d+(?:\.\d+)?$/.test(value) || value.split(':').some(n => Number(n) <= 0))) missing.push('Tỷ lệ dạng W:H');
       if (['dimensions','custom_dimensions'].includes(key) && !/^[1-9]\d{0,4}\s*[x×]\s*[1-9]\d{0,4}$/i.test(value)) missing.push('Kích thước dạng W x H, số nguyên dương');
+      if (missing.length > countBefore) invalidAdvanced = true;
     }
+    if (invalidAdvanced) $('optionalBrief').open = true;
     if (missing.length) { $('brief-status').textContent = 'Cần bổ sung: ' + missing.join('; ') + '. Nếu nguồn đã có trong chat, mô tả rõ nguồn thay vì nhập lại.'; return ''; }
-    $('brief-status').textContent = 'Có thể sao chép brief. Chat sẽ suy ra thông tin từ nguồn, chỉ hỏi phần thiết yếu còn thiếu và xác minh điều kiện thực hiện.';
+    $('brief-status').textContent = 'Sẵn sàng sao chép về chat.';
     const parts = ['UID Brands · Brief ' + taskNames[task.branch], `Brand: ${brand}`, 'Material / Task: ' + taskNames[task.branch] + ' (' + task.branch + ')'];
     if (rawUrl) parts.push('Product / Collection URL: ' + rawUrl);
     for (const [key,value] of Object.entries(values)) if (value) parts.push((fieldNames[key] || key) + ': ' + value);

@@ -8,21 +8,22 @@
 <div class="panel-toolbar"><strong>UID Brands · Prompt Master</strong><button id="toggleComposer" type="button" aria-expanded="true" aria-controls="composerBody">Thu gọn</button></div>
 <div id="composerBody">
 <div id="masterTabs" class="mode-tabs" role="tablist" aria-label="UID Brands Prompt Master"><button id="taskTab" class="mode-tab" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="taskTabPanel">Tạo tác vụ</button><button id="feedbackTab" class="mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="feedbackTabPanel">Feedback Onepage</button></div>
-<p class="flow-state" id="flowState">UID Brands · Soạn prompt trên trang, sao chép và gửi trong chat. Chưa chạy tác vụ.</p>
+<p class="flow-state" id="flowState">Soạn prompt → sao chép → gửi vào chat.</p>
 <noscript><p class="error">Cần bật JavaScript để soạn prompt. Bạn cũng có thể gửi brief hoặc góp ý trực tiếp trong chat.</p></noscript>
 <section id="actionablePanel">
 <div id="taskTabPanel" role="tabpanel" aria-labelledby="taskTab" hidden>
 <div class="launcher-row"><div><label for="brand">Brand</label><select id="brand"><option value="">Chọn brand</option><option value="PawfectHouse">PawfectHouse</option><option value="GiftSoul">GiftSoul</option><option value="SoulPrise">SoulPrise</option></select></div><div><label for="branches">Material / Task</label><select id="branches" aria-label="Select material"><option value="onepage-system">Onepage</option></select></div></div>
-<p class="mode-info">Danh mục xác minh ngày 15/10/2026, lọc theo brand. Link/theme/yêu cầu riêng được giữ riêng cho từng brand và task. Chat sẽ kiểm tra lại route và canonical hiện hành. Không thấy task cần dùng? Hỏi trực tiếp trong chat, không chọn thay một task khác.</p><p id="task-format" class="mode-info"></p>
 <label for="url">Product / Collection URL</label><input id="url" type="url" maxlength="2000" placeholder="https://pawfecthouse.com/collections/...">
 <div id="task-fields"></div>
-<details class="optional-brief" id="optionalBrief"><summary>Theme / yêu cầu riêng (tuỳ chọn)</summary><label for="theme">Theme <span class="optional">(không bắt buộc)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial...">
-<label for="custom">Yêu cầu riêng <span class="optional">(không bắt buộc)</span></label><textarea id="custom" maxlength="4000" placeholder="Nhập yêu cầu sáng tạo hoặc lưu ý riêng..."></textarea></details>
+<details class="optional-brief" id="optionalBrief"><summary>Tuỳ chọn thêm</summary><label for="theme">Theme <span class="optional">(không bắt buộc)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial...">
+<label for="custom">Yêu cầu riêng <span class="optional">(không bắt buộc)</span></label><textarea id="custom" maxlength="4000" placeholder="Nhập yêu cầu sáng tạo hoặc lưu ý riêng..."></textarea><div id="task-advanced-fields"></div></details>
+<details class="optional-brief" id="taskInfo"><summary>Thông tin task</summary><p class="mode-info">Danh mục xác minh ngày 15/10/2026, lọc theo brand. Link/theme/yêu cầu riêng được giữ riêng cho từng brand và task. Chat sẽ kiểm tra lại route và canonical hiện hành. Không thấy task cần dùng? Hỏi trực tiếp trong chat, không chọn thay một task khác.</p><p id="task-format" class="mode-info"></p>
+</details>
 <p id="brief-status" class="draft-note" role="status">Chọn brand và nhập link sản phẩm hoặc bộ sưu tập để tạo prompt.</p>
 </div>
 <div id="feedbackTabPanel" role="tabpanel" aria-labelledby="feedbackTab">
-<p class="mode-info notice">Chọn các vị trí cần góp ý rồi viết feedback chung. Đây là 18 vị trí canonical cố định, không phải ảnh đã tạo. Trang không đọc task hay phiên bản; chat sẽ đối chiếu kết quả thực tế. GTK chỉ dùng khi kết quả có GTK.</p>
-<label id="picker-title">Chọn variables / section</label>
+<p class="mode-info notice">Chọn mục → thêm góp ý chung → copy về chat. Chỉ áp dụng cho các mục có trong kết quả Onepage đang xem.</p>
+<label id="picker-title">Chọn mục cần sửa</label>
 <div id="slot-groups" class="variable-keys"></div>
 <div id="groupActions"><button type="button" id="createSharedFeedback" disabled>+ Feedback chung cho mục đã chọn</button><button type="button" id="clear-selection">Bỏ chọn</button></div>
 <p id="selection-summary" class="selection-count" aria-live="polite">Chưa chọn mục nào.</p>
@@ -40,5 +41,5 @@
 <p id="draft-warning" class="warning" hidden>Bạn còn nhóm đang soạn. Hãy thêm/lưu nhóm hoặc hủy phần đang soạn trước khi copy.</p>
 <div class="prompt-actions"><button type="button" id="copy-prompt" disabled>Sao chép prompt</button><button type="button" id="select-prompt" disabled>Chọn toàn bộ prompt</button></div><p id="status" role="status" aria-live="polite">Chưa gửi sang ChatGPT. Sao chép, dán vào chat rồi bấm Gửi.</p>
 </section>
-<p class="footer-note">Chỉ soạn văn bản · Không đăng nhập · Không lưu nội dung · Không tải dữ liệu task. Trang không gửi yêu cầu sửa, tạo hàng đợi hay Train.</p>
+<p class="footer-note">Chỉ soạn prompt trên trang; không gửi yêu cầu sửa, tạo hàng đợi hay Train.</p>
 </div></main></body></html>
