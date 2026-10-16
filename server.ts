@@ -684,7 +684,7 @@ export function createMcpServer(): McpServer {
     async ({ brand, branch, source_url, source_type, research }) => {
       try {
         const upstream = await resolveCreativeDna(brand, branch,{source_url,source_type,research});
-        const text = typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data, null, 2);
+        const text = typeof upstream.data === "string" ? upstream.data : JSON.stringify(upstream.data);
         return withUidProgress({
           content: [
             {
@@ -713,7 +713,7 @@ export function createMcpServer(): McpServer {
   server.registerTool("compile_onepage_job",uidProgressTool("compile_onepage_job", {
     title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
     inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
-  }),async({brand,source_url,source_type,theme,research})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data,null,2)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
+  }),async({brand,source_url,source_type,theme,research})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
 
   // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
   server.registerTool(
@@ -1744,3 +1744,4 @@ export function isDirectExecution(): boolean {
 if (isDirectExecution()) {
   startServer();
 }
+
