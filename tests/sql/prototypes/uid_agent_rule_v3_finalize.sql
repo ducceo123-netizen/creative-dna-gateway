@@ -85,10 +85,10 @@ declare c jsonb:=a.snapshot->'rule_context'; cap jsonb:=a.snapshot->'compiler_ca
  t jsonb; entry jsonb; n integer; identity jsonb; attempt_id text:=a.request_id::text||':'||a.lease_version;
 begin
  review_hash:=uid_rule_v3_private.validate_review(a,p_review); catalog:=uid_rule_v3_private.catalog(a,review_hash);
- select jsonb_agg(jsonb_build_object('node_id',t->'id','content_md',t->'content_md',
-  'metadata',case when catalog is null then t->'metadata' else jsonb_set(t->'metadata','{creative_quality_contract}',catalog) end,
-  'version',t->'version','input_schema',t->'input_schema','status',t->'status','confidence',t->'confidence') order by t->>'id') into targets
- from jsonb_array_elements(c#>'{compiler_context,projected_targets}') t;
+ select jsonb_agg(jsonb_build_object('node_id',target_value->'id','content_md',target_value->'content_md',
+  'metadata',case when catalog is null then target_value->'metadata' else jsonb_set(target_value->'metadata','{creative_quality_contract}',catalog) end,
+  'version',target_value->'version','input_schema',target_value->'input_schema','status',target_value->'status','confidence',target_value->'confidence') order by target_value->>'id') into targets
+ from jsonb_array_elements(c#>'{compiler_context,projected_targets}') target_value;
  identity:=jsonb_build_object('request_id',a.request_id,'attempt_id',attempt_id,'proposal_id',c#>'{proposal,id}',
   'candidate_hash',a.candidate_hash,'snapshot_hash',a.snapshot_hash,'review_hash',review_hash);
  expected:=identity||jsonb_build_object('schema_version','uid.agent-rule-review-plan.v1','targets',targets);
