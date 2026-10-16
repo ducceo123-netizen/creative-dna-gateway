@@ -118,7 +118,7 @@ create function uid_rule_v3_private.complete(p_request uuid,p_owner uuid,p_claim
 language plpgsql security definer set search_path=pg_catalog,public,pg_temp as $$
 declare epoch bigint; q uid_rule_v3_private.requests%rowtype; a uid_rule_v3_private.attempts%rowtype;
  c jsonb; s jsonb; current_intent jsonb; catalog jsonb; before_nodes jsonb; after_nodes jsonb; outside_nodes jsonb;
- blockers jsonb:='[]'; next_status text:='blocked'; merge_result jsonb; core jsonb;
+ v_blockers jsonb:='[]'; next_status text:='blocked'; merge_result jsonb; core jsonb;
  previous text:=current_setting('uid.rule_v3_action',true);
 begin
  epoch:=uid_rule_v3_private.lock_authority(p_owner);
@@ -137,22 +137,22 @@ begin
  select coalesce(jsonb_agg(to_jsonb(n) order by n.id),'[]') into before_nodes from public.knowledge_nodes n
  where exists(select 1 from jsonb_array_elements(a.snapshot#>'{rule_context,targets}') t where t->>'id'=n.id::text);
  if q.expires_at<=clock_timestamp() then
-  next_status:='expired'; blockers:='[{"code":"intent_expired"}]';
+  next_status:='expired'; v_blockers:='[{"code":"intent_expired"}]';
  elsif q.authorization_revision<>epoch then
-  next_status:='superseded'; blockers:='[{"code":"authority_changed"}]';
+  next_status:='superseded'; v_blockers:='[{"code":"authority_changed"}]';
  else
   c:=uid_rule_v3_private.context(q.proposal_id,p_owner);
   current_intent:=uid_rule_v3_private.intent(c,p_owner,q.operation);
   if c#>>'{proposal,status}' is distinct from 'pending' or c#>>'{proposal,merged_at}' is not null
    or 'sha256:'||uid_rule_v3_private.hex(current_intent) is distinct from q.intent_hash then
-   next_status:='superseded'; blockers:='[{"code":"intent_changed_or_resolved"}]';
+   next_status:='superseded'; v_blockers:='[{"code":"intent_changed_or_resolved"}]';
   else
    begin
     s:=uid_rule_v3_private.snapshot(c,p_owner);
     if (s#>>'{compiler_capability,release_revision}')::bigint<>q.release_revision
     then raise exception 'Pinned release changed'; end if;
     if 'sha256:'||uid_rule_v3_private.hex(s) is distinct from a.snapshot_hash or s->>'candidate_hash' is distinct from a.candidate_hash then
-     next_status:='queued'; blockers:='[{"code":"snapshot_changed","next_action":"Inspect a fresh claim; old receipts cannot be reused."}]';
+     next_status:='queued'; v_blockers:='[{"code":"snapshot_changed","next_action":"Inspect a fresh claim; old receipts cannot be reused."}]';
     elsif p_review->>'decision'='blocked' then
      core:=uid_rule_v3_private.review_core(p_review);
      if jsonb_typeof(core) is distinct from 'object' or core->>'schema_version' is distinct from 'uid.agent-rule-review.v1'
@@ -160,12 +160,12 @@ begin
       or jsonb_typeof(core->'source_receipts') is distinct from 'array' or jsonb_typeof(core->'findings') is distinct from 'array'
       or jsonb_typeof(core->'review_note') is distinct from 'string' or length(btrim(core->>'review_note')) not between 40 and 4000
       or p_review ? 'compiler_plan' or p_review ? 'compiler_receipt' then raise exception 'Scoped blocked review and specific explanation required'; end if;
-     blockers:=jsonb_build_array(jsonb_build_object('code','semantic_review_blocked','message',core->>'review_note'));
+     v_blockers:=jsonb_build_array(jsonb_build_object('code','semantic_review_blocked','message',core->>'review_note'));
     else
      catalog:=uid_rule_v3_private.validate_plan(a,p_review); next_status:='merged';
     end if;
    exception when others then
-    next_status:='blocked'; blockers:=jsonb_build_array(jsonb_build_object('code','rule_review_validation_blocked','message',sqlerrm));
+    next_status:='blocked'; v_blockers:=jsonb_build_array(jsonb_build_object('code','rule_review_validation_blocked','message',sqlerrm));
    end;
   end if;
  end if;
@@ -192,8 +192,8 @@ begin
  insert into uid_rule_v3_private.audit(request_id,lease_version,proposal_id,owner_user_id,result,review,compiler_plan,compiler_receipt,before_snapshot,after_snapshot,blockers)
  values(q.id,a.lease_version,q.proposal_id,p_owner,case when next_status='queued' then 'blocked' else next_status end,
   coalesce(p_review,'null'::jsonb),case when next_status='merged' then p_review->'compiler_plan' end,
-  case when next_status='merged' then p_review->'compiler_receipt' end,before_nodes,after_nodes,blockers);
- update uid_rule_v3_private.requests set status=next_status,updated_at=clock_timestamp(),blockers=complete.blockers,
+  case when next_status='merged' then p_review->'compiler_receipt' end,before_nodes,after_nodes,v_blockers);
+ update uid_rule_v3_private.requests set status=next_status,updated_at=clock_timestamp(),blockers=v_blockers,
   next_attempt_at=case when next_status='blocked' then clock_timestamp()+interval '1 hour' end,
   outcome=jsonb_build_object('canonical_changed',next_status='merged','visual_qc_performed',false,
    'review_scope','RULE_SEMANTICS_AND_COMPILATION_NOT_OUTPUT_QC',
