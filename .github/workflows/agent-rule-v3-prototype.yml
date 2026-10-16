@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'tests/sql/prototypes/**'
+      - 'supabase/deploy/**'
+      - 'tests/sql/uid_agent_rule_v3_install.mjs'
       - 'tests/sql/uid_agent_rule_v3_prototype.mjs'
       - 'tests/sql/uid_agent_rule_v3_races.mjs'
       - '.github/workflows/agent-rule-v3-prototype.yml'
@@ -54,3 +56,4 @@ jobs:
           npm install --prefix /tmp/uid-governance-test --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
           node tests/sql/uid_agent_rule_v3_prototype.mjs
           node tests/sql/uid_agent_rule_v3_races.mjs
+          node tests/sql/uid_agent_rule_v3_install.mjs
