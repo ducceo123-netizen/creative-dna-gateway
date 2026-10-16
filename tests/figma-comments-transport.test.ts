@@ -1,7 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
 test('real HTTP MCP isolates current session and never accepts a tool-argument identity',async()=>{
+ // Bun shares the module cache across test files. Isolate this environment-sensitive
+ // fixture in the production Node runtime; never change runtime secret loading for tests.
+ if(process.env.UID_FIGMA_TRANSPORT_ISOLATED !== '1'){
+  const child=spawnSync('node',['--import','tsx','--test',fileURLToPath(import.meta.url)],{env:{...process.env,UID_FIGMA_TRANSPORT_ISOLATED:'1'},encoding:'utf8',timeout:30000});
+  assert.equal(child.status,0,child.stdout+'\n'+child.stderr);
+  return;
+ }
  const original=globalThis.fetch;
  const id='11111111-1111-4111-8111-111111111111';
  process.env.UID_FIGMA_READ_TOKEN='fixture-token';
