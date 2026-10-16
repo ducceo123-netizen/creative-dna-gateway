@@ -1,3 +1,5 @@
+import {RULE_COMPILER,RULE_REVIEW_SCOPE} from './supabase/functions/_shared/agent-rule-policy.ts';
+import {ruleSupplementValid} from './supabase/functions/_shared/agent-rule-quality.ts';
 import { createHash } from 'node:crypto';
 import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, agentReviewedSupplementalShapeValid, AGENT_REVIEW_SCOPE, stableJson } from './supabase/functions/_shared/creative-quality.ts';
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
@@ -68,7 +70,9 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
   const branchSlug = String(data.resolved?.branch || branch).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (!['pawfecthouse', 'giftsoul', 'soulprise'].includes(brandSlug) || !['onepage', 'onepagesystem'].includes(branchSlug)) return data;
   const quality = data.creative_quality_contract;
-  const currentCompiler = quality?.compiler_version === QUALITY_COMPILER;
+  const ruleCompiler = quality?.compiler_version === RULE_COMPILER;
+  const currentCompiler = quality?.compiler_version === QUALITY_COMPILER || ruleCompiler;
+  const hasRuleEnvelope = quality && (Object.hasOwn(quality, 'agent_rule_reviewed_supplemental_rules') || Object.hasOwn(quality, 'agent_rule_reviewed_supplemental_policy')) || Object.hasOwn(data, 'agent_rule_reviewed_supplemental_contract');
   const ownerCompiler = currentCompiler || quality?.compiler_version === '2026-10-13-owner-supplement-v1';
   const hasAgentEnvelope = quality && (Object.hasOwn(quality, 'agent_reviewed_supplemental_rules') || Object.hasOwn(quality, 'agent_reviewed_supplemental_policy')) || Object.hasOwn(data, 'agent_reviewed_supplemental_contract');
   const hasSupplementEnvelope = quality && (Object.hasOwn(quality, 'owner_supplemental_rules') || Object.hasOwn(quality, 'owner_supplemental_policy')) || Object.hasOwn(data, 'owner_supplemental_contract');
@@ -95,7 +99,18 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
     && (!data.agent_reviewed_supplemental_contract || stableJson(data.agent_reviewed_supplemental_contract) === stableJson({ ...quality.agent_reviewed_supplemental_policy, rules: quality.agent_reviewed_supplemental_rules }));
   const compilerSupported = ownerCompiler ? supplementValid && (currentCompiler ? agentSupplementValid : !hasAgentEnvelope)
     : quality?.compiler_version === '2026-10-11-v2' && !hasSupplementEnvelope && !hasAgentEnvelope;
-  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && compilerSupported &&
+  const ruleSupplements=quality?.agent_rule_reviewed_supplemental_rules;
+  const combinedSupplements=[...(Array.isArray(quality?.owner_supplemental_rules)?quality.owner_supplemental_rules:[]),...(Array.isArray(quality?.agent_reviewed_supplemental_rules)?quality.agent_reviewed_supplemental_rules:[]),...(Array.isArray(ruleSupplements)?ruleSupplements:[])];
+  const ruleSupplementValidResult=ruleCompiler ? Array.isArray(ruleSupplements)
+    && ruleSupplements.every((r:any)=>ruleSupplementValid(r,brandSlug,'onepage-system')&&createHash('sha256').update(r.canonical_text).digest('hex')===r.source.canonical_text_hash)
+    && combinedSupplements.length<=MAX_OWNER_SUPPLEMENTS
+    && new Set(combinedSupplements.map((r:any)=>r.proposal_id)).size===combinedSupplements.length
+    && quality.agent_rule_reviewed_supplemental_policy?.review_scope===RULE_REVIEW_SCOPE
+    && quality.agent_rule_reviewed_supplemental_policy?.visual_qc_performed===false
+    && quality.agent_rule_reviewed_supplemental_policy?.precedence===OWNER_SUPPLEMENTAL_PRECEDENCE
+    && (!data.agent_rule_reviewed_supplemental_contract||stableJson(data.agent_rule_reviewed_supplemental_contract)===stableJson({...quality.agent_rule_reviewed_supplemental_policy,rules:ruleSupplements}))
+    : !hasRuleEnvelope;
+  const qualityValid = quality?.schema_version === 'uid-creative-quality/1' && compilerSupported && ruleSupplementValidResult &&
     /^[a-f0-9]{64}$/.test(String(quality.contract_hash || '')) && ['COMPILED','BLOCKED'].includes(quality.status) &&
     (quality.status === 'BLOCKED' || (typeof quality.revision === 'string' && !!quality.revision.trim())) &&
     quality.route?.brand === brandSlug && quality.route?.branch === 'onepage-system' &&

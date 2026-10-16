@@ -1064,6 +1064,34 @@ export function createApp(): express.Application {
     }
   });
 
+  // The authenticated edge derives the actor. Do not forward client actor,
+  // plans, findings, compiler receipts or worker lease capabilities.
+  for (const action of ["preflight","status","handoff","cancel"] as const) {
+    const handler=async(req:Request,res:Response)=>{
+      res.setHeader("Cache-Control","no-store");
+      if(!adminUpstreamUrl)return res.status(503).json({error:"Bàn giao AI chưa khả dụng: admin backend chưa được cấu hình."});
+      const authorization=req.header("authorization");
+      if(!authorization?.startsWith("Bearer "))return res.status(401).json({error:"Admin authentication required"});
+      const payload:Record<string,unknown>={mode:`rule_review_${action}`,proposal_id:req.params.id};
+      if(action==="handoff"||action==="cancel"){
+        if(typeof req.body?.intent_hash!=="string"||!/^sha256:[a-f0-9]{64}$/.test(req.body.intent_hash))return res.status(422).json({error:"Current exact rule intent required"});
+        payload.intent_hash=req.body.intent_hash;
+        if(typeof req.body?.idempotency_key!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(req.body.idempotency_key))return res.status(422).json({error:"Exact delegation idempotency key required"});
+        payload.idempotency_key=req.body.idempotency_key;
+        if(action==="handoff"){
+          if(req.body?.delegate!==true||typeof req.body?.idempotency_key!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(req.body.idempotency_key))return res.status(422).json({error:"Explicit delegation and stable idempotency key required"});
+          payload.delegate=true;payload.idempotency_key=req.body.idempotency_key;
+        }
+      }
+      try{
+        const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},body:JSON.stringify(payload)});
+        return res.status(upstream.status).json(await upstream.json());
+      }catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Chưa xác minh được bàn giao AI. Kiểm tra trạng thái trước khi gửi lại.")});}
+    };
+    if(action==="preflight"||action==="status")app.get(`/api/admin/feedback/:id/rule-review/${action}`,handler);
+    else app.post(`/api/admin/feedback/:id/rule-review/${action}`,handler);
+  }
+
   // The gateway forwards the existing Admin session; resolution stays atomic in SQL.
   app.get("/api/admin/feedback/:id/preflight", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });

@@ -14,6 +14,22 @@ function validReviewContext(value:any):boolean {
     (value.direct_rule===undefined||(value.direct_rule&&Array.isArray(value.direct_rule.blockers)));
 }
 
+/** Allowlisted public projection; worker capabilities and raw nested payloads never leave the edge. */
+function publicRuleReviewRequest(value:any,proposalId:string) {
+  if(value===null)return null;
+  if(!value||typeof value.idempotency_key!=="string"||!/^[a-f0-9-]{36}$/i.test(value.idempotency_key)||value.proposal_id!==proposalId||value.review_mode!=="agent_rule_review"||!/^sha256:[a-f0-9]{64}$/.test(value.intent_hash||"")||
+    !["queued","leased","blocked","merged","cancelled","superseded","expired"].includes(value.status)||
+    ![value.created_at,value.expires_at].every(v=>typeof v==="string"&&Number.isFinite(Date.parse(v)))||!Array.isArray(value.blockers))throw Error("Invalid rule review status");
+  const messages:Record<string,string>={intent_expired:"Bàn giao đã hết hạn.",authority_changed:"Quyền bàn giao đã thay đổi.",intent_changed:"Nội dung hoặc phạm vi feedback đã thay đổi.",rule_snapshot_blocked:"AI chưa đọc được quy chuẩn hiện tại.",new_explicit_delegation:"Đã có lượt bàn giao mới."};
+  const blockers=value.blockers.map((item:any)=>({code:typeof item?.code==="string"&&/^[a-z_]{1,80}$/.test(item.code)?item.code:"review_blocked",message:messages[item?.code]||"AI chưa thể hoàn tất; cần kiểm tra nội dung hoặc cấu hình review."}));
+  let outcome=null;
+  if(value.status==="merged"){
+    if(value.outcome?.canonical_changed!==true||value.outcome?.visual_qc_performed!==false||value.outcome?.review_scope!=="RULE_SEMANTICS_AND_COMPILATION_NOT_OUTPUT_QC")throw Error("Invalid merge outcome");
+    outcome={canonical_changed:true,visual_qc_performed:false,review_scope:"RULE_SEMANTICS_AND_COMPILATION_NOT_OUTPUT_QC"};
+  }
+  return {proposal_id:proposalId,review_mode:"agent_rule_review",intent_hash:value.intent_hash,idempotency_key:value.idempotency_key,status:value.status,created_at:value.created_at,expires_at:value.expires_at,blockers,outcome};
+}
+
 export default {
   fetch: async (req: Request) => {
     if (req.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
@@ -42,6 +58,48 @@ export default {
     }
 
     const body = await req.json();
+    // v3 is an explicit owner-delegated semantic rule review. Never route to
+    // outcome-QC v2, create synthetic evidence, or enqueue on a read.
+    if (["rule_review_preflight","rule_review_handoff","rule_review_status","rule_review_cancel"].includes(body.mode)) {
+      const headers={"Cache-Control":"no-store"};
+      const unavailable=()=>Response.json({error:"Bàn giao AI chưa khả dụng: backend rule-review v3 chưa được kích hoạt hoặc chưa cấp quyền.",code:"rule_review_unavailable"},{status:503,headers});
+      if(typeof body.proposal_id!=="string"||!body.proposal_id)return Response.json({error:"proposal_id required"},{status:422,headers});
+      if(["rule_review_preflight","rule_review_handoff"].includes(body.mode)&&Deno.env.get("UID_RULE_REVIEW_V3_ENABLED")!=="true")return unavailable();
+      const args:Record<string,unknown>={p_proposal_id:body.proposal_id,p_owner_user_id:user.id};
+      let rpc="uid_rule_review_v3_get";
+      if(body.mode==="rule_review_preflight")rpc="uid_rule_review_v3_preview";
+      if(body.mode==="rule_review_handoff"||body.mode==="rule_review_cancel"){
+        if(typeof body.intent_hash!=="string"||!/^sha256:[a-f0-9]{64}$/.test(body.intent_hash))return Response.json({error:"Current exact rule intent required"},{status:422,headers});
+        args.p_expected_intent_hash=body.intent_hash;
+        if(typeof body.idempotency_key!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(body.idempotency_key))return Response.json({error:"Exact delegation idempotency key required"},{status:422,headers});
+        if(body.mode==="rule_review_cancel")args.p_expected_idempotency_key=body.idempotency_key;
+        rpc=body.mode==="rule_review_handoff"?"uid_rule_review_v3_handoff":"uid_rule_review_v3_cancel";
+        if(body.mode==="rule_review_handoff"){
+          if(body.delegate!==true||typeof body.idempotency_key!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(body.idempotency_key))return Response.json({error:"Explicit delegation and stable idempotency key required"},{status:422,headers});
+          args.p_idempotency_key=body.idempotency_key;
+        }
+      }
+      const {data,error}=await adminDb.rpc(rpc,args);
+      if(error){
+        if(["42501","42883","PGRST202"].includes(error.code)||/not activated|not enabled|compiler release|permission denied/i.test(error.message||""))return unavailable();
+        return Response.json({error:"Chưa thể bàn giao: nội dung, phạm vi hoặc quyền đã thay đổi, hoặc còn lượt review khác. Hãy kiểm tra trạng thái và tải lại.",code:"rule_review_conflict"},{status:409,headers});
+      }
+      try {
+        if(body.mode==="rule_review_preflight"){
+          if(data?.proposal_id!==body.proposal_id||data.review_mode!=="agent_rule_review"||!/^sha256:[a-f0-9]{64}$/.test(data.intent_hash)||typeof data.proposed_content_md!=="string"||!data.scope||typeof data.scope!=="object"||Array.isArray(data.scope))throw Error("Invalid preview");
+          // Scope is display-only; the SQL intent hash binds the actual scope.
+          const scope=Object.fromEntries(["branch_slug","cross_brand","structural","proposed_scope"].filter(key=>["string","boolean"].includes(typeof data.scope[key])).map(key=>[key,data.scope[key]]));
+          return Response.json({proposal_id:body.proposal_id,review_mode:"agent_rule_review",available:true,eligible:true,intent_hash:data.intent_hash,proposed_content_md:data.proposed_content_md,scope,blockers:[],review_request:publicRuleReviewRequest(data.review_request??null,body.proposal_id)},{headers});
+        }
+        const review_request=publicRuleReviewRequest(data,body.proposal_id);
+        if(body.mode==="rule_review_handoff"&&review_request?.intent_hash===body.intent_hash&&review_request.idempotency_key!==body.idempotency_key)return Response.json({error:"Feedback đã có lượt bàn giao khác. Kiểm tra trạng thái trước khi thao tác.",code:"rule_review_existing_request"},{status:409,headers});
+        if(body.mode!=="rule_review_status"&&(!review_request||review_request.intent_hash!==body.intent_hash||review_request.idempotency_key!==body.idempotency_key||(body.mode==="rule_review_cancel"&&review_request.status!=="cancelled")))throw Error("Invalid request receipt");
+        return Response.json({review_request,canonical_changed:false},{headers});
+      }catch{
+        return Response.json({error:"Chưa xác minh được kết quả bàn giao AI. Kiểm tra trạng thái trước khi gửi lại.",code:"rule_review_invalid_receipt"},{status:502,headers});
+      }
+    }
+
 
     // The displayed patch, full trigger scope and owner-bound rule hash come
     // from ONE SQL snapshot. The effective plan is derived only on the server.
