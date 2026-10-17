@@ -105,9 +105,9 @@ test('full v4 bundle size remains bounded when stripped base fits and when only 
   const initial=await buildCompatibleOwnerRulePlan(s);assert(initial.plan);
   for(const n of s.targets)for(const [brand,b] of Object.entries(n.metadata.creative_quality_contract.contracts) as [string,any][]) {
    b.retained_extension='';
-   const grown=initial.plan.targets[0].metadata.creative_quality_contract.contracts[brand];
-   const delta=stableJson(grown).length-stableJson(b).length;
-   const targetSize=afterOnly?100000-Math.max(1,Math.floor(delta/2)):100001;
+   const grown:any=initial.plan.targets[0].metadata.creative_quality_contract.contracts[brand];
+   const delta:number=stableJson(grown).length-stableJson(b).length;
+   const targetSize:number=afterOnly?100000-Math.max(1,Math.floor(delta/2)):100001;
    b.retained_extension='x'.repeat(targetSize-stableJson(b).length);
    const stripped=clone(b);delete stripped.agent_rule_reviewed_supplemental_rules;stripped.schema_version='uid-creative-quality/1';
    assert(stableJson(stripped).length<100000);
