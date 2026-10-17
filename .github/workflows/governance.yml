@@ -24,6 +24,14 @@ jobs:
       - run: bun install
       - run: bun run lint
       - run: bun test tests/governance-engine.test.ts tests/knowledge-governance.test.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify owner schema4 adapter, Edge integration and isolated SQL parity
+        run: |
+          node --import tsx --test tests/owner-rule-plan.test.ts tests/owner-rule-compatible-plan.test.ts tests/uid-owner-rule-edge.test.ts tests/agent-rule-review-plan.test.ts
+          npm install --prefix /tmp/uid-owner-v4-test --no-save --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.10
+          UID_TEST_PGLITE_MODULE=/tmp/uid-owner-v4-test/node_modules/@electric-sql/pglite/dist/index.js node --import tsx tests/sql/uid_owner_rule_v4.mjs
   sql:
     runs-on: ubuntu-latest
     services:
