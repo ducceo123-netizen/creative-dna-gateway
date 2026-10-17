@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { buildOwnerRulePlan } from "../_shared/owner-rule-plan.ts";
+import { buildCompatibleOwnerRulePlan as buildOwnerRulePlan } from "../_shared/owner-rule-compatible-plan.ts";
 import { assessReviewCandidates, reviewReadiness, prepareAutomaticReview, prepareGuidedOutcomeReview, REVIEW_EVALUATOR_VERSION } from "../_shared/feedback-review.ts";
 
 function validReviewContext(value:any):boolean {

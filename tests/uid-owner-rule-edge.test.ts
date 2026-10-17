@@ -7,6 +7,9 @@ import { transformSync } from 'esbuild';
 import { createApp } from '../server.ts';
 import * as reviewModule from '../supabase/functions/_shared/feedback-review.ts';
 import * as ownerRuleModule from '../supabase/functions/_shared/owner-rule-plan.ts';
+import { buildCompatibleOwnerRulePlan } from '../supabase/functions/_shared/owner-rule-compatible-plan.ts';
+import { compileCompatibleQuality, RULE_QUALITY_SCHEMA, RULE_SUPPLEMENT_SCHEMA } from '../supabase/functions/_shared/agent-rule-quality.ts';
+import { RULE_COMPILER, RULE_REVIEW_EVALUATOR, RULE_REVIEW_SCOPE } from '../supabase/functions/_shared/agent-rule-policy.ts';
 import { sourceHashes, QUALITY_SCHEMA, type QualityRule } from '../supabase/functions/_shared/creative-quality.ts';
 
 const proposalId = '00000000-0000-4000-8000-000000000101';
@@ -58,7 +61,7 @@ const snapshotPromise = makeSnapshot();
 const snapshot = async () => structuredClone(await snapshotPromise);
 async function approval(context?: any) {
   context ??= await snapshot();
-  const result = await ownerRuleModule.buildOwnerRulePlan(context);
+  const result = await buildCompatibleOwnerRulePlan(context);
   assert.equal(result.eligible, true, JSON.stringify(result.blockers));
   assert.ok(result.plan_hash);
   return {
@@ -108,7 +111,7 @@ async function invoke(payload: any, options: Options = {}) {
   const sandbox: any = {
     ...reviewModule, ...ownerRuleModule, Response, Request, URL,
     Deno: { env: { get: () => 'synthetic-test-value' } }, createClient: () => client,
-    buildOwnerRulePlan: async (value: any) => { compilerCalls.push(structuredClone(value)); return ownerRuleModule.buildOwnerRulePlan(value); },
+    buildOwnerRulePlan: async (value: any) => { compilerCalls.push(structuredClone(value)); return buildCompatibleOwnerRulePlan(value); },
     fetch: async () => assert.fail('owner acceptance must not perform media QC or launch a reviewer'),
   };
   vm.runInNewContext(edgeCode, sandbox);
@@ -484,4 +487,83 @@ test('present invalid catalogs never fall back to canonical append or call the a
   assert.equal(result.body.direct_rule.eligible,false);assert.equal(result.body.direct_rule_plan.plan_hash,null);
   assert.equal(accepts(result).length,0);
  }
+});
+
+/** Synthetic prior delegated rule; no real review receipt or source is reused. */
+async function v4Snapshot() {
+ const context:any=await snapshot(),prior=structuredClone(context);
+ prior.proposal.id='00000000-0000-4000-8000-000000000104';
+ prior.proposal.proposed_content_md=canonicalRule.replace('Content titles must identify the current product.','Content sections must retain specific product context.');
+ prior.compiler_context.merge_block_text='\n\n## ACCEPTED ADMIN FEEDBACK — 2026-10-13\n'+prior.proposal.proposed_content_md+'\n';
+ prior.compiler_context.projected_targets=prior.targets.map((t:any)=>({...structuredClone(t),content_md:t.content_md+prior.compiler_context.merge_block_text}));
+ const previous=await ownerRuleModule.buildOwnerRulePlan(prior);assert(previous.eligible,JSON.stringify(previous.blockers));assert(previous.plan);
+ context.targets=context.targets.map((t:any)=>({...t,...previous.plan!.targets.find(n=>n.node_id===t.id)}));
+ const bundle=context.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'];
+ const {semantic_consistency,...supplement}=bundle.owner_supplemental_rules[0];
+ const request='00000000-0000-4000-8000-000000000105',attempt=request+':1';
+ bundle.schema_version=RULE_QUALITY_SCHEMA;
+ delete bundle.owner_supplemental_rules;
+ bundle.agent_rule_reviewed_supplemental_rules=[{...supplement,schema_version:RULE_SUPPLEMENT_SCHEMA,
+  id:'agent-rule:'+attempt,request_id:request,attempt_id:attempt,decision_kind:'agent_rule_review',
+  evaluator_version:RULE_REVIEW_EVALUATOR,snapshot_hash:'sha256:'+'a'.repeat(64),review_hash:'b'.repeat(64),review_scope:RULE_REVIEW_SCOPE,
+  source:{...supplement.source,locator:`agent-rule:${supplement.proposal_id}:${attempt}`}}];
+ context.compiler_context.projected_targets=context.targets.map((t:any)=>({...structuredClone(t),content_md:t.content_md+context.compiler_context.merge_block_text}));
+ return context;
+}
+
+test('schema4 owner Edge preflight and approval use the real compatible planner and preserve delegated provenance',async()=>{
+ assert.match(readFileSync('supabase/functions/creative-dna-admin-feedback/index.ts','utf8'),
+  /import \{ buildCompatibleOwnerRulePlan as buildOwnerRulePlan \} from ["']\.\.\/_shared\/owner-rule-compatible-plan\.ts["']/);
+ const context=await v4Snapshot(),before=structuredClone(context),expected=await buildCompatibleOwnerRulePlan(context);
+ assert(expected.eligible,JSON.stringify(expected.blockers));assert(expected.plan);
+ const preview=await invoke({mode:'review_preflight',proposal_id:proposalId},{snapshot:context});
+ assert.equal(preview.response.status,200);assert.equal(preview.body.direct_rule.eligible,true);
+ assert.equal(preview.body.direct_rule_plan.plan_kind,'compiled_supplement');
+ assert.equal(preview.body.direct_rule_plan.compiler_version,RULE_COMPILER);
+ assert.equal(preview.body.direct_rule_plan.plan_hash,expected.plan_hash);
+ assert.equal(preview.body.direct_rule_plan.visual_qc_performed,false);
+ assert.equal(Object.hasOwn(preview.body.direct_rule_plan,'plan'),false);
+ assert.equal(Object.hasOwn(preview.body,'compiler_context'),false);
+ assert.equal(accepts(preview).length,0);
+ const accepted=await invoke({...await approval(context),plan:{targets:[]},actor_user_id:'forged-owner',visual_qc_performed:true},{snapshot:context});
+ assert.equal(accepted.response.status,200);assert.equal(accepted.body.canonical_changed,true);
+ assert.equal(accepted.body.decision_kind,'owner_direct_rule');assert.equal(accepted.body.visual_qc_performed,false);
+ assert.deepEqual(accepted.rpcCalls.map(c=>c.name),['uid_rule_preflight','uid_rule_accept']);
+ assert.equal(accepts(accepted).length,1);assert.deepEqual(accepts(accepted)[0].args.p_plan,expected.plan);
+ assert.equal(accepts(accepted)[0].args.p_expected_plan_hash,preview.body.direct_rule_plan.plan_hash);
+ assert.equal(accepts(accepted)[0].args.p_actor_user_id,ownerId);
+ const prior=context.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'];
+ const after=accepts(accepted)[0].args.p_plan.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'];
+ assert.equal(after.schema_version,RULE_QUALITY_SCHEMA);
+ assert.deepEqual(after.agent_rule_reviewed_supplemental_rules,prior.agent_rule_reviewed_supplemental_rules);
+ assert.equal(after.owner_supplemental_rules.length,1);assert.equal(after.owner_supplemental_rules[0].proposal_id,proposalId);
+ const runtime=await compileCompatibleQuality({brand:context.compiler_context.brands[0],
+  branch:{...context.targets[0],...expected.plan.targets[0]},brand_dna:context.compiler_context.brand_dna_nodes[0]});
+ assert.equal(runtime.status,'COMPILED');assert.equal(runtime.contract_hash,expected.compiled[0].contract_hash);
+ assert.equal(runtime.agent_rule_reviewed_supplemental_rules?.length,1);assert.equal(runtime.owner_supplemental_rules.length,1);
+ assert.deepEqual(context,before,'both Edge routes keep their source snapshot immutable');
+});
+
+test('schema4 Edge rejects malformed or divergent history before any owner accept RPC',async()=>{
+ const valid=await v4Snapshot(),payload=await approval(valid);
+ const changes=[
+  (c:any)=>{c.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].agent_rule_reviewed_supplemental_rules[0].visual_qc_performed=true;},
+  (c:any)=>{c.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].agent_rule_reviewed_supplemental_rules[0].source.canonical_text_hash='0'.repeat(64);},
+  (c:any)=>{c.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].agent_rule_reviewed_supplemental_rules=null;},
+  (c:any)=>{c.targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].schema_version='uid-creative-quality/1';},
+ ];
+ for(const change of changes){
+  const context=structuredClone(valid);change(context);
+  context.compiler_context.projected_targets[0].metadata=structuredClone(context.targets[0].metadata);
+  const preview=await invoke({mode:'review_preflight',proposal_id:proposalId},{snapshot:context});
+  assert.equal(preview.response.status,200);assert.equal(preview.body.direct_rule.eligible,false);
+  assert.equal(preview.body.direct_rule_plan.plan_hash,null);assert.equal(accepts(preview).length,0);
+  const rejected=await invoke(payload,{snapshot:context});
+  assert.equal(rejected.response.status,409);assert.equal(accepts(rejected).length,0);
+  assert.notEqual(rejected.body.canonical_changed,true);
+ }
+ const drift=structuredClone(valid);
+ drift.compiler_context.projected_targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].agent_rule_reviewed_supplemental_rules[0].review_hash='c'.repeat(64);
+ const rejected=await invoke(payload,{snapshot:drift});
+ assert.equal(rejected.response.status,409);assert.equal(accepts(rejected).length,0);
 });
