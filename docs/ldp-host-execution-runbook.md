@@ -1,3 +1,5 @@
+> Current default (2026-10-19): use the HTML/CSS preview + grouped Copy prompt flow in [ldp-html-preview.md](ldp-html-preview.md). Figma assembly steps below are retained only as historical/explicit legacy documentation and are not required by the default LDP resolver.
+
 # LDP host execution: from verified plan to a real new Figma file
 
 This is the operational continuation of the read-only contract. The host executes existing supported tools; it must not report the contract or its semantic operations as an executed landing page. No new credentials, service accounts, public uploads or automated publisher are needed or authorized by this runbook.
