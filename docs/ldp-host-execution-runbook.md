@@ -1,53 +1,31 @@
-> Current default (2026-10-19): use the HTML/CSS preview + grouped Copy prompt flow in [ldp-html-preview.md](ldp-html-preview.md). Figma assembly steps below are retained only as historical/explicit legacy documentation and are not required by the default LDP resolver.
+# LDP host execution: verified plan to HTML/CSS preview
 
-# LDP host execution: from verified plan to a real new Figma file
+The active delivery flow is HTML/CSS with direct selection and grouped Copy prompt feedback. Figma assembly is no longer a production step. Preserve existing user files; old operational documentation is available through git history.
 
-This is the operational continuation of the read-only contract. The host executes existing supported tools; it must not report the contract or its semantic operations as an executed landing page. No new credentials, service accounts, public uploads or automated publisher are needed or authorized by this runbook.
+## Start and research
 
-## 1. Start from the collection URL
+From the user's collection URL, resolve current canonical brand/LDP instructions, discover live same-brand design references and research the actual product pool. Verify selected SKU variants, full galleries, details and product pixels. Record limitations, pagination completeness and excluded products. Live references supply brand layout/style evidence, not conversion guarantees. Do not copy source semantic defects or unsupported claims.
 
-The user need not supply a separate reference, niche or production plan. Infer those from the actual collection, resolve current canonical brand/LDP instructions, discover live brand references and research real products. Build the plan as the executing AI/UI/UX designer. Initialization's `AUTO_RESEARCH_AND_PLAN_REQUIRED` is assigned to the host, not a manual user checkpoint. If the user asks for the whole outcome, continue within that scope and actual tool permissions; do not stop just to ask for plan approval. A user-requested review checkpoint is still binding.
+Author the plan as the executing UI/UX designer: idea, hierarchy, shopper journey, section variation, mobile decisions, precise source tokens and asset mapping. Use the existing research.ldp_job schema. Bind task, research_snapshot, canonical_snapshot and content_version. Resolve validation errors; honor any user-requested checkpoint. Verify original execution authority from actual user context, not merely the submitted packet.
 
-### Example research family
+## Asset handling
 
-Use the live Book Lovers page as the UI baseline, not its Figma demo. The product pool must be independently verified: inspect exact current collection/PDP destinations, selected SKU variants, full galleries/specs and actual product pixels. Keep the small pilot varied enough for meaningful browsing. A suggested bounded first asset batch is one desktop/mobile hero pair, two product-type images, one two-product niche combo and one UGC-style image; adapt the approved page plan to the real pool. This small batch does not permit fabricated categories or replacing actual product cards with generic imagery.
+Use verified source media or generate only within the actual requested/authorized scope and current material rules. Inspect each actual output, preserve product geometry/artwork and mobile continuity, verify bytes/dimensions/checksum and record a genuine review note. Do not manufacture evidence or approval. Missing assets block the affected preview instead of becoming placeholders. No public-storage workaround for private assets.
 
-The final complete page needs native header/footer, hero, verified merchandise cards, a meaningful browsing module and a gallery, plus any other modules in its approved page manifest. Bestselling/New Arrivals only receive those labels with evidence; otherwise use truthful editorial labels. Unsupported trust offers and reviews must be omitted or replaced by verified source copy, not guessed.
+## Build the preview
 
-## 2. Produce and bind the production plan
+Supply revision-bound research.ldp_asset_outputs and research.ldp_preview_layout using the schema returned in ldp_preview_contract. Every actual section requires sourced desktop/mobile layout, columns, fit, focal alignment and observed same-brand reference. Typography requires source evidence; baseline tokens supply brand colors, font, spacing and radii. Do not invent a generic baseline for another brand.
 
-Resolve current LDP and relevant material rules. Use the returned LDP schema and canonical fingerprint. Submit selected-product research; record the returned research fingerprint. Author native section/card copy, destinations and asset briefs, then submit `research.ldp_job`. Resolve validation errors; bind `expected_version`. Bind and verify the original authenticated end-to-end user request via execution_authority; never self-approve a generated proposal. Use exact version-bound plan_approval only when the user requested a checkpoint. Validate that the actual plan remains within the original scope before generation. Stop for material commercial spending not covered by the user, required data-sharing approval or an unresolved source ambiguity. Ordinary tool availability is not authorization to spend external credits.
+The resolver returns ldp_html_preview.html only when current plan/evidence/asset inventory match. Save the returned HTML through authorized file handling. This is a review draft: verify desktop/mobile rendering, font availability, content, crops, links, long text and any complex geometry against source. The stack/split/grid renderer is not a captured brand DOM or pixel-parity guarantee. If the actual page needs unsupported hero/header/footer geometry, report and implement that authorized HTML work before claiming a finished layout.
 
-Act as a UI/UX designer: explain the central idea, hierarchy, shopper journey, deliberate layout variation and mobile choices in the plan. For Book Lovers, a personal reading retreat can move from an asymmetric lifestyle hero to a concise product comparison, circular browsing, a wider editorial moment and a candid gallery. Choose this rhythm for the story rather than mechanically filling rows. Preserve the current user's instruction that live web is the UI authority. Record Figma reference measurements only as demonstration context. Read a rendered mobile page before claiming mobile layout fidelity; responsive image markup alone is not a mobile QA pass.
+## Direct review and handoff
 
-## 3. Generate actual material assets through the host
+Deliver the standalone HTML and original assets/mapping; use Render only if a hosted preview is needed and authorized. The user opens the file, enables Select elements, selects text/images/cards or Whole section, adds a note for each group, and copies the generated prompt into ChatGPT. Copy fallback exposes selectable text if clipboard access is unavailable. No login, automatic transmission, feedback server persistence or screenshot-upload step is required.
 
-For each independent asset, use the available image-generation tool after loading its skill. Supply the exact verified product references, current material rules and the asset's concept, dimensions, crop/copy-safe region and physical-truth requirements. Preserve source/product artwork; one generated scene is not evidence for a second product's geometry. Desktop/mobile hero must retain the same story and SKU with deliberate portrait adaptation.
+Validate pasted feedback against exact task, content_version, render_hash and actual selected IDs. Apply each group's note only to its scope/viewport. Return the revised HTML and asset mapping. Feedback alone does not authorize canonical changes, Train, spending, publication or permission expansion.
 
-Use product-source media for actual commerce cards when appropriate. Label those as source media, never as generated output. Generated UGC remains commercial image-only creative; do not add fake review names/stars/quotes.
+## Completion
 
-Open each actual output and inspect pixels. Verify dimensions from actual file bytes; if the generator cannot supply required dimensions, report that boundary or use a supported authorized image-edit/export route. Do not claim a requested dimension is the delivered dimension. Save outputs through supported host/Library handling and record durable identities/checksums; no guessed download URLs. If a tool returns only an inline display image without transferable bytes, report the exact blocked asset and continue independent work.
+Report what was actually produced and inspected, along with any source/layout gaps. Generated HTML remains HTML_DRAFT_REQUIRES_VISUAL_QA and visual_qc_performed:false until real host inspection is separately evidenced. Test fixtures must remain explicitly synthetic and never masquerade as the user's task or a verified brand outcome.
 
-## 4. Create a new Figma file using real supported tools
-
-Read the current Figma create-file and use/generate-design skills before invoking tools. Create a new Design file for this pilot. Do not overwrite a supplied reference file or publish a plugin. Record the actual returned file ID/URL.
-
-Use the Figma tool's current supported native operations to create desktop and mobile pages/frames with reusable components and Auto Layout. Build the actual header, search/navigation, hero image/copy, product cards, browsing tiles, gallery and footer. Use live-web typography/spacing/crops and responsive behavior; the generic semantic plan is a checklist, not a final geometric renderer. Product names/PDP URLs must match the verified pool; omit prices if fresh exact prices are unavailable.
-
-Import the actual generated/source files using the supported Figma asset-upload route into known node IDs. Use IMAGE fills on native RECTANGLE/FRAME nodes; Figma does not have an IMAGE node type. Native TEXT remains text, separate from image fills. Bind shared styles/variables and preserve component instances where supported. Keep intrinsic source image dimensions separate from rendered slot and crop dimensions.
-
-If asset upload requires a public URL but only a private Library artifact exists, use the current supported transfer route; do not expose private download links or create public storage as a workaround. Report any unsupported transfer precisely.
-
-## 5. Read back, inspect and revise
-
-Read actual native node IDs, parent hierarchy, types, text and image fills. Export/get actual desktop and mobile screenshots and inspect them visually at full-page and detail scale. Check native text editability, Auto Layout, catalog image/title/PDP matches, all approved sections, copy contamination, overflow, circle masks, tap targets, contrast and mobile hero continuity.
-
-A screenshot is QA evidence, not the editable deliverable. A native node list alone is not visual proof. Correct failures using the actual target IDs; preserve unrelated edits and previously approved assets. A changed SKU invalidates its dependent imagery, claims, links and responsive variants. Verify the current file before retrying an uncertain write to avoid duplicate files/sections/uploads.
-
-Submit the real readback receipt only after those checks. The gateway verifies structure and version binding; the host remains responsible for actual verification and truthful reporting. A section prototype cannot become a complete-page receipt by merely changing its label; it must satisfy the complete-page and approved-section inventory gates.
-
-## 6. Deliver and stop at the authorized boundary
-
-Return the actual user-accessible Figma file/desktop/mobile links, preview exports, original assets, source/claim/asset-node manifest, scope/limitations and completed QC. Perform final visual/content QA; obtain human review if the user requested it. Record human_artistic_review as not_requested when no human review occurred, never fabricate a passed review. Do not claim fully reviewed or approved based on tool success alone.
-
-Repository PR, local test success, the gateway plan and Figma file creation are distinct milestones. Complete delivery requires the actual page and required checks. Website publication, deployment, canonical writes and any new persistent integrations remain separate authorization decisions.
+See [workflow contract](ldp-workflow-contract.md) and [preview schema and controls](ldp-html-preview.md). No Figma receipt or node ID is required by this active flow.
