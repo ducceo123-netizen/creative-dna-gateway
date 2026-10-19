@@ -35,7 +35,7 @@ The reviewed initial compact set covers product-led research/copy, distinct sect
 
 Four occasion icons are listed. Explicit aliases bind `occasion_01/02` to the template's `occasion_story_01/02`. The historical slot named `occasion_story_01_mobile` is actually the Product Details picture source, so it binds to `detail_main` and preserves the anchor SKU.
 
-The approved GTK-or-FAQ decision is propagated, but the shipped DOM supports GTK only. FAQ mapping is explicitly unavailable until a separately verified FAQ template variant is implemented. No placeholder GTK images or UI redesign are invented.
+The approved GTK-or-FAQ decision is propagated. The gateway exposes separate immutable GTK and FAQ mapping variants; consumers must select the variant from the approved content decision. FAQ v2026-10-19.faq.v1 reconstructs the missing markup against verified store CSS, with explicitly disclosed lack of captured live FAQ DOM/pixel parity. It uses exact approved questions/answers, all expanded for review, and no GTK placeholder images. Upstream legacy packet capability text is resolved only by the gateway serving the actual variant; quality and research gates remain independent.
 
 ## Updating approved wisdom
 
