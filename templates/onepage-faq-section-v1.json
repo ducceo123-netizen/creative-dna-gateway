@@ -1,0 +1,25 @@
+{
+  "reference_url": "https://pawfecthouse.com/",
+  "captured_at": "2026-10-19",
+  "html": "<div class=\"uid-product-content-faqs\" data-post-story-section=\"faq\"><div class=\"uid-product-content-heading\" data-text-slot=\"faq_heading\">{{faq_heading}}</div><div class=\"uid-faqs-items\"><div class=\"uid-faqs-item\" data-faq-item=\"01\"><input class=\"product-tabs__radio\" type=\"checkbox\" hidden id=\"uid-faq-01\" checked aria-label=\"Toggle FAQ answer\"><label class=\"uid-faqs-question\" for=\"uid-faq-01\"><span data-text-slot=\"faq_question_01\">{{faq_question_01}}</span><span class=\"uid-faqs-icon\" aria-hidden=\"true\"></span></label><div class=\"uid-faqs-answer\" data-text-slot=\"faq_answer_01\">{{faq_answer_01}}</div></div></div></div>",
+  "text_slots": [
+    "faq_heading",
+    "faq_question_01",
+    "faq_answer_01"
+  ],
+  "verification": {
+    "source_capture": "reconstructed_from_verified_store_css",
+    "pixel_parity": "not_claimed_no_live_faq_dom_found"
+  },
+  "binding": {
+    "selection": "Use only when the approved content decision selects FAQ; never combine with GTK.",
+    "repeatable_selector": "[data-faq-item]",
+    "count": "One row per approved question/answer, no fixed required count and no filler. Clone the row using a DOM parser, numbering data-faq-item and text-slot suffixes 01,02,...; update each input id and corresponding label for to unique uid-faq-NN values.",
+    "text": "Set textContent from exact approved FAQ copy. No product claims are supplied by this layout. Preserve line breaks in copy with DOM text nodes, not untrusted HTML.",
+    "review_state": "Keep every checkbox checked so ALL answers are expanded before screenshot/export. Reopen all answers after any interactive inspection.",
+    "assets": "No GTK images or checkmarks in FAQ mode. Other asset/text slots are unchanged.",
+    "provenance": "FAQ structure reconstructed against verified live store CSS; no claim of captured live FAQ DOM or screenshot parity."
+  },
+  "css_source_sha256": "b9a1fb4a142ef4bd2d6c920ae8f3facdd4f3fa92544108c3294f8084bb781c1d",
+  "css_reference_url": "https://cdn.shopify.com/extensions/01a13419-2006-77c6-b6a3-bd41bf062e0e/uid-internal-app-57/assets/product-content.css"
+}

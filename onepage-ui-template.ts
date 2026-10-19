@@ -2,6 +2,8 @@ import {RULE_COMPILER,RULE_REVIEW_SCOPE} from './supabase/functions/_shared/agen
 import {ruleSupplementValid} from './supabase/functions/_shared/agent-rule-quality.ts';
 import { createHash } from 'node:crypto';
 import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, agentReviewedSupplementalShapeValid, AGENT_REVIEW_SCOPE, stableJson } from './supabase/functions/_shared/creative-quality.ts';
+import { ONEPAGE_FAQ_TEMPLATE_VERSION, replacePostStorySection } from './onepage-faq-template.ts';
+import faqSection from './templates/onepage-faq-section-v1.json' with { type: 'json' };
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
 
 const canvasCss = `
@@ -22,10 +24,20 @@ const paddedTemplate = {
 };
 // Metadata-only revision: exact same approved HTML/CSS bytes, current delivery instructions.
 const qualityAlignedTemplate = { ...paddedTemplate, version: '2026-10-11.v3' };
+const faqHtml = replacePostStorySection(paddedHtml, faqSection.html);
+const faqTemplate = {
+  ...qualityAlignedTemplate, version: ONEPAGE_FAQ_TEMPLATE_VERSION,
+  reference_url: faqSection.reference_url, captured_at: faqSection.captured_at,
+  html: faqHtml, html_sha256: createHash('sha256').update(faqHtml).digest('hex'),
+  asset_slots: originalTemplate.asset_slots.filter(slot => !slot.startsWith('gtk_')),
+  text_slots: [...originalTemplate.text_slots.filter(slot => !/^(title|description)_(11|12|13)$/.test(slot)), ...faqSection.text_slots],
+  verification: { source_capture: faqSection.verification.source_capture, pixel_parity: faqSection.verification.pixel_parity },
+};
 const templates: Record<string, typeof originalTemplate> = {
   [originalTemplate.version]: originalTemplate,
   [paddedTemplate.version]: paddedTemplate,
   [qualityAlignedTemplate.version]: qualityAlignedTemplate,
+  [faqTemplate.version]: faqTemplate,
 };
 export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://uid-brands-gateway-preview.onrender.com';
@@ -36,9 +48,12 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) throw new Error('Unknown Onepage UI template version');
   if (format !== 'manifest' && format !== 'source') throw new Error('Invalid template format');
-  const base = `${version === qualityAlignedTemplate.version ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
+  const base = `${[qualityAlignedTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
+    post_story_section: version === faqTemplate.version ? 'faq' : 'gtk',
+    variants: { gtk: qualityAlignedTemplate.version, faq: faqTemplate.version },
+    ...(version === faqTemplate.version ? { faq_binding: faqSection.binding, faq_css_reference: { url: faqSection.css_reference_url, sha256: faqSection.css_source_sha256 } } : {}),
     reference_url: template.reference_url, captured_at: template.captured_at,
     urls: { html: `${base}/template.html`, css: `${base}/styles.css`, bundle: `${base}/bundle.json`, manifest: `${base}/manifest.json` },
     sha256: { html: template.html_sha256, css: template.css_sha256, original_app_css: template.app_css_sha256 },
@@ -47,8 +62,8 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
     canvas_gutter: version !== originalTemplate.version ? { desktop_px: 32, mobile_px: 16, mobile_max_width_px: 798 } : null,
     layout_lock: 'HARD: preserve captured DOM/classes/section order, widths, columns, gaps, padding, typography, borders, backgrounds, masks, object-fit, object-position and responsive CSS. Preserve the approved outer canvas gutters in this version. Substitute approved images and exact copy only. Render mapping from this template; never use imagegen to redraw the page.',
     loading: 'Download html + css into the same folder (styles.css is relative to template.html), or use bundle.json. Fonts and fixed UI checkmarks are embedded. This backend-owned template supersedes libfile/ZIP references and split feedback payloads as the executable UI source. Do not fetch the live PDP to rebuild layout. If unavailable, report template retrieval failure without guessing.',
-    binding: 'Use a DOM parser. Set img[src] and source[srcset] using data-asset-slot; delete stale img[srcset]. Set textContent of data-text-slot elements using exact approved copy. ui_checkmark is a fixed embedded UI dependency. Resolve supplied asset paths relative to output HTML. Do not alter other DOM/style properties.',
-    qa: 'Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, rounded Good To Know masks, full badge readability and final-package assets. Downloadability/source hashes do not certify pixel parity. ' + (version === qualityAlignedTemplate.version ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
+    binding: 'Use a DOM parser. Set img[src] and source[srcset] using data-asset-slot; delete stale img[srcset]. Set textContent of data-text-slot elements using exact approved copy. ui_checkmark is a fixed embedded GTK-only UI dependency. FAQ row repetition follows faq_binding. Resolve supplied asset paths relative to output HTML. Do not alter other DOM/style properties.',
+    qa: 'Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, full badge readability and final-package assets. ' + (version === faqTemplate.version ? 'Check every FAQ answer expanded, long question wrapping, unique input/label IDs and no GTK placeholders. ' : 'Check rounded Good To Know masks. ') + 'Downloadability/source hashes do not certify pixel parity. ' + ([qualityAlignedTemplate.version, faqTemplate.version].includes(version) ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
   };
   return format === 'source' ? { ...manifest, html: template.html, css: template.css } : manifest;
 }
@@ -127,6 +142,12 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
     ? { status: 'BLOCKED_QUALITY_CONTRACT', stage: 'mapping', instruction: 'A valid current quality contract is required before checking template policy compatibility.' }
     : mappingFormat && mappingFormat !== 'PNG'
     ? { status: 'BLOCKED_POLICY_TEMPLATE_MISMATCH', stage: 'mapping', instruction: 'The active delivery policy differs from this immutable PNG template manifest. Publish a reviewed metadata/template revision before mapping; do not silently pick one format.' }
-    : { status: 'COMPATIBLE', mapping_format: 'PNG', faq_variant: 'NOT_AVAILABLE' };
-  return { ...data, quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nUI mapping MUST use ui_mapping_template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page.`.trim() };
+    : { status: 'COMPATIBLE', mapping_format: 'PNG', faq_variant: 'AVAILABLE', faq_version: faqTemplate.version };
+  return { ...data,
+    ...(data.post_story_section ? { post_story_section: { ...data.post_story_section,
+      faq_template_status: 'AVAILABLE_IN_GATEWAY', faq_mapping_gate: 'SELECT_FAQ_TEMPLATE_AND_EXPAND_ALL_ANSWERS',
+      faq_template_version: faqTemplate.version,
+    } } : {}),
+    ui_mapping_templates: { gtk: getOnepageUiTemplate(), faq: getOnepageUiTemplate(faqTemplate.version) },
+    quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nSelect exactly one ui_mapping_templates variant from the approved GTK/FAQ content decision; ui_mapping_template is the backward-compatible GTK default, not an FAQ fallback. For FAQ use the faq version, bind only approved questions and answers, keep every answer expanded, and omit GTK assets. UI mapping MUST use the selected template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page.`.trim() };
 }

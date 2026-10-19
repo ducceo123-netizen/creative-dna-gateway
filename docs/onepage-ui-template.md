@@ -24,3 +24,30 @@ Validation: `npm run lint`, `node --import tsx --test tests/onepage-ui-template.
 ## Canvas spacing revision
 
 Active version `2026-10-03.v2` adds 32px gutters on desktop and 16px at widths up to 798px. The module is wrapped in a mapping canvas and its outer theme shell fits the available canvas width without the theme column margins doubling the gutter. Original Onepage DOM, inner layout CSS, fonts, slots and masks are retained. Version `2026-10-03.v1` remains available with its original hashes. This spacing change was explicitly requested by the owner on 2026-10-03.
+
+
+## FAQ restoration — 2026-10-19
+
+`get_onepage_ui_template()` advertises `variants.gtk` and `variants.faq`. Select
+`version=2026-10-19.faq.v1` when approved content chose FAQ; the default remains
+GTK for existing clients. `ui_mapping_templates` exposes both manifests in the
+Onepage resolver/compiler response. FAQ replaces only the post-story GTK block,
+removes GTK asset/copy slots and fixed checkmarks, and retains all other bytes.
+No canonical rule, compiler pin, research gate, tool input schema or auth changes.
+
+The store's public product-content.css still has the FAQ accordion styles. The
+36 sampled PDPs and four browser-inspected PDPs did not provide live FAQ DOM.
+The restored fragment is therefore explicitly **reconstructed from verified
+store CSS**, not a claimed live DOM capture or pixel-identical snapshot. Its
+manifest preserves the CSS source URL/hash and this limitation.
+
+Use a DOM parser and the `faq_binding` instructions to repeat one row per exact
+approved question/answer, bind via textContent, assign unique checkbox/label
+IDs, and leave ALL checkboxes checked for review/export. No fixed FAQ count,
+product copy, GTK placeholders or auto-selection is introduced. Verify long
+copy at desktop, mobile and 798/799px; expand every answer again before capture.
+The final mapping filename is `onepage_{product_slug}-overall.png`; production
+assets stay WebP. Existing template HTML/CSS versions and hashes are unchanged.
+
+Deploy the gateway containing this template revision before claiming the live
+capability. No database or Edge deployment is needed for this additive adapter.
