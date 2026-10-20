@@ -1,3 +1,4 @@
+import {registerHostedReviews} from './uid-hosted-review.ts';
 import { FIGMA_COMMENTS_INPUT, FIGMA_COMMENTS_DESCRIPTION, readFigmaComments } from "./uid-figma-comments.ts";
 import { attachLdpHtmlPreview } from "./uid-ldp-html-preview.ts";
 import { attachLdpWorkflow } from "./uid-ldp-planner.ts";
@@ -1721,6 +1722,7 @@ export function startServer() {
   const distPath = path.join(process.cwd(), "dist");
 
   // Serve static assets from built Vite dist
+  registerHostedReviews(app, path.join(distPath, "reviews"));
   app.use(express.static(distPath));
   app.get("*", (_req: Request, res: Response) => {
     res.sendFile(path.join(distPath, "index.html"));

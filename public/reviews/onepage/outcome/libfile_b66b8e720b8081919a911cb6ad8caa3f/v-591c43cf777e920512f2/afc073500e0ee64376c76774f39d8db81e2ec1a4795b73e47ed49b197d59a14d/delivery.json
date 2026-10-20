@@ -1,0 +1,359 @@
+{
+  "schema_version": "uid-hosted-review/1",
+  "kind": "onepage",
+  "identity": {
+    "type": "outcome",
+    "id": "libfile_b66b8e720b8081919a911cb6ad8caa3f"
+  },
+  "content_version": "library-v3-html-review-v1",
+  "render_hash": "62ae7cdb0bf171dbf747ae8104f483bc146c9ac354fd4ae047360b8397d6045e",
+  "source_manifest": {
+    "schema_version": "uid-onepage-preview/1",
+    "identity_type": "outcome",
+    "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+    "content_version": "library-v3-html-review-v1",
+    "brand": "pawfecthouse",
+    "template_version": "2026-10-11.v3",
+    "asset_manifest": [
+      {
+        "slot": "banner_desktop",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-banner.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-banner.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-banner.webp",
+        "checksum": "sha256:db681a9d78e5006e534bc0c5ed24c74ee40674da53bc9314aac0d0c988ed555a"
+      },
+      {
+        "slot": "banner_mobile",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-banner-mobile.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-banner-mobile.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-banner-mobile.webp",
+        "checksum": "sha256:9bcf9c6184fbc1b875037c4ed58919873df91ec0889cc83b99729c3fdce5a9c1"
+      },
+      {
+        "slot": "detail_main",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail_banner.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail_banner.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-detail_banner.webp",
+        "checksum": "sha256:2a8eaed905b10b1ff8430dc3828148d2fbe20cbb5b798711a7423348ae4bc85a"
+      },
+      {
+        "slot": "occasion_story_01_mobile",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail_banner.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail_banner.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-detail_banner.webp",
+        "checksum": "sha256:2a8eaed905b10b1ff8430dc3828148d2fbe20cbb5b798711a7423348ae4bc85a"
+      },
+      {
+        "slot": "wyl_01",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_01.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_01.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-wyl_01.webp",
+        "checksum": "sha256:2c78023e890c6d649b33ce4f15d640fd172d34fd34dcce399d2ffa9cd915d21f"
+      },
+      {
+        "slot": "wyl_02",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_02.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_02.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-wyl_02.webp",
+        "checksum": "sha256:3de9c6dd674e5a6161b20669cdc7f327ea63a3d3b6cccc544eb28a8cd332c785"
+      },
+      {
+        "slot": "wyl_03",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_03.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-wyl_03.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-wyl_03.webp",
+        "checksum": "sha256:967274551f36939b1831aa19c03c4a914fb02080bdf58e37ba16397193878f48"
+      },
+      {
+        "slot": "detail_01",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-01.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-01.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-detail-01.webp",
+        "checksum": "sha256:fd1af6ca5eab5fdc80c16b089a3ccfc488a6690926911158e877b1cd4e1ce61d"
+      },
+      {
+        "slot": "detail_02",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-02.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-02.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-detail-02.webp",
+        "checksum": "sha256:18817bf17cfdb8425e5881eb89ece7905d2668d58809fa7b5cf9d8870bd2f6a6"
+      },
+      {
+        "slot": "detail_03",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-03.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-detail-03.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-detail-03.webp",
+        "checksum": "sha256:8d8b6e70d909d81b43f74f6291b90a0c567cb8444566fa31b0ab6999a7d6b1a1"
+      },
+      {
+        "slot": "occasion_story_01",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_banner-01.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_banner-01.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_banner-01.webp",
+        "checksum": "sha256:f09cfe81cd9ed59f43eb70e64bd47111cb484ea1ad10791f23c4a2a099627e29"
+      },
+      {
+        "slot": "occasion_story_02",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_banner-02.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_banner-02.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_banner-02.webp",
+        "checksum": "sha256:53f362555608c29612e125d08fe957e933c0e3f0462bafcf6999bf880ee2dd7a"
+      },
+      {
+        "slot": "occasion_icon_01",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-01.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-01.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_icon-01.webp",
+        "checksum": "sha256:dde343d532dcf9018b436c9ecfd5c8732a763497e31f2ba1fd0051ef0543682d"
+      },
+      {
+        "slot": "occasion_icon_02",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-02.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-02.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_icon-02.webp",
+        "checksum": "sha256:f598b93b1d4b566dacf9645872a3e3b65dcea45f4326a4638e5e7d8c5e442af0"
+      },
+      {
+        "slot": "occasion_icon_03",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-03.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-03.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_icon-03.webp",
+        "checksum": "sha256:3e18461390c6e1f602fe6c7a61932568b800100e5c8526669bb8bf3215edff5d"
+      },
+      {
+        "slot": "occasion_icon_04",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-04.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-occasion_icon-04.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-occasion_icon-04.webp",
+        "checksum": "sha256:e4f69554bf943236420bd81f63c1383e529701d7333d22f5146b7a0147aaed24"
+      },
+      {
+        "slot": "gtk_01",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-01.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-01.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-gtk-01.webp",
+        "checksum": "sha256:2c493a70d9ab59e3ff8b5229d8278f281c0fec09078147a218a9ed163457ca74"
+      },
+      {
+        "slot": "gtk_02",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-02.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-02.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-gtk-02.webp",
+        "checksum": "sha256:f15653460b64b14f605c797ba80db869771e3aaeb1568d9fc739b04c358f384a"
+      },
+      {
+        "slot": "gtk_03",
+        "asset_id": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-03.webp",
+        "asset_identity_type": "source_archive_member",
+        "registered_asset_id": null,
+        "source_asset_reference": {
+          "outcome_id": "libfile_b66b8e720b8081919a911cb6ad8caa3f",
+          "library_version": 3,
+          "archive_member": "Onepage - Ceramic Ornament/onepage-ceramic_ornament-gtk-03.webp"
+        },
+        "file_url": "assets/onepage-ceramic_ornament-gtk-03.webp",
+        "checksum": "sha256:5c7ec1a58b20532fd7d4098f1dda20ba3bb7d9fec39392adee65591242a26e5b"
+      }
+    ],
+    "rendition_type": "new_canonical_html_rendition_of_approved_png_and_assets",
+    "original_source_html_available": false,
+    "source_library_version": 3,
+    "source_archive_sha256": "27e5d9b255ad24316df8c32871d3f1fe83bd7b156bf4a16feb9d45b13c08f2ef",
+    "source_overall_sha256": "ed50a7deefd219d0fcfda28317b5c3db9611912fb3cb916cba50d26fe3f3d2c4",
+    "render_hash": "62ae7cdb0bf171dbf747ae8104f483bc146c9ac354fd4ae047360b8397d6045e",
+    "source_html_sha256": "62ae7cdb0bf171dbf747ae8104f483bc146c9ac354fd4ae047360b8397d6045e"
+  },
+  "files": [
+    {
+      "path": "assets/18817bf17cfdb8425e5881eb89ece7905d2668d58809fa7b5cf9d8870bd2f6a6.webp",
+      "sha256": "18817bf17cfdb8425e5881eb89ece7905d2668d58809fa7b5cf9d8870bd2f6a6"
+    },
+    {
+      "path": "assets/2a8eaed905b10b1ff8430dc3828148d2fbe20cbb5b798711a7423348ae4bc85a.webp",
+      "sha256": "2a8eaed905b10b1ff8430dc3828148d2fbe20cbb5b798711a7423348ae4bc85a"
+    },
+    {
+      "path": "assets/2c493a70d9ab59e3ff8b5229d8278f281c0fec09078147a218a9ed163457ca74.webp",
+      "sha256": "2c493a70d9ab59e3ff8b5229d8278f281c0fec09078147a218a9ed163457ca74"
+    },
+    {
+      "path": "assets/2c78023e890c6d649b33ce4f15d640fd172d34fd34dcce399d2ffa9cd915d21f.webp",
+      "sha256": "2c78023e890c6d649b33ce4f15d640fd172d34fd34dcce399d2ffa9cd915d21f"
+    },
+    {
+      "path": "assets/3de9c6dd674e5a6161b20669cdc7f327ea63a3d3b6cccc544eb28a8cd332c785.webp",
+      "sha256": "3de9c6dd674e5a6161b20669cdc7f327ea63a3d3b6cccc544eb28a8cd332c785"
+    },
+    {
+      "path": "assets/3e18461390c6e1f602fe6c7a61932568b800100e5c8526669bb8bf3215edff5d.webp",
+      "sha256": "3e18461390c6e1f602fe6c7a61932568b800100e5c8526669bb8bf3215edff5d"
+    },
+    {
+      "path": "assets/53f362555608c29612e125d08fe957e933c0e3f0462bafcf6999bf880ee2dd7a.webp",
+      "sha256": "53f362555608c29612e125d08fe957e933c0e3f0462bafcf6999bf880ee2dd7a"
+    },
+    {
+      "path": "assets/5c7ec1a58b20532fd7d4098f1dda20ba3bb7d9fec39392adee65591242a26e5b.webp",
+      "sha256": "5c7ec1a58b20532fd7d4098f1dda20ba3bb7d9fec39392adee65591242a26e5b"
+    },
+    {
+      "path": "assets/8d8b6e70d909d81b43f74f6291b90a0c567cb8444566fa31b0ab6999a7d6b1a1.webp",
+      "sha256": "8d8b6e70d909d81b43f74f6291b90a0c567cb8444566fa31b0ab6999a7d6b1a1"
+    },
+    {
+      "path": "assets/967274551f36939b1831aa19c03c4a914fb02080bdf58e37ba16397193878f48.webp",
+      "sha256": "967274551f36939b1831aa19c03c4a914fb02080bdf58e37ba16397193878f48"
+    },
+    {
+      "path": "assets/9bcf9c6184fbc1b875037c4ed58919873df91ec0889cc83b99729c3fdce5a9c1.webp",
+      "sha256": "9bcf9c6184fbc1b875037c4ed58919873df91ec0889cc83b99729c3fdce5a9c1"
+    },
+    {
+      "path": "assets/db681a9d78e5006e534bc0c5ed24c74ee40674da53bc9314aac0d0c988ed555a.webp",
+      "sha256": "db681a9d78e5006e534bc0c5ed24c74ee40674da53bc9314aac0d0c988ed555a"
+    },
+    {
+      "path": "assets/dde343d532dcf9018b436c9ecfd5c8732a763497e31f2ba1fd0051ef0543682d.webp",
+      "sha256": "dde343d532dcf9018b436c9ecfd5c8732a763497e31f2ba1fd0051ef0543682d"
+    },
+    {
+      "path": "assets/e4f69554bf943236420bd81f63c1383e529701d7333d22f5146b7a0147aaed24.webp",
+      "sha256": "e4f69554bf943236420bd81f63c1383e529701d7333d22f5146b7a0147aaed24"
+    },
+    {
+      "path": "assets/f09cfe81cd9ed59f43eb70e64bd47111cb484ea1ad10791f23c4a2a099627e29.webp",
+      "sha256": "f09cfe81cd9ed59f43eb70e64bd47111cb484ea1ad10791f23c4a2a099627e29"
+    },
+    {
+      "path": "assets/f15653460b64b14f605c797ba80db869771e3aaeb1568d9fc739b04c358f384a.webp",
+      "sha256": "f15653460b64b14f605c797ba80db869771e3aaeb1568d9fc739b04c358f384a"
+    },
+    {
+      "path": "assets/f598b93b1d4b566dacf9645872a3e3b65dcea45f4326a4638e5e7d8c5e442af0.webp",
+      "sha256": "f598b93b1d4b566dacf9645872a3e3b65dcea45f4326a4638e5e7d8c5e442af0"
+    },
+    {
+      "path": "assets/fd1af6ca5eab5fdc80c16b089a3ccfc488a6690926911158e877b1cd4e1ce61d.webp",
+      "sha256": "fd1af6ca5eab5fdc80c16b089a3ccfc488a6690926911158e877b1cd4e1ce61d"
+    },
+    {
+      "path": "index.html",
+      "sha256": "7c9a5b1b5762c9bda0428a6601e5b806e54881a2c9e2629144db96d331d3bbea"
+    },
+    {
+      "path": "styles.css",
+      "sha256": "4671a41229fe5b3704d2825661f5ef1f7087500e513ddd2eb21eea3877291154"
+    }
+  ],
+  "script_hashes": [
+    "'sha256-ixT/TTfCR7a/ojqmtZHely++/fixTaeq5GDj3HlmQY8='"
+  ]
+}
