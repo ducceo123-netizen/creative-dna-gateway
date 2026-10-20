@@ -1,0 +1,3947 @@
+{
+  "schema_version": "uid-ldp-preview/1",
+  "task_id": "libfile_03d72154a954819184342e69aeb03210",
+  "task_id_basis": "Existing outcome Library identity; not a new UID task",
+  "source_outcome": "libfile_03d72154a954819184342e69aeb03210",
+  "content_version": "sha256:51f64bb173d38ae6ff5b41a7d252e333417313d3b3887440931c38dbbad66f91",
+  "source_url": "https://pawfecthouse.com/collections/gifts-for-cooking-bbq-lover",
+  "observed_at": "2026-10-20T04:31:40.860333+00:00",
+  "sections": [
+    {
+      "section_id": "gift-picks",
+      "title": "Cooking & BBQ Gift Picks",
+      "lead": "A name, a familiar face, or a family joke makes it theirs."
+    },
+    {
+      "section_id": "niche",
+      "title": "Shop for Their Kind of Cook",
+      "lead": "Find a gift that fits what they love about cooking."
+    },
+    {
+      "section_id": "shop-by-product",
+      "title": "Shop Cooking Gifts by Product",
+      "lead": "Choose the kind of gift they will love to wear, use, or display."
+    },
+    {
+      "section_id": "featured-apron",
+      "title": "Aprons for the Family’s Favorite Cook",
+      "lead": "Put their name and favorite people at the heart of the next cookout."
+    },
+    {
+      "section_id": "featured-towel",
+      "title": "Kitchen Towels with Their Kind of Character",
+      "lead": "Choose a favorite flower, furry face, or kitchen pun."
+    },
+    {
+      "section_id": "bbq-signs",
+      "title": "BBQ Signs for Their Favorite Spot",
+      "lead": "Give their cooking corner a name of its own."
+    },
+    {
+      "section_id": "new-arrivals",
+      "title": "Discover New Arrivals",
+      "lead": "More personal touches for cooks, bakers, and backyard hosts."
+    },
+    {
+      "section_id": "gallery",
+      "title": "Cooking Gifts in Everyday Moments",
+      "lead": "A closer look at gifts for their kitchen, cookouts, and favorite people."
+    },
+    {
+      "section_id": "browse",
+      "title": "Browse Cooking Gifts",
+      "lead": "Choose a group to explore matching products."
+    },
+    {
+      "section_id": "closing",
+      "title": "Make Their Next Cooking Moment Personal",
+      "lead": "Celebrate the person behind every favorite meal."
+    }
+  ],
+  "elements": [
+    {
+      "element_id": "global-header",
+      "label": "Header PawfectHouse",
+      "section_id": "header",
+      "asset_id": null,
+      "kind": "element",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "hero-hero_desktop",
+      "label": "Cooking & BBQ hero — cùng câu chuyện, hai khung hình",
+      "section_id": "hero",
+      "asset_id": "hero_desktop",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ],
+      "assets_by_viewport": {
+        "desktop": "hero_desktop",
+        "mobile": "hero_mobile"
+      }
+    },
+    {
+      "element_id": "hero-eyebrow",
+      "label": "Cooking & BBQ Gifts",
+      "section_id": "hero",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "hero-title",
+      "label": "Gifts for the Cook Everyone Loves.",
+      "section_id": "hero",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "hero-lead",
+      "label": "Hero — câu dẫn",
+      "section_id": "hero",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "personalization-benefits",
+      "label": "Ba điểm cá nhân hóa",
+      "section_id": "trust",
+      "asset_id": null,
+      "kind": "element",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-heading",
+      "label": "Cooking & BBQ Gift Picks",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-lead",
+      "label": "A name, a familiar face, or a family joke makes it theirs.",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10120543174945",
+      "label": "Custom Photo The Grillfather - Family Personalized Custom Apron - Father's Day, Gift For Dad, Grandpa",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_32",
+      "label": "Apron — Custom Photo The Grillfather",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_32",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10353773478177",
+      "label": "Custom Platter - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Grill Master At Work",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_3",
+      "label": "Platter — Grill Master At Work",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_3",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10512378822945",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Smoke Fire Good Times",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_0",
+      "label": "Custom Shaped Metal Sign — Smoke Fire Good Times",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_0",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10509942653217",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Made With Love And Flavor",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_48",
+      "label": "Kitchen Towel — Made With Love And Flavor",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_48",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10588858548513",
+      "label": "Custom Name Sourdough Bread Baking Gifts for Bakers - Personalized Storage Basket",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_67",
+      "label": "Storage Basket — Custom Name Sourdough Bread Baking Gifts for Bakers",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_67",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-9972502036769",
+      "label": "If It Hits The Floor It Is Mine - Funny Personalized Dog Apron",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_71",
+      "label": "Apron — Funny Personalized Dog Apron",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_71",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10568844411169",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Sourdough Bakers, Bread Bakers - Born To Bake Sourdough Bread",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_15",
+      "label": "Kitchen Towel — Born To Bake Sourdough Bread",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_15",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-product-10361790890273",
+      "label": "Custom Ceramic Plate - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Served With Love Always",
+      "section_id": "gift-picks",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gift-picks-catalog_38",
+      "label": "Ceramic Plate US — Served With Love Always",
+      "section_id": "gift-picks",
+      "asset_id": "catalog_38",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-heading",
+      "label": "Shop for Their Kind of Cook",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-lead",
+      "label": "Find a gift that fits what they love about cooking.",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-card-bbq",
+      "label": "Gifts for Grill Masters",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-combo_bbq",
+      "label": "Gifts for Grill Masters",
+      "section_id": "niche",
+      "asset_id": "combo_bbq",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-card-baking",
+      "label": "Gifts for Home Bakers",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-combo_baking",
+      "label": "Gifts for Home Bakers",
+      "section_id": "niche",
+      "asset_id": "combo_baking",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-card-decor",
+      "label": "Personalized Kitchen Decor",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-combo_decor",
+      "label": "Personalized Kitchen Decor",
+      "section_id": "niche",
+      "asset_id": "combo_decor",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-card-pets",
+      "label": "Gifts for Pet-Loving Cooks",
+      "section_id": "niche",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "niche-combo_pets",
+      "label": "Gifts for Pet-Loving Cooks",
+      "section_id": "niche",
+      "asset_id": "combo_pets",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-heading",
+      "label": "Shop Cooking Gifts by Product",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-lead",
+      "label": "Choose the kind of gift they will love to wear, use, or display.",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-apron",
+      "label": "Aprons",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_apron",
+      "label": "Aprons — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_apron",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-towel",
+      "label": "Kitchen Towels",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_towel",
+      "label": "Kitchen Towels — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_towel",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-sign",
+      "label": "Kitchen & BBQ Signs",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_sign",
+      "label": "Kitchen & BBQ Signs — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_sign",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-platter",
+      "label": "Platters",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_platter",
+      "label": "Platters — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_platter",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-plate",
+      "label": "Ceramic Plates",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_plate",
+      "label": "Ceramic Plates — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_plate",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "category-basket",
+      "label": "Storage Baskets",
+      "section_id": "shop-by-product",
+      "asset_id": null,
+      "kind": "navigation",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "shop-by-product-sbp_basket",
+      "label": "Storage Baskets — SBP v3",
+      "section_id": "shop-by-product",
+      "asset_id": "sbp_basket",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-heading",
+      "label": "Aprons for the Family’s Favorite Cook",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-lead",
+      "label": "Put their name and favorite people at the heart of the next cookout.",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-feature_apron",
+      "label": "Aprons for the Family’s Favorite Cook",
+      "section_id": "featured-apron",
+      "asset_id": "feature_apron",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-product-10120248230177",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - This Grandpa Loves His Crew",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-catalog_95",
+      "label": "Apron — This Grandpa Loves His Crew",
+      "section_id": "featured-apron",
+      "asset_id": "catalog_95",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-product-10238799348001",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - Legend In The Kitchen",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-catalog_78",
+      "label": "Apron — Legend In The Kitchen",
+      "section_id": "featured-apron",
+      "asset_id": "catalog_78",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-product-9972384170273",
+      "label": "Best FLippin' Dad Ever Ever -  Gift For Dad, Personalized Apron",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-catalog_139",
+      "label": "Apron — Best FLippin' Dad Ever Ever",
+      "section_id": "featured-apron",
+      "asset_id": "catalog_139",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-product-9972385480993",
+      "label": "I Drink I Grill And I Know Things - Gift For Dad - Personalized Apron",
+      "section_id": "featured-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-apron-catalog_60",
+      "label": "Apron — I Drink I Grill And I Know Things",
+      "section_id": "featured-apron",
+      "asset_id": "catalog_60",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-heading",
+      "label": "Kitchen Towels with Their Kind of Character",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-lead",
+      "label": "Choose a favorite flower, furry face, or kitchen pun.",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-feature_towel",
+      "label": "Kitchen Towels with Their Kind of Character",
+      "section_id": "featured-towel",
+      "asset_id": "feature_towel",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-product-10531535946017",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Mom, Grandam - Grandma's Sweet Kitchen Garden",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-catalog_118",
+      "label": "Kitchen Towel — Grandma's Sweet Kitchen Garden",
+      "section_id": "featured-towel",
+      "asset_id": "catalog_118",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-product-10375255556385",
+      "label": "Custom Photo Kitchen Towel - Personalized Birthday Gifts For Dog Cat Lovers, Dog Dad And Mom, Cat Owners - My Favorite Furry Sous Chef",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-catalog_64",
+      "label": "Kitchen Towel — My Favorite Furry Sous Chef",
+      "section_id": "featured-towel",
+      "asset_id": "catalog_64",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-product-10512472899873",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Flour Power",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-catalog_121",
+      "label": "Kitchen Towel — Flour Power",
+      "section_id": "featured-towel",
+      "asset_id": "catalog_121",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-product-10512453796129",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Cooking With Birth Flower Bliss",
+      "section_id": "featured-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "featured-towel-catalog_83",
+      "label": "Kitchen Towel — Cooking With Birth Flower Bliss",
+      "section_id": "featured-towel",
+      "asset_id": "catalog_83",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-heading",
+      "label": "BBQ Signs for Their Favorite Spot",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-lead",
+      "label": "Give their cooking corner a name of its own.",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-product-10508952273185",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill And Chill",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-catalog_1",
+      "label": "Custom Shaped Metal Sign — Grill And Chill",
+      "section_id": "bbq-signs",
+      "asset_id": "catalog_1",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-product-10515562856737",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Fire Up The Fun",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-catalog_7",
+      "label": "Custom Shaped Metal Sign — Fire Up The Fun",
+      "section_id": "bbq-signs",
+      "asset_id": "catalog_7",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-product-10510985756961",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill Smoke Good Times",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-catalog_11",
+      "label": "Custom Shaped Metal Sign — Grill Smoke Good Times",
+      "section_id": "bbq-signs",
+      "asset_id": "catalog_11",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-product-10529188086049",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Chill Vibes And Hot Grill Fires",
+      "section_id": "bbq-signs",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "bbq-signs-catalog_16",
+      "label": "Custom Shaped Metal Sign — Chill Vibes And Hot Grill Fires",
+      "section_id": "bbq-signs",
+      "asset_id": "catalog_16",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-heading",
+      "label": "Discover New Arrivals",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-lead",
+      "label": "More personal touches for cooks, bakers, and backyard hosts.",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10590088298785",
+      "label": "Custom Name Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_111",
+      "label": "Storage Basket — Custom Name Sourdough Baker Gifts",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_111",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10590061887777",
+      "label": "Custom Name Funny Sourdough Baker Gifts - Personalized All-Over Print Tote Bag",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_112",
+      "label": "All-Over Print Tote Bag — Custom Name Funny Sourdough Baker Gifts",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_112",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10588858548513",
+      "label": "Custom Name Sourdough Bread Baking Gifts for Bakers - Personalized Storage Basket",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_67",
+      "label": "Storage Basket — Custom Name Sourdough Bread Baking Gifts for Bakers",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_67",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10588237398305",
+      "label": "Custom Name Crazy Baking Gifts For Women - Personalized Metal Sign",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_113",
+      "label": "Metal Sign — Custom Name Crazy Baking Gifts For Women",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_113",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10587274543393",
+      "label": "Custom Name Funny Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_114",
+      "label": "Storage Basket — Custom Name Funny Sourdough Baker Gifts",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_114",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10587276017953",
+      "label": "Custom Name Sourdough Baking Humor Gifts - Personalized Storage Basket",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_97",
+      "label": "Storage Basket — Custom Name Sourdough Baking Humor Gifts",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_97",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10583809753377",
+      "label": "Custom Name Funny Grill Master Gifts - Personalized Kitchen Towel",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_98",
+      "label": "Kitchen Towel — Custom Name Funny Grill Master Gifts",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_98",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-product-10568844411169",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Sourdough Bakers, Bread Bakers - Born To Bake Sourdough Bread",
+      "section_id": "new-arrivals",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "new-arrivals-catalog_15",
+      "label": "Kitchen Towel — Born To Bake Sourdough Bread",
+      "section_id": "new-arrivals",
+      "asset_id": "catalog_15",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-heading",
+      "label": "Cooking Gifts in Everyday Moments",
+      "section_id": "gallery",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-lead",
+      "label": "A closer look at gifts for their kitchen, cookouts, and favorite people.",
+      "section_id": "gallery",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_01",
+      "label": "UGC 01 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_01",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_02",
+      "label": "UGC 02 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_02",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_03",
+      "label": "UGC 03 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_03",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_04",
+      "label": "UGC 04 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_04",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_05",
+      "label": "UGC 05 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_05",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_06",
+      "label": "UGC 06 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_06",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_07",
+      "label": "UGC 07 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_07",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "gallery-ugc_08",
+      "label": "UGC 08 — ảnh AI minh họa",
+      "section_id": "gallery",
+      "asset_id": "ugc_08",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-heading",
+      "label": "Browse Cooking Gifts",
+      "section_id": "browse",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-lead",
+      "label": "Choose a group to explore matching products.",
+      "section_id": "browse",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "closing-heading",
+      "label": "Make Their Next Cooking Moment Personal",
+      "section_id": "closing",
+      "asset_id": null,
+      "kind": "heading",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "closing-lead",
+      "label": "Celebrate the person behind every favorite meal.",
+      "section_id": "closing",
+      "asset_id": null,
+      "kind": "copy",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "global-footer",
+      "label": "Footer PawfectHouse",
+      "section_id": "footer",
+      "asset_id": null,
+      "kind": "element",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10120543174945",
+      "label": "Custom Photo The Grillfather - Family Personalized Custom Apron - Father's Day, Gift For Dad, Grandpa",
+      "section_id": "browse-niche-bbq",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-catalog_32",
+      "label": "Apron — Custom Photo The Grillfather",
+      "section_id": "browse-niche-bbq",
+      "asset_id": "catalog_32",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10353773478177",
+      "label": "Custom Platter - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Grill Master At Work",
+      "section_id": "browse-niche-bbq",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-catalog_3",
+      "label": "Platter — Grill Master At Work",
+      "section_id": "browse-niche-bbq",
+      "asset_id": "catalog_3",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10512378822945",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Smoke Fire Good Times",
+      "section_id": "browse-niche-bbq",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-bbq-catalog_0",
+      "label": "Custom Shaped Metal Sign — Smoke Fire Good Times",
+      "section_id": "browse-niche-bbq",
+      "asset_id": "catalog_0",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-product-10568844411169",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Sourdough Bakers, Bread Bakers - Born To Bake Sourdough Bread",
+      "section_id": "browse-niche-baking",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-catalog_15",
+      "label": "Kitchen Towel — Born To Bake Sourdough Bread",
+      "section_id": "browse-niche-baking",
+      "asset_id": "catalog_15",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-product-10588858548513",
+      "label": "Custom Name Sourdough Bread Baking Gifts for Bakers - Personalized Storage Basket",
+      "section_id": "browse-niche-baking",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-catalog_67",
+      "label": "Storage Basket — Custom Name Sourdough Bread Baking Gifts for Bakers",
+      "section_id": "browse-niche-baking",
+      "asset_id": "catalog_67",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-product-10590088298785",
+      "label": "Custom Name Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "browse-niche-baking",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-baking-catalog_111",
+      "label": "Storage Basket — Custom Name Sourdough Baker Gifts",
+      "section_id": "browse-niche-baking",
+      "asset_id": "catalog_111",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-product-10509942653217",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Made With Love And Flavor",
+      "section_id": "browse-niche-decor",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-catalog_48",
+      "label": "Kitchen Towel — Made With Love And Flavor",
+      "section_id": "browse-niche-decor",
+      "asset_id": "catalog_48",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-product-10361790890273",
+      "label": "Custom Ceramic Plate - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Served With Love Always",
+      "section_id": "browse-niche-decor",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-catalog_38",
+      "label": "Ceramic Plate US — Served With Love Always",
+      "section_id": "browse-niche-decor",
+      "asset_id": "catalog_38",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-product-10531535946017",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Mom, Grandam - Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-niche-decor",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-decor-catalog_118",
+      "label": "Kitchen Towel — Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-niche-decor",
+      "asset_id": "catalog_118",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-pets-product-9972502036769",
+      "label": "If It Hits The Floor It Is Mine - Funny Personalized Dog Apron",
+      "section_id": "browse-niche-pets",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-pets-catalog_71",
+      "label": "Apron — Funny Personalized Dog Apron",
+      "section_id": "browse-niche-pets",
+      "asset_id": "catalog_71",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-pets-product-10375255556385",
+      "label": "Custom Photo Kitchen Towel - Personalized Birthday Gifts For Dog Cat Lovers, Dog Dad And Mom, Cat Owners - My Favorite Furry Sous Chef",
+      "section_id": "browse-niche-pets",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-niche-pets-catalog_64",
+      "label": "Kitchen Towel — My Favorite Furry Sous Chef",
+      "section_id": "browse-niche-pets",
+      "asset_id": "catalog_64",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-10120543174945",
+      "label": "Custom Photo The Grillfather - Family Personalized Custom Apron - Father's Day, Gift For Dad, Grandpa",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_32",
+      "label": "Apron — Custom Photo The Grillfather",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_32",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-9972385480993",
+      "label": "I Drink I Grill And I Know Things - Gift For Dad - Personalized Apron",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_60",
+      "label": "Apron — I Drink I Grill And I Know Things",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_60",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-9972502036769",
+      "label": "If It Hits The Floor It Is Mine - Funny Personalized Dog Apron",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_71",
+      "label": "Apron — Funny Personalized Dog Apron",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_71",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-10238799348001",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - Legend In The Kitchen",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_78",
+      "label": "Apron — Legend In The Kitchen",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_78",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-10120248230177",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - This Grandpa Loves His Crew",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_95",
+      "label": "Apron — This Grandpa Loves His Crew",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_95",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-product-9972384170273",
+      "label": "Best FLippin' Dad Ever Ever -  Gift For Dad, Personalized Apron",
+      "section_id": "browse-type-apron",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-apron-catalog_139",
+      "label": "Apron — Best FLippin' Dad Ever Ever",
+      "section_id": "browse-type-apron",
+      "asset_id": "catalog_139",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10568844411169",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Sourdough Bakers, Bread Bakers - Born To Bake Sourdough Bread",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_15",
+      "label": "Kitchen Towel — Born To Bake Sourdough Bread",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_15",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10509942653217",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Made With Love And Flavor",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_48",
+      "label": "Kitchen Towel — Made With Love And Flavor",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_48",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10375255556385",
+      "label": "Custom Photo Kitchen Towel - Personalized Birthday Gifts For Dog Cat Lovers, Dog Dad And Mom, Cat Owners - My Favorite Furry Sous Chef",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_64",
+      "label": "Kitchen Towel — My Favorite Furry Sous Chef",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_64",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10512453796129",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Cooking With Birth Flower Bliss",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_83",
+      "label": "Kitchen Towel — Cooking With Birth Flower Bliss",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_83",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10583809753377",
+      "label": "Custom Name Funny Grill Master Gifts - Personalized Kitchen Towel",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_98",
+      "label": "Kitchen Towel — Custom Name Funny Grill Master Gifts",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_98",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10531535946017",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Mom, Grandam - Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_118",
+      "label": "Kitchen Towel — Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_118",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-product-10512472899873",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Flour Power",
+      "section_id": "browse-type-towel",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-towel-catalog_121",
+      "label": "Kitchen Towel — Flour Power",
+      "section_id": "browse-type-towel",
+      "asset_id": "catalog_121",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10512378822945",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Smoke Fire Good Times",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_0",
+      "label": "Custom Shaped Metal Sign — Smoke Fire Good Times",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_0",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10508952273185",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill And Chill",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_1",
+      "label": "Custom Shaped Metal Sign — Grill And Chill",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_1",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10515562856737",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Fire Up The Fun",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_7",
+      "label": "Custom Shaped Metal Sign — Fire Up The Fun",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_7",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10510985756961",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill Smoke Good Times",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_11",
+      "label": "Custom Shaped Metal Sign — Grill Smoke Good Times",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_11",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10529188086049",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Chill Vibes And Hot Grill Fires",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_16",
+      "label": "Custom Shaped Metal Sign — Chill Vibes And Hot Grill Fires",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_16",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-product-10588237398305",
+      "label": "Custom Name Crazy Baking Gifts For Women - Personalized Metal Sign",
+      "section_id": "browse-type-sign",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-sign-catalog_113",
+      "label": "Metal Sign — Custom Name Crazy Baking Gifts For Women",
+      "section_id": "browse-type-sign",
+      "asset_id": "catalog_113",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-platter-product-10353773478177",
+      "label": "Custom Platter - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Grill Master At Work",
+      "section_id": "browse-type-platter",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-platter-catalog_3",
+      "label": "Platter — Grill Master At Work",
+      "section_id": "browse-type-platter",
+      "asset_id": "catalog_3",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-plate-product-10361790890273",
+      "label": "Custom Ceramic Plate - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Served With Love Always",
+      "section_id": "browse-type-plate",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-plate-catalog_38",
+      "label": "Ceramic Plate US — Served With Love Always",
+      "section_id": "browse-type-plate",
+      "asset_id": "catalog_38",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-product-10588858548513",
+      "label": "Custom Name Sourdough Bread Baking Gifts for Bakers - Personalized Storage Basket",
+      "section_id": "browse-type-basket",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-catalog_67",
+      "label": "Storage Basket — Custom Name Sourdough Bread Baking Gifts for Bakers",
+      "section_id": "browse-type-basket",
+      "asset_id": "catalog_67",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-product-10587276017953",
+      "label": "Custom Name Sourdough Baking Humor Gifts - Personalized Storage Basket",
+      "section_id": "browse-type-basket",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-catalog_97",
+      "label": "Storage Basket — Custom Name Sourdough Baking Humor Gifts",
+      "section_id": "browse-type-basket",
+      "asset_id": "catalog_97",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-product-10590088298785",
+      "label": "Custom Name Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "browse-type-basket",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-catalog_111",
+      "label": "Storage Basket — Custom Name Sourdough Baker Gifts",
+      "section_id": "browse-type-basket",
+      "asset_id": "catalog_111",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-product-10587274543393",
+      "label": "Custom Name Funny Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "browse-type-basket",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-type-basket-catalog_114",
+      "label": "Storage Basket — Custom Name Funny Sourdough Baker Gifts",
+      "section_id": "browse-type-basket",
+      "asset_id": "catalog_114",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10512378822945",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Smoke Fire Good Times",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_0",
+      "label": "Custom Shaped Metal Sign — Smoke Fire Good Times",
+      "section_id": "browse-all",
+      "asset_id": "catalog_0",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10508952273185",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill And Chill",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_1",
+      "label": "Custom Shaped Metal Sign — Grill And Chill",
+      "section_id": "browse-all",
+      "asset_id": "catalog_1",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10353773478177",
+      "label": "Custom Platter - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Grill Master At Work",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_3",
+      "label": "Platter — Grill Master At Work",
+      "section_id": "browse-all",
+      "asset_id": "catalog_3",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10515562856737",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Fire Up The Fun",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_7",
+      "label": "Custom Shaped Metal Sign — Fire Up The Fun",
+      "section_id": "browse-all",
+      "asset_id": "catalog_7",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10510985756961",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Grill Smoke Good Times",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_11",
+      "label": "Custom Shaped Metal Sign — Grill Smoke Good Times",
+      "section_id": "browse-all",
+      "asset_id": "catalog_11",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10568844411169",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Sourdough Bakers, Bread Bakers - Born To Bake Sourdough Bread",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_15",
+      "label": "Kitchen Towel — Born To Bake Sourdough Bread",
+      "section_id": "browse-all",
+      "asset_id": "catalog_15",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10529188086049",
+      "label": "Custom BBQ Shaped Metal Sign - Personalized Grilling Gifts For BBQ Lovers, Husband, Son, Grandson, Brother, Grandpa, Dad, Yourself - Chill Vibes And Hot Grill Fires",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_16",
+      "label": "Custom Shaped Metal Sign — Chill Vibes And Hot Grill Fires",
+      "section_id": "browse-all",
+      "asset_id": "catalog_16",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10120543174945",
+      "label": "Custom Photo The Grillfather - Family Personalized Custom Apron - Father's Day, Gift For Dad, Grandpa",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_32",
+      "label": "Apron — Custom Photo The Grillfather",
+      "section_id": "browse-all",
+      "asset_id": "catalog_32",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10361790890273",
+      "label": "Custom Ceramic Plate - Personalized Father's Day Birthday Gifts For Dad, Grandpa - Served With Love Always",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_38",
+      "label": "Ceramic Plate US — Served With Love Always",
+      "section_id": "browse-all",
+      "asset_id": "catalog_38",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10509942653217",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Made With Love And Flavor",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_48",
+      "label": "Kitchen Towel — Made With Love And Flavor",
+      "section_id": "browse-all",
+      "asset_id": "catalog_48",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-9972385480993",
+      "label": "I Drink I Grill And I Know Things - Gift For Dad - Personalized Apron",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_60",
+      "label": "Apron — I Drink I Grill And I Know Things",
+      "section_id": "browse-all",
+      "asset_id": "catalog_60",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10375255556385",
+      "label": "Custom Photo Kitchen Towel - Personalized Birthday Gifts For Dog Cat Lovers, Dog Dad And Mom, Cat Owners - My Favorite Furry Sous Chef",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_64",
+      "label": "Kitchen Towel — My Favorite Furry Sous Chef",
+      "section_id": "browse-all",
+      "asset_id": "catalog_64",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10588858548513",
+      "label": "Custom Name Sourdough Bread Baking Gifts for Bakers - Personalized Storage Basket",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_67",
+      "label": "Storage Basket — Custom Name Sourdough Bread Baking Gifts for Bakers",
+      "section_id": "browse-all",
+      "asset_id": "catalog_67",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-9972502036769",
+      "label": "If It Hits The Floor It Is Mine - Funny Personalized Dog Apron",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_71",
+      "label": "Apron — Funny Personalized Dog Apron",
+      "section_id": "browse-all",
+      "asset_id": "catalog_71",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10238799348001",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - Legend In The Kitchen",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_78",
+      "label": "Apron — Legend In The Kitchen",
+      "section_id": "browse-all",
+      "asset_id": "catalog_78",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10512453796129",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Cooking With Birth Flower Bliss",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_83",
+      "label": "Kitchen Towel — Cooking With Birth Flower Bliss",
+      "section_id": "browse-all",
+      "asset_id": "catalog_83",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10120248230177",
+      "label": "Custom Apron - Personalized Birthday Gifts For Dad, Grandpa - This Grandpa Loves His Crew",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_95",
+      "label": "Apron — This Grandpa Loves His Crew",
+      "section_id": "browse-all",
+      "asset_id": "catalog_95",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10587276017953",
+      "label": "Custom Name Sourdough Baking Humor Gifts - Personalized Storage Basket",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_97",
+      "label": "Storage Basket — Custom Name Sourdough Baking Humor Gifts",
+      "section_id": "browse-all",
+      "asset_id": "catalog_97",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10583809753377",
+      "label": "Custom Name Funny Grill Master Gifts - Personalized Kitchen Towel",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_98",
+      "label": "Kitchen Towel — Custom Name Funny Grill Master Gifts",
+      "section_id": "browse-all",
+      "asset_id": "catalog_98",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10590088298785",
+      "label": "Custom Name Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_111",
+      "label": "Storage Basket — Custom Name Sourdough Baker Gifts",
+      "section_id": "browse-all",
+      "asset_id": "catalog_111",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10590061887777",
+      "label": "Custom Name Funny Sourdough Baker Gifts - Personalized All-Over Print Tote Bag",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_112",
+      "label": "All-Over Print Tote Bag — Custom Name Funny Sourdough Baker Gifts",
+      "section_id": "browse-all",
+      "asset_id": "catalog_112",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10588237398305",
+      "label": "Custom Name Crazy Baking Gifts For Women - Personalized Metal Sign",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_113",
+      "label": "Metal Sign — Custom Name Crazy Baking Gifts For Women",
+      "section_id": "browse-all",
+      "asset_id": "catalog_113",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10587274543393",
+      "label": "Custom Name Funny Sourdough Baker Gifts - Personalized Storage Basket",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_114",
+      "label": "Storage Basket — Custom Name Funny Sourdough Baker Gifts",
+      "section_id": "browse-all",
+      "asset_id": "catalog_114",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10531535946017",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Mom, Grandam - Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_118",
+      "label": "Kitchen Towel — Grandma's Sweet Kitchen Garden",
+      "section_id": "browse-all",
+      "asset_id": "catalog_118",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-10512472899873",
+      "label": "Custom Kitchen Towel - Personalized Birthday Gifts For Wife, Daughter, Besties, Sisters, Granddaughter, Grandma, Mom, Yourself - Flour Power",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_121",
+      "label": "Kitchen Towel — Flour Power",
+      "section_id": "browse-all",
+      "asset_id": "catalog_121",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-product-9972384170273",
+      "label": "Best FLippin' Dad Ever Ever -  Gift For Dad, Personalized Apron",
+      "section_id": "browse-all",
+      "asset_id": null,
+      "kind": "product_card",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "element_id": "browse-all-catalog_139",
+      "label": "Apron — Best FLippin' Dad Ever Ever",
+      "section_id": "browse-all",
+      "asset_id": "catalog_139",
+      "kind": "image",
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "catalog_112",
+      "original_file": "originals/catalog_112.webp",
+      "preview_file": "assets/catalog_112.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:4943f60fcb9f9a0b8c5d713d5976a08d76af90742ed763691f214e00d389b2bd",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_7",
+      "original_file": "originals/catalog_7.webp",
+      "preview_file": "assets/catalog_7.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:8c527cd89a3f2de1a78dd666bc749c3c450629711ffd8c457588fa0fa0ec65db",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_38",
+      "original_file": "originals/catalog_38.webp",
+      "preview_file": "assets/catalog_38.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:18a172e55611ffaa735b47dc85f46fdb10671a0265d6f7db2e845edd04b3edea",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_basket",
+      "original_file": "originals/sbp_basket.png",
+      "preview_file": "assets/sbp_basket.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:ed6116c1752755f0fe3e9f15ca91a20d387ba39333fe1ae624d4a5df8a4bd130",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_83",
+      "original_file": "originals/catalog_83.webp",
+      "preview_file": "assets/catalog_83.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:2dd86ffafc65a8b22468b19a3018be04453d78ae830686b0fd4e615bf6d868eb",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "combo_decor",
+      "original_file": "originals/combo_decor.png",
+      "preview_file": "assets/combo_decor.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:92d758645a0682c028d410063ece490425bf1cb519f0341bf8f36f7a1cc9c210",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "combo_bbq",
+      "original_file": "originals/combo_bbq.png",
+      "preview_file": "assets/combo_bbq.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:48fef851f2f2db2e9c27d752bfe930fafb78ef3f586917b543f293cd0c0cf48d",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_15",
+      "original_file": "originals/catalog_15.webp",
+      "preview_file": "assets/catalog_15.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:401229ebab9b5b66f87b1afcae7b0144278f7f8e92ef8dd264a0cae20c659170",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "combo_pets",
+      "original_file": "originals/combo_pets.png",
+      "preview_file": "assets/combo_pets.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:65c1e84d1800af9627256f631a95720d9cfba69d88517e54b635014406fca659",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_67",
+      "original_file": "originals/catalog_67.webp",
+      "preview_file": "assets/catalog_67.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:26e2c5343da2f057dfb0b22fe5022618b44cc39fc6a11bfda169c73cedf071d7",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_121",
+      "original_file": "originals/catalog_121.webp",
+      "preview_file": "assets/catalog_121.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:6a167b33528b6e5bb7dfeda768a924b614e9623ff099b847ec0757b5c8fccc50",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_139",
+      "original_file": "originals/catalog_139.webp",
+      "preview_file": "assets/catalog_139.webp",
+      "original_dimensions": [
+        700,
+        700
+      ],
+      "checksum": "sha256:2b8dd948f0bb4ef52e5541cc0bd146c1d377394217fd83f6054898ee2c71be47",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_3",
+      "original_file": "originals/catalog_3.webp",
+      "preview_file": "assets/catalog_3.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:46942858a55866d976b7317f56c383391cd6fa2bfa6d3c64481088ea268363e4",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "hero_desktop",
+      "original_file": "originals/hero_desktop.png",
+      "preview_file": "assets/hero_desktop.webp",
+      "original_dimensions": [
+        1983,
+        793
+      ],
+      "checksum": "sha256:0b602233001ce182db586b34a8e850e80f1b9dedd04da20b9f514a13be50e760",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_71",
+      "original_file": "originals/catalog_71.webp",
+      "preview_file": "assets/catalog_71.webp",
+      "original_dimensions": [
+        1000,
+        1000
+      ],
+      "checksum": "sha256:ee58390638537a11c29da0803edda6ca84965c937e4c64cf1f6c6ffc5b0b33a6",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_60",
+      "original_file": "originals/catalog_60.webp",
+      "preview_file": "assets/catalog_60.webp",
+      "original_dimensions": [
+        700,
+        700
+      ],
+      "checksum": "sha256:94965b705e1ca2d02373357b56f148edd383b749745452ffd2512ffec93237ed",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_48",
+      "original_file": "originals/catalog_48.webp",
+      "preview_file": "assets/catalog_48.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:26828af615da9b41fb0c4dbd091a1917b655e6e66ac8b59c5299109006c7e786",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_apron",
+      "original_file": "originals/sbp_apron.png",
+      "preview_file": "assets/sbp_apron.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:83d8890f20c5e70e36a559e76459b125d2ce65764886fe49e00264f52f6824b6",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "combo_baking",
+      "original_file": "originals/combo_baking.png",
+      "preview_file": "assets/combo_baking.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:c30453e83f022a9c000ef5284114c8087defcd7c3261c42ecc9581e321bee8b5",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_118",
+      "original_file": "originals/catalog_118.webp",
+      "preview_file": "assets/catalog_118.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:9f90b60d5416cb153dc89d97f3733c5cfb91544a7e9aa9fd6726954fb494cb84",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_95",
+      "original_file": "originals/catalog_95.webp",
+      "preview_file": "assets/catalog_95.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:6ec7ae80c7090e3862b86aef85d7a0b7ef2917756ed18ddf3f0f5a4dfaf1ea64",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "feature_apron",
+      "original_file": "originals/feature_apron.png",
+      "preview_file": "assets/feature_apron.webp",
+      "original_dimensions": [
+        1836,
+        856
+      ],
+      "checksum": "sha256:9138f1f89192cfcbed6db0226e6b2d312ee76da4defb5082fc575ab9d034d50c",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_11",
+      "original_file": "originals/catalog_11.webp",
+      "preview_file": "assets/catalog_11.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:f1c6f55c148bb17e7e7d3b21abd569ec2fdbeba951f52127ecaa3382b80cc247",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_78",
+      "original_file": "originals/catalog_78.webp",
+      "preview_file": "assets/catalog_78.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:a234ce331bf16a2566bc11a1d27c7765fc63b9146c3e573c952d8ec844eccd0a",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_sign",
+      "original_file": "originals/sbp_sign.png",
+      "preview_file": "assets/sbp_sign.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:f199094482f9aea6d6e62a3e583ec4dbe20ea8abe2391c161d097c38e1cc2221",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_113",
+      "original_file": "originals/catalog_113.webp",
+      "preview_file": "assets/catalog_113.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:fa5f70723abdf9d645df633f8365b77356daac8f67d6649e454d50c93384273b",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_1",
+      "original_file": "originals/catalog_1.webp",
+      "preview_file": "assets/catalog_1.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:e7a3b21cb753d0229417561d8912f7ac7dbb18a690ae597a851cc3adb72a4c56",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_64",
+      "original_file": "originals/catalog_64.webp",
+      "preview_file": "assets/catalog_64.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:378326dadc0945864952d688e7b69f8f95d95feb854dcb3abe75834c9579acc1",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_towel",
+      "original_file": "originals/sbp_towel.png",
+      "preview_file": "assets/sbp_towel.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:41bc3457f65c25a6947be5b761b097b40d2a742a393e40f3d9bf4f0ee2d23463",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "hero_mobile",
+      "original_file": "originals/hero_mobile.png",
+      "preview_file": "assets/hero_mobile.webp",
+      "original_dimensions": [
+        1113,
+        1414
+      ],
+      "checksum": "sha256:f6e4cfbd03ea2d999954ebb6432283ab1e48d5bd0c834a57aa033eb067e15bda",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_16",
+      "original_file": "originals/catalog_16.webp",
+      "preview_file": "assets/catalog_16.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:9a9d082f6c2abcc88b1203c1964dc03c4b8a21a25e4f1ded397988cf7eea55f8",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_0",
+      "original_file": "originals/catalog_0.webp",
+      "preview_file": "assets/catalog_0.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:e28b097830d60ecd4880b572b5565feb4ba8dd7c2819a42e44f889933bab8510",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "feature_towel",
+      "original_file": "originals/feature_towel.png",
+      "preview_file": "assets/feature_towel.webp",
+      "original_dimensions": [
+        1837,
+        856
+      ],
+      "checksum": "sha256:6b0dbff5e397cb08332b7a420e5c77cb77591fc9bce2f4e9283242e59f242385",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_plate",
+      "original_file": "originals/sbp_plate.png",
+      "preview_file": "assets/sbp_plate.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:010fcc0234e136a7e5884f986714240b6dc5a4fedfa2ebc3874f45b3646719de",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_111",
+      "original_file": "originals/catalog_111.webp",
+      "preview_file": "assets/catalog_111.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:c85f2e89ef931cfa23cadbbc6f8c2a1dbc2abe499b979a543bf3b0018bbff207",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_98",
+      "original_file": "originals/catalog_98.webp",
+      "preview_file": "assets/catalog_98.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:c1dc43d28447e8bb712197190310830098488da66331061fa40df51f981c9992",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_32",
+      "original_file": "originals/catalog_32.webp",
+      "preview_file": "assets/catalog_32.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:9b9868fa515f5057865e03c3fa626c705e17b3b18628453f295551a71f465b14",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_114",
+      "original_file": "originals/catalog_114.webp",
+      "preview_file": "assets/catalog_114.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:9841e764200d2e9c3fc034c32ec38c6e0f58d672e8fee101f9d3ab2b683ac3d8",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "catalog_97",
+      "original_file": "originals/catalog_97.webp",
+      "preview_file": "assets/catalog_97.webp",
+      "original_dimensions": [
+        2048,
+        2048
+      ],
+      "checksum": "sha256:9a9e320a12ac5d0a4dec8165a2dfa2f9755a203e1d6329707af5d7588cd363b4",
+      "revision": "existing",
+      "provenance": "source_catalog",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "sbp_platter",
+      "original_file": "originals/sbp_platter.png",
+      "preview_file": "assets/sbp_platter.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:31745fa7cba186438a45d93df5db29fef97589f844c487ac3717dfd9de26210e",
+      "revision": "v3",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_01",
+      "original_file": "originals/ugc_01.png",
+      "preview_file": "assets/ugc_01.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:b1c49f6c09d5e13bd9758275f5f353ca4cedd6b4e4ac9828c31d846ed0ec021b",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_05",
+      "original_file": "originals/ugc_05.png",
+      "preview_file": "assets/ugc_05.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:9aafd330de0292e85653a9627bc6d509d47e4015b0196c8623aa34efa2ee036c",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_07",
+      "original_file": "originals/ugc_07.png",
+      "preview_file": "assets/ugc_07.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:a72c0535304fecf98e265efefc73d129a947b31968e5425e3b86abdaa43df6d3",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_08",
+      "original_file": "originals/ugc_08.png",
+      "preview_file": "assets/ugc_08.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:8876011bac0550050d77248b654ab3bd4edbfeb2cdc29661edc9362a09bdf8df",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_02",
+      "original_file": "originals/ugc_02.png",
+      "preview_file": "assets/ugc_02.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:183a1bc895a5f1424af2ece215d3acb83a9841e367d3ea7ce9d4118059ab7f55",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_04",
+      "original_file": "originals/ugc_04.png",
+      "preview_file": "assets/ugc_04.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:c9ef27bb6d9deb437dd1b259ae3233ea99ee1a1f6a576ec9f08b0c71f69ebdaf",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_06",
+      "original_file": "originals/ugc_06.png",
+      "preview_file": "assets/ugc_06.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:5d54d913aba7c1cdb0a95f24c5d6a9e76be3203b28c0f332cd644fab0e2e05cd",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    },
+    {
+      "asset_id": "ugc_03",
+      "original_file": "originals/ugc_03.png",
+      "preview_file": "assets/ugc_03.webp",
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "checksum": "sha256:4d6fdf01a4ab5489d9a1dadc85da1531cc6f6dffbfcf8214bdb81ff2ef08fc03",
+      "revision": "existing",
+      "provenance": "generated_commercial",
+      "genuine_customer_media": false
+    }
+  ],
+  "destinations": [
+    {
+      "element_id": "gift-picks-product-10120543174945",
+      "url": "https://pawfecthouse.com/products/custom-photo-the-grillfather-family-personalized-custom-apron-fathers-day-gift-for-dad-grandpa",
+      "product_id": "10120543174945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10353773478177",
+      "url": "https://pawfecthouse.com/products/custom-platter-personalized-fathers-day-birthday-gifts-for-dad-grandpa-grill-master-at-work",
+      "product_id": "10353773478177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10512378822945",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-smoke-fire-good-times",
+      "product_id": "10512378822945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10509942653217",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-made-with-love-and-flavor",
+      "product_id": "10509942653217",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10588858548513",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-bread-baking-gifts-for-bakers-personalized-storage-basket",
+      "product_id": "10588858548513",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-9972502036769",
+      "url": "https://pawfecthouse.com/products/if-it-hits-the-floor-it-is-mine-personalized-apron",
+      "product_id": "9972502036769",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10568844411169",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-sourdough-bakers-bread-bakers-born-to-bake-sourdough-bread",
+      "product_id": "10568844411169",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "gift-picks-product-10361790890273",
+      "url": "https://pawfecthouse.com/products/custom-ceramic-plate-personalized-fathers-day-birthday-gifts-for-dad-grandpa-served-with-love-always",
+      "product_id": "10361790890273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-apron-product-10120248230177",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-this-grandpa-loves-his-crew",
+      "product_id": "10120248230177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-apron-product-10238799348001",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-legend-in-the-kitchen",
+      "product_id": "10238799348001",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-apron-product-9972384170273",
+      "url": "https://pawfecthouse.com/products/best-flippin-dad-ever-ever-gift-for-dad-personalized-apron",
+      "product_id": "9972384170273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-apron-product-9972385480993",
+      "url": "https://pawfecthouse.com/products/i-drink-i-grill-and-i-know-things-gift-for-dad-personalized-apron",
+      "product_id": "9972385480993",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-towel-product-10531535946017",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-mom-grandam-grandmas-sweet-kitchen-garden",
+      "product_id": "10531535946017",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-towel-product-10375255556385",
+      "url": "https://pawfecthouse.com/products/custom-photo-kitchen-towel-personalized-birthday-gifts-for-dog-cat-lovers-dog-dad-and-mom-cat-owners-my-favorite-furry-sous-chef",
+      "product_id": "10375255556385",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-towel-product-10512472899873",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-flour-power",
+      "product_id": "10512472899873",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "featured-towel-product-10512453796129",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-cooking-with-birth-flower-bliss",
+      "product_id": "10512453796129",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "bbq-signs-product-10508952273185",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-and-chill",
+      "product_id": "10508952273185",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "bbq-signs-product-10515562856737",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-fire-up-the-fun",
+      "product_id": "10515562856737",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "bbq-signs-product-10510985756961",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-smoke-good-times",
+      "product_id": "10510985756961",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "bbq-signs-product-10529188086049",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-chill-vibes-and-hot-grill-fires",
+      "product_id": "10529188086049",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10590088298785",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10590088298785",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10590061887777",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-sourdough-baker-gifts-personalized-all-over-print-tote-bag",
+      "product_id": "10590061887777",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10588858548513",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-bread-baking-gifts-for-bakers-personalized-storage-basket",
+      "product_id": "10588858548513",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10588237398305",
+      "url": "https://pawfecthouse.com/products/custom-name-crazy-baking-gifts-for-women-personalized-metal-sign",
+      "product_id": "10588237398305",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10587274543393",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10587274543393",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10587276017953",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baking-humor-gifts-personalized-storage-basket",
+      "product_id": "10587276017953",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10583809753377",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-grill-master-gifts-personalized-kitchen-towel",
+      "product_id": "10583809753377",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "new-arrivals-product-10568844411169",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-sourdough-bakers-bread-bakers-born-to-bake-sourdough-bread",
+      "product_id": "10568844411169",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10120543174945",
+      "url": "https://pawfecthouse.com/products/custom-photo-the-grillfather-family-personalized-custom-apron-fathers-day-gift-for-dad-grandpa",
+      "product_id": "10120543174945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10353773478177",
+      "url": "https://pawfecthouse.com/products/custom-platter-personalized-fathers-day-birthday-gifts-for-dad-grandpa-grill-master-at-work",
+      "product_id": "10353773478177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-bbq-product-10512378822945",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-smoke-fire-good-times",
+      "product_id": "10512378822945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-baking-product-10568844411169",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-sourdough-bakers-bread-bakers-born-to-bake-sourdough-bread",
+      "product_id": "10568844411169",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-baking-product-10588858548513",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-bread-baking-gifts-for-bakers-personalized-storage-basket",
+      "product_id": "10588858548513",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-baking-product-10590088298785",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10590088298785",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-decor-product-10509942653217",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-made-with-love-and-flavor",
+      "product_id": "10509942653217",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-decor-product-10361790890273",
+      "url": "https://pawfecthouse.com/products/custom-ceramic-plate-personalized-fathers-day-birthday-gifts-for-dad-grandpa-served-with-love-always",
+      "product_id": "10361790890273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-decor-product-10531535946017",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-mom-grandam-grandmas-sweet-kitchen-garden",
+      "product_id": "10531535946017",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-pets-product-9972502036769",
+      "url": "https://pawfecthouse.com/products/if-it-hits-the-floor-it-is-mine-personalized-apron",
+      "product_id": "9972502036769",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-niche-pets-product-10375255556385",
+      "url": "https://pawfecthouse.com/products/custom-photo-kitchen-towel-personalized-birthday-gifts-for-dog-cat-lovers-dog-dad-and-mom-cat-owners-my-favorite-furry-sous-chef",
+      "product_id": "10375255556385",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-10120543174945",
+      "url": "https://pawfecthouse.com/products/custom-photo-the-grillfather-family-personalized-custom-apron-fathers-day-gift-for-dad-grandpa",
+      "product_id": "10120543174945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-9972385480993",
+      "url": "https://pawfecthouse.com/products/i-drink-i-grill-and-i-know-things-gift-for-dad-personalized-apron",
+      "product_id": "9972385480993",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-9972502036769",
+      "url": "https://pawfecthouse.com/products/if-it-hits-the-floor-it-is-mine-personalized-apron",
+      "product_id": "9972502036769",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-10238799348001",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-legend-in-the-kitchen",
+      "product_id": "10238799348001",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-10120248230177",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-this-grandpa-loves-his-crew",
+      "product_id": "10120248230177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-apron-product-9972384170273",
+      "url": "https://pawfecthouse.com/products/best-flippin-dad-ever-ever-gift-for-dad-personalized-apron",
+      "product_id": "9972384170273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10568844411169",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-sourdough-bakers-bread-bakers-born-to-bake-sourdough-bread",
+      "product_id": "10568844411169",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10509942653217",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-made-with-love-and-flavor",
+      "product_id": "10509942653217",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10375255556385",
+      "url": "https://pawfecthouse.com/products/custom-photo-kitchen-towel-personalized-birthday-gifts-for-dog-cat-lovers-dog-dad-and-mom-cat-owners-my-favorite-furry-sous-chef",
+      "product_id": "10375255556385",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10512453796129",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-cooking-with-birth-flower-bliss",
+      "product_id": "10512453796129",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10583809753377",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-grill-master-gifts-personalized-kitchen-towel",
+      "product_id": "10583809753377",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10531535946017",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-mom-grandam-grandmas-sweet-kitchen-garden",
+      "product_id": "10531535946017",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-towel-product-10512472899873",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-flour-power",
+      "product_id": "10512472899873",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10512378822945",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-smoke-fire-good-times",
+      "product_id": "10512378822945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10508952273185",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-and-chill",
+      "product_id": "10508952273185",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10515562856737",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-fire-up-the-fun",
+      "product_id": "10515562856737",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10510985756961",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-smoke-good-times",
+      "product_id": "10510985756961",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10529188086049",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-chill-vibes-and-hot-grill-fires",
+      "product_id": "10529188086049",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-sign-product-10588237398305",
+      "url": "https://pawfecthouse.com/products/custom-name-crazy-baking-gifts-for-women-personalized-metal-sign",
+      "product_id": "10588237398305",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-platter-product-10353773478177",
+      "url": "https://pawfecthouse.com/products/custom-platter-personalized-fathers-day-birthday-gifts-for-dad-grandpa-grill-master-at-work",
+      "product_id": "10353773478177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-plate-product-10361790890273",
+      "url": "https://pawfecthouse.com/products/custom-ceramic-plate-personalized-fathers-day-birthday-gifts-for-dad-grandpa-served-with-love-always",
+      "product_id": "10361790890273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-basket-product-10588858548513",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-bread-baking-gifts-for-bakers-personalized-storage-basket",
+      "product_id": "10588858548513",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-basket-product-10587276017953",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baking-humor-gifts-personalized-storage-basket",
+      "product_id": "10587276017953",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-basket-product-10590088298785",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10590088298785",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-type-basket-product-10587274543393",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10587274543393",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10512378822945",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-smoke-fire-good-times",
+      "product_id": "10512378822945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10508952273185",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-and-chill",
+      "product_id": "10508952273185",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10353773478177",
+      "url": "https://pawfecthouse.com/products/custom-platter-personalized-fathers-day-birthday-gifts-for-dad-grandpa-grill-master-at-work",
+      "product_id": "10353773478177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10515562856737",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-fire-up-the-fun",
+      "product_id": "10515562856737",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10510985756961",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-grill-smoke-good-times",
+      "product_id": "10510985756961",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10568844411169",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-sourdough-bakers-bread-bakers-born-to-bake-sourdough-bread",
+      "product_id": "10568844411169",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10529188086049",
+      "url": "https://pawfecthouse.com/products/custom-bbq-shaped-metal-sign-personalized-grilling-gifts-for-bbq-lovers-husband-son-grandson-brother-grandpa-dad-yourself-chill-vibes-and-hot-grill-fires",
+      "product_id": "10529188086049",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10120543174945",
+      "url": "https://pawfecthouse.com/products/custom-photo-the-grillfather-family-personalized-custom-apron-fathers-day-gift-for-dad-grandpa",
+      "product_id": "10120543174945",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10361790890273",
+      "url": "https://pawfecthouse.com/products/custom-ceramic-plate-personalized-fathers-day-birthday-gifts-for-dad-grandpa-served-with-love-always",
+      "product_id": "10361790890273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10509942653217",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-made-with-love-and-flavor",
+      "product_id": "10509942653217",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-9972385480993",
+      "url": "https://pawfecthouse.com/products/i-drink-i-grill-and-i-know-things-gift-for-dad-personalized-apron",
+      "product_id": "9972385480993",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10375255556385",
+      "url": "https://pawfecthouse.com/products/custom-photo-kitchen-towel-personalized-birthday-gifts-for-dog-cat-lovers-dog-dad-and-mom-cat-owners-my-favorite-furry-sous-chef",
+      "product_id": "10375255556385",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10588858548513",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-bread-baking-gifts-for-bakers-personalized-storage-basket",
+      "product_id": "10588858548513",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-9972502036769",
+      "url": "https://pawfecthouse.com/products/if-it-hits-the-floor-it-is-mine-personalized-apron",
+      "product_id": "9972502036769",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10238799348001",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-legend-in-the-kitchen",
+      "product_id": "10238799348001",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10512453796129",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-cooking-with-birth-flower-bliss",
+      "product_id": "10512453796129",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10120248230177",
+      "url": "https://pawfecthouse.com/products/custom-apron-personalized-birthday-gifts-for-dad-grandpa-this-grandpa-loves-his-crew",
+      "product_id": "10120248230177",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10587276017953",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baking-humor-gifts-personalized-storage-basket",
+      "product_id": "10587276017953",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10583809753377",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-grill-master-gifts-personalized-kitchen-towel",
+      "product_id": "10583809753377",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10590088298785",
+      "url": "https://pawfecthouse.com/products/custom-name-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10590088298785",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10590061887777",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-sourdough-baker-gifts-personalized-all-over-print-tote-bag",
+      "product_id": "10590061887777",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10588237398305",
+      "url": "https://pawfecthouse.com/products/custom-name-crazy-baking-gifts-for-women-personalized-metal-sign",
+      "product_id": "10588237398305",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10587274543393",
+      "url": "https://pawfecthouse.com/products/custom-name-funny-sourdough-baker-gifts-personalized-storage-basket",
+      "product_id": "10587274543393",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10531535946017",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-mom-grandam-grandmas-sweet-kitchen-garden",
+      "product_id": "10531535946017",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-10512472899873",
+      "url": "https://pawfecthouse.com/products/custom-kitchen-towel-personalized-birthday-gifts-for-wife-daughter-besties-sisters-granddaughter-grandma-mom-yourself-flour-power",
+      "product_id": "10512472899873",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    },
+    {
+      "element_id": "browse-all-product-9972384170273",
+      "url": "https://pawfecthouse.com/products/best-flippin-dad-ever-ever-gift-for-dad-personalized-apron",
+      "product_id": "9972384170273",
+      "source": "current collection public JSON; product handle",
+      "verified_in_current_catalog": true
+    }
+  ],
+  "selected_catalog_count": 26,
+  "current_collection_count": 142,
+  "original_figma_frames": [
+    "9281:49447",
+    "9281:49562"
+  ],
+  "figma_status": "Legacy reference only; not modified during this HTML refinement",
+  "limits": [
+    "Existing generated images retained; no new pixel-fidelity approval asserted.",
+    "Hero source desktop 1983x793 displayed in accepted 2560x800 aspect ratio; not a native 2560px detail source.",
+    "Need/product links open curated verified SKU selections; not exhaustive type collections.",
+    "Generated UGC has no customer testimony, identities or rating.",
+    "Static header/footer reused from live Gardening HTML and source CSS; no Shopify JavaScript, cart or mega-menu behavior included.",
+    "Original research sample and Pinterest access limits remain; no new market-demand conclusion."
+  ]
+}
