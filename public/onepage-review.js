@@ -146,7 +146,7 @@
     };
     $('copy').onclick = async () => {
       if (!valid() || !groups.length || selected.size || $('feedback').value.trim()) return;
-      const value = prompt(); $('prompt').value = value;
+      const value = prompt(); $('prompt').value = value; $('prompt-details').open = true;
       try { await navigator.clipboard.writeText(value); $('status').textContent = 'Đã sao chép. Dán vào chat của task này rồi bấm Gửi.'; }
       catch { if (!valid()) return; $('prompt-details').open = true; $('prompt').focus(); $('prompt').select(); $('status').textContent = 'Clipboard chưa khả dụng. Chọn và sao chép prompt trong ô trên.'; }
     };

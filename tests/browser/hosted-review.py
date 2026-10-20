@@ -44,7 +44,7 @@ try:
                 assert packet['groups'][1]['elements'][0]['file_url']==('image.webp' if kind=='faq' else 'image.png')
                 assert packet['groups'][1]['elements'][0]['hosted_file_url'].startswith('assets/')
             # Clipboard denied under sandbox must expose a manually selectable prompt.
-            assert page.locator(prefix+'#prompt').is_visible()
+            page.locator(prefix+'#prompt').wait_for(state='visible')
             assert not errors,errors
             print(kind+': sandbox, assets, desktop/mobile feedback and copy fallback passed')
             page.close()
