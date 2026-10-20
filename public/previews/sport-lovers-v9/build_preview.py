@@ -21,8 +21,11 @@ def asset(path,key,maxsize=1254):
     b=path.read_bytes(); im=Image.open(io.BytesIO(b)).convert('RGB')
     w,h=im.size; im.thumbnail((maxsize,maxsize))
     dest=ASSETS/(key+'.webp')
-    if not dest.exists() or prior.get(key,{}).get('source_checksum')!=sha(b):
-        im.save(dest,'WEBP',quality=92,method=6)
+    if not dest.exists() or dest.stat().st_size==0 or prior.get(key,{}).get('source_checksum')!=sha(b):
+        temporary=dest.with_suffix('.tmp.webp')
+        im.save(temporary,'WEBP',quality=92,method=6)
+        with Image.open(temporary) as check:check.verify()
+        temporary.replace(dest)
     rec={'id':key,'source_file':str(path.relative_to(SRC)) if path.is_relative_to(SRC) else path.name,
          'source_checksum':sha(b),'checksum':sha(dest.read_bytes()),'width':im.width,'height':im.height,
          'original_width':w,'original_height':h,'file_url':'assets/'+dest.name,

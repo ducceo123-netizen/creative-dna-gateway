@@ -3,14 +3,14 @@
   "renderer_version": "uid-ldp-html-renderer/1",
   "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "task_id_basis": "Existing outcome Library identity, not a newly registered UID task",
-  "content_version": "sha256:f55de758c7bdd0c13eb8350a5f6c48abf2be360d706a410326b0dc40314be9c6",
+  "content_version": "sha256:c23cd778c86379356d95ee25641a10984eb432cff468b510e93f88f89413eefd",
   "brand": "pawfecthouse",
   "scope": "complete_ldp",
   "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "source_version": "3",
-  "created_at": "2026-10-20T04:08:11.827270+00:00",
+  "created_at": "2026-10-20T04:13:44.554443+00:00",
   "canonical_snapshot": "sha256:45c9edae00cec9694961e419be4fff8d6d832213d7f7e7c0098917e47a995580",
-  "layout_hash": "sha256:51e189271f05eaf2f31dc2dd77be2c06e5df329031a2c2034b9ca8c2a5743753",
+  "layout_hash": "sha256:844819af46c78f3c1b5fe0b4f50f5869a3ec48a62f7bf80489d81af4a89f5925",
   "asset_manifest": [
     {
       "id": "hero-desktop-2560x800",
@@ -211,7 +211,7 @@
       "id": "featured_02",
       "source_file": "04-featured/featured_02.png",
       "source_checksum": "sha256:db9d0f8ee39745bd50d27f2d1301c6406f8d1af7507aac3d7332ed06d311cb7d",
-      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checksum": "sha256:3f563173f4e9e0dfb3967b20659a5dcdd554044e7a67e26e3b01136400f0721b",
       "width": 1504,
       "height": 701,
       "original_width": 1836,
@@ -276,7 +276,7 @@
       "id": "gallery_05",
       "source_file": "05-lifestyle-gallery/gallery_05.png",
       "source_checksum": "sha256:ccfcd41c7efef2c8e6e8f6dec239685b850baf1ecab7be6f65945116d1c3dbc4",
-      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checksum": "sha256:a243750c836f3d76373d36ddff42c87b58f6ed2b29c74a71109c91bb1b2cc8be",
       "width": 1254,
       "height": 1254,
       "original_width": 1254,
@@ -510,7 +510,7 @@
       "id": "catalog-10162784272673",
       "source_file": "06-catalog-products/product_10162784272673.webp",
       "source_checksum": "sha256:3dcd4e9e833816b85f4664b2af7904f33ba56de2de978e5f95721bdccd5edc4c",
-      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checksum": "sha256:9e971f0e5d2a4330f6928b5b660e822e3bdd7477cb56c5b455dd687186b7c2f7",
       "width": 850,
       "height": 850,
       "original_width": 2048,
@@ -2868,6 +2868,15 @@
       "Groups 1 and 2 remain independent requests on the same title/lead IDs.",
       "Remove Gift Picks from the desktop landing-page flow. Preserve category navigation through a dedicated browse view on this same preview; source products and URLs remain unchanged. Mobile keeps existing inline filtered-section behavior.",
       "New Arrivals: native horizontal scroll carousel on desktop, preserving all eight SKUs and review IDs. Mobile remains the existing two-column grid."
-    ]
+    ],
+    "export_repair": {
+      "reason": "Three existing WebP exports were zero-byte files; original approved source files remain intact.",
+      "asset_ids": [
+        "featured_02",
+        "catalog-10162784272673",
+        "gallery_05"
+      ],
+      "action": "Re-export from the same source checksums with the existing WebP size/quality settings; verify all 56 files decode. No generative edits or design changes."
+    }
   }
 }

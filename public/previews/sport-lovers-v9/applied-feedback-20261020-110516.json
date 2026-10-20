@@ -54,5 +54,14 @@
     "Groups 1 and 2 remain independent requests on the same title/lead IDs.",
     "Remove Gift Picks from the desktop landing-page flow. Preserve category navigation through a dedicated browse view on this same preview; source products and URLs remain unchanged. Mobile keeps existing inline filtered-section behavior.",
     "New Arrivals: native horizontal scroll carousel on desktop, preserving all eight SKUs and review IDs. Mobile remains the existing two-column grid."
-  ]
+  ],
+  "export_repair": {
+    "reason": "Three existing WebP exports were zero-byte files; original approved source files remain intact.",
+    "asset_ids": [
+      "featured_02",
+      "catalog-10162784272673",
+      "gallery_05"
+    ],
+    "action": "Re-export from the same source checksums with the existing WebP size/quality settings; verify all 56 files decode. No generative edits or design changes."
+  }
 }
