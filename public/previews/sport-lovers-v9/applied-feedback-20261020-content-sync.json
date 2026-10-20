@@ -1,0 +1,41 @@
+{
+  "schema_version": "uid-ldp-applied-feedback/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_version": "3",
+  "parent_content_version": "sha256:c23cd778c86379356d95ee25641a10984eb432cff468b510e93f88f89413eefd",
+  "parent_render_hash": "sha256:b49122244505a5c84c1a5a4db7bed9891a3baacd4a2ba6e6e901a69cbc56b567",
+  "feedback": "ê sao anh thấy desktop với mobile nó không đồng bộ với nhau về content, các phần nội dung thể hiện. vậy?",
+  "groups": [
+    {
+      "scope": "desktop_and_mobile",
+      "feedback": "Đồng bộ content giữa desktop và mobile",
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp"
+      ],
+      "resolution": "Use the latest revised copy as a shared source; remove viewport copy overrides."
+    },
+    {
+      "scope": "desktop_and_mobile",
+      "feedback": "Đồng bộ các phần nội dung thể hiện",
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks"
+      ],
+      "resolution": "Apply approved pretext removal to both viewports; omit inline Gift Picks on both landing views. Keep identical category browse route on both."
+    }
+  ],
+  "scope_resolution": [
+    "This cross-viewport synchronization supersedes earlier viewport-specific content and visibility overrides. Prior feedback groups remain separate in their original records.",
+    "Preserve all 311 review IDs, approved assets, product IDs, destination URLs, native brand components and source canonical identity.",
+    "Responsive column counts, CTA placement, heading alignment and desktop carousel/mobile grid remain layout adaptations; content and product order are shared."
+  ]
+}

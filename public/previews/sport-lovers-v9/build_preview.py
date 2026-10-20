@@ -91,10 +91,10 @@ copy={
  'picks':{'title':'Gifts Worth Cheering For','lead':'A personal touch for their favorite sport.'},
  'niche':{'title':'Find Their Kind of Sports Gift','lead':'For the ones who play, cheer, or never miss a game.'},
  'combo_01':{'title':'Game Day at Home','lead':'Settle in with favorites made for watching the game.','filter':'game-day'},
- 'combo_02':{'title':'Parents & Grandparents','lead':'Celebrate the family cheering from the sidelines.','filter':'family'},
+ 'combo_02':{'title':'Sideline Support','lead':'For the ones who cheer them on, game after game.','filter':'family'},
  'combo_03':{'title':'Gifts for Players','lead':'A personal reminder that you’re always behind them.','filter':'players'},
  'combo_04':{'title':'Room Decor','lead':'Bring their favorite sport into their own space.','filter':'decor'},
- 'sbp':{'title':'Shop Sports Gifts by Product','lead':'From something to wear to something they’ll keep close.'},
+ 'sbp':{'title':'Pick a Sports Gift They’ll Love','lead':'From game-day favorites to keepsakes for their space.'},
  'featured_01':{'title':'Golf Towels for Their Next Round','lead':'Add a personal touch to their days on the green.'},
  'featured_02':{'title':'Sports Ornaments for a Season to Remember','lead':'Give their favorite game a place on the Christmas tree.'},
  'new':{'title':'Discover New Sports Gifts','lead':'More ways to make their favorite sport personal.'},
@@ -108,8 +108,9 @@ filters={
  'decor':[p['id'] for p in catalog if p['category'] in ['decor','signs']],
  **{k:[p['id'] for p in catalog if p['category']==k] for k in ['apparel','caps','drinkware','socks','balls','blankets','ornaments','signs','golf']}
 }
-viewport_copy={'desktop':{'sbp':{'title':'Pick a Sports Gift They’ll Love','lead':'From game-day favorites to keepsakes for their space.'}},'mobile':{'combo_02':{'title':'Sideline Support','lead':'For the ones who cheer them on, game after game.'}}}
-viewport_visibility={'desktop':{'picks/lead':False,'gift-picks':False},'mobile':{'niche/card/combo_0'+str(i)+'/lead':False for i in range(1,5)}}
+viewport_copy={}
+shared_hidden={'picks/lead':False,'gift-picks':False,**{'niche/card/combo_0'+str(i)+'/lead':False for i in range(1,5)}}
+viewport_visibility={v:dict(shared_hidden) for v in ['desktop','mobile']}
 cv=sha(json.dumps({'viewport_visibility':viewport_visibility,'copy':copy,'viewport_copy':viewport_copy,'assets':asset_manifest,'catalog':catalog,'filters':filters},sort_keys=True).encode())
 elements=[]
 def attr(sec,sub='',kind='text',label='',assetid=None):
@@ -134,7 +135,6 @@ def img(sec,key,file,alt,cls='',eager=False):
 def head(sec):return '<div class="section-heading">'+txt(sec,'title',copy[sec]['title'],'h2')+txt(sec,'lead',copy[sec]['lead'],'p')+'</div>'
 def section(sec,body,cls=''):
     result=f'<section id="{sec}" class="section {cls}" {attr(sec,kind="section",label=copy.get(sec,{}).get("title",sec))}>{body}</section>'
-    if sec=='sbp':elements[-1]['viewport_labels']={v:viewport_copy.get(v,{}).get(sec,{}).get('title',copy[sec]['title']) for v in ['desktop','mobile']}
     return result
 def product_card(p,sec):
     key='card/'+p['id']
@@ -186,7 +186,7 @@ footer=footer.replace('/section/native-footer','/section/footer')
 elements[:]=[e for e in elements if e['section_id'] not in ['native-header','native-footer']]
 page=header+hero+trust+early+niche+byproduct+''.join(features)+new+gallery+gift+footer
 layout={'schema_version':'uid-ldp-preview-layout/1','task_id':TASK,'content_version':cv,
- 'sections':[{'section_id':s,'desktop':'separate_browse_view' if s=='gift-picks' else 'carousel' if s=='new' else 'split' if s.startswith('featured') else 'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','mobile':'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','columns':4,'mobile_columns':2,'image_fit':'cover' if s=='hero' else 'contain','image_position':'center','source_url':'https://pawfecthouse.com/pages/book-lovers','observed_at':OBS,'evidence_note':'Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations.'} for s in ['header','hero','trust','picks','niche','sbp','featured_01','featured_02','new','gallery','gift-picks','footer']],
+ 'sections':[{'section_id':s,'desktop':'separate_browse_view' if s=='gift-picks' else 'carousel' if s=='new' else 'split' if s.startswith('featured') else 'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','mobile':'separate_browse_view' if s=='gift-picks' else 'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','columns':4,'mobile_columns':2,'image_fit':'cover' if s=='hero' else 'contain','image_position':'center','source_url':'https://pawfecthouse.com/pages/book-lovers','observed_at':OBS,'evidence_note':'Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations.'} for s in ['header','hero','trust','picks','niche','sbp','featured_01','featured_02','new','gallery','gift-picks','footer']],
  'typography':{'heading_px':28,'mobile_heading_px':24,'body_px':16,'line_height':1.5,'source_url':'https://pawfecthouse.com/pages/book-lovers','evidence_note':'Live theme CSS declares Poppins, #202024 text, #EE860F primary, #F34028 prices and 10px card radii. Section sizes adapted to source hierarchy.'}}
 css=(ROOT/'style.css').read_text()+(ROOT/'brand-components/native.css').read_text()+(ROOT/'brand-system.css').read_text()
 render_hash=sha((page+css+(ROOT/'review.js').read_text()).encode())
@@ -200,16 +200,17 @@ toolbar=(ROOT/'review-ui.html').read_text()
 js=(ROOT/'review.js').read_text()
 manifest['viewport_copy']=viewport_copy
 manifest['viewport_visibility']=viewport_visibility
-manifest['view_contract']={'landing':{'desktop_omits':['gift-picks']},'desktop_browse':{'query_parameter':'browse','reuses_section':'gift-picks','return_to_landing':True},'new_arrivals':{'desktop':'carousel','mobile':'two_column_grid'}}
+manifest['view_contract']={'content':'One shared copy, section order and product assortment across desktop and mobile.','landing':{'desktop_omits':['gift-picks'],'mobile_omits':['gift-picks']},'browse':{'viewports':['desktop','mobile'],'query_parameter':'browse','reuses_section':'gift-picks','return_to_landing':True},'new_arrivals':{'desktop':'carousel','mobile':'two_column_grid','same_product_ids':True}}
 for e in elements:
     path=e['id'].split('/section/',1)[1]
     visibility={v:overrides[path] for v,overrides in viewport_visibility.items() if path in overrides}
     if visibility:e['viewport_visibility']={v:visibility.get(v,True) for v in ['desktop','mobile']}
 manifest['brand_system_source']=json.loads((ROOT/'brand-components/source-audit.json').read_text())
-manifest['revision']=json.loads((ROOT/'applied-feedback-20261020-110516.json').read_text())
+manifest['revision']=json.loads((ROOT/'applied-feedback-20261020-content-sync.json').read_text())
 (ROOT/'preview-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 source['viewport_copy']=viewport_copy
 source['viewport_visibility']=viewport_visibility
+source['view_contract']=manifest['view_contract']
 source['revision']=manifest['revision']
 (ROOT/'copy-destination-source-map.json').write_text(json.dumps(source,ensure_ascii=False,indent=2))
 data=json.dumps({'manifest':manifest,'filters':filters,'copy':copy,'catalog':catalog},ensure_ascii=False).replace('</','<\\/')
