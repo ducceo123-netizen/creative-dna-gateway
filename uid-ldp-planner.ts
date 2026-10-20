@@ -125,5 +125,5 @@ export function attachLdpWorkflow<T extends Record<string,any>>(data:T, context:
   const validation=raw===undefined?{schema_version:LDP_VERSION,status:'AUTO_RESEARCH_AND_PLAN_REQUIRED',execution:'NOT_EXECUTED',pending_owner:'EXECUTING_HOST',next:'Use the collection URL to infer brand/niche, resolve current canonical rules, discover live brand references, research products and author research.ldp_job automatically. No user-authored plan or separate reference URL is required.'}:validateLdpJob(raw,context,snapshot);
   const policyBlocked=data.creative_quality_contract?.status==='BLOCKED'||data.quality_execution_guard?.status==='BLOCKED'||data.readiness?.content_authoring==='BLOCKED';
   return {...data,ldp_workflow_contract:{...LDP_CONTRACT,canonical_snapshot:snapshot,research_snapshot:researchEvidenceSnapshot(context.research),input_shape:ldpInputShape},ldp_validation:validation,
-    readiness:{...data.readiness,ldp_plan:policyBlocked?'BLOCKED':validation.status,ldp_asset_execution:'HOST_EXECUTION_REQUIRED',ldp_figma_delivery:'REQUIRES_NATIVE_ASSEMBLY_AND_ACTUAL_QC'}};
+    readiness:{...data.readiness,ldp_plan:policyBlocked?'BLOCKED':validation.status,ldp_asset_execution:'HOST_EXECUTION_REQUIRED',ldp_html_delivery:'REQUIRES_HTML_PREVIEW_AND_ACTUAL_QC'}};
 }
