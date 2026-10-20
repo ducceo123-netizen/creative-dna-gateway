@@ -3,17 +3,17 @@ import { createReviewContext, REVIEW_INPUT_SCHEMA } from "./uid-brands-review-co
 import { buildFeedbackIndex, resolveFeedbackBlocks } from "./uid-brands-feedback-index.ts";
 
 export const UID_EXTERNAL_PANEL_URL = "https://uid-brands-gateway-preview.onrender.com/onepage-panel.html";
-export const UID_EXTERNAL_PANEL = { url: UID_EXTERNAL_PANEL_URL, mode: "copy_prompt_only", context: "generic_canonical_slots", opens_automatically: false, private_context_transferred: false } as const;
-export const EXTERNAL_PANEL_GUIDANCE = `Panel Onepage trên Render: ${UID_EXTERNAL_PANEL_URL}. Mở tab Feedback → chọn các mục và viết góp ý riêng cho từng nhóm → sao chép prompt → dán và gửi vào chính cuộc trò chuyện này. Bạn cũng có thể góp ý trực tiếp trong chat bằng tên/số thứ tự/nhóm. Trang không nhận task, phiên bản hay ảnh riêng; khi dán phải đối chiếu đúng kết quả và assets thực tế, không suy đoán mục chưa có. Chỉ copy chưa gửi hay thực hiện tác vụ; không tự mở trang.`;
+export const UID_EXTERNAL_PANEL = { url: UID_EXTERNAL_PANEL_URL, mode: "copy_prompt_only", context: "task_brief", opens_automatically: false, private_context_transferred: false } as const;
+export const EXTERNAL_PANEL_GUIDANCE = "Góp ý Onepage ngay trên bản preview thực tế: chọn ảnh, chữ hoặc section → thêm góp ý riêng cho từng nhóm → sao chép prompt → dán và gửi vào chính cuộc trò chuyện này. Nếu chưa có preview, góp ý trực tiếp trong chat và yêu cầu mở đúng kết quả hiện tại. Đối chiếu đúng task/outcome, phiên bản và assets thực tế trước khi sửa. Chỉ copy chưa gửi hay thực hiện tác vụ; không tự mở trang.";
 export function externalPanelGuidance(stage: string) {
-  if (stage === "launcher") return `Nếu muốn soạn brief UID Brands bằng panel: ${UID_EXTERNAL_PANEL_URL}. Mở tab Tạo tác vụ → chọn Brand và Material trong danh mục của brand → điền phần brief còn thiếu → sao chép prompt → dán và gửi vào chính chat này. Hoặc gửi brief trực tiếp trong chat. Nếu đã có kết quả cần góp ý, không tạo tác vụ mới. Tab Feedback Onepage chỉ dành cho kết quả Onepage; material khác góp ý trực tiếp trong chat. Danh mục tĩnh phải được đối chiếu lại với route hiện hành. Panel không tự gửi hay chạy việc.`;
+  if (stage === "launcher") return `Nếu muốn soạn brief UID Brands bằng panel: ${UID_EXTERNAL_PANEL_URL}. Chọn Brand và Material trong danh mục của brand → điền phần brief còn thiếu → sao chép prompt → dán và gửi vào chính chat này. Hoặc gửi brief trực tiếp trong chat. Nếu đã có kết quả cần góp ý, không tạo tác vụ mới: dùng chọn trực tiếp trên preview hoặc góp ý trong chat. Danh mục tĩnh phải được đối chiếu lại với route hiện hành. Panel không tự gửi hay chạy việc.`;
   const context = stage === "content_approval"
-    ? "Đang xem content: góp ý câu chữ trực tiếp trong chat, hoặc dùng Góp ý tổng thể trong tab Feedback và ghi rõ phần content cần sửa. Chỉ chọn vị trí ảnh khi ảnh đó thực sự đã được tạo."
+    ? "Đang xem content: góp ý câu chữ trực tiếp trong chat và ghi rõ phần content cần sửa. Chỉ chọn vị trí ảnh khi ảnh đó thực sự đã được tạo."
     : stage === "packaging"
-      ? "Nếu phát hiện phần cần sửa trước khi đóng gói, dùng Feedback bên dưới. Panel không kiểm tra QC hay ZIP và không thay thế bước xác minh đóng gói."
+      ? "Nếu phát hiện phần cần sửa trước khi đóng gói, góp ý trên preview hoặc trong chat. Công cụ góp ý không kiểm tra QC hay ZIP và không thay thế bước xác minh đóng gói."
       : stage === "complete"
-        ? "Nếu muốn chỉnh tiếp kết quả vừa bàn giao, dùng Feedback bên dưới và giữ đúng kết quả đang xem."
-        : "Khi đã có ảnh thực tế cần sửa: chọn nhiều mục cho một góp ý chung, rồi thêm nhóm khác cho ý riêng.";
+        ? "Nếu muốn chỉnh tiếp kết quả vừa bàn giao, góp ý trên preview hoặc trong chat và giữ đúng kết quả đang xem."
+        : "Khi đã có ảnh thực tế cần sửa: chọn nhiều mục cho một góp ý chung trên preview, rồi thêm nhóm khác cho ý riêng.";
   return context + "\n" + EXTERNAL_PANEL_GUIDANCE;
 }
 
@@ -163,5 +163,5 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
   if (input.branch === "onepage-system") lines.push(externalPanelGuidance(input.stage));
   if (next_actions.length) lines.push("Bạn có thể gửi một trong các câu sau (đây là mẫu yêu cầu, chưa thực hiện):", ...next_actions.map(item => `${item.label}: “${item.command}”`));
   lines.push("Hướng dẫn này không tự chạy tác vụ, đóng gói hay gửi Train. Feedback không được chuyển thành Train; chỉ khi bạn yêu cầu Train rõ ràng mới có thể gửi đề xuất chờ quản trị duyệt.");
-  return { text: lines.join("\n"), next_actions, guide_data: { ...(input.branch === "onepage-system" ? { external_panel: UID_EXTERNAL_PANEL } : {}), ...(index ? { review_index: index } : {}), ...(feedback_resolution ? { feedback_resolution } : {}), ...(scope_echo ? { scope_echo } : {}), ...(execution_guidance ? { execution_guidance } : {}) } };
+  return { text: lines.join("\n"), next_actions, guide_data: { ...(index ? { review_index: index } : {}), ...(feedback_resolution ? { feedback_resolution } : {}), ...(scope_echo ? { scope_echo } : {}), ...(execution_guidance ? { execution_guidance } : {}) } };
 }

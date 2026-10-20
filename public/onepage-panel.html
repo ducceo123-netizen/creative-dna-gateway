@@ -7,11 +7,11 @@
 <main class="wrap" id="widgetContent">
 <div class="panel-toolbar"><strong>UID Brands · Prompt Master</strong><button id="toggleComposer" type="button" aria-expanded="true" aria-controls="composerBody">Thu gọn</button></div>
 <div id="composerBody">
-<div id="masterTabs" class="mode-tabs" role="tablist" aria-label="UID Brands Prompt Master"><button id="taskTab" class="mode-tab" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="taskTabPanel">Tạo tác vụ</button><button id="feedbackTab" class="mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="feedbackTabPanel">Feedback Onepage</button></div>
+<h1 id="taskTitle">Tạo tác vụ</h1>
 <p class="flow-state" id="flowState">Soạn prompt → sao chép → gửi vào chat.</p>
 <noscript><p class="error">Cần bật JavaScript để soạn prompt. Bạn cũng có thể gửi brief hoặc góp ý trực tiếp trong chat.</p></noscript>
 <section id="actionablePanel">
-<div id="taskTabPanel" role="tabpanel" aria-labelledby="taskTab" hidden>
+<div id="taskTabPanel" aria-labelledby="taskTitle">
 <div class="launcher-row"><div><label for="brand">Brand</label><select id="brand"><option value="">Chọn brand</option><option value="PawfectHouse">PawfectHouse</option><option value="GiftSoul">GiftSoul</option><option value="SoulPrise">SoulPrise</option></select></div><div><label for="branches">Material / Task</label><select id="branches" aria-label="Select material"><option value="onepage-system">Onepage</option></select></div></div>
 <label for="url">Product / Collection URL</label><input id="url" type="url" maxlength="2000" placeholder="https://pawfecthouse.com/collections/...">
 <div id="task-fields"></div>
@@ -21,25 +21,12 @@
 </details>
 <p id="brief-status" class="draft-note" role="status">Chọn brand và nhập link sản phẩm hoặc bộ sưu tập để tạo prompt.</p>
 </div>
-<div id="feedbackTabPanel" role="tabpanel" aria-labelledby="feedbackTab">
-<p class="mode-info notice">Chọn mục → thêm góp ý chung → copy về chat. Chỉ áp dụng cho các mục có trong kết quả Onepage đang xem.</p>
-<label id="picker-title">Chọn mục cần sửa</label>
-<div id="slot-groups" class="variable-keys"></div>
-<div id="groupActions"><button type="button" id="createSharedFeedback" disabled>+ Feedback chung cho mục đã chọn</button><button type="button" id="clear-selection">Bỏ chọn</button></div>
-<p id="selection-summary" class="selection-count" aria-live="polite">Chưa chọn mục nào.</p>
-<section id="draft-card" class="draft-box variable-item" aria-labelledby="draft-title" hidden>
-<div class="variable-item-head"><h2 id="draft-title">Feedback chung cho mục đã chọn</h2><span id="selection-count" class="count">0 mục</span></div>
-<label for="instruction">Yêu cầu chỉnh sửa</label><textarea id="instruction" rows="3" maxlength="4000" placeholder="Nhập yêu cầu chỉnh sửa cụ thể cho nhóm này..."></textarea>
-<div class="draft-actions"><button type="button" id="save-block" disabled>Thêm nhóm góp ý</button><button type="button" id="cancel-edit" hidden>Hủy chỉnh sửa</button></div>
+
 </section>
-<section class="review-card" aria-labelledby="review-title"><div class="section-heading"><h2 id="review-title">Các nhóm feedback</h2><span id="block-count" class="count">0 nhóm</span></div><div id="blocks"></div><p id="empty-state" class="empty-state">Chưa thêm nhóm. Mỗi nhóm giữ phạm vi riêng, tối đa 10 nhóm không trùng mục.</p></section>
-<details class="overall-box"><summary>Feedback tổng thể <span class="optional">(tuỳ chọn, phạm vi riêng)</span></summary><label for="overall">Chỉ nhập nếu muốn thay đổi tổng thể Onepage; không tự gộp vào các nhóm assets.</label><textarea id="overall" rows="3" maxlength="4000" placeholder="Ví dụ: thống nhất cách viết tiêu đề trên toàn trang."></textarea></details>
-<p class="draft-note">Bản nháp được giữ khi đổi tab trong trang này. Tải lại hoặc đóng trang sẽ mất nội dung chưa sao chép.</p>
-</div>
-</section>
-<section class="prompt-dock" id="promptDock"><details id="promptDetails" open><summary>Prompt để dán vào chat</summary><label for="prompt-output">Xem lại trước khi sao chép</label><textarea id="prompt-output" rows="6" readonly placeholder="Prompt xuất hiện khi bạn hoàn tất brief hoặc nhóm feedback."></textarea></details>
-<p id="draft-warning" class="warning" hidden>Bạn còn nhóm đang soạn. Hãy thêm/lưu nhóm hoặc hủy phần đang soạn trước khi copy.</p>
+<section class="prompt-dock" id="promptDock"><details id="promptDetails" open><summary>Prompt để dán vào chat</summary><label for="prompt-output">Xem lại trước khi sao chép</label><textarea id="prompt-output" rows="6" readonly placeholder="Prompt xuất hiện khi bạn hoàn tất brief."></textarea></details>
+
 <div class="prompt-actions"><button type="button" id="copy-prompt" disabled>Sao chép prompt</button><button type="button" id="select-prompt" disabled>Chọn toàn bộ prompt</button></div><p id="status" role="status" aria-live="polite">Chưa gửi sang ChatGPT. Sao chép, dán vào chat rồi bấm Gửi.</p>
 </section>
+<p class="draft-note">Bản nháp chỉ ở trang này. Tải lại hoặc đóng trang sẽ mất nội dung chưa sao chép.</p>
 <p class="footer-note">Chỉ soạn prompt trên trang; không gửi yêu cầu sửa, tạo hàng đợi hay Train.</p>
 </div></main></body></html>

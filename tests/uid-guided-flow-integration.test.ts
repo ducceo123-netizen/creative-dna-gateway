@@ -190,17 +190,17 @@ test("additive input fields are optional and bounded on review and native tools"
   }, true);
 });
 
- test("external selector is a plain public link with no private hydration or automatic widget", async () => {
+ test("task composer is offered only for launch; outcome feedback uses live preview", async () => {
   const url = new URL(UID_EXTERNAL_PANEL_URL);
   assert.equal(url.protocol, "https:"); assert.equal(url.search, ""); assert.equal(url.hash, "");
   assert.equal(url.pathname, "/onepage-panel.html");
   await withMcp(async call => {
     for (const name of ["show_uid_brands_review", "get_uid_brands_native_workflow"]) {
       const onepage = await call(base, name);
-      assert.deepEqual(onepage.structuredContent.external_panel, UID_EXTERNAL_PANEL);
-      assert.match(onepage.content[0].text, new RegExp(UID_EXTERNAL_PANEL_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.equal(onepage.structuredContent.external_panel.opens_automatically, false);
-      assert.equal(onepage.structuredContent.external_panel.private_context_transferred, false);
+      assert.equal(onepage.structuredContent.external_panel, undefined);
+      assert.ok(!onepage.content[0].text.includes(UID_EXTERNAL_PANEL_URL));
+      assert.match(onepage.content[0].text, /preview thực tế/);
+      assert.doesNotMatch(onepage.content[0].text, /Mở tab Feedback/);
       safeProse(onepage);
       for (const branch of [undefined, "home-hero"]) {
         const unrelated = await call({ ...base, branch }, name);
