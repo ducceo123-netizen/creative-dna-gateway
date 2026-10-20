@@ -54,7 +54,7 @@ function directReceipt(data=directPreflight()) {return {
  plan_hash:data.direct_rule_plan!.plan_hash,canonical_changed:true,
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
-function setup(path:'covered'|'merge'='covered'){
+function setup(path:'covered'|'merge'|'owner'='covered'){
  const deadlines=new Map<number,()=>void>(),polls=new Map<number,()=>void>();let timerId=0;
  const document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
  const slots:any[]=[],effects:Effect[]=[],queued:Effect[]=[],calls:Call[]=[],completed:any[]=[],busyEvents:boolean[]=[];
@@ -539,4 +539,41 @@ test('visible refresh never overlaps, updates open queue and invalidates version
  ui.calls[1].resolve(Response.json(preflight({candidate_hash:'scope-v2:new'})));await flush();
  assert.equal(ui.all('textarea')[0].props.value,note);assert.equal(ui.button('Xác nhận đã có trong quy chuẩn').props.disabled,true);
  assert.ok(ui.all('input').filter(node=>node.props.type==='checkbox').every(node=>!node.props.checked));
+});
+
+
+test('hard merge opens a read-only scoped preview and requires deliberate owner confirmation',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);const data=directPreflight();await ready(ui,data);
+ assert.equal(ui.calls.length,1);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ assert.match(ui.text(),/Phạm vi đầy đủ: PawfectHouse/);
+ assert.ok(ui.text().includes(data.proposal.proposed_content_md!));
+ assert.ok(!ui.text().includes('Review outcome và bằng chứng'));
+ ui.button('Xác nhận hard merge').props.onClick();await flush();assert.equal(ui.calls.length,1);
+ ui.checkAll();await flush();const action=ui.button('Xác nhận hard merge').props.onClick;action();action();await flush();
+ assert.equal(ui.calls.length,2);assert.match(ui.calls[1].url,/accept-rule$/);
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();assert.equal(ui.completed.length,1);
+});
+
+test('hard merge clears owner confirmation when scope changes and cannot bypass ineligible plans',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ ui.click('Tải lại / Retry');await flush();ui.calls[1].resolve(Response.json(directPreflight({candidate_hash:'scope-v2:new'})));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+ ui.checkAll();await flush();ui.click('Tải lại / Retry');await flush();
+ const blocked=directPreflight();blocked.direct_rule!.eligible=false;blocked.direct_rule!.owner_authorized=false;
+ blocked.direct_rule!.blockers=[{code:'owner_required',message:'Owner required',next_action:'Sign in as owner'}];
+ blocked.direct_rule_plan!.eligible=false;
+ ui.calls[2].resolve(Response.json(blocked));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.disabled,true);
+});
+
+test('hard merge uncertain response locks retries and close causes no extra writes',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();ui.click('Xác nhận hard merge');await flush();
+ ui.calls[1].reject(Error('Connection lost'));await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.button('Xác nhận hard merge').props.onClick();await flush();assert.equal(ui.calls.length,2);
+ ui.click('Đóng');await flush();assert.equal(ui.calls.length,2);assert.equal(ui.completed.length,0);
 });
