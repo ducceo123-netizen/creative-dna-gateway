@@ -1,0 +1,6 @@
+/* Only FAQ answer 02 is revised for the selected desktop viewport. */
+.uid-faqs-answer > [data-faq-answer-viewport="desktop"] { display: none; }
+@media (min-width: 800px) {
+  .uid-faqs-answer > [data-faq-answer-viewport="desktop"] { display: inline; }
+  .uid-faqs-answer > [data-faq-answer-viewport="mobile"] { display: none; }
+}
