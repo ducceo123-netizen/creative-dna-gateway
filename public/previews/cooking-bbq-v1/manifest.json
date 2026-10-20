@@ -3,7 +3,7 @@
   "task_id": "libfile_03d72154a954819184342e69aeb03210",
   "task_id_basis": "Existing outcome Library identity; not a new UID task",
   "source_outcome": "libfile_03d72154a954819184342e69aeb03210",
-  "content_version": "sha256:c7bab68c77c54352abe76d7cbebb9ecb30c19558cc4e24ce5b33278295d79d5a",
+  "content_version": "sha256:5a545440f233765f18223a8d68aeb964dfbd9fbb03b57a6b2a43a90bdb69992e",
   "source_url": "https://pawfecthouse.com/collections/gifts-for-cooking-bbq-lover",
   "observed_at": "2026-10-20T05:12:57.166219+00:00",
   "sections": [
@@ -582,14 +582,18 @@
     },
     {
       "element_id": "shop-by-product-sbp_basket",
-      "label": "Storage Baskets — SBP v3",
+      "label": "Storage Baskets — desktop v4 / mobile v3",
       "section_id": "shop-by-product",
       "asset_id": "sbp_basket",
       "kind": "image",
       "viewports": [
         "desktop",
         "mobile"
-      ]
+      ],
+      "viewport_asset_revisions": {
+        "desktop": "v4",
+        "mobile": "v3"
+      }
     },
     {
       "element_id": "featured-apron-heading",
@@ -2720,9 +2724,40 @@
         1254
       ],
       "checksum": "sha256:ed6116c1752755f0fe3e9f15ca91a20d387ba39333fe1ae624d4a5df8a4bd130",
-      "revision": "v3",
+      "revision": "desktop-v4/mobile-v3",
       "provenance": "generated_commercial",
-      "genuine_customer_media": false
+      "genuine_customer_media": false,
+      "preview_file_basis": "Default/mobile fallback retained from base outcome; desktop uses viewport_variants.desktop.",
+      "viewport_variants": {
+        "desktop": {
+          "revision": "v4",
+          "media": "(min-width:800px)",
+          "original_file": "originals/sbp_basket_desktop_v4.png",
+          "preview_file": "assets/sbp_basket_desktop_v4.webp",
+          "original_dimensions": [
+            1254,
+            1254
+          ],
+          "checksum": "sha256:ce10cbd1033627182c1ed81a5939d3535f5db13e916dca6439b9d75487ce4819",
+          "preview_checksum": "sha256:58b59060f381ee4d4db31421df659c333cf7636f0ce5a91d4cceb4d5efad60fa",
+          "provenance": "generated_commercial",
+          "genuine_customer_media": false
+        },
+        "mobile": {
+          "revision": "v3",
+          "media": "(max-width:799px)",
+          "original_file": "originals/sbp_basket.png",
+          "preview_file": "assets/sbp_basket.webp",
+          "original_dimensions": [
+            1254,
+            1254
+          ],
+          "checksum": "sha256:ed6116c1752755f0fe3e9f15ca91a20d387ba39333fe1ae624d4a5df8a4bd130",
+          "preview_checksum": "sha256:836eafea6692e614f3c81d189fb7e8bc0a0206ee9846d5725281ff6f455a1b5e",
+          "provenance": "generated_commercial",
+          "genuine_customer_media": false
+        }
+      }
     },
     {
       "asset_id": "catalog_83",
@@ -3943,5 +3978,29 @@
     "Generated UGC has no customer testimony, identities or rating.",
     "Static header/footer reused from live Gardening HTML and source CSS; no Shopify JavaScript, cart or mega-menu behavior included.",
     "Original research sample and Pinterest access limits remain; no new market-demand conclusion."
-  ]
+  ],
+  "revision_scope": {
+    "base_content_version": "sha256:c7bab68c77c54352abe76d7cbebb9ecb30c19558cc4e24ce5b33278295d79d5a",
+    "feedback_file": "evidence/feedback-group-1.json",
+    "groups": [
+      {
+        "group": 1,
+        "viewport": "desktop",
+        "element_ids": [
+          "shop-by-product-sbp_basket"
+        ],
+        "asset_ids": [
+          "sbp_basket"
+        ]
+      }
+    ],
+    "status": "local_preview_only_not_published",
+    "preserved": [
+      "All other elements and copy",
+      "Mobile basket original and preview bytes",
+      "Product and printed artwork",
+      "Brand system"
+    ],
+    "content_version_method": "SHA-256 of compact sorted JSON containing manifest and page with content_version blank; self-contained wrapper excluded."
+  }
 }
