@@ -1,3 +1,4 @@
+import {getOnepageReviewContract} from './uid-onepage-html-preview.ts';
 import {RULE_COMPILER,RULE_REVIEW_SCOPE} from './supabase/functions/_shared/agent-rule-policy.ts';
 import {ruleSupplementValid} from './supabase/functions/_shared/agent-rule-quality.ts';
 import { createHash } from 'node:crypto';
@@ -51,6 +52,7 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
   const base = `${[qualityAlignedTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
+    live_html_feedback: getOnepageReviewContract(),
     post_story_section: version === faqTemplate.version ? 'faq' : 'gtk',
     variants: { gtk: qualityAlignedTemplate.version, faq: faqTemplate.version },
     ...(version === faqTemplate.version ? { faq_binding: faqSection.binding, faq_css_reference: { url: faqSection.css_reference_url, sha256: faqSection.css_source_sha256 } } : {}),
@@ -149,5 +151,6 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
       faq_template_version: faqTemplate.version,
     } } : {}),
     ui_mapping_templates: { gtk: getOnepageUiTemplate(), faq: getOnepageUiTemplate(faqTemplate.version) },
-    quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nSelect exactly one ui_mapping_templates variant from the approved GTK/FAQ content decision; ui_mapping_template is the backward-compatible GTK default, not an FAQ fallback. For FAQ use the faq version, bind only approved questions and answers, keep every answer expanded, and omit GTK assets. UI mapping MUST use the selected template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page.`.trim() };
+    onepage_preview_contract: getOnepageReviewContract(),
+    quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nSelect exactly one ui_mapping_templates variant from the approved GTK/FAQ content decision; ui_mapping_template is the backward-compatible GTK default, not an FAQ fallback. For FAQ use the faq version, bind only approved questions and answers, keep every answer expanded, and omit GTK assets. UI mapping MUST use the selected template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page. Deliver live HTML element feedback using onepage_preview_contract on the actual bound output, alongside the required PNG and production assets; preserve canonical layout and do not substitute the demo.`.trim() };
 }
