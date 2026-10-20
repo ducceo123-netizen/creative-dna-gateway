@@ -1,7 +1,7 @@
 import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock, reconcilesReview } from "../request-recovery";
 import { useEffect, useRef, useState } from "react";
 import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
-import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
+import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposalReviewKey, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
 
 export type FeedbackReviewPath = "covered" | "merge" | "owner";
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
@@ -87,7 +87,12 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const [queueRequest,setQueueRequest]=useState<ReviewRequest|null|undefined>(undefined);
   const alive=useRef(false);
   const activeRead=useRef<AbortController|null>(null);
+  const pollTimer=useRef<number|null>(null);
   const mutation=useRef(false);
+  const proposalKey=proposalReviewKey(proposal);
+  const proposalKeyRef=useRef(proposalKey);proposalKeyRef.current=proposalKey;
+  const observedProposalKey=useRef(proposalKey);
+  const loadedProposalKey=useRef<string|null>(null);
   const requestRef=useRef(request); requestRef.current=request;
   const onCompleteRef=useRef(onComplete); onCompleteRef.current=onComplete;
   const onBusyChangeRef=useRef(onBusyChange); onBusyChangeRef.current=onBusyChange;
@@ -97,11 +102,21 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const visibleData=sameIdentity?data:null;
 
   const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);setOwnerConfirmed(false);};
+  const clearPoll=()=>{if(pollTimer.current!==null)window.clearTimeout(pollTimer.current);pollTimer.current=null;};
+  const schedulePoll=()=>{
+    clearPoll();
+    if(alive.current)pollTimer.current=window.setTimeout(()=>{
+      pollTimer.current=null;
+      if(document.visibilityState==="visible")void load(true);else schedulePoll();
+    },10000);
+  };
   const load=async(background=false)=>{
-    if(mutation.current || (background&&activeRead.current))return;
+    if(!alive.current||mutation.current || (background&&activeRead.current))return;
+    clearPoll();
     activeRead.current?.abort();
     const controller=new AbortController();activeRead.current=controller;
-    const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller;
+    const readProposalKey=proposalKeyRef.current;
+    const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller&&proposalKeyRef.current===readProposalKey;
     setLoading(true);
     try {
       const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/preflight`,{signal:controller.signal},requestRef.current);
@@ -110,37 +125,43 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
       if(!response.ok)throw Error([result.error||"Không tải được preflight.",...(Array.isArray(result.issues)?result.issues:[])].join(" · "));
       const next=validatePreflight(result,proposal.id);
       const previous=dataRef.current;
-      if(previous&&(previous.candidate_hash!==next.candidate_hash||JSON.stringify(previous.targets)!==JSON.stringify(next.targets)||JSON.stringify(previous.covered_candidates)!==JSON.stringify(next.covered_candidates)||previous.review_intent_hash!==next.review_intent_hash||previous.direct_rule?.rule_hash!==next.direct_rule?.rule_hash||previous.direct_rule_plan?.plan_hash!==next.direct_rule_plan?.plan_hash||JSON.stringify(previous.baselines)!==JSON.stringify(next.baselines)))resetAttestations();
-      dataRef.current=next;setData(next);setQueueRequest(undefined);setStale(false);
+      if(previous&&(proposalReviewKey(previous.proposal)!==proposalReviewKey(next.proposal)||previous.candidate_hash!==next.candidate_hash||JSON.stringify(previous.targets)!==JSON.stringify(next.targets)||JSON.stringify(previous.covered_candidates)!==JSON.stringify(next.covered_candidates)||previous.review_intent_hash!==next.review_intent_hash||previous.direct_rule?.rule_hash!==next.direct_rule?.rule_hash||previous.direct_rule_plan?.plan_hash!==next.direct_rule_plan?.plan_hash||JSON.stringify(previous.baselines)!==JSON.stringify(next.baselines)))resetAttestations();
+      loadedProposalKey.current=readProposalKey;dataRef.current=next;setData(next);setQueueRequest(undefined);setStale(false);
       const lock=getReviewLock(lockKey);
       if(lock&&reconcilesReview(lock,next.proposal.status,next.review_request))clearReviewLock(lockKey);
       const unresolved=!!getReviewLock(lockKey);setUncertain(unresolved);
       setError(unresolved?"Kết quả thao tác chưa rõ. Đang kiểm tra trạng thái; không gửi lại. Đóng cửa sổ không hủy thao tác trên máy chủ.":"");setErrorIssues([]);
     } catch(e:unknown){if(current()){setStale(true);setError(e instanceof Error?e.message:"Không tải được preflight.");}}
-    finally {if(current()){activeRead.current=null;setLoading(false);}}
+    finally {if(current()){activeRead.current=null;setLoading(false);schedulePoll();}}
   };
   useEffect(()=>{
-    alive.current=true;identity.current={id:proposal.id,path};dataRef.current=null;setData(null);setNote("");resetAttestations();setBusy(null);mutation.current=false;load();
+    alive.current=true;identity.current={id:proposal.id,path};observedProposalKey.current=proposalKey;loadedProposalKey.current=null;dataRef.current=null;setData(null);setNote("");resetAttestations();setBusy(null);mutation.current=false;load();
     const sync=()=>{if(document.visibilityState==="visible")void load(true);};
-    const poll=window.setInterval(sync,10000);document.addEventListener("visibilitychange",sync);window.addEventListener("focus",sync);
-    return ()=>{alive.current=false;activeRead.current?.abort();activeRead.current=null;window.clearInterval(poll);document.removeEventListener("visibilitychange",sync);window.removeEventListener("focus",sync);onBusyChangeRef.current?.(false);};
+    document.addEventListener("visibilitychange",sync);window.addEventListener("focus",sync);
+    return ()=>{alive.current=false;activeRead.current?.abort();activeRead.current=null;clearPoll();document.removeEventListener("visibilitychange",sync);window.removeEventListener("focus",sync);onBusyChangeRef.current?.(false);};
   },[proposal.id,path]);
 
-  useEffect(()=>{if(alive.current&&!mutation.current)void load(true);},[proposal]);
+  useEffect(()=>{
+    if(observedProposalKey.current===proposalKey)return;
+    observedProposalKey.current=proposalKey;setStale(true);resetAttestations();
+    // A meaningful inbox change supersedes even an in-flight read of the old revision.
+    if(alive.current&&!mutation.current)void load();
+  },[proposalKey]);
 
   const candidate=visibleData?.covered_candidates.find(item=>item.id===selected);
   const filteredCandidates=searchCoveredCandidates(visibleData?.covered_candidates||[],candidateSearch);
   const automatic=visibleData?.automatic_review;
   const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
   const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
-  const canReview=!!visibleData&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
+  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
-  const canCancel=!!visibleData&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
+  const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
   const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true&&(path!=="owner"||ownerConfirmed);
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
-    if(mutation.current||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
+    if(!alive.current||mutation.current||activeRead.current||proposalKey!==proposalKeyRef.current||loadedProposalKey.current!==proposalKeyRef.current||dataRef.current!==visibleData||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
+    clearPoll();
     mutation.current=true;onBusyChangeRef.current?.(true);setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
     const operationIdentity=identity.current;
@@ -175,9 +196,9 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
         onCompleteRef.current(action==="rule"?"Đã merge rule do bạn duyệt trực tiếp. Đã lưu lịch sử và snapshot để rollback; đây không phải kết quả QC hình ảnh.":action==="covered"?"Đã đóng feedback: quy chuẩn hiện có đã bao phủ. Nội dung canonical không thay đổi.":"Đã merge: kiểm tra tự động và review đã lưu đều hợp lệ. Quy chuẩn đã được cập nhật.",result);
       }
     } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setUncertain(true);setStale(true);resetAttestations();}}
-    finally {if(current()){mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);}}
+    finally {if(current()){mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);schedulePoll();}}
   };
-  const close=()=>{onBusyChangeRef.current?.(false);activeRead.current?.abort();alive.current=false;onClose();};
+  const close=()=>{onBusyChangeRef.current?.(false);activeRead.current?.abort();alive.current=false;clearPoll();onClose();};
 
   return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
     <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
