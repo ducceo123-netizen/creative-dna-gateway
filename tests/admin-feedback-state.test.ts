@@ -527,7 +527,7 @@ test('advanced Governance starts collapsed, mounts on first opening, and stays m
   ui.change('Admin email', 'synthetic@example.invalid'); ui.change('Password', 'synthetic-test-only'); await flush();
   ui.click('Sign in');
   ui.loginCalls[0].resolve(Response.json({ access_token: 'synthetic.next-session.jwt' })); await flush();
-  assert.equal(ui.all('details').length, 3); assert.equal(ui.all('governance-panel-stub').length, 0);
+  assert.equal(ui.all('details').length, 4); assert.equal(ui.all('governance-panel-stub').length, 0);
   assert.equal(ui.governanceRenders, loggedOutRenders, 'A new authenticated session starts with advanced tools unloaded again');
   ui.calls[1].resolve(page()); await flush();
 });
@@ -594,8 +594,8 @@ test('a successful action notice is associated with its feedback and never appea
 
 test('screenshot ancillary sections each start independently collapsed and reference data loads on demand',async t=>{
  const ui=setup();t.after(ui.unmount);ui.calls[0].resolve(page([proposal()]));await flush();
- const tools=ui.all('details');assert.equal(tools.length,3);assert.ok(tools.every(node=>!node.props.open));
- for(const title of ['Admin access','Reference Library','Nâng cao · Knowledge Governance']){
+ const tools=ui.all('details');assert.equal(tools.length,4);assert.ok(tools.every(node=>!node.props.open));
+ for(const title of ['Admin access','Reference Library','Nâng cao · Knowledge Governance','PawfectHouse · Home Icon']){
    assert.ok(ui.all('summary').some(node=>textOf(node).includes(title)),title);
  }
  assert.equal(ui.all('private-reference-panel-stub').length,0);

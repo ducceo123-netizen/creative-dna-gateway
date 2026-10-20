@@ -31,6 +31,7 @@ const BRANCH_LABELS: Record<string,string> = {
   "ldp-system":"LDP",
   "ldp-hero":"LDP Hero",
   "home-hero":"Home Hero",
+  "home-icon":"Home Icon",
   "recipient-image":"Recipient Image",
   "seasonal-banner":"Seasonal Banner",
   "shop-by-product-image":"Shop By Product",
@@ -49,6 +50,7 @@ const DEFAULT_BRANCH_HELP: Record<string,{usage_badge:string;description_vi:stri
   "onepage-system": { usage_badge:"PDP / Onepage", description_vi:"Material cho toàn bộ khối Onepage gắn vào PDP: Banner, Why You'll Love It, Product Details, Occasion và Good To Know.", output_note:"Output theo cấu trúc Onepage canonical của brand." },
   "ldp-system": { usage_badge:"Landing Page", description_vi:"Hệ thống material cho toàn bộ LDP: hierarchy, section logic, copy flow và visual consistency.", output_note:"Dùng khi làm hoặc kiểm tra cả Landing Page." },
   "ldp-hero": { usage_badge:"LDP · Hero", description_vi:"Material cho hero đầu Landing Page, tập trung visual story, sản phẩm chính và khoảng trống cho content.", output_note:"Hero image theo ratio và alignment của campaign." },
+  "home-icon": { usage_badge:"Homepage · Interest Icon", description_vi:"Keyword chủ đề hoặc collection → icon line-art đen trắng, không phải ảnh sản phẩm.", output_note:"SVG 75×75 trong suốt; vòng nền #fff1dc do CSS. Kèm preview và QC." },
   "home-hero": { usage_badge:"Homepage · Hero", description_vi:"Material cho khu vực hero trên Homepage. Dùng để tạo Main/Side hero hoặc hero campaign tương ứng.", output_note:"Homepage hero theo đúng format của brand." },
   "recipient-image": { usage_badge:"LDP · Recipient", description_vi:"Material cho block Shop by Recipient / Gift For, giúp user nhận ra nhanh món quà dành cho ai.", output_note:"Một image riêng cho từng recipient group." },
   "seasonal-banner": { usage_badge:"Seasonal Banner", description_vi:"Material cho banner theo mùa/campaign, thường nằm giữa hành trình browse hoặc trên collection/LDP.", output_note:"Banner ngang, ưu tiên scene + product + text runway." },
@@ -76,6 +78,7 @@ const TASK_PROMPT_FIELDS: Record<string,PromptField[]> = {
     { label:"Ratio / Align", required:false, placeholder:"21:9, 18:9, center, right..." },
     { label:"Angle / Story", required:false, placeholder:"Moment hoặc art direction mong muốn" },
   ],
+  "home-icon": [{ label:"Topic / Collection", required:true, placeholder:"Gardening hoặc URL collection" }],
   "home-hero": [
     { label:"Product / Collection", required:true, placeholder:"Product URL hoặc Collection URL" },
     { label:"Theme / Campaign", required:true, placeholder:"Halloween / Christmas /..." },

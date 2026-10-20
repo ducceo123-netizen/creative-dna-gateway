@@ -1,3 +1,5 @@
+import { installHomeIcon } from "../_shared/home-icon-install.ts";
+import { HOME_ICON_CONTENT, HOME_ICON_REVISION } from "../_shared/home-icon.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildCompatibleOwnerRulePlan as buildOwnerRulePlan } from "../_shared/owner-rule-compatible-plan.ts";
@@ -58,6 +60,11 @@ export default {
     }
 
     const body = await req.json();
+    if (body.mode === "home_icon_preview") return Response.json({ revision: HOME_ICON_REVISION, content_md: HOME_ICON_CONTENT, output_owner_approved: false }, { headers: { "Cache-Control": "no-store" } });
+    if (body.mode === "home_icon_install") {
+      const result = await installHomeIcon(adminDb, body);
+      return Response.json(result.body, { status: result.status, headers: { "Cache-Control": "no-store" } });
+    }
     // v3 is an explicit owner-delegated semantic rule review. Never route to
     // outcome-QC v2, create synthetic evidence, or enqueue on a read.
     if (["rule_review_preflight","rule_review_handoff","rule_review_status","rule_review_cancel"].includes(body.mode)) {

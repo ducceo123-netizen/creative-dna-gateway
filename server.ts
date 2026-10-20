@@ -1,4 +1,5 @@
 import {registerHostedReviews} from './uid-hosted-review.ts';
+import { attachHomeIconContract } from "./supabase/functions/_shared/home-icon.ts";
 import { FIGMA_COMMENTS_INPUT, FIGMA_COMMENTS_DESCRIPTION, readFigmaComments } from "./uid-figma-comments.ts";
 import { attachLdpHtmlPreview } from "./uid-ldp-html-preview.ts";
 import { attachLdpWorkflow } from "./uid-ldp-planner.ts";
@@ -378,6 +379,7 @@ export async function resolveCreativeDna(brand: string, branch: string, research
     brand: validated.brand,
     branch: validated.branch,
   });
+  if (result.ok && result.data?.brand?.slug === "pawfecthouse" && result.data?.branch?.slug === "home-icon") return { ...result, data: attachHomeIconContract(result.data) };
   return { ...result, data: result.ok ? attachLdpHtmlPreview(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data };
 }
 
@@ -976,6 +978,19 @@ export function createApp(): express.Application {
     } catch (err:any) {
       return res.status(502).json({ error: sanitizePublicError(err, "Unable to refresh admin session") });
     }
+  });
+
+  app.post("/api/admin/home-icon/:action", async (req: Request, res: Response) => {
+    if (!["preview", "install"].includes(String(req.params.action))) return res.status(404).json({ error: "Unknown Home Icon action" });
+    if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin service is not configured" });
+    const authorization = req.header("authorization");
+    if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
+    try {
+      const upstream = await fetch(adminUpstreamUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: authorization },
+        body: JSON.stringify({ mode: req.params.action === "preview" ? "home_icon_preview" : "home_icon_install", confirm_revision: req.body?.confirm_revision }) });
+      const data = await upstream.json();
+      return res.status(upstream.status).json(data);
+    } catch { return res.status(502).json({ error: "Home Icon outcome unknown. Check route before retrying." }); }
   });
 
   app.post("/api/admin/branch-guides/upsert", async (req: Request, res: Response) => {
