@@ -1,0 +1,159 @@
+{
+  "schema_version": "uid-ldp-preview-layout/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
+  "sections": [
+    {
+      "section_id": "header",
+      "desktop": "stack",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "hero",
+      "desktop": "stack",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "cover",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "trust",
+      "desktop": "stack",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "picks",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "niche",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "sbp",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "featured_01",
+      "desktop": "split",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "featured_02",
+      "desktop": "split",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "new",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "gallery",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "gift-picks",
+      "desktop": "grid",
+      "mobile": "grid",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    },
+    {
+      "section_id": "footer",
+      "desktop": "stack",
+      "mobile": "stack",
+      "columns": 4,
+      "mobile_columns": 2,
+      "image_fit": "contain",
+      "image_position": "center",
+      "source_url": "https://pawfecthouse.com/pages/book-lovers",
+      "observed_at": "2026-10-20T03:29:32.184864+00:00",
+      "evidence_note": "Live Book Lovers HTML: 1280px content, four niche cards, round type tiles, wide feature image with copy; adapted to existing Sport Lovers outcome."
+    }
+  ],
+  "typography": {
+    "heading_px": 32,
+    "mobile_heading_px": 24,
+    "body_px": 16,
+    "line_height": 1.5,
+    "source_url": "https://pawfecthouse.com/pages/book-lovers",
+    "evidence_note": "Live theme CSS declares Poppins, #202024 text, #EE860F primary, #F34028 prices and 10px card radii. Section sizes adapted to source hierarchy."
+  }
+}

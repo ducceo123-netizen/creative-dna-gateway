@@ -1,0 +1,2731 @@
+{
+  "schema_version": "uid-ldp-preview/1",
+  "renderer_version": "uid-ldp-html-renderer/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "task_id_basis": "Existing outcome Library identity, not a newly registered UID task",
+  "content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
+  "brand": "pawfecthouse",
+  "scope": "complete_ldp",
+  "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_version": "3",
+  "created_at": "2026-10-20T03:29:32.184864+00:00",
+  "canonical_snapshot": "sha256:45c9edae00cec9694961e419be4fff8d6d832213d7f7e7c0098917e47a995580",
+  "layout_hash": "sha256:d797bcefaa26bd715a02c6620c3ba6cb3673907fcd57741616cbd891158b22c0",
+  "asset_manifest": [
+    {
+      "id": "hero-desktop-2560x800",
+      "source_file": "01-hero/hero-desktop-2560x800.png",
+      "source_checksum": "sha256:4b9c0fd7b8c8f23b19132800869f32744af32a7b14a69991b16435a6b4d2c417",
+      "checksum": "sha256:70487d3e7d13ba3d3d5a9a2ee523b30076763a324c8303b3742dded01769fea3",
+      "width": 2560,
+      "height": 800,
+      "original_width": 2560,
+      "original_height": 800,
+      "file_url": "assets/hero-desktop-2560x800.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "hero-mobile-750x954",
+      "source_file": "01-hero/hero-mobile-750x954.png",
+      "source_checksum": "sha256:f559ef0770c909680e4d48dbe9cdbc41e306dfa2e04a43c183c63114c7a3e4d3",
+      "checksum": "sha256:933d95cbb5416542d36c0831f42683de9ee9ddaf4a9f1befc5fb6580830b1003",
+      "width": 750,
+      "height": 954,
+      "original_width": 750,
+      "original_height": 954,
+      "file_url": "assets/hero-mobile-750x954.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_01-apparel-v7",
+      "source_file": "02-shop-by-product/sbp_01-apparel-v7.png",
+      "source_checksum": "sha256:6abef394d26c67b52108b6b51f82eec2525abc1717bf52207ad7c7d6de00be83",
+      "checksum": "sha256:32adc508f13074dbaf59defdca3d6a12f750314f44b23e0cf1011d433206d244",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_01-apparel-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_02-caps-v7",
+      "source_file": "02-shop-by-product/sbp_02-caps-v7.png",
+      "source_checksum": "sha256:39394d7ec1ce8f88dfd698542815bda63a1243d854177710043e5bce6438a904",
+      "checksum": "sha256:7d3c8c67e266af1e86835f95d908fc7ab0507f015ca57c7725c41a7bb6e5a79c",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_02-caps-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_03-drinkware-v7",
+      "source_file": "02-shop-by-product/sbp_03-drinkware-v7.png",
+      "source_checksum": "sha256:f3b86c5aadb854fcac381a5b8de3cdf4517f08db0ea42e638f2901055eab8524",
+      "checksum": "sha256:3c50f02dbf8a6c76261510aab4e1f2b80689c33da610bd9f200153e8b3f4f59b",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_03-drinkware-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_04-socks-v7",
+      "source_file": "02-shop-by-product/sbp_04-socks-v7.png",
+      "source_checksum": "sha256:5e081c2aa1bd1dbc357fd0f5d071237879c5edd1e3833d6fc246f54771d4e746",
+      "checksum": "sha256:ad14643b2f02b680a4071471856307e73a372d164c48252c6a212e3c7b20b9f0",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_04-socks-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_05-personalized-balls-v7",
+      "source_file": "02-shop-by-product/sbp_05-personalized-balls-v7.png",
+      "source_checksum": "sha256:fe238a974308d99ca3bcbc4171c425f132e4bfa36d17f4cc00c8a3b5f7580e21",
+      "checksum": "sha256:cc2e97b81c4e50ff26e4bce0bd462eb90b89ea270d6d6a269d54d220f876b048",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_05-personalized-balls-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_06-blankets-v7",
+      "source_file": "02-shop-by-product/sbp_06-blankets-v7.png",
+      "source_checksum": "sha256:e976531120daa8c7e999cb5983244e96a935c8e285ef5f29eeeef52ddbfcb059",
+      "checksum": "sha256:e06e2434b6e4c02a86ab0f8b0ba68cc1562f34fdd2da8b60fc8375c86e16cc2b",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_06-blankets-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_07-ornaments-v7",
+      "source_file": "02-shop-by-product/sbp_07-ornaments-v7.png",
+      "source_checksum": "sha256:154447b9b695037d666ca495e2e612c1e76ebc8c5cb877bec48322618adcb044",
+      "checksum": "sha256:7e2df6cd70fe30df4a19d53c31d2128b8f6b0a19ed7f95f6fd43075924f5e81c",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_07-ornaments-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "sbp_08-signs-plaques-v7",
+      "source_file": "02-shop-by-product/sbp_08-signs-plaques-v7.png",
+      "source_checksum": "sha256:2fb327e2545b89f80629d04a926900ea68255011e10f44814e66c074c9766dd5",
+      "checksum": "sha256:5c4d2242d5cb4e34def5d823c095884d4c25c5839b9d08e67eaf42b4dc41d6ce",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/sbp_08-signs-plaques-v7.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "combo_01",
+      "source_file": "03-niche-combos/combo_01.png",
+      "source_checksum": "sha256:2d8accfc5330d58fa3f9a319e9cd1e872e0c565d8f539f8721c4fbf75e13b9a3",
+      "checksum": "sha256:6bd6df3442ab5a7e54e7d5d41c6e6501dfc532d4115d011e2bd4193e362f9447",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_01.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "combo_02",
+      "source_file": "03-niche-combos/combo_02.png",
+      "source_checksum": "sha256:3c86aaac890f41adf5f3975f73190d553f0642194fe4e76ef7d4ad68faaeff97",
+      "checksum": "sha256:5b3cd89925cb9f2f02996d6385587457398e85c6e997ac6c94422723bcb54cb0",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_02.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "combo_03",
+      "source_file": "03-niche-combos/combo_03.png",
+      "source_checksum": "sha256:8c1ba91860aad95f743237f96e9bed0e16ec9294fd22178cfc95486f2c4cb2fd",
+      "checksum": "sha256:4a398ead52e737f4dcde4c17fda030636e790973d1b6842ddd959cb14f008e59",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_03.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "combo_04",
+      "source_file": "03-niche-combos/combo_04.png",
+      "source_checksum": "sha256:d7642990572a854fd44329b79e5fe16376bdf9f324a76e6d4a33749fde911f32",
+      "checksum": "sha256:45afef516aa47548c2374690787c522715e33c0bdad6fa5b6a4da44437a4266b",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_04.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "featured_01",
+      "source_file": "04-featured/featured_01.png",
+      "source_checksum": "sha256:9cb19969a74ca2a20c95f1833b1df3ee54c0855e32d70b59be04d16cc87b63dc",
+      "checksum": "sha256:3b31da61e43682c9ecdd7ddcb32d4af9aa6e1de99a6a24720d3224c2676b462f",
+      "width": 1504,
+      "height": 701,
+      "original_width": 1837,
+      "original_height": 856,
+      "file_url": "assets/featured_01.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "featured_02",
+      "source_file": "04-featured/featured_02.png",
+      "source_checksum": "sha256:db9d0f8ee39745bd50d27f2d1301c6406f8d1af7507aac3d7332ed06d311cb7d",
+      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "width": 1504,
+      "height": 701,
+      "original_width": 1836,
+      "original_height": 856,
+      "file_url": "assets/featured_02.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_01",
+      "source_file": "05-lifestyle-gallery/gallery_01.png",
+      "source_checksum": "sha256:38d06654984d0f0a14e9cd366969adfd887eeb35468b2462c261b4a7f67bce6c",
+      "checksum": "sha256:c62e1ea3738ddfbb00a411644f2cbacaf4381d9a8351c8610c679fd30443c5a2",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_01.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_02",
+      "source_file": "05-lifestyle-gallery/gallery_02.png",
+      "source_checksum": "sha256:97b3f2b28321d245b6288f6d489c1f70ce8db8de8f3e6fb0a750850a396f179a",
+      "checksum": "sha256:a76c0dd0b7657d646a8f22bf17a03dcaa84fd7f92dc7c07c7386b5b4f3ea590e",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_02.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_03",
+      "source_file": "05-lifestyle-gallery/gallery_03.png",
+      "source_checksum": "sha256:973a1116304b2fef6efb8ff9a15915d2f30e00bbc120625d26df888a81fa8deb",
+      "checksum": "sha256:40381ec2669e1f4473e2a38e73ba9ae34a13232269fa001f4fc85ce530d09742",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_03.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_04",
+      "source_file": "05-lifestyle-gallery/gallery_04.png",
+      "source_checksum": "sha256:c5fa3c900ca5a989b53f7d157af50f95fb53eef9f6005a192898ec1f028c0eb3",
+      "checksum": "sha256:f0d126fb9525d95b3e46ecdb84432f94dbc697337a594b83d1be8de6aaa492b8",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_04.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_05",
+      "source_file": "05-lifestyle-gallery/gallery_05.png",
+      "source_checksum": "sha256:ccfcd41c7efef2c8e6e8f6dec239685b850baf1ecab7be6f65945116d1c3dbc4",
+      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_05.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_06",
+      "source_file": "05-lifestyle-gallery/gallery_06.png",
+      "source_checksum": "sha256:e69bc6b59c0221a612f24b73663067de421e3d68b6741a1ecc0b4174730ce72a",
+      "checksum": "sha256:5d9fa46c05ceb464d6da0300d60d6d49a5aff546ec11e1c64d054f6eb0b6041e",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_06.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_07",
+      "source_file": "05-lifestyle-gallery/gallery_07.png",
+      "source_checksum": "sha256:7611ae813a2239f0e85a36878deccec4ffbeb0c4abb6a5de6f9c8b0305316bc1",
+      "checksum": "sha256:886ee0ef8b43af4aa30e773c9cdefb7b943096b1b0c1223d20333c77cc90879b",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_07.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "gallery_08",
+      "source_file": "05-lifestyle-gallery/gallery_08.png",
+      "source_checksum": "sha256:c4f717904d5180fcf460b6216ba12ce773e95334fbf0629b6a44dd8a2ffe6e61",
+      "checksum": "sha256:ea580fe954abd00d0033eb3c5f9c09c639c89e2ba863defe3fc0dfe29b8ae63d",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/gallery_08.webp",
+      "provenance": "generated_commercial",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10549224440097",
+      "source_file": "06-catalog-products/product_10549224440097.webp",
+      "source_checksum": "sha256:2ce7c9670ced3e0b8c633a371a729b208f0ca96afdca2914d1bfb425886035ba",
+      "checksum": "sha256:17cbe1f33036b3ff17e40f4b81a1c0ccde0ed792848d2173b866fa7298e82a70",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10549224440097.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10507401363745",
+      "source_file": "06-catalog-products/product_10507401363745.webp",
+      "source_checksum": "sha256:16e431960ab489858440b4997bc3a619eea0bb1592dfa9fb653cdc6284e21f47",
+      "checksum": "sha256:4aa95ea1ce00a44402d129a66532107bee8e147dc358971b08b5d2308d44a070",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10507401363745.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10583428137249",
+      "source_file": "06-catalog-products/product_10583428137249.webp",
+      "source_checksum": "sha256:d969364a787c769b916655a1d3b2f4060006bfe45b153bf2b2e7bf55ddec807d",
+      "checksum": "sha256:b4d514f3b3446836ccee4a2725fa5ce2efd22f31ccf5295610aac0aa668dd4dd",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10583428137249.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10576150331681",
+      "source_file": "06-catalog-products/product_10576150331681.webp",
+      "source_checksum": "sha256:511289bbabe4859e6ccad5072d1b17b5378d9e0c6543b5ef262a27d15bcbfd7d",
+      "checksum": "sha256:e38f18a0613319968dfe19a9adb24c2ae93c6755847f51a57f5d485f86f5613d",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10576150331681.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10319659925793",
+      "source_file": "06-catalog-products/product_10319659925793.webp",
+      "source_checksum": "sha256:7065f994e5aed15c3ea5c97ad31dcc66e38299394493e55201b0c494ba2b31b8",
+      "checksum": "sha256:7636a860568c7b885fb8c25afd61c1aa9113205c8b7c7e3de82e80ab8217400c",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10319659925793.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10305845985569",
+      "source_file": "06-catalog-products/product_10305845985569.webp",
+      "source_checksum": "sha256:afd82ec6f60a380b3e69e72136f769dc3e55dc5a8160582e7c97660f16a2bac2",
+      "checksum": "sha256:ef400f98f1407edccd84366a1ba8ed2819e8f93c0dd7df9dd57282dea030ebe6",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10305845985569.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10537313435937",
+      "source_file": "06-catalog-products/product_10537313435937.webp",
+      "source_checksum": "sha256:c58863c5e5cc06035d7ae5e782e64d5241843dc2f3b066361f601a9038e32953",
+      "checksum": "sha256:c2b2f852b6e39d94f158c97bb52353850167ccb26571410edbad485317d75b97",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10537313435937.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10535718682913",
+      "source_file": "06-catalog-products/product_10535718682913.webp",
+      "source_checksum": "sha256:d94602e96c708059aa51ae4d8ee9a4193df788dc52de42d2bfa055226695a674",
+      "checksum": "sha256:de648784513ba47c169421a9332b6ce86ff2490cd32416aecbf419159a8e42ef",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10535718682913.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10335559778593",
+      "source_file": "06-catalog-products/product_10335559778593.webp",
+      "source_checksum": "sha256:f2b0d03070c42980651d92088dbd795de08b4be9edd621f29d9ad5a1a31da7cc",
+      "checksum": "sha256:0923187be483f40056ab256e407842985ab6a5fa52db1154ddaa7fe42d7f70a3",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10335559778593.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10341066146081",
+      "source_file": "06-catalog-products/product_10341066146081.webp",
+      "source_checksum": "sha256:837da43fd2788f33d936527ea7e4c630012329a0de9331dc78a8c0b6e93efaf4",
+      "checksum": "sha256:cac46bd70835bc67632b046abb163b47864bea24f1e58f19b4f899164504e3dd",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10341066146081.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10351175827745",
+      "source_file": "06-catalog-products/product_10351175827745.webp",
+      "source_checksum": "sha256:f2b0d03070c42980651d92088dbd795de08b4be9edd621f29d9ad5a1a31da7cc",
+      "checksum": "sha256:0923187be483f40056ab256e407842985ab6a5fa52db1154ddaa7fe42d7f70a3",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10351175827745.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10333213131041",
+      "source_file": "06-catalog-products/product_10333213131041.webp",
+      "source_checksum": "sha256:b7cf331fbc75131d5eafbe7713529d442762c69f70248d06e186c43a0520305c",
+      "checksum": "sha256:707cd2fd69c247fdce1c2594f7808642366207dbcf845ff6ed682a87d1dc3f36",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10333213131041.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10516256686369",
+      "source_file": "06-catalog-products/product_10516256686369.webp",
+      "source_checksum": "sha256:b8ebf030cbd8a8e0aa15f9500910327d5ec63dfe78635dca7babe713b198c970",
+      "checksum": "sha256:c492c9d1c769902fecf3c046e5a04712a72b28d9f5d301114e77f334ee7c9d8f",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10516256686369.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10549572075809",
+      "source_file": "06-catalog-products/product_10549572075809.webp",
+      "source_checksum": "sha256:62b523d511b8d50a4dc55eaf767f7eb14aad601342f42298caff306df222752b",
+      "checksum": "sha256:1e46208b207f553e4bba2cb5581a2d23fa73664791cca6e163b462ee9f778e36",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10549572075809.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10162784272673",
+      "source_file": "06-catalog-products/product_10162784272673.webp",
+      "source_checksum": "sha256:3dcd4e9e833816b85f4664b2af7904f33ba56de2de978e5f95721bdccd5edc4c",
+      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10162784272673.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10588931227937",
+      "source_file": "06-catalog-products/product_10588931227937.webp",
+      "source_checksum": "sha256:5befb888e29868abd3171a26b8a2f74b39bc1d70558b3c373a2bedef3f53104d",
+      "checksum": "sha256:221e3e4047fe2546bde736ec6442f0a5b3279ebcbb40fb7c1d45cce000a18b0f",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10588931227937.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10588280357153",
+      "source_file": "06-catalog-products/product_10588280357153.webp",
+      "source_checksum": "sha256:75833cd0f3d960f676cead633fe9e5311c64ff863e2961a56b9fd9a5439c204d",
+      "checksum": "sha256:c4f662a4adaa087445ff33103a99f3be9704f014f100ce49ad4e686204051539",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10588280357153.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10586742161697",
+      "source_file": "06-catalog-products/product_10586742161697.webp",
+      "source_checksum": "sha256:43f5d398daf9228c6fdeb4e2a120b64ac2eca024b1b1b81590e5b46abff7d3b6",
+      "checksum": "sha256:bf10cf756c5480dd6404c61e68918cedc78156ad22aa1d8353ce57972f064e4e",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10586742161697.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10582182887713",
+      "source_file": "06-catalog-products/product_10582182887713.webp",
+      "source_checksum": "sha256:a1f521ccedf71cc6ebabe5daaf117d7ab5000305320e95674f499697651eabe6",
+      "checksum": "sha256:470bcf8917537ab30333bbefebd61e2fd460544761256d3154b335a55dc9064b",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10582182887713.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10515729613089",
+      "source_file": "10515729613089.img",
+      "source_checksum": "sha256:39eb50ced60143930b46af5ac0181f8a222969dec646c509b3d7bfba68732073",
+      "checksum": "sha256:e5a48649f1e4131101bb716cfedb06f62649af8c7b87a320a17ddd2ec999d881",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10515729613089.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10531193422113",
+      "source_file": "10531193422113.img",
+      "source_checksum": "sha256:0ce3c5d5ee7e6e5d1a3543ebddcf5f32f45ba4582b10dc339031c37852be3a72",
+      "checksum": "sha256:9c272d7f8e93c8ce56e76e451f75c39c8952887bf8bc84edfb34eddb6f4bb70a",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10531193422113.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10557875749153",
+      "source_file": "10557875749153.img",
+      "source_checksum": "sha256:38afc55b74567ff17e16f9753e8ac0a98bfde437c06c3b8fba2a884f0b4b24ca",
+      "checksum": "sha256:43804893af69f31f8ee5a329c395a2e6ffcdc477f3ad05809139fd8812c8697f",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10557875749153.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10568863809825",
+      "source_file": "10568863809825.img",
+      "source_checksum": "sha256:550b7cd1dc7f92b2dccc3f09282f03bddc01f73e803cacdfa6ff33966f967958",
+      "checksum": "sha256:40d4a9bbf942c2d8d641c99908f631e7c00be433c98ad3f61d0b50132416501d",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10568863809825.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10350078066977",
+      "source_file": "10350078066977.img",
+      "source_checksum": "sha256:38793b6288301fe9470ade5ffc0bf2c69a4728954ea5e0b9fadb1cd0f4aa2ee1",
+      "checksum": "sha256:905b706e36753bd107935372f511667c1107377a076831b4c73a893bed87e817",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10350078066977.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10298789527841",
+      "source_file": "10298789527841.img",
+      "source_checksum": "sha256:6cc496aa2122ec2ab244651265f1c255023e363cc2ae2b65fb7d16421f7b0fa9",
+      "checksum": "sha256:99c3bb680434d21aadae84ab2ca5cdb9988fa77096db287b9ea6efe7d6b70436",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10298789527841.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10214737543457",
+      "source_file": "10214737543457.img",
+      "source_checksum": "sha256:70fa3300f379955b44f0a46b88abff931cc8f36815613c61652645a5fc1f6a2d",
+      "checksum": "sha256:0620f903f8fdb757fc2a47a3d5aebf89e8fcb416a2290391fc5d8dc628800f8e",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10214737543457.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10120588165409",
+      "source_file": "10120588165409.img",
+      "source_checksum": "sha256:49c949faeb76cc2eb86c5960868b040ad61e96b4bbc23d6443de0a6979a6e4c2",
+      "checksum": "sha256:ed97ba5d0c7747cd187ffa7a6f34bdb3fe9963d8d146306121a095af5ae46d26",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10120588165409.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10120373535009",
+      "source_file": "10120373535009.img",
+      "source_checksum": "sha256:55dc18755bc343dd7b585aaaa1c17c72151b3f28a68e1e7e6cf58cb5d7b3e891",
+      "checksum": "sha256:fbb953710d7e4048882145a20a81bb1d53fc55b4eaa63473c4b470c0c97bd26b",
+      "width": 850,
+      "height": 850,
+      "original_width": 960,
+      "original_height": 960,
+      "file_url": "assets/catalog-10120373535009.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10567401242913",
+      "source_file": "10567401242913.img",
+      "source_checksum": "sha256:459e2489598a8c29e93f14fac6807e4ac4fd11641464e18f9d2c09293e14291b",
+      "checksum": "sha256:3e6952d9bc5bcc453522a3712d4b2ae7b86245ef27f21e31e6774fcf5eb0bc4d",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10567401242913.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10578150228257",
+      "source_file": "10578150228257.img",
+      "source_checksum": "sha256:5400bb0c791acb19ca3a66e7ff451301d8a742c54e6b9fffe6c904742a00bb7f",
+      "checksum": "sha256:81787416e89e981525ea157122469213a125636fb8b172fc72ef0fcf0c8ae951",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10578150228257.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10353211375905",
+      "source_file": "10353211375905.img",
+      "source_checksum": "sha256:fa8776b442ef0b7464995d52c47e6b229f43761332a9305ad34799de173b7bc9",
+      "checksum": "sha256:e18c49c93b2276bbc0d4087a3a728209e325a8fc8b0f910de0c9d46e53444310",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10353211375905.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "catalog-10203075084577",
+      "source_file": "10203075084577.img",
+      "source_checksum": "sha256:2787a7a2afc78f44468f8345bd510ad49366265fcf5616fa69cfe7780ca3e451",
+      "checksum": "sha256:7935e86ad4e3854e63719bfa65aa6329c8f922eaf10180e8792dba1d23f9e6c5",
+      "width": 850,
+      "height": 850,
+      "original_width": 2048,
+      "original_height": 2048,
+      "file_url": "assets/catalog-10203075084577.webp",
+      "provenance": "verified_source_media",
+      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    }
+  ],
+  "elements": [
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/header",
+      "section_id": "header",
+      "kind": "section",
+      "label": "PawfectHouse header"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/asset/hero-desktop",
+      "section_id": "hero",
+      "kind": "image",
+      "label": "Grandmother and grandson sharing a personalized football",
+      "asset_id": "hero-desktop"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/asset/hero-mobile",
+      "section_id": "hero",
+      "kind": "image",
+      "label": "Grandmother and grandson sharing a personalized football",
+      "asset_id": "hero-mobile"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/eyebrow",
+      "section_id": "hero",
+      "kind": "text",
+      "label": "GIFTS FOR SPORTS LOVERS"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/title",
+      "section_id": "hero",
+      "kind": "text",
+      "label": "Their Sport. Your Support."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/lead",
+      "section_id": "hero",
+      "kind": "text",
+      "label": "Celebrate your favorite player with a gift that feels personal."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero",
+      "section_id": "hero",
+      "kind": "section",
+      "label": "Their Sport. Your Support."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/trust",
+      "section_id": "trust",
+      "kind": "section",
+      "label": "Store trust strip"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/trust/item/0",
+      "section_id": "trust",
+      "kind": "text",
+      "label": "On-Time Delivery"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/trust/item/1",
+      "section_id": "trust",
+      "kind": "text",
+      "label": "45-Day Refund"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/trust/item/2",
+      "section_id": "trust",
+      "kind": "text",
+      "label": "Superior Quality"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/trust/item/3",
+      "section_id": "trust",
+      "kind": "text",
+      "label": "Holiday Support"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Gifts Worth Cheering For"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "A personal touch for their favorite sport."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10549224440097",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Leather Football - Personalized Birthday Gifts For Son, Grandson, American Football Lovers, Sports Fans, Sports Lovers - Made For Game Day"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10549224440097",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Leather Football - Personalized Birthday Gifts For Son, Grandson, American Football Lovers, Sports Fans, Sports Lovers - Made For Game Day",
+      "asset_id": "catalog-10549224440097"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10549224440097/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Leather Football"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10549224440097/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "From $34.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10507401363745",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom America Football Comfort T-Shirt - Personalized Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Forever Cheering You On"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10507401363745",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom America Football Comfort T-Shirt - Personalized Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Forever Cheering You On",
+      "asset_id": "catalog-10507401363745"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10507401363745/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Comfort T-Shirt"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10507401363745/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "From $29.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10583428137249",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10583428137249",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball",
+      "asset_id": "catalog-10583428137249"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10583428137249/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10583428137249/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "From $36.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10576150331681",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10576150331681",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball",
+      "asset_id": "catalog-10576150331681"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10576150331681/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10576150331681/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "$49.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10319659925793",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Hat, All Over Print Classic Cap - Personalized Birthday Baseball Gifts For Dad, Grandpa, Baseball Lovers, Sports Fans, Sports Lovers - Best Dad In The Game"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10319659925793",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Hat, All Over Print Classic Cap - Personalized Birthday Baseball Gifts For Dad, Grandpa, Baseball Lovers, Sports Fans, Sports Lovers - Best Dad In The Game",
+      "asset_id": "catalog-10319659925793"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10319659925793/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Classic Cap"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10319659925793/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "$29.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10305845985569",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Tumbler - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Sunshine, Ballfields And Baseball Mom Life"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10305845985569",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Tumbler - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Sunshine, Ballfields And Baseball Mom Life",
+      "asset_id": "catalog-10305845985569"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10305845985569/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Tumbler"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10305845985569/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "$32.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10537313435937",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom Sport Laundry Basket - Personalized Birthday Gifts For Sports Fans, Sports Lovers, Kids - Play Like A Pro"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10537313435937",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom Sport Laundry Basket - Personalized Birthday Gifts For Sports Fans, Sports Lovers, Kids - Play Like A Pro",
+      "asset_id": "catalog-10537313435937"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10537313435937/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Laundry Basket"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10537313435937/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "From $32.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10535718682913",
+      "section_id": "picks",
+      "kind": "card",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/asset/catalog-10535718682913",
+      "section_id": "picks",
+      "kind": "image",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always",
+      "asset_id": "catalog-10535718682913"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10535718682913/title",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10535718682913/price",
+      "section_id": "picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks",
+      "section_id": "picks",
+      "kind": "section",
+      "label": "Gifts Worth Cheering For"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Game Day at Home"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_01",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Game Day at Home",
+      "asset_id": "combo_01"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Game Day at Home"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Settle in with favorites made for watching the game."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Parents & Grandparents"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_02",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Parents & Grandparents",
+      "asset_id": "combo_02"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Parents & Grandparents",
+      "viewport_labels": {
+        "desktop": "Parents & Grandparents",
+        "mobile": "Sideline Support"
+      }
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Celebrate the family cheering from the sidelines.",
+      "viewport_labels": {
+        "desktop": "Celebrate the family cheering from the sidelines.",
+        "mobile": "For the ones who cheer them on, game after game."
+      }
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Gifts for Players"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_03",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Gifts for Players",
+      "asset_id": "combo_03"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Gifts for Players"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "A personal reminder that you’re always behind them."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Room Decor"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_04",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Room Decor",
+      "asset_id": "combo_04"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Room Decor"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Bring their favorite sport into their own space."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Find Their Kind of Sports Gift"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "For the ones who play, cheer, or never miss a game."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche",
+      "section_id": "niche",
+      "kind": "section",
+      "label": "Find Their Kind of Sports Gift"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_01-apparel-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Apparel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_01-apparel-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Apparel",
+      "asset_id": "sbp_01-apparel-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_01-apparel-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Apparel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_02-caps-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Caps"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_02-caps-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Caps",
+      "asset_id": "sbp_02-caps-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_02-caps-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Caps"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_03-drinkware-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Drinkware"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_03-drinkware-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Drinkware",
+      "asset_id": "sbp_03-drinkware-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_03-drinkware-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Drinkware"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_04-socks-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Socks"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_04-socks-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Socks",
+      "asset_id": "sbp_04-socks-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_04-socks-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Socks"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_05-personalized-balls-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Personalized Balls"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_05-personalized-balls-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Personalized Balls",
+      "asset_id": "sbp_05-personalized-balls-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_05-personalized-balls-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Personalized Balls"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_06-blankets-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Blankets"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_06-blankets-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Blankets",
+      "asset_id": "sbp_06-blankets-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_06-blankets-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Blankets"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_07-ornaments-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Ornaments"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_07-ornaments-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Ornaments",
+      "asset_id": "sbp_07-ornaments-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_07-ornaments-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Ornaments"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_08-signs-plaques-v7",
+      "section_id": "sbp",
+      "kind": "card",
+      "label": "Signs & Plaques"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/asset/sbp_08-signs-plaques-v7",
+      "section_id": "sbp",
+      "kind": "image",
+      "label": "Signs & Plaques",
+      "asset_id": "sbp_08-signs-plaques-v7"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_08-signs-plaques-v7/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Signs & Plaques"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "Shop Sports Gifts by Product"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead",
+      "section_id": "sbp",
+      "kind": "text",
+      "label": "From something to wear to something they’ll keep close."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp",
+      "section_id": "sbp",
+      "kind": "section",
+      "label": "Shop Sports Gifts by Product"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/featured_01",
+      "section_id": "featured_01",
+      "kind": "image",
+      "label": "Golf Towels for Their Next Round",
+      "asset_id": "featured_01"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/title",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Golf Towels for Their Next Round"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/lead",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Add a personal touch to their days on the green."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10335559778593",
+      "section_id": "featured_01",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing, Smile, Repeat"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/catalog-10335559778593",
+      "section_id": "featured_01",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing, Smile, Repeat",
+      "asset_id": "catalog-10335559778593"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10335559778593/title",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10335559778593/price",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10341066146081",
+      "section_id": "featured_01",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/catalog-10341066146081",
+      "section_id": "featured_01",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less",
+      "asset_id": "catalog-10341066146081"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10341066146081/title",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10341066146081/price",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10351175827745",
+      "section_id": "featured_01",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing Easy, Live Happy"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/catalog-10351175827745",
+      "section_id": "featured_01",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing Easy, Live Happy",
+      "asset_id": "catalog-10351175827745"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10351175827745/title",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10351175827745/price",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "From $24.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10333213131041",
+      "section_id": "featured_01",
+      "kind": "card",
+      "label": "Custom Photo Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Life Is Better On The Green"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/catalog-10333213131041",
+      "section_id": "featured_01",
+      "kind": "image",
+      "label": "Custom Photo Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Life Is Better On The Green",
+      "asset_id": "catalog-10333213131041"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10333213131041/title",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/card/10333213131041/price",
+      "section_id": "featured_01",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01",
+      "section_id": "featured_01",
+      "kind": "section",
+      "label": "Golf Towels for Their Next Round"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/asset/featured_02",
+      "section_id": "featured_02",
+      "kind": "image",
+      "label": "Sports Ornaments for a Season to Remember",
+      "asset_id": "featured_02"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/title",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Sports Ornaments for a Season to Remember"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/lead",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Give their favorite game a place on the Christmas tree."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10535718682913",
+      "section_id": "featured_02",
+      "kind": "card",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/asset/catalog-10535718682913",
+      "section_id": "featured_02",
+      "kind": "image",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always",
+      "asset_id": "catalog-10535718682913"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10535718682913/title",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10535718682913/price",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10516256686369",
+      "section_id": "featured_02",
+      "kind": "card",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Sports Fans, Sports Lovers - Hit Hard And Live Free"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/asset/catalog-10516256686369",
+      "section_id": "featured_02",
+      "kind": "image",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Sports Fans, Sports Lovers - Hit Hard And Live Free",
+      "asset_id": "catalog-10516256686369"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10516256686369/title",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10516256686369/price",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10549572075809",
+      "section_id": "featured_02",
+      "kind": "card",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Kids, Sports Fans, Sports Lovers - Little Dumpling Big Game"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/asset/catalog-10549572075809",
+      "section_id": "featured_02",
+      "kind": "image",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Kids, Sports Fans, Sports Lovers - Little Dumpling Big Game",
+      "asset_id": "catalog-10549572075809"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10549572075809/title",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10549572075809/price",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10162784272673",
+      "section_id": "featured_02",
+      "kind": "card",
+      "label": "Custom Acrylic Ornament - Personalized Christmas Birthday Gifts For Football, Baseball, Basketball, Soccer Lovers, Sports Fans, Sports Lovers - No Limits Just Goals"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/asset/catalog-10162784272673",
+      "section_id": "featured_02",
+      "kind": "image",
+      "label": "Custom Acrylic Ornament - Personalized Christmas Birthday Gifts For Football, Baseball, Basketball, Soccer Lovers, Sports Fans, Sports Lovers - No Limits Just Goals",
+      "asset_id": "catalog-10162784272673"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10162784272673/title",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02/card/10162784272673/price",
+      "section_id": "featured_02",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_02",
+      "section_id": "featured_02",
+      "kind": "section",
+      "label": "Sports Ornaments for a Season to Remember"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Discover New Sports Gifts"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/lead",
+      "section_id": "new",
+      "kind": "text",
+      "label": "More ways to make their favorite sport personal."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588931227937",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Name Sports Ball Gifts for Young Athletes - Personalized Shaped Pillow"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10588931227937",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Name Sports Ball Gifts for Young Athletes - Personalized Shaped Pillow",
+      "asset_id": "catalog-10588931227937"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588931227937/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Shaped Pillow"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588931227937/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588280357153",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Photo Soccer Player Gifts For Grandson - Personalized Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10588280357153",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Photo Soccer Player Gifts For Grandson - Personalized Soccer Ball",
+      "asset_id": "catalog-10588280357153"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588280357153/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588280357153/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $36.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10586742161697",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Name Christmas Sports Gifts For Athletes, Sports Fans, Sports Lovers - Personalized Acrylic Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10586742161697",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Name Christmas Sports Gifts For Athletes, Sports Fans, Sports Lovers - Personalized Acrylic Ornament",
+      "asset_id": "catalog-10586742161697"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10586742161697/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10586742161697/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10583428137249",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10583428137249",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball",
+      "asset_id": "catalog-10583428137249"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10583428137249/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10583428137249/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $36.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10582182887713",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Grandma Love and Encouragement Gifts for Granddaughter - Personalized Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10582182887713",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Grandma Love and Encouragement Gifts for Granddaughter - Personalized Volleyball",
+      "asset_id": "catalog-10582182887713"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10582182887713/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10582182887713/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "$49.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10578150228257",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Football Lover Name Gifts - Personalized Pajama Pants"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10578150228257",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Football Lover Name Gifts - Personalized Pajama Pants",
+      "asset_id": "catalog-10578150228257"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10578150228257/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Pajamas"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10578150228257/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $38.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10576150331681",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10576150331681",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball",
+      "asset_id": "catalog-10576150331681"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10576150331681/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10576150331681/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "$49.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10568863809825",
+      "section_id": "new",
+      "kind": "card",
+      "label": "Custom Blanket - Personalized Birthday Gifts For Kids, Sports Fans, Sports Lovers - Dream Big Play Hard Always"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/asset/catalog-10568863809825",
+      "section_id": "new",
+      "kind": "image",
+      "label": "Custom Blanket - Personalized Birthday Gifts For Kids, Sports Fans, Sports Lovers - Dream Big Play Hard Always",
+      "asset_id": "catalog-10568863809825"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10568863809825/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Blanket"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10568863809825/price",
+      "section_id": "new",
+      "kind": "text",
+      "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new",
+      "section_id": "new",
+      "kind": "section",
+      "label": "Discover New Sports Gifts"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/title",
+      "section_id": "gallery",
+      "kind": "text",
+      "label": "Sports Gifts in Everyday Life"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/lead",
+      "section_id": "gallery",
+      "kind": "text",
+      "label": "Little moments. A shared love of the game."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_01",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 1",
+      "asset_id": "gallery_01"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_02",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 2",
+      "asset_id": "gallery_02"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_03",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 3",
+      "asset_id": "gallery_03"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_04",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 4",
+      "asset_id": "gallery_04"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_05",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 5",
+      "asset_id": "gallery_05"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_06",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 6",
+      "asset_id": "gallery_06"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_07",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 7",
+      "asset_id": "gallery_07"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery/asset/gallery_08",
+      "section_id": "gallery",
+      "kind": "image",
+      "label": "Sports lifestyle moment 8",
+      "asset_id": "gallery_08"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gallery",
+      "section_id": "gallery",
+      "kind": "section",
+      "label": "Sports Gifts in Everyday Life"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Find a Gift That Fits"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/lead",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Explore these picks, or browse the full collection."
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549224440097",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Leather Football - Personalized Birthday Gifts For Son, Grandson, American Football Lovers, Sports Fans, Sports Lovers - Made For Game Day"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10549224440097",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Leather Football - Personalized Birthday Gifts For Son, Grandson, American Football Lovers, Sports Fans, Sports Lovers - Made For Game Day",
+      "asset_id": "catalog-10549224440097"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549224440097/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Leather Football"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549224440097/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $34.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10507401363745",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom America Football Comfort T-Shirt - Personalized Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Forever Cheering You On"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10507401363745",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom America Football Comfort T-Shirt - Personalized Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Forever Cheering You On",
+      "asset_id": "catalog-10507401363745"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10507401363745/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Comfort T-Shirt"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10507401363745/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $29.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10583428137249",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10583428137249",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball",
+      "asset_id": "catalog-10583428137249"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10583428137249/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10583428137249/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $36.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10576150331681",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10576150331681",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Name Volleyball Gifts For Daughter, Granddaughter, Son, Grandson  - Personalized Volleyball",
+      "asset_id": "catalog-10576150331681"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10576150331681/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10576150331681/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$49.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10319659925793",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Hat, All Over Print Classic Cap - Personalized Birthday Baseball Gifts For Dad, Grandpa, Baseball Lovers, Sports Fans, Sports Lovers - Best Dad In The Game"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10319659925793",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Hat, All Over Print Classic Cap - Personalized Birthday Baseball Gifts For Dad, Grandpa, Baseball Lovers, Sports Fans, Sports Lovers - Best Dad In The Game",
+      "asset_id": "catalog-10319659925793"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10319659925793/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Classic Cap"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10319659925793/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$29.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10305845985569",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Tumbler - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Sunshine, Ballfields And Baseball Mom Life"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10305845985569",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Tumbler - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Sunshine, Ballfields And Baseball Mom Life",
+      "asset_id": "catalog-10305845985569"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10305845985569/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Tumbler"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10305845985569/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$32.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10537313435937",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Sport Laundry Basket - Personalized Birthday Gifts For Sports Fans, Sports Lovers, Kids - Play Like A Pro"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10537313435937",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Sport Laundry Basket - Personalized Birthday Gifts For Sports Fans, Sports Lovers, Kids - Play Like A Pro",
+      "asset_id": "catalog-10537313435937"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10537313435937/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Laundry Basket"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10537313435937/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $32.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10535718682913",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10535718682913",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom America Football Acrylic Ornament - Personalized Christmas Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Born To Play Hard Always",
+      "asset_id": "catalog-10535718682913"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10535718682913/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10535718682913/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10335559778593",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing, Smile, Repeat"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10335559778593",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing, Smile, Repeat",
+      "asset_id": "catalog-10335559778593"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10335559778593/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10335559778593/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10341066146081",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10341066146081",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less",
+      "asset_id": "catalog-10341066146081"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10341066146081/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10341066146081/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10351175827745",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing Easy, Live Happy"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10351175827745",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Swing Easy, Live Happy",
+      "asset_id": "catalog-10351175827745"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10351175827745/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10351175827745/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $24.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10333213131041",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Photo Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Life Is Better On The Green"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10333213131041",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Photo Golf Towel - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Life Is Better On The Green",
+      "asset_id": "catalog-10333213131041"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10333213131041/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Golf Towel"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10333213131041/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10516256686369",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Sports Fans, Sports Lovers - Hit Hard And Live Free"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10516256686369",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Sports Fans, Sports Lovers - Hit Hard And Live Free",
+      "asset_id": "catalog-10516256686369"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10516256686369/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10516256686369/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549572075809",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Kids, Sports Fans, Sports Lovers - Little Dumpling Big Game"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10549572075809",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Sport Acrylic Ornament - Personalized Christmas Birthday Gifts For Kids, Sports Fans, Sports Lovers - Little Dumpling Big Game",
+      "asset_id": "catalog-10549572075809"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549572075809/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10549572075809/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10162784272673",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Acrylic Ornament - Personalized Christmas Birthday Gifts For Football, Baseball, Basketball, Soccer Lovers, Sports Fans, Sports Lovers - No Limits Just Goals"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10162784272673",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Acrylic Ornament - Personalized Christmas Birthday Gifts For Football, Baseball, Basketball, Soccer Lovers, Sports Fans, Sports Lovers - No Limits Just Goals",
+      "asset_id": "catalog-10162784272673"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10162784272673/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10162784272673/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588931227937",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Name Sports Ball Gifts for Young Athletes - Personalized Shaped Pillow"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10588931227937",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Name Sports Ball Gifts for Young Athletes - Personalized Shaped Pillow",
+      "asset_id": "catalog-10588931227937"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588931227937/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Shaped Pillow"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588931227937/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588280357153",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Photo Soccer Player Gifts For Grandson - Personalized Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10588280357153",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Photo Soccer Player Gifts For Grandson - Personalized Soccer Ball",
+      "asset_id": "catalog-10588280357153"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588280357153/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Soccer Ball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10588280357153/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $36.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10586742161697",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Name Christmas Sports Gifts For Athletes, Sports Fans, Sports Lovers - Personalized Acrylic Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10586742161697",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Name Christmas Sports Gifts For Athletes, Sports Fans, Sports Lovers - Personalized Acrylic Ornament",
+      "asset_id": "catalog-10586742161697"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10586742161697/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Ornament"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10586742161697/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $19.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10582182887713",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Grandma Love and Encouragement Gifts for Granddaughter - Personalized Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10582182887713",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Grandma Love and Encouragement Gifts for Granddaughter - Personalized Volleyball",
+      "asset_id": "catalog-10582182887713"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10582182887713/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Volleyball"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10582182887713/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$49.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10515729613089",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Football Crew Socks - Personalized Christmas Birthday Football Gifts For Football Lovers, Sports Fans, Sports Lovers - Born To Compete"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10515729613089",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Football Crew Socks - Personalized Christmas Birthday Football Gifts For Football Lovers, Sports Fans, Sports Lovers - Born To Compete",
+      "asset_id": "catalog-10515729613089"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10515729613089/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Middle Tube Socks"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10515729613089/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$22.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10531193422113",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Football Crew Socks - Personalized Birthday Gifts For Football Lovers, Sports Fans, Sports Lovers - Quiet Please Game Day Today"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10531193422113",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Football Crew Socks - Personalized Birthday Gifts For Football Lovers, Sports Fans, Sports Lovers - Quiet Please Game Day Today",
+      "asset_id": "catalog-10531193422113"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10531193422113/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Middle Tube Socks"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10531193422113/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "$22.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10557875749153",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom America Football Blanket - Personalized Birthday Gifts For Son, Grandson, America Football Lovers, Sports Fans, Sports Lovers - Shine Bright On The Field"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10557875749153",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom America Football Blanket - Personalized Birthday Gifts For Son, Grandson, America Football Lovers, Sports Fans, Sports Lovers - Shine Bright On The Field",
+      "asset_id": "catalog-10557875749153"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10557875749153/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Blanket"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10557875749153/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10568863809825",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Blanket - Personalized Birthday Gifts For Kids, Sports Fans, Sports Lovers - Dream Big Play Hard Always"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10568863809825",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Blanket - Personalized Birthday Gifts For Kids, Sports Fans, Sports Lovers - Dream Big Play Hard Always",
+      "asset_id": "catalog-10568863809825"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10568863809825/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Blanket"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10568863809825/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10350078066977",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom 2-Layered Wooden Plaque - Personalized Father's Day Birthday American Football Gifts For Dad, Grandpa, Football Lovers, Sports Fans, Sports Lovers - Game Day Energy"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10350078066977",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom 2-Layered Wooden Plaque - Personalized Father's Day Birthday American Football Gifts For Dad, Grandpa, Football Lovers, Sports Fans, Sports Lovers - Game Day Energy",
+      "asset_id": "catalog-10350078066977"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10350078066977/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Wooden Plaque With Flat Stand"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10350078066977/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10298789527841",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom 2-Layered Wooden Plaque - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Our Home Team Hero"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10298789527841",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom 2-Layered Wooden Plaque - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Our Home Team Hero",
+      "asset_id": "catalog-10298789527841"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10298789527841/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Wooden Plaque With Flat Stand"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10298789527841/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10214737543457",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Photo Magazine Rectangle Shaped Acrylic Plaque - Personalized Birthday Running Gifts For Running Lovers, Sports Fans, Sports Lovers - Hustle In Every Stride"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10214737543457",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Photo Magazine Rectangle Shaped Acrylic Plaque - Personalized Birthday Running Gifts For Running Lovers, Sports Fans, Sports Lovers - Hustle In Every Stride",
+      "asset_id": "catalog-10214737543457"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10214737543457/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Shaped Acrylic Plaque"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10214737543457/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $32.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120588165409",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Together We Make A Winning Team - Family Personalized Custom Horizontal Poster - Father's Day, Gift For Dad, Sport Lovers, Sport Players"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10120588165409",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Together We Make A Winning Team - Family Personalized Custom Horizontal Poster - Father's Day, Gift For Dad, Sport Lovers, Sport Players",
+      "asset_id": "catalog-10120588165409"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120588165409/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Poster"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120588165409/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120373535009",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Train Hard, Fight Easy - American Football Personalized Custom Vertical Poster - Gift For Sport Lovers, Sport Players"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10120373535009",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Train Hard, Fight Easy - American Football Personalized Custom Vertical Poster - Gift For Sport Lovers, Sport Players",
+      "asset_id": "catalog-10120373535009"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120373535009/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Poster"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10120373535009/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $27.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10567401242913",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Funny American Football Pajama Pants - Personalized Birthday Gifts For American Football Lovers, Sports Fans, Sports Lovers - Living The Ultimate Fan Life"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10567401242913",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Funny American Football Pajama Pants - Personalized Birthday Gifts For American Football Lovers, Sports Fans, Sports Lovers - Living The Ultimate Fan Life",
+      "asset_id": "catalog-10567401242913"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10567401242913/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Pajamas"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10567401242913/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $38.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10578150228257",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Football Lover Name Gifts - Personalized Pajama Pants"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10578150228257",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Football Lover Name Gifts - Personalized Pajama Pants",
+      "asset_id": "catalog-10578150228257"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10578150228257/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Pajamas"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10578150228257/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $38.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10353211375905",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Mug - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10353211375905",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Mug - Personalized Father's Day Birthday Golf Gifts For Dad, Grandpa - Golf More Worry Less",
+      "asset_id": "catalog-10353211375905"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10353211375905/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Mugs"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10353211375905/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $24.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10203075084577",
+      "section_id": "gift-picks",
+      "kind": "card",
+      "label": "Custom Photo Magazine Mug - Personalized  Birthday Running Gifts For Running Lovers, Sports Fans, Sports Lovers - Champions Train Daily"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/asset/catalog-10203075084577",
+      "section_id": "gift-picks",
+      "kind": "image",
+      "label": "Custom Photo Magazine Mug - Personalized  Birthday Running Gifts For Running Lovers, Sports Fans, Sports Lovers - Champions Train Daily",
+      "asset_id": "catalog-10203075084577"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10203075084577/title",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "Mugs"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks/card/10203075084577/price",
+      "section_id": "gift-picks",
+      "kind": "text",
+      "label": "From $24.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks",
+      "section_id": "gift-picks",
+      "kind": "section",
+      "label": "Find a Gift That Fits"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/footer",
+      "section_id": "footer",
+      "kind": "section",
+      "label": "PawfectHouse footer"
+    }
+  ],
+  "render_hash": "sha256:04b3f4e9bba21d6f9047ba046a66adde6d1a07fc8565f85554e4ddc75c4b5d0d",
+  "verification_limits": [
+    "Current collection JSON first 250 products; not an exhaustive assortment census.",
+    "Historical approved/revised materials reused; full PDP media/spec research not repeated.",
+    "Generated gallery is campaign imagery, not verified customer reviews.",
+    "Header/footer reconstructed from live brand reference; not a pixel-identical storefront header.",
+    "Internal curated product subsets; no invented niche collection destinations.",
+    "Figma not used or synchronized in this HTML workflow."
+  ],
+  "viewport_copy": {
+    "mobile": {
+      "combo_02": {
+        "title": "Sideline Support",
+        "lead": "For the ones who cheer them on, game after game."
+      }
+    }
+  },
+  "revision": {
+    "parent_content_version": "sha256:5d1e04370d7f811d70d88c07fbdbc2928663377979496f6c1a4e4067bbb1e59a",
+    "parent_render_hash": "sha256:9820347712cd8b561863210c8d366708c1904dc70cb1f2f70a86a6e9b328a78f",
+    "groups": [
+      {
+        "viewport": "mobile",
+        "viewport_width": 390,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead"
+        ]
+      }
+    ]
+  }
+}
