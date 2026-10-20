@@ -6,7 +6,7 @@ import { buildSync } from 'esbuild';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CanonicalComparison, EvaluationDetails, ResolvedFeedbackAudit } from '../src/components/FeedbackReviewPanel.tsx';
-import { affectedBrands, candidateRuns, currentEvaluation, emptyReviewChecks, missingBaselineBrands, proposedLines, searchCoveredCandidates, validatePreflight } from '../src/components/feedback-review.ts';
+import { affectedBrands, candidateRuns, currentEvaluation, emptyReviewChecks, missingBaselineBrands, proposalReviewKey, proposedLines, searchCoveredCandidates, validatePreflight } from '../src/components/feedback-review.ts';
 import type { AutomaticReview, FeedbackPreflight } from '../src/components/feedback-review.ts';
 
 const code=buildSync({entryPoints:['src/components/FeedbackReviewPanel.tsx'],bundle:true,format:'cjs',platform:'node',jsx:'automatic',write:false,external:['react','react/jsx-runtime']}).outputFiles[0].text;
@@ -55,8 +55,9 @@ function directReceipt(data=directPreflight()) {return {
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
 function setup(path:'covered'|'merge'|'owner'='covered'){
- const deadlines=new Map<number,()=>void>(),polls=new Map<number,()=>void>();let timerId=0;
- const document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
+ const deadlines=new Map<number,()=>void>(),polls=new Map<number,{run:()=>void;at:number}>();let timerId=0,now=0;
+ const listeners=new Map<string,()=>void>();
+ const document={visibilityState:'visible',addEventListener(name:string,run:()=>void){listeners.set(name,run);},removeEventListener(name:string){listeners.delete(name);}};
  const slots:any[]=[],effects:Effect[]=[],queued:Effect[]=[],calls:Call[]=[],completed:any[]=[],busyEvents:boolean[]=[];
  let cursor=0,tree:Node,scheduled=false,mounted=true,writes=0,lateWrites=0,closed=0;
  let props:any={proposal,path,request,onBusyChange:(busy:boolean)=>busyEvents.push(busy),onClose:()=>{closed++;unmount();},onComplete:(...result:any[])=>completed.push(result)};
@@ -69,11 +70,12 @@ function setup(path:'covered'|'merge'|'owner'='covered'){
  const module={exports:{} as {FeedbackReviewPanel:(props:any)=>Node}};
  vm.runInNewContext(code,{module,exports:module.exports,Error,AbortController,Response,setTimeout:(run:()=>void)=>{const id=++timerId;deadlines.set(id,run);return id;},clearTimeout:(id:number)=>deadlines.delete(id),
  document,
- window:{setInterval(run:()=>void){const id=++timerId;polls.set(id,run);return id;},clearInterval(id:number){polls.delete(id);},addEventListener(){},removeEventListener(){}},
+ window:{setTimeout(run:()=>void,ms:number){const id=++timerId;polls.set(id,{run,at:now+ms});return id;},clearTimeout(id:number){polls.delete(id);},addEventListener(name:string,run:()=>void){listeners.set(name,run);},removeEventListener(name:string){listeners.delete(name);}},
  sessionStorage:{getItem(){return null;},setItem(){},removeItem(){}},require(name:string){if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('Fragment')};throw Error(name);}});
  function request(url:string,init:RequestInit={}){return new Promise<Response>((resolve,reject)=>calls.push({url,init,resolve,reject}));}
  function materialize(value:any):any{if(Array.isArray(value))return value.map(materialize);if(!value||typeof value!=='object'||!('props'in value))return value;if(typeof value.type==='function')return materialize(value.type(value.props));return {...value,props:{...value.props,children:materialize(value.props.children)}};}
- function render(){cursor=0;tree=materialize(module.exports.FeedbackReviewPanel(props));for(const effect of queued.splice(0))effect.cleanup=effect.create()||undefined;}
+ function commitEffects(){for(const effect of queued.splice(0))effect.cleanup=effect.create()||undefined;}
+ function render(runEffects=true){cursor=0;tree=materialize(module.exports.FeedbackReviewPanel(props));if(runEffects)commitEffects();}
  function unmount(){if(!mounted)return;mounted=false;for(const effect of effects)effect.cleanup?.();}
  function all(type:string){return nodes(tree).filter(node=>node.type===type);}
  function button(label:string){const node=all('button').find(node=>textOf(node)===label);assert.ok(node,'Missing button '+label);return node;}
@@ -81,8 +83,13 @@ function setup(path:'covered'|'merge'|'owner'='covered'){
  function input(aria:string,value:string){const node=nodes(tree).find(node=>node.props['aria-label']===aria);assert.ok(node,'Missing field '+aria);node.props.onChange({target:{value}});}
  function checkAll(){for(const node of all('input').filter(node=>node.props.type==='checkbox')){assert.equal(!!node.props.disabled,false);node.props.onChange({target:{checked:true}});}}
  function candidateFields(){all('input').find(node=>node.props.placeholder==='Source run ID từ công cụ tạo output')!.props.onChange({target:{value:'actual-run-42'}});all('input').find(node=>node.props.type==='url')!.props.onChange({target:{value:'https://example.test/candidate'}});all('textarea').find(node=>node.props.placeholder==='Dán output JSON object từ lần chạy thật')!.props.onChange({target:{value:'{"title":"Actual generated result"}'}});}
+ function advance(ms:number){
+  const until=now+ms;
+  while(true){const next=[...polls.entries()].sort(([,a],[,b])=>a.at-b.at)[0];if(!next||next[1].at>until)break;now=next[1].at;polls.delete(next[0]);next[1].run();}
+  now=until;
+ }
  render();
- return {timeout:()=>{for(const run of [...deadlines.values()])run();},poll:()=>{for(const run of polls.values())run();},visibility:(state:string)=>{document.visibilityState=state;},calls,completed,busyEvents,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any){props={...props,proposal:next};render();},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
+ return {timeout:()=>{for(const run of [...deadlines.values()])run();},poll:()=>{const next=Math.min(...[...polls.values()].map(poll=>poll.at));if(Number.isFinite(next))advance(next-now);},advance,commitEffects,get pendingPolls(){return polls.size;},focus:()=>listeners.get('focus')?.(),visibility:(state:string)=>{document.visibilityState=state;},calls,completed,busyEvents,button,click,input,all,checkAll,candidateFields,unmount,text:()=>textOf(tree),changeProposal(next:any,runEffects=true){props={...props,proposal:next};render(runEffects);},get writes(){return writes;},get lateWrites(){return lateWrites;},get closed(){return closed;}};
 }
 async function ready(ui:ReturnType<typeof setup>,data=preflight()){ui.calls[0].resolve(Response.json(data));await flush();}
 async function coveredReady(ui:ReturnType<typeof setup>){await ready(ui);ui.input('Quy chuẩn đã có','covered-1');await flush();ui.checkAll();ui.input('Lý do đóng feedback','Reviewed every affected brand and existing product safeguards.');await flush();}
@@ -576,4 +583,127 @@ test('hard merge uncertain response locks retries and close causes no extra writ
  ui.calls[1].reject(Error('Connection lost'));await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
  ui.button('Xác nhận hard merge').props.onClick();await flush();assert.equal(ui.calls.length,2);
  ui.click('Đóng');await flush();assert.equal(ui.calls.length,2);assert.equal(ui.completed.length,0);
+});
+
+test('proposal refresh identity compares JSON values including nested evidence and actual review fields',()=>{
+ const original={...proposal,evidence_summary:{source:{url:'https://example.test/product',verified:true},note:'Product truth'},context_images:[{role:'REFERENCE',image_url:'https://example.test/image'}]};
+ const reordered={...Object.fromEntries(Object.entries(original).reverse()),evidence_summary:{note:'Product truth',source:{verified:true,url:'https://example.test/product'}}};
+ assert.equal(proposalReviewKey(original),proposalReviewKey(reordered as typeof original));
+ for(const changed of [
+  {...original,proposed_scope:'brand_only'}, {...original,proposed_content_md:'Changed rule'},
+  {...original,status:'merged'}, {...original,branch_slug:'ldp-system'},
+  {...original,evidence_summary:{...original.evidence_summary,note:'New evidence'}},
+  {...original,context_images:[{role:'REFERENCE',image_url:'https://example.test/new-image'}]},
+ ])assert.notEqual(proposalReviewKey(original),proposalReviewKey(changed));
+});
+
+test('equal inbox replacements do not reload preflight or erase owner confirmation',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ for(let i=0;i<5;i++){ui.changeProposal({...proposal});await flush();}
+ assert.equal(ui.calls.length,1);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,true);
+ assert.equal(ui.pendingPolls,1);
+ ui.advance(9999);assert.equal(ui.calls.length,1);ui.advance(1);await flush();assert.equal(ui.calls.length,2);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Actual refresh still disables submit');
+ ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,true);
+});
+
+test('slow refresh waits a full interval after completion and manual refresh replaces the timer',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);
+ ui.advance(18000);assert.equal(ui.calls.length,1);assert.equal(ui.pendingPolls,0);
+ await ready(ui,directPreflight());ui.checkAll();await flush();
+ ui.advance(9999);assert.equal(ui.calls.length,1);ui.advance(1);await flush();assert.equal(ui.calls.length,2);
+ ui.advance(18000);ui.changeProposal({...proposal});await flush();assert.equal(ui.calls.length,2);assert.equal(ui.pendingPolls,0);
+ ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ ui.advance(9999);assert.equal(ui.calls.length,2);assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ ui.click('Tải lại / Retry');await flush();assert.equal(ui.calls.length,3);assert.equal(ui.pendingPolls,0);
+ ui.advance(1);assert.equal(ui.calls.length,3);
+ ui.calls[2].resolve(Response.json(directPreflight()));await flush();
+ ui.advance(9999);assert.equal(ui.calls.length,3);ui.advance(1);assert.equal(ui.calls.length,4);
+});
+
+test('meaningful inbox change aborts the old preflight and clears owner confirmation before fresh scope',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ const oldAction=ui.button('Xác nhận hard merge').props.onClick;
+ ui.poll();await flush();assert.equal(ui.calls.length,2);
+ const changed={...proposal,proposed_scope:'brand_only',proposed_content_md:'New owner rule'};
+ ui.changeProposal(changed);await flush();
+ assert.equal(ui.calls.length,3);assert.equal(ui.calls[1].init.signal?.aborted,true);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+ oldAction();assert.equal(ui.calls.length,3,'An old handler cannot submit while the current revision is unread');
+ ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.calls[2].resolve(Response.json(directPreflight({proposal:changed,candidate_hash:'scope-v2:new'})));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Fresh scope still requires new confirmation');
+ oldAction();assert.equal(ui.calls.length,3,'An old handler cannot submit after the new preflight completes');
+ ui.checkAll();await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+});
+
+test('changed proposal cannot use prior preflight even before refresh effects execute',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ const oldAction=ui.button('Xác nhận hard merge').props.onClick;
+ ui.changeProposal({...proposal,proposed_content_md:'Another rule'},false);
+ assert.equal(ui.calls.length,1,'No refresh effect has run yet');
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ oldAction();assert.equal(ui.calls.length,1,'A stale event handler cannot submit the old revision');
+ ui.commitEffects();await flush();assert.equal(ui.calls.length,2);
+ assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+});
+
+test('failed polling remains stale and schedules one retry only after completion',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ ui.poll();ui.advance(7000);ui.calls[1].reject(Error('Preflight unavailable'));await flush();
+ assert.equal(ui.pendingPolls,1);assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.changeProposal({...proposal});await flush();ui.advance(9999);assert.equal(ui.calls.length,2);
+ ui.advance(1);await flush();assert.equal(ui.calls.length,3);assert.equal(ui.pendingPolls,0);
+ ui.calls[2].resolve(Response.json(directPreflight()));await flush();
+ assert.equal(ui.pendingPolls,1);assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+});
+
+test('mutation removes polling until it completes and does not refresh while a write is pending',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ assert.equal(ui.pendingPolls,1);ui.click('Xác nhận hard merge');await flush();
+ assert.equal(ui.pendingPolls,0);ui.advance(30000);ui.focus();assert.equal(ui.calls.length,2);
+ ui.calls[1].resolve(Response.json({error:'Scope changed'},{status:409}));await flush();
+ assert.equal(ui.pendingPolls,1);assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.advance(9999);assert.equal(ui.calls.length,2);ui.advance(1);assert.equal(ui.calls.length,3);
+});
+
+test('poll refresh resets owner approval for each changed hash or target scope but never auto-writes',async t=>{
+ const base=directPreflight();
+ for(const data of [
+  directPreflight({candidate_hash:'scope-v2:new'}),
+  directPreflight({review_intent_hash:'intent:new'}),
+  directPreflight({direct_rule:{...base.direct_rule!,rule_hash:'rule:new'}}),
+  directPreflight({direct_rule_plan:{...base.direct_rule_plan!,plan_hash:'plan:new'}}),
+  directPreflight({targets:[{...base.targets[0],node_hash:'node:new',version:4}]}),
+  directPreflight({proposal:{...proposal,change_summary:'A changed review summary'}}),
+ ]) {
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+  ui.poll();await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+  ui.calls[1].resolve(Response.json(data));await flush();
+  assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+  assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
+ }
+});
+
+test('focus refresh coalesces with active reads and closing clears the sole scheduled poll',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());
+ ui.focus();ui.focus();await flush();assert.equal(ui.calls.length,2);assert.equal(ui.pendingPolls,0);
+ ui.calls[1].resolve(Response.json(directPreflight()));await flush();assert.equal(ui.pendingPolls,1);
+ ui.click('Đóng');assert.equal(ui.pendingPolls,0);ui.advance(60000);ui.focus();assert.equal(ui.calls.length,2);
+});
+
+test('retained owner handler cannot submit after close or unmount',async t=>{
+ for(const close of [true,false]) {
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+  const action=ui.button('Xác nhận hard merge').props.onClick;
+  if(close)ui.click('Đóng');else ui.unmount();
+  action();await flush();assert.equal(ui.calls.length,1);assert.equal(ui.lateWrites,0);
+ }
 });

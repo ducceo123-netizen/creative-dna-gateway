@@ -7,6 +7,11 @@ export type FeedbackProposal = {
   resolved_at?: string; resolution_kind?: string; resolution?: Record<string, unknown>;
   context_images?: Array<{ role:string; image_url?:string|null; reference_id?:string|null; caption?:string|null }>;
 };
+/** Compare JSON values, not fresh inbox object identities. Preserve every field and array order. */
+export function proposalReviewKey(proposal:FeedbackProposal):string {
+  return JSON.stringify(proposal,(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)
+    ?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))):value);
+}
 export type ReviewTarget = { id:string; brand_id:string; brand_name:string; slug:string; title:string; content_md:string; node_hash:string; version?:number|string;status?:string };
 export type ReviewBaseline = {
   id:string; brand_id:string; brand_name?:string; case_key:string; branch_slug:string; approved_at?:string|null;
