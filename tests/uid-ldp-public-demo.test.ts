@@ -7,8 +7,12 @@ test('public demo is labelled synthetic, self-contained and uses current copy-on
  assert.ok(html.includes('SYNTHETIC INTERACTION DEMO ONLY'));
  assert.ok(html.includes('Not approved brand layout or real task'));
  const embedded=html.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)![1];
- const diff=[...PREVIEW_SCRIPT].findIndex((c,i)=>c!==embedded[i]);
- assert.equal(embedded,PREVIEW_SCRIPT,JSON.stringify({expectedLength:PREVIEW_SCRIPT.length,actualLength:embedded.length,diff,expected:PREVIEW_SCRIPT.slice(Math.max(0,diff-30),diff+90),actual:embedded.slice(Math.max(0,diff-30),diff+90)}));
+ // Bun rewrites non-ASCII String.raw literals; guard exact source on every runtime,
+ // and exact generated production bytes on Node (Render runtime).
+ const source=readFileSync(new URL('../uid-ldp-html-preview.ts',import.meta.url),'utf8');
+ const raw=source.match(/export const PREVIEW_SCRIPT=String.raw`([\s\S]*?)`;/)![1];
+ assert.equal(embedded,raw);
+ if(!process.versions.bun)assert.equal(embedded,PREVIEW_SCRIPT);
  assert.ok(html.includes("img-src data:"));
  assert.ok(html.includes("connect-src 'none'"));
  assert.equal(/<img[^>]+src="https?:/i.test(html),false);
