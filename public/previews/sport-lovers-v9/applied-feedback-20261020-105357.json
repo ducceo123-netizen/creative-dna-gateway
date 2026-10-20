@@ -1,0 +1,72 @@
+{
+  "schema_version": "uid-ldp-applied-feedback/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_version": "3",
+  "parent_content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
+  "parent_render_hash": "sha256:be27bfd5b8a3f73ee6148dfe86c6d6eadd3409ee70d560fdb9b8eab72844f118",
+  "groups": [
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead"
+      ],
+      "feedback": "bỏ pretext nhỏ bên dưới"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_width": 390,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead"
+      ],
+      "feedback": "đoạn này và cái button trên mobile chưa đúng UI brand lắm"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_width": 390,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead"
+      ],
+      "feedback": "Trên mobile canh giữa chứ"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_width": 390,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead"
+      ],
+      "feedback": "bỏ mấy cái pretext này"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_width": 390,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead"
+      ],
+      "feedback": "canh giữa trên mobile, đồng bộ cả page"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_width": 390,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks"
+      ],
+      "feedback": "trên cả page , button chưa đúng UI"
+    }
+  ],
+  "scope_resolution": [
+    "Group 1: hide only picks/lead on desktop.",
+    "Group 2: preserve mobile Picks wording; center heading/lead and use native mobile CTA after the grid.",
+    "Group 3: center mobile niche title/lead.",
+    "Group 4: hide only the four niche-card leads on mobile; preserve desktop leads and mobile titles.",
+    "Group 5: explicit 'đồng bộ cả page' extends centered section headings to all mobile LDP sections.",
+    "Group 6: explicit 'trên cả page' extends native orange pill styling and after-grid placement to mobile browse CTAs throughout this LDP; navigation, image and category controls retain their distinct roles."
+  ]
+}

@@ -106,7 +106,8 @@ filters={
  **{k:[p['id'] for p in catalog if p['category']==k] for k in ['apparel','caps','drinkware','socks','balls','blankets','ornaments','signs','golf']}
 }
 viewport_copy={'mobile':{'combo_02':{'title':'Sideline Support','lead':'For the ones who cheer them on, game after game.'}}}
-cv=sha(json.dumps({'copy':copy,'viewport_copy':viewport_copy,'assets':asset_manifest,'catalog':catalog,'filters':filters},sort_keys=True).encode())
+viewport_visibility={'desktop':{'picks/lead':False},'mobile':{'niche/card/combo_0'+str(i)+'/lead':False for i in range(1,5)}}
+cv=sha(json.dumps({'viewport_visibility':viewport_visibility,'copy':copy,'viewport_copy':viewport_copy,'assets':asset_manifest,'catalog':catalog,'filters':filters},sort_keys=True).encode())
 elements=[]
 def attr(sec,sub='',kind='text',label='',assetid=None):
     key='task/'+TASK+'/section/'+sec+('/'+sub if sub else '')
@@ -190,10 +191,16 @@ fontcss=''.join('@font-face{font-family:Poppins;src:url('+url+');font-weight:'+w
 toolbar=(ROOT/'review-ui.html').read_text()
 js=(ROOT/'review.js').read_text()
 manifest['viewport_copy']=viewport_copy
+manifest['viewport_visibility']=viewport_visibility
+for e in elements:
+    path=e['id'].split('/section/',1)[1]
+    visibility={v:overrides[path] for v,overrides in viewport_visibility.items() if path in overrides}
+    if visibility:e['viewport_visibility']={v:visibility.get(v,True) for v in ['desktop','mobile']}
 manifest['brand_system_source']=json.loads((ROOT/'brand-components/source-audit.json').read_text())
-manifest['revision']={'parent_content_version':'sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a','parent_render_hash':'sha256:04b3f4e9bba21d6f9047ba046a66adde6d1a07fc8565f85554e4ddc75c4b5d0d','groups':[{'viewport':'desktop_and_mobile','scope':'overall_brand_ui','feedback':'Align overall design system, UI, HTML/CSS and brand style more closely with PawfectHouse live pages.'}]}
+manifest['revision']=json.loads((ROOT/'applied-feedback-20261020-105357.json').read_text())
 (ROOT/'preview-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 source['viewport_copy']=viewport_copy
+source['viewport_visibility']=viewport_visibility
 source['revision']=manifest['revision']
 (ROOT/'copy-destination-source-map.json').write_text(json.dumps(source,ensure_ascii=False,indent=2))
 data=json.dumps({'manifest':manifest,'filters':filters,'copy':copy,'catalog':catalog},ensure_ascii=False).replace('</','<\\/')

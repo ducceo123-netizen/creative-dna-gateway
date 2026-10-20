@@ -93,3 +93,16 @@
  #page .pfh-native-footer .footer-menu-frame{padding-left:12px;padding-right:12px}#page .pfh-native-footer .footer-menu-frame>.flex-span-style:first-child{max-width:100%;flex-basis:100%}#page .pfh-native-footer .footer-menu-frame>.flex-span-style{min-width:0}#page .pfh-native-footer .footer-payment{justify-content:flex-start}#page .pfh-native-footer .footer-payment svg{max-width:40px}
 }
 @container(max-width:799px){#page .hero-copy{padding:14px}#page .hero h1{font-size:24px;line-height:1.3}}
+/* Feedback 2026-10-20 10:53:57 — six independently scoped groups. */
+@container(min-width:800px){#page #picks>.section-heading-row>.section-heading>p{display:none}}
+@container(max-width:799px){
+ #page .section-heading,#page .section-heading-row .section-heading{width:100%;text-align:center}
+ #page .section-heading h2,#page .section-heading p{width:100%;text-align:center}
+ #page .section-heading-row{display:block}
+ #page #picks .section-heading-row .section-heading p{font-size:16px;line-height:1.5;color:var(--pfh-text);margin-top:8px}
+ #page #niche .combo-card>p{display:none}
+ #page #niche .combo-card>.card-heading{padding-bottom:12px}
+ #page .section>.browse{display:flex;align-items:center;justify-content:center;width:fit-content;max-width:100%;margin:20px auto 0;padding:10px 24px;border:0;border-radius:50px;background:var(--pfh-primary);color:white;font:600 16px/1.5 Poppins,sans-serif;gap:5px;min-height:44px;text-align:center}
+ #page .section>.browse>span{display:none}
+ #page .section>.browse:hover{background:#dc7809;color:white}
+}
