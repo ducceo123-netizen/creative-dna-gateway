@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PREVIEW_SCRIPT} from '../uid-ldp-html-preview.ts';
+import {PREVIEW_SCRIPT,REVIEW_CHROME_CSS,REVIEW_CHROME_HTML} from '../uid-ldp-html-preview.ts';
 const html=readFileSync(new URL('../public/ldp-feedback-demo.html',import.meta.url),'utf8');
 test('public demo is labelled synthetic, self-contained and uses current copy-only interaction script',()=>{
  assert.ok(html.includes('SYNTHETIC INTERACTION DEMO ONLY'));
@@ -24,3 +24,5 @@ test('public demo is labelled synthetic, self-contained and uses current copy-on
  assert.equal(new Set(manifest.elements.map((e:any)=>e.id)).size,manifest.elements.length);
  assert.ok(manifest.asset_manifest.every((a:any)=>a.file_url.startsWith('https://assets.example/')));
 });
+
+test('demo shares production Onepage-inspired chrome without changing brand template',()=>{assert.ok(html.includes(REVIEW_CHROME_CSS));assert.ok(html.includes(REVIEW_CHROME_HTML));assert.ok(REVIEW_CHROME_HTML.includes('Feedback chung cho mục đã chọn'));assert.ok(REVIEW_CHROME_CSS.includes('.toolbar #selected li'));assert.ok(REVIEW_CHROME_CSS.includes('--active:#d4f9e0'));assert.ok(REVIEW_CHROME_CSS.includes('body.force-mobile .toolbar h2'));});
