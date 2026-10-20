@@ -1,0 +1,28 @@
+{
+  "source_url": "https://pawfecthouse.com/pages/book-lovers",
+  "method": "Live HTML/CSS and rendered desktop computed-style inspection; mobile declarations inspected in source CSS. Native header/footer HTML sanitized and ported with container queries. No third-party store/app scripts included.",
+  "core_tokens": {
+    "font": "Poppins",
+    "text": "#202024",
+    "muted": "#79797B",
+    "primary": "#EE860F",
+    "price": "#F34028",
+    "card_radius": 10,
+    "button_radius": 12
+  },
+  "ldp_observations": {
+    "max_width_px": 1280,
+    "desktop_heading_px": 28,
+    "desktop_heading_weight": 600,
+    "desktop_heading_line_height": 1.4,
+    "desktop_card_title_px": 20,
+    "mobile_card_title_px": 18,
+    "desktop_product_gap_px": 20,
+    "mobile_product_gap_px": 15,
+    "hero_radius_px": 20,
+    "mobile_hero_radius_px": 10,
+    "feature_copy_share": 0.4,
+    "feature_image_share": 0.6
+  },
+  "campaign_boundary": "Book Lovers greens/cream and Gardening palettes are source-specific. Sport Lovers preserves existing imagery and uses core neutral surfaces."
+}

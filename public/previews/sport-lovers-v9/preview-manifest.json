@@ -8,9 +8,9 @@
   "scope": "complete_ldp",
   "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "source_version": "3",
-  "created_at": "2026-10-20T03:29:32.184864+00:00",
+  "created_at": "2026-10-20T03:45:43.131734+00:00",
   "canonical_snapshot": "sha256:45c9edae00cec9694961e419be4fff8d6d832213d7f7e7c0098917e47a995580",
-  "layout_hash": "sha256:d797bcefaa26bd715a02c6620c3ba6cb3673907fcd57741616cbd891158b22c0",
+  "layout_hash": "sha256:db4b89a074e098de33aefb33b0617ff4654fd84aa003a9cbf8be0d7daec5e6af",
   "asset_manifest": [
     {
       "id": "hero-desktop-2560x800",
@@ -2697,12 +2697,12 @@
       "label": "PawfectHouse footer"
     }
   ],
-  "render_hash": "sha256:04b3f4e9bba21d6f9047ba046a66adde6d1a07fc8565f85554e4ddc75c4b5d0d",
+  "render_hash": "sha256:be27bfd5b8a3f73ee6148dfe86c6d6eadd3409ee70d560fdb9b8eab72844f118",
   "verification_limits": [
     "Current collection JSON first 250 products; not an exhaustive assortment census.",
     "Historical approved/revised materials reused; full PDP media/spec research not repeated.",
     "Generated gallery is campaign imagery, not verified customer reviews.",
-    "Header/footer reconstructed from live brand reference; not a pixel-identical storefront header.",
+    "Native header/footer HTML and CSS ported from live PawfectHouse reference; container-query review adaptation and evergreen announcement, without store/app runtime scripts.",
     "Internal curated product subsets; no invented niche collection destinations.",
     "Figma not used or synchronized in this HTML workflow."
   ],
@@ -2714,17 +2714,42 @@
       }
     }
   },
+  "brand_system_source": {
+    "source_url": "https://pawfecthouse.com/pages/book-lovers",
+    "method": "Live HTML/CSS and rendered desktop computed-style inspection; mobile declarations inspected in source CSS. Native header/footer HTML sanitized and ported with container queries. No third-party store/app scripts included.",
+    "core_tokens": {
+      "font": "Poppins",
+      "text": "#202024",
+      "muted": "#79797B",
+      "primary": "#EE860F",
+      "price": "#F34028",
+      "card_radius": 10,
+      "button_radius": 12
+    },
+    "ldp_observations": {
+      "max_width_px": 1280,
+      "desktop_heading_px": 28,
+      "desktop_heading_weight": 600,
+      "desktop_heading_line_height": 1.4,
+      "desktop_card_title_px": 20,
+      "mobile_card_title_px": 18,
+      "desktop_product_gap_px": 20,
+      "mobile_product_gap_px": 15,
+      "hero_radius_px": 20,
+      "mobile_hero_radius_px": 10,
+      "feature_copy_share": 0.4,
+      "feature_image_share": 0.6
+    },
+    "campaign_boundary": "Book Lovers greens/cream and Gardening palettes are source-specific. Sport Lovers preserves existing imagery and uses core neutral surfaces."
+  },
   "revision": {
-    "parent_content_version": "sha256:5d1e04370d7f811d70d88c07fbdbc2928663377979496f6c1a4e4067bbb1e59a",
-    "parent_render_hash": "sha256:9820347712cd8b561863210c8d366708c1904dc70cb1f2f70a86a6e9b328a78f",
+    "parent_content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
+    "parent_render_hash": "sha256:04b3f4e9bba21d6f9047ba046a66adde6d1a07fc8565f85554e4ddc75c4b5d0d",
     "groups": [
       {
-        "viewport": "mobile",
-        "viewport_width": 390,
-        "element_ids": [
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead"
-        ]
+        "viewport": "desktop_and_mobile",
+        "scope": "overall_brand_ui",
+        "feedback": "Align overall design system, UI, HTML/CSS and brand style more closely with PawfectHouse live pages."
       }
     ]
   }

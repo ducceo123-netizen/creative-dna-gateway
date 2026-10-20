@@ -55,9 +55,9 @@
         const slot = node.dataset.assetSlot, a = assets.get(slot), raw = assetURL(node);
         // Bound inline decorative icons are not editable output assets. No invented asset IDs.
         if (!a && slot === 'ui_checkmark' && raw?.startsWith('data:image/svg+xml')) return;
-        if (!a || !raw || !['IMG','SOURCE'].includes(node.tagName) || /[{}]/.test(raw) || url(raw) !== url(a.file_url)) throw Error('asset không khớp: ' + slot);
+        if (!a || !raw || !['IMG','SOURCE'].includes(node.tagName) || /[{}]/.test(raw) || url(raw) !== url(a.hosted_file_url || a.file_url)) throw Error('asset không khớp: ' + slot);
         used.add(slot);
-        add(node, 'image', slot, {asset_id: a.asset_id, file_url: a.file_url, checksum: a.checksum, media: node.getAttribute('media') || null});
+        add(node, 'image', slot, {asset_id: a.asset_id, ...(a.asset_identity_type ? {asset_identity_type:a.asset_identity_type} : {}), ...(Object.hasOwn(a,'registered_asset_id') ? {registered_asset_id:a.registered_asset_id} : {}), ...(a.source_asset_reference ? {source_asset_reference:a.source_asset_reference} : {}), file_url: a.file_url, ...(a.hosted_file_url ? {hosted_file_url:a.hosted_file_url} : {}), checksum: a.checksum, media: node.getAttribute('media') || null});
       });
       if (used.size !== assets.size) throw Error('asset manifest có slot không tồn tại trong output');
       const explicit = [...document.querySelectorAll('[data-onepage-review-section]')];
@@ -85,8 +85,8 @@
       const current = img.currentSrc;
       if (!current) return null; // Do not guess a responsive mapping before the browser resolves it.
       // The same URL may be reused by distinct desktop/mobile assets; source media still identifies the slot.
-      const source = candidates.find(e => e.node.tagName === 'SOURCE' && (!e.data.media || matchMedia(e.data.media).matches) && url(e.data.file_url) === current);
-      return source || candidates.find(e => e.node === img && url(e.data.file_url) === current) || null;
+      const source = candidates.find(e => e.node.tagName === 'SOURCE' && (!e.data.media || matchMedia(e.data.media).matches) && url(e.data.hosted_file_url || e.data.file_url) === current);
+      return source || candidates.find(e => e.node === img && url(e.data.hosted_file_url || e.data.file_url) === current) || null;
     }
     function paint() {
       overlays.replaceChildren();

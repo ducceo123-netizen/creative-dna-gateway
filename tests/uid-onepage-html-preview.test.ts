@@ -34,3 +34,11 @@ test('real compiler and template delivery expose live review without altering ca
  const result=attachOnepageUiTemplate({},'PawfectHouse','Onepage');assert.deepEqual(result.onepage_preview_contract,contract);assert.match(result.instruction,/actual bound output/);
  const server=readFileSync(new URL('../server.ts',import.meta.url),'utf8');assert.match(server,/attachOnepageUiTemplate\(data,validated.brand,"onepage-system"\)/);
 });
+test('outcome-only provenance is explicit and never pretends to be a registered task',()=>{
+ const {task_id,...rest}=input;const result=packageOnepageReview(source,{...rest,identity_type:'outcome',outcome_id:'libfile_actual'},'','');assert.equal(result.manifest.outcome_id,'libfile_actual');assert.equal(result.manifest.task_id,undefined);assert.equal(result.manifest.identity_type,'outcome');
+ assert.throws(()=>packageOnepageReview(source,{...input,identity_type:'outcome',outcome_id:'libfile_actual'},'',''));
+});
+test('both generation delivery contracts require verified hosted URLs, not downloads or demos',()=>{
+ const onepage=getOnepageReviewContract();assert.equal(onepage.hosted_delivery.delivery_requirement,'REQUIRED_HOSTED_VERIFIED_URL');assert.equal(onepage.hosted_delivery.status,'REQUIRES_HOSTED_PUBLICATION');assert.match(onepage.instruction,/Download-only HTML is not completed delivery/);
+ const ldp=readFileSync(new URL('../uid-ldp-html-preview.ts',import.meta.url),'utf8');assert.match(ldp,/hostedReviewDeliveryContract\('ldp'/);assert.match(ldp,/downloads, ZIP, screenshots and Figma are supplemental only/);
+});

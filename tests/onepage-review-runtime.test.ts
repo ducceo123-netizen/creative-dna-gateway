@@ -78,3 +78,12 @@ test('outcome identity is exact and never rewritten as a fabricated task ID',()=
  const bad=harness(m=>{outcome(m);m.current_context={outcome_id:'other'};});assert.equal(bad.nodes.copy.disabled,true);
  const noId=harness(m=>{delete m.task_id;});assert.equal(noId.nodes.copy.disabled,true);
 });
+
+test('hosted asset route validates displayed bytes without losing original mapping identity',async()=>{
+ const h=harness((m,n)=>{m.asset_manifest[0].hosted_file_url='assets/hosted-desktop.png';n.img.attrs.src='assets/hosted-desktop.png';n.img.currentSrc=n.img.src='https://preview.test/assets/hosted-desktop.png';});
+ h.click(h.inventory.img);h.add('Keep original mapping');await h.nodes.copy.onclick();const p=JSON.parse(h.copied.slice(h.copied.indexOf('{')));
+ assert.equal(p.groups[0].elements[0].file_url,'https://assets.test/desktop.png');assert.equal(p.groups[0].elements[0].hosted_file_url,'assets/hosted-desktop.png');assert.equal(p.groups[0].elements[0].asset_id,'a1');
+});
+test('archive-member asset identity stays explicit in copied feedback',async()=>{
+ const h=harness((m)=>{Object.assign(m.asset_manifest[0],{asset_identity_type:'source_archive_member',registered_asset_id:null,source_asset_reference:'Ceramic/assets/actual.webp'});});h.click(h.inventory.img);h.add('Review actual image');await h.nodes.copy.onclick();const p=JSON.parse(h.copied.slice(h.copied.indexOf('{')));const a=p.groups[0].elements[0];assert.equal(a.asset_identity_type,'source_archive_member');assert.equal(a.registered_asset_id,null);assert.equal(a.source_asset_reference,'Ceramic/assets/actual.webp');
+});

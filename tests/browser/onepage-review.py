@@ -1,6 +1,7 @@
 """Real Chromium DOM checks; no fake DOM and no external requests required."""
 import json
 import os
+import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[2]
@@ -88,5 +89,33 @@ with sync_playwright() as p:
     assert out['identity_type']=='outcome' and out['outcome_id']=='artifact-exact-9' and 'task_id' not in out
     setup(page,{**outcome,'current_context':{'outcome_id':'different'}})
     assert 'context' in status(page)
+    # Canonical template regression: bind the real shipped DOM/CSS without redrawing any sections.
+    template=json.loads((ROOT/'templates/onepage-ui-v1.json').read_text())
+    canonical=template['html']
+    assets=[]
+    for slot in template['asset_slots']:
+        uri=B if 'mobile' in slot else A
+        canonical=canonical.replace('{{'+slot+'}}',uri)
+        assets.append(dict(slot=slot,asset_id='actual-'+slot,file_url=uri,checksum='sha256:'+('a'*64)))
+    for slot in template['text_slots']:
+        canonical=canonical.replace('{{'+slot+'}}','Bound canonical '+slot)
+    canonical=re.sub(r'<link[^>]*rel="stylesheet"[^>]*>','',canonical)
+    canonical=canonical.replace('</head>','<style>'+template['css']+'</style></head>')
+    cm={**M,'template_version':template['version'],'asset_manifest':assets}
+    canonical=canonical.replace('</body>','<script type="application/json" id="onepage-review-manifest">'+json.dumps(cm)+'</script><template id="onepage-review-styles"><style>'+CSS+'</style></template></body>')
+    page.set_viewport_size(dict(width=1200,height=1000))
+    page.set_content(canonical)
+    capture='(n)=>({html:n.outerHTML,rects:[n,...n.querySelectorAll("*")].map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})})'
+    original=page.locator('.uid-product-content-container').evaluate(capture)
+    page.add_script_tag(content=JS)
+    assert 'Không thể' not in status(page),status(page)
+    assert page.locator('.uid-product-content-container').evaluate(capture)==original
+    assert page.locator('#onepage-review-controls #inventory option').count()>len(assets)
+    pick(page,'[data-asset-slot="banner_desktop"]'); group(page,'Canonical desktop banner')
+    assert packet(page)['groups'][0]['elements'][0]['asset_id']=='actual-banner_desktop'
+    page.set_viewport_size(dict(width=390,height=844))
+    page.wait_for_function('document.querySelector("[data-asset-slot=banner_desktop]").currentSrc === '+json.dumps(B))
+    pick(page,'[data-asset-slot="banner_desktop"]'); group(page,'Canonical mobile banner')
+    assert packet(page)['groups'][1]['elements'][0]['asset_id']=='actual-banner_mobile'
     browser.close()
 print('Onepage real Chromium checks passed: layout invariance, responsive asset selection, grouped exact mappings, section inventory, fallback and stale/invalid guards.')

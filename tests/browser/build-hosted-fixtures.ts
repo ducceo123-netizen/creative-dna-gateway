@@ -1,0 +1,21 @@
+/** Synthetic QA only, never publish these fixture bundles. Uses real renderers/runtimes. */
+import {mkdtempSync,writeFileSync,readFileSync,mkdirSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import express from 'express';
+import {getOnepageUiTemplate} from '../../onepage-ui-template.ts';
+import {ONEPAGE_FAQ_TEMPLATE_VERSION} from '../../onepage-faq-template.ts';
+import {packageOnepageReview} from '../../public/onepage-review-pack.mjs';
+import {buildLdpHtmlPreview} from '../../uid-ldp-html-preview.ts';
+import {completeLdpFixture} from '../fixtures/ldp-v1.fixture.ts';
+import {prepareHostedReview,writeHostedReview,registerHostedReviews} from '../../uid-hosted-review.ts';
+const root=mkdtempSync(path.join(tmpdir(),'uid-hosted-browser-'));const pub=path.join(root,'public');mkdirSync(pub);const urls:Record<string,string>={};
+const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jBPkAAAAASUVORK5CYII=','base64');
+const checksum='sha256:'+createHash('sha256').update(png).digest('hex');writeFileSync(path.join(root,'image.png'),png);
+const webp=Buffer.from('UklGRjwAAABXRUJQVlA4IDAAAADwAQCdASoCAAIAAUAmJaACdLoB+AAEgwAA/u+9V/6tD5aHy0P3Pv/mCV+QbrkAAAA=','base64');writeFileSync(path.join(root,'image.webp'),webp);
+for(const [label,version] of [['gtk',undefined],['faq',ONEPAGE_FAQ_TEMPLATE_VERSION]]){const imageFile=label==='faq'?'image.webp':'image.png';const imageChecksum=label==='faq'?'sha256:'+createHash('sha256').update(webp).digest('hex'):checksum;const t:any=getOnepageUiTemplate(version,'source');let html=t.html;for(const slot of t.asset_slots)html=html.replaceAll('{{'+slot+'}}',imageFile);for(const slot of t.text_slots)html=html.replaceAll('{{'+slot+'}}','Synthetic hosted browser QA copy');const result=packageOnepageReview(html,{schema_version:'uid-onepage-preview/1',task_id:'hosted-'+label,brand:'pawfecthouse',content_version:'2026-10-20.v1',template_version:t.version,asset_manifest:t.asset_slots.map((slot:string)=>({slot,asset_id:'qa-'+slot,file_url:imageFile,checksum:imageChecksum}))},readFileSync('public/onepage-review.js','utf8'),readFileSync('public/onepage-review.css','utf8'));writeFileSync(path.join(root,'review.html'),result.html);writeFileSync(path.join(root,'styles.css'),t.css);const p=prepareHostedReview({kind:'onepage',identity:{type:'task',id:'hosted-'+label},content_version:result.manifest.content_version,render_hash:result.manifest.render_hash,entry:'review.html',publication_authorized:true,assets:[{source_url:imageFile,path:imageFile,checksum:imageChecksum}],styles:['styles.css']},root,process.cwd());urls[label!]=writeHostedReview(p,pub);}
+const f=completeLdpFixture();const outputs=f.job.assets.map(a=>({asset_id:a.id,content_version:f.job.content_version,file_url:`https://assets.example/${a.id}.png`,checksum,width:a.dimensions.width,height:a.dimensions.height,pixel_review:'passed',review_note:'Synthetic fixture only.'}));const layout={schema_version:'uid-ldp-preview-layout/1',task_id:f.job.task_id,content_version:f.job.content_version,sections:f.job.sections.map(s=>({section_id:s.id,desktop:'grid',mobile:'stack',columns:3,mobile_columns:1,image_fit:'contain',image_position:'center',source_url:f.job.baseline.url,observed_at:f.job.baseline.observed_at,evidence_note:'Synthetic layout evidence for automated tests only.'})),typography:{heading_px:36,mobile_heading_px:26,body_px:16,line_height:1.5,source_url:f.job.baseline.url,evidence_note:'Synthetic typography evidence for automated tests only.'}};
+const ldp=buildLdpHtmlPreview(f.job,f.context,f.snapshot,outputs,layout);writeFileSync(path.join(root,'review.html'),ldp.html);urls.ldp=writeHostedReview(prepareHostedReview({kind:'ldp',identity:{type:'task',id:ldp.task_id},content_version:ldp.content_version,render_hash:ldp.render_hash,entry:'review.html',publication_authorized:true,assets:outputs.map(a=>({source_url:a.file_url,path:'image.png',checksum}))},root,process.cwd()),pub);
+const app=express();registerHostedReviews(app,path.join(pub,'reviews'));const server=app.listen(0,'127.0.0.1',()=>console.log(JSON.stringify({origin:'http://127.0.0.1:'+(server.address() as any).port,urls})));
+process.on('SIGTERM',()=>{server.close();rmSync(root,{recursive:true,force:true});process.exit(0);});

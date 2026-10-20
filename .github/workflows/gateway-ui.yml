@@ -6,6 +6,9 @@ on:
       - 'public/onepage-panel.*'
       - 'public/onepage-review*'
       - 'uid-onepage-html-preview.ts'
+      - 'uid-hosted-review*.ts'
+      - 'scripts/*hosted-review.ts'
+      - 'public/reviews/**'
       - 'uid-brands-chat.ts'
       - 'uid-brands-feedback-index.ts'
       - 'uid-brands-progress.ts'
@@ -50,3 +53,4 @@ jobs:
       - run: python -m pip install playwright==1.55.0
       - run: python -m playwright install --with-deps chromium
       - run: python tests/browser/onepage-review.py
+      - run: python tests/browser/hosted-review.py
