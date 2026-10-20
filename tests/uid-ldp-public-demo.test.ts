@@ -6,7 +6,9 @@ const html=readFileSync(new URL('../public/ldp-feedback-demo.html',import.meta.u
 test('public demo is labelled synthetic, self-contained and uses current copy-only interaction script',()=>{
  assert.ok(html.includes('SYNTHETIC INTERACTION DEMO ONLY'));
  assert.ok(html.includes('Not approved brand layout or real task'));
- assert.ok(html.includes(PREVIEW_SCRIPT));
+ const embedded=html.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)![1];
+ const diff=[...PREVIEW_SCRIPT].findIndex((c,i)=>c!==embedded[i]);
+ assert.equal(embedded,PREVIEW_SCRIPT,JSON.stringify({expectedLength:PREVIEW_SCRIPT.length,actualLength:embedded.length,diff,expected:PREVIEW_SCRIPT.slice(Math.max(0,diff-30),diff+90),actual:embedded.slice(Math.max(0,diff-30),diff+90)}));
  assert.ok(html.includes("img-src data:"));
  assert.ok(html.includes("connect-src 'none'"));
  assert.equal(/<img[^>]+src="https?:/i.test(html),false);
