@@ -1,0 +1,58 @@
+{
+  "schema_version": "uid-ldp-applied-feedback/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_version": "3",
+  "parent_content_version": "sha256:038e0324515cfec3fd3d12e0b6d22e35520b7a34f4e60ad83fa9013c951ffa16",
+  "parent_render_hash": "sha256:b98e2f1186ac620c07f75f6bcfb53e6dcbaf86e24d6de8322be386fce7fe7937",
+  "groups": [
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead"
+      ],
+      "feedback": "content chỗ này cần sửa nè, không tự nhiên lắm"
+    },
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead"
+      ],
+      "feedback": "2 cái này align center chứ"
+    },
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01"
+      ],
+      "feedback": "chỗ này cái button chưa đúng"
+    },
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks"
+      ],
+      "feedback": "dư section này"
+    },
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new"
+      ],
+      "feedback": "line sản phẩm là carousel đi"
+    }
+  ],
+  "scope_resolution": [
+    "All five groups apply to desktop >=800px only; preserve mobile copy and layout.",
+    "Groups 1 and 2 remain independent requests on the same title/lead IDs.",
+    "Remove Gift Picks from the desktop landing-page flow. Preserve category navigation through a dedicated browse view on this same preview; source products and URLs remain unchanged. Mobile keeps existing inline filtered-section behavior.",
+    "New Arrivals: native horizontal scroll carousel on desktop, preserving all eight SKUs and review IDs. Mobile remains the existing two-column grid."
+  ]
+}

@@ -105,8 +105,8 @@ filters={
  'decor':[p['id'] for p in catalog if p['category'] in ['decor','signs']],
  **{k:[p['id'] for p in catalog if p['category']==k] for k in ['apparel','caps','drinkware','socks','balls','blankets','ornaments','signs','golf']}
 }
-viewport_copy={'mobile':{'combo_02':{'title':'Sideline Support','lead':'For the ones who cheer them on, game after game.'}}}
-viewport_visibility={'desktop':{'picks/lead':False},'mobile':{'niche/card/combo_0'+str(i)+'/lead':False for i in range(1,5)}}
+viewport_copy={'desktop':{'sbp':{'title':'Pick a Sports Gift They’ll Love','lead':'From game-day favorites to keepsakes for their space.'}},'mobile':{'combo_02':{'title':'Sideline Support','lead':'For the ones who cheer them on, game after game.'}}}
+viewport_visibility={'desktop':{'picks/lead':False,'gift-picks':False},'mobile':{'niche/card/combo_0'+str(i)+'/lead':False for i in range(1,5)}}
 cv=sha(json.dumps({'viewport_visibility':viewport_visibility,'copy':copy,'viewport_copy':viewport_copy,'assets':asset_manifest,'catalog':catalog,'filters':filters},sort_keys=True).encode())
 elements=[]
 def attr(sec,sub='',kind='text',label='',assetid=None):
@@ -120,15 +120,19 @@ def txt(sec,key,text,tag='p',cls=''):
     return f'<{tag} class="{cls}" {review_attr}>{viewport_text(sec,key,text)}</{tag}>'
 def viewport_text(sec,key,text):
     parts=key.split('/')
-    mobile=viewport_copy.get('mobile',{}).get(parts[1],{}).get(parts[2]) if sec=='niche' and len(parts)==3 and parts[0]=='card' else None
-    if mobile is None:return esc(text)
-    elements[-1]['viewport_labels']={'desktop':text,'mobile':mobile}
-    return '<span class="copy-desktop">'+esc(text)+'</span><span class="copy-mobile">'+esc(mobile)+'</span>'
+    obj,field=(parts[1],parts[2]) if sec=='niche' and len(parts)==3 and parts[0]=='card' else (sec,key)
+    labels={v:viewport_copy.get(v,{}).get(obj,{}).get(field,text) for v in ['desktop','mobile']}
+    if labels['desktop']==labels['mobile']:return esc(text)
+    elements[-1]['viewport_labels']=labels
+    return '<span class="copy-desktop">'+esc(labels['desktop'])+'</span><span class="copy-mobile">'+esc(labels['mobile'])+'</span>'
+
 def img(sec,key,file,alt,cls='',eager=False):
     return f'<img class="{cls}" {attr(sec,"asset/"+key,"image",alt,key)} src="{file}" alt="{esc(alt)}" loading="{"eager" if eager else "lazy"}">'
 def head(sec):return '<div class="section-heading">'+txt(sec,'title',copy[sec]['title'],'h2')+txt(sec,'lead',copy[sec]['lead'],'p')+'</div>'
 def section(sec,body,cls=''):
-    return f'<section id="{sec}" class="section {cls}" {attr(sec,kind="section",label=copy.get(sec,{}).get("title",sec))}>{body}</section>'
+    result=f'<section id="{sec}" class="section {cls}" {attr(sec,kind="section",label=copy.get(sec,{}).get("title",sec))}>{body}</section>'
+    if sec=='sbp':elements[-1]['viewport_labels']={v:viewport_copy.get(v,{}).get(sec,{}).get('title',copy[sec]['title']) for v in ['desktop','mobile']}
+    return result
 def product_card(p,sec):
     key='card/'+p['id']
     title=p['type'];price=(p['price_prefix']+'$'+format(p['price'],'.2f')+' USD') if p['price'] is not None else ''
@@ -166,9 +170,10 @@ for key,flt in [('featured_01','golf'),('featured_02','ornaments')]:
     feat='<div class="feature-band">'+img(key,key,assets[key],copy[key]['title'])+'<div class="feature-copy">'+txt(key,'title',copy[key]['title'],'h2')+txt(key,'lead',copy[key]['lead'])+browse('Explore '+('Golf Towels' if flt=='golf' else 'Ornaments'),flt)+'</div></div>'
     features.append(section(key,feat+grid(key,[p for p in catalog if p['category']==flt][:4]),'container feature'))
 newps=sorted(catalog,key=lambda p:p['created_at'],reverse=True)[:8]
-new=section('new','<div class="section-heading-row">'+head('new')+f'<a class="browse" href="{COLLECTION}?sort_by=created-descending" target="_blank" rel="noopener">View more <span aria-hidden="true">→</span></a></div>'+grid('new',newps),'container')
+newgrid='<div class="new-carousel" id="new-carousel"><button class="carousel-arrow carousel-prev" type="button" aria-label="Previous new arrivals" disabled>‹</button>'+grid('new',newps,'new-carousel-track')+'<button class="carousel-arrow carousel-next" type="button" aria-label="Next new arrivals">›</button></div>'
+new=section('new','<div class="section-heading-row">'+head('new')+f'<a class="browse" href="{COLLECTION}?sort_by=created-descending" target="_blank" rel="noopener">View more <span aria-hidden="true">→</span></a></div>'+newgrid,'container')
 gallery=section('gallery',head('gallery')+'<div class="gallery-grid">'+''.join(img('gallery',f'gallery_0{i}',assets[f'gallery_0{i}'],f'Sports lifestyle moment {i}') for i in range(1,9))+'</div>','container')
-gift=section('gift-picks',head('gift-picks')+'<div class="filter-summary"><span id="active-filter">All picks</span><button id="show-all" type="button">Show all</button></div><div id="filtered-grid" class="product-grid">'+''.join(product_card(p,'gift-picks') for p in catalog)+'</div>'+browse('Browse the full collection'),'container filtered-section')
+gift=section('gift-picks','<button type="button" id="back-to-ldp" class="back-to-ldp">← Back to Sports Gifts</button>'+head('gift-picks')+'<div class="filter-summary"><span id="active-filter">All picks</span><button id="show-all" type="button">Show all</button></div><div id="filtered-grid" class="product-grid">'+''.join(product_card(p,'gift-picks') for p in catalog)+'</div>'+browse('Browse the full collection'),'container filtered-section')
 footer='<footer '+attr('footer',kind='section',label='PawfectHouse footer')+'><div class="footer-inner"><div><img class="footer-logo" src="'+logo+'" alt="PawfectHouse"><p>Deliver Happiness, Personally!</p></div><div><strong>Explore</strong><a href="'+COLLECTION+'" target="_blank">Sports Gifts</a><a href="https://pawfecthouse.com/pages/family-gifts" target="_blank">Family Gifts</a><a href="https://pawfecthouse.com/pages/ornament" target="_blank">Ornaments</a></div><div><strong>Here to Help</strong><a href="https://pawfecthouse.com/pages/contact-us" target="_blank">Contact Us</a><a href="https://pawfecthouse.com/pages/track-order" target="_blank">Track Order</a><a href="https://pawfecthouse.com" target="_blank">Visit PawfectHouse</a></div></div><p class="copyright">© PawfectHouse · Sports Lovers</p></footer>'
 header='<div '+attr('native-header',kind='section',label='PawfectHouse native header')+'>'+(ROOT/'brand-components/header.html').read_text()+'</div>'
 footer='<div '+attr('native-footer',kind='section',label='PawfectHouse native footer')+'>'+(ROOT/'brand-components/footer.html').read_text()+'</div>'
@@ -178,7 +183,7 @@ footer=footer.replace('/section/native-footer','/section/footer')
 elements[:]=[e for e in elements if e['section_id'] not in ['native-header','native-footer']]
 page=header+hero+trust+early+niche+byproduct+''.join(features)+new+gallery+gift+footer
 layout={'schema_version':'uid-ldp-preview-layout/1','task_id':TASK,'content_version':cv,
- 'sections':[{'section_id':s,'desktop':'split' if s.startswith('featured') else 'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','mobile':'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','columns':4,'mobile_columns':2,'image_fit':'cover' if s=='hero' else 'contain','image_position':'center','source_url':'https://pawfecthouse.com/pages/book-lovers','observed_at':OBS,'evidence_note':'Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations.'} for s in ['header','hero','trust','picks','niche','sbp','featured_01','featured_02','new','gallery','gift-picks','footer']],
+ 'sections':[{'section_id':s,'desktop':'separate_browse_view' if s=='gift-picks' else 'carousel' if s=='new' else 'split' if s.startswith('featured') else 'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','mobile':'grid' if s in ['picks','niche','sbp','new','gallery','gift-picks'] else 'stack','columns':4,'mobile_columns':2,'image_fit':'cover' if s=='hero' else 'contain','image_position':'center','source_url':'https://pawfecthouse.com/pages/book-lovers','observed_at':OBS,'evidence_note':'Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations.'} for s in ['header','hero','trust','picks','niche','sbp','featured_01','featured_02','new','gallery','gift-picks','footer']],
  'typography':{'heading_px':28,'mobile_heading_px':24,'body_px':16,'line_height':1.5,'source_url':'https://pawfecthouse.com/pages/book-lovers','evidence_note':'Live theme CSS declares Poppins, #202024 text, #EE860F primary, #F34028 prices and 10px card radii. Section sizes adapted to source hierarchy.'}}
 css=(ROOT/'style.css').read_text()+(ROOT/'brand-components/native.css').read_text()+(ROOT/'brand-system.css').read_text()
 render_hash=sha((page+css+(ROOT/'review.js').read_text()).encode())
@@ -192,12 +197,13 @@ toolbar=(ROOT/'review-ui.html').read_text()
 js=(ROOT/'review.js').read_text()
 manifest['viewport_copy']=viewport_copy
 manifest['viewport_visibility']=viewport_visibility
+manifest['view_contract']={'landing':{'desktop_omits':['gift-picks']},'desktop_browse':{'query_parameter':'browse','reuses_section':'gift-picks','return_to_landing':True},'new_arrivals':{'desktop':'carousel','mobile':'two_column_grid'}}
 for e in elements:
     path=e['id'].split('/section/',1)[1]
     visibility={v:overrides[path] for v,overrides in viewport_visibility.items() if path in overrides}
     if visibility:e['viewport_visibility']={v:visibility.get(v,True) for v in ['desktop','mobile']}
 manifest['brand_system_source']=json.loads((ROOT/'brand-components/source-audit.json').read_text())
-manifest['revision']=json.loads((ROOT/'applied-feedback-20261020-105357.json').read_text())
+manifest['revision']=json.loads((ROOT/'applied-feedback-20261020-110516.json').read_text())
 (ROOT/'preview-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 source['viewport_copy']=viewport_copy
 source['viewport_visibility']=viewport_visibility

@@ -1,7 +1,7 @@
 {
   "schema_version": "uid-ldp-preview-layout/1",
   "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
-  "content_version": "sha256:038e0324515cfec3fd3d12e0b6d22e35520b7a34f4e60ad83fa9013c951ffa16",
+  "content_version": "sha256:f55de758c7bdd0c13eb8350a5f6c48abf2be360d706a410326b0dc40314be9c6",
   "sections": [
     {
       "section_id": "header",
@@ -12,7 +12,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -24,7 +24,7 @@
       "image_fit": "cover",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -36,7 +36,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -48,7 +48,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -60,7 +60,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -72,7 +72,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -84,7 +84,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -96,19 +96,19 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
       "section_id": "new",
-      "desktop": "grid",
+      "desktop": "carousel",
       "mobile": "grid",
       "columns": 4,
       "mobile_columns": 2,
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -120,19 +120,19 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
       "section_id": "gift-picks",
-      "desktop": "grid",
+      "desktop": "separate_browse_view",
       "mobile": "grid",
       "columns": 4,
       "mobile_columns": 2,
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     },
     {
@@ -144,7 +144,7 @@
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
-      "observed_at": "2026-10-20T03:55:47.553536+00:00",
+      "observed_at": "2026-10-20T04:08:11.827270+00:00",
       "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
     }
   ],
