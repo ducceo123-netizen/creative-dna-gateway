@@ -3,14 +3,14 @@
   "renderer_version": "uid-ldp-html-renderer/1",
   "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "task_id_basis": "Existing outcome Library identity, not a newly registered UID task",
-  "content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
+  "content_version": "sha256:f55de758c7bdd0c13eb8350a5f6c48abf2be360d706a410326b0dc40314be9c6",
   "brand": "pawfecthouse",
   "scope": "complete_ldp",
   "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "source_version": "3",
-  "created_at": "2026-10-20T03:45:43.131734+00:00",
+  "created_at": "2026-10-20T04:08:11.827270+00:00",
   "canonical_snapshot": "sha256:45c9edae00cec9694961e419be4fff8d6d832213d7f7e7c0098917e47a995580",
-  "layout_hash": "sha256:db4b89a074e098de33aefb33b0617ff4654fd84aa003a9cbf8be0d7daec5e6af",
+  "layout_hash": "sha256:51e189271f05eaf2f31dc2dd77be2c06e5df329031a2c2034b9ca8c2a5743753",
   "asset_manifest": [
     {
       "id": "hero-desktop-2560x800",
@@ -826,7 +826,11 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead",
       "section_id": "picks",
       "kind": "text",
-      "label": "A personal touch for their favorite sport."
+      "label": "A personal touch for their favorite sport.",
+      "viewport_visibility": {
+        "desktop": false,
+        "mobile": true
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/card/10549224440097",
@@ -1057,7 +1061,11 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "Settle in with favorites made for watching the game."
+      "label": "Settle in with favorites made for watching the game.",
+      "viewport_visibility": {
+        "desktop": true,
+        "mobile": false
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
@@ -1090,6 +1098,10 @@
       "viewport_labels": {
         "desktop": "Celebrate the family cheering from the sidelines.",
         "mobile": "For the ones who cheer them on, game after game."
+      },
+      "viewport_visibility": {
+        "desktop": true,
+        "mobile": false
       }
     },
     {
@@ -1115,7 +1127,11 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "A personal reminder that you’re always behind them."
+      "label": "A personal reminder that you’re always behind them.",
+      "viewport_visibility": {
+        "desktop": true,
+        "mobile": false
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
@@ -1140,7 +1156,11 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "Bring their favorite sport into their own space."
+      "label": "Bring their favorite sport into their own space.",
+      "viewport_visibility": {
+        "desktop": true,
+        "mobile": false
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
@@ -1316,19 +1336,31 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
       "section_id": "sbp",
       "kind": "text",
-      "label": "Shop Sports Gifts by Product"
+      "label": "Shop Sports Gifts by Product",
+      "viewport_labels": {
+        "desktop": "Pick a Sports Gift They’ll Love",
+        "mobile": "Shop Sports Gifts by Product"
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead",
       "section_id": "sbp",
       "kind": "text",
-      "label": "From something to wear to something they’ll keep close."
+      "label": "From something to wear to something they’ll keep close.",
+      "viewport_labels": {
+        "desktop": "From game-day favorites to keepsakes for their space.",
+        "mobile": "From something to wear to something they’ll keep close."
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp",
       "section_id": "sbp",
       "kind": "section",
-      "label": "Shop Sports Gifts by Product"
+      "label": "Shop Sports Gifts by Product",
+      "viewport_labels": {
+        "desktop": "Pick a Sports Gift They’ll Love",
+        "mobile": "Shop Sports Gifts by Product"
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01/asset/featured_01",
@@ -1581,18 +1613,6 @@
       "label": "Sports Ornaments for a Season to Remember"
     },
     {
-      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/title",
-      "section_id": "new",
-      "kind": "text",
-      "label": "Discover New Sports Gifts"
-    },
-    {
-      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/lead",
-      "section_id": "new",
-      "kind": "text",
-      "label": "More ways to make their favorite sport personal."
-    },
-    {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/card/10588931227937",
       "section_id": "new",
       "kind": "card",
@@ -1791,6 +1811,18 @@
       "section_id": "new",
       "kind": "text",
       "label": "From $39.99 USD"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/title",
+      "section_id": "new",
+      "kind": "text",
+      "label": "Discover New Sports Gifts"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new/lead",
+      "section_id": "new",
+      "kind": "text",
+      "label": "More ways to make their favorite sport personal."
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new",
@@ -2688,7 +2720,11 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks",
       "section_id": "gift-picks",
       "kind": "section",
-      "label": "Find a Gift That Fits"
+      "label": "Find a Gift That Fits",
+      "viewport_visibility": {
+        "desktop": false,
+        "mobile": true
+      }
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/footer",
@@ -2697,7 +2733,7 @@
       "label": "PawfectHouse footer"
     }
   ],
-  "render_hash": "sha256:be27bfd5b8a3f73ee6148dfe86c6d6eadd3409ee70d560fdb9b8eab72844f118",
+  "render_hash": "sha256:b49122244505a5c84c1a5a4db7bed9891a3baacd4a2ba6e6e901a69cbc56b567",
   "verification_limits": [
     "Current collection JSON first 250 products; not an exhaustive assortment census.",
     "Historical approved/revised materials reused; full PDP media/spec research not repeated.",
@@ -2707,11 +2743,45 @@
     "Figma not used or synchronized in this HTML workflow."
   ],
   "viewport_copy": {
+    "desktop": {
+      "sbp": {
+        "title": "Pick a Sports Gift They’ll Love",
+        "lead": "From game-day favorites to keepsakes for their space."
+      }
+    },
     "mobile": {
       "combo_02": {
         "title": "Sideline Support",
         "lead": "For the ones who cheer them on, game after game."
       }
+    }
+  },
+  "viewport_visibility": {
+    "desktop": {
+      "picks/lead": false,
+      "gift-picks": false
+    },
+    "mobile": {
+      "niche/card/combo_01/lead": false,
+      "niche/card/combo_02/lead": false,
+      "niche/card/combo_03/lead": false,
+      "niche/card/combo_04/lead": false
+    }
+  },
+  "view_contract": {
+    "landing": {
+      "desktop_omits": [
+        "gift-picks"
+      ]
+    },
+    "desktop_browse": {
+      "query_parameter": "browse",
+      "reuses_section": "gift-picks",
+      "return_to_landing": true
+    },
+    "new_arrivals": {
+      "desktop": "carousel",
+      "mobile": "two_column_grid"
     }
   },
   "brand_system_source": {
@@ -2743,14 +2813,61 @@
     "campaign_boundary": "Book Lovers greens/cream and Gardening palettes are source-specific. Sport Lovers preserves existing imagery and uses core neutral surfaces."
   },
   "revision": {
-    "parent_content_version": "sha256:ea231d6611b853e1de95602ac8e4b54a58282a42c943cc1545572bb1edb9e86a",
-    "parent_render_hash": "sha256:04b3f4e9bba21d6f9047ba046a66adde6d1a07fc8565f85554e4ddc75c4b5d0d",
+    "schema_version": "uid-ldp-applied-feedback/1",
+    "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+    "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+    "source_version": "3",
+    "parent_content_version": "sha256:038e0324515cfec3fd3d12e0b6d22e35520b7a34f4e60ad83fa9013c951ffa16",
+    "parent_render_hash": "sha256:b98e2f1186ac620c07f75f6bcfb53e6dcbaf86e24d6de8322be386fce7fe7937",
     "groups": [
       {
-        "viewport": "desktop_and_mobile",
-        "scope": "overall_brand_ui",
-        "feedback": "Align overall design system, UI, HTML/CSS and brand style more closely with PawfectHouse live pages."
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead"
+        ],
+        "feedback": "content chỗ này cần sửa nè, không tự nhiên lắm"
+      },
+      {
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead"
+        ],
+        "feedback": "2 cái này align center chứ"
+      },
+      {
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/featured_01"
+        ],
+        "feedback": "chỗ này cái button chưa đúng"
+      },
+      {
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks"
+        ],
+        "feedback": "dư section này"
+      },
+      {
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/new"
+        ],
+        "feedback": "line sản phẩm là carousel đi"
       }
+    ],
+    "scope_resolution": [
+      "All five groups apply to desktop >=800px only; preserve mobile copy and layout.",
+      "Groups 1 and 2 remain independent requests on the same title/lead IDs.",
+      "Remove Gift Picks from the desktop landing-page flow. Preserve category navigation through a dedicated browse view on this same preview; source products and URLs remain unchanged. Mobile keeps existing inline filtered-section behavior.",
+      "New Arrivals: native horizontal scroll carousel on desktop, preserving all eight SKUs and review IDs. Mobile remains the existing two-column grid."
     ]
   }
 }
