@@ -2,43 +2,43 @@
   "copy": {
     "gift-picks": {
       "section_id": "gift-picks",
-      "title": "Cooking & BBQ Gift Picks",
-      "lead": "A name, a familiar face, or a family joke makes it theirs."
+      "title": "Find a Cooking Gift That Feels Like Them",
+      "lead": "Start with aprons, kitchen towels, and gifts for their favorite cooking spot."
     },
     "niche": {
       "section_id": "niche",
-      "title": "Shop for Their Kind of Cook",
-      "lead": "Find a gift that fits what they love about cooking."
+      "title": "Shop Gifts for Their Kind of Cook",
+      "lead": "Start with the hobby or kitchen style they love."
     },
     "shop-by-product": {
       "section_id": "shop-by-product",
       "title": "Shop Cooking Gifts by Product",
-      "lead": "Choose the kind of gift they will love to wear, use, or display."
+      "lead": "Choose an apron to wear, a towel to hang, or a keepsake to display."
     },
     "featured-apron": {
       "section_id": "featured-apron",
-      "title": "Aprons for the Family’s Favorite Cook",
-      "lead": "Put their name and favorite people at the heart of the next cookout."
+      "title": "Put Their Name on an Apron",
+      "lead": "Their favorite people, right there for every family cookout."
     },
     "featured-towel": {
       "section_id": "featured-towel",
-      "title": "Kitchen Towels with Their Kind of Character",
-      "lead": "Choose a favorite flower, furry face, or kitchen pun."
+      "title": "Find a Kitchen Towel That’s So Them",
+      "lead": "Pick their favorite flowers, a furry face, or a kitchen joke."
     },
     "bbq-signs": {
       "section_id": "bbq-signs",
-      "title": "BBQ Signs for Their Favorite Spot",
-      "lead": "Give their cooking corner a name of its own."
+      "title": "BBQ Signs for Their Own Grill Spot",
+      "lead": "Add their name to the place everyone gathers."
     },
     "new-arrivals": {
       "section_id": "new-arrivals",
-      "title": "Discover New Arrivals",
-      "lead": "More personal touches for cooks, bakers, and backyard hosts."
+      "title": "Discover New Cooking & BBQ Gifts",
+      "lead": "Fresh designs for baking days, backyard BBQs, and just-because gifts."
     },
     "gallery": {
       "section_id": "gallery",
-      "title": "Cooking Gifts in Everyday Moments",
-      "lead": "A closer look at gifts for their kitchen, cookouts, and favorite people."
+      "title": "See Cooking Gifts in Everyday Life",
+      "lead": "From unwrapping an apron to finding its place in their kitchen."
     },
     "browse": {
       "section_id": "browse",
@@ -47,8 +47,8 @@
     },
     "closing": {
       "section_id": "closing",
-      "title": "Make Their Next Cooking Moment Personal",
-      "lead": "Celebrate the person behind every favorite meal."
+      "title": "Ready to Find Their Cooking Gift?",
+      "lead": "Choose a name, a familiar face, or a joke they’ll recognize."
     }
   },
   "destinations": [
@@ -690,7 +690,7 @@
         3,
         0
       ],
-      "label": "Gifts for Grill Masters",
+      "label": "Grill Masters",
       "scope": "curated local verified product selection; not full product category"
     },
     "niche:baking": {
@@ -699,7 +699,7 @@
         67,
         111
       ],
-      "label": "Gifts for Home Bakers",
+      "label": "Home Bakers",
       "scope": "curated local verified product selection; not full product category"
     },
     "niche:decor": {
@@ -708,7 +708,7 @@
         38,
         118
       ],
-      "label": "Personalized Kitchen Decor",
+      "label": "Kitchen Decor",
       "scope": "curated local verified product selection; not full product category"
     },
     "niche:pets": {
@@ -716,7 +716,7 @@
         71,
         64
       ],
-      "label": "Gifts for Pet-Loving Cooks",
+      "label": "Pet-Loving Cooks",
       "scope": "curated local verified product selection; not full product category"
     },
     "type:apron": {
