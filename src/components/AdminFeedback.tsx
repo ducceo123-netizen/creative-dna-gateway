@@ -1,3 +1,4 @@
+import { HomeIconInstall } from "./HomeIconInstall";
 import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock } from "../request-recovery";
 import { feedbackStatuses, sourceBrand, feedbackTitle, materialKey, materialLabel, filterFeedback, groupFeedback, feedbackDate } from "./feedback-inbox";
 import { RuleReviewHandoff } from "./RuleReviewHandoff";
@@ -404,6 +405,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>}
       </div>)}
     </section>
+    {token && <HomeIconInstall request={authFetch}/>}
     {token && <details className="rounded-xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setReferencesLoaded(true); }}><summary className="cursor-pointer text-sm font-semibold">Reference Library <span className="ml-2 text-xs font-normal text-slate-500">Ảnh mẫu & context riêng</span></summary>{referencesLoaded && <div className="mt-4"><PrivateReferencePanel request={authFetch}/></div>}</details>}
     {token && <details className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open) setAdvancedLoaded(true); }}>
       <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>

@@ -1,3 +1,4 @@
+import { attachHomeIconContract } from "../_shared/home-icon.ts";
 import { attachResearch } from "../_shared/product-research.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { compileCompatibleQuality as compileCreativeQuality } from "../_shared/agent-rule-quality.ts";
@@ -19,6 +20,7 @@ Deno.serve(async(req)=>{
  if(!brand||!branch)return out({error:"brand and branch are required",examples:["PawfectHouse / Onepage","GiftSoul / LDP Hero","SoulPrise / Onepage"]},400);
  const {data,error}=await admin.rpc("resolve_creative_dna_alias",{p_brand:String(brand),p_branch:String(branch)});
  if(error)return out({error:"Resolver unavailable"},500);if(!data?.brand||!data?.branch)return out({error:"Creative DNA route not found"},404);
+ if(data.brand.slug==='pawfecthouse' && data.branch.slug==='home-icon') return out(attachHomeIconContract({...data,api_version:'1.3',mode:'read_only',generate:false,requested:{brand,branch},resolved:{brand:data.brand.slug,branch:data.branch.slug}}));
  const researchContext={source_url:b.source_url??u.searchParams.get("source_url")??undefined,source_type:b.source_type??u.searchParams.get("source_type")??undefined,research:b.research,require_pdp_coverage:data.branch.slug==="onepage-system"};
  const withResearch=(value:any)=>attachResearch(value,researchContext);
  // Preserve legacy behavior for branches outside this reviewed Onepage rollout.

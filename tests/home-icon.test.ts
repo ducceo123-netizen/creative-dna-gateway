@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {validateHomeIconSvg} from '../uid-home-icon.ts';
+import {attachHomeIconContract,HOME_ICON_CONTENT,HOME_ICON_INPUT} from '../supabase/functions/_shared/home-icon.ts';
+const svg=readFileSync(new URL('../templates/home-icon/music-test.svg',import.meta.url),'utf8');
+test('authored vector passes mechanical checks but never claims visual/owner approval',()=>{const q=validateHomeIconSvg(svg);assert.equal(q.ok,true);assert.equal(q.owner_approved,false);assert.match(q.visual_qc,/NOT_PROVEN/);});
+test('reject bitmap wrappers, script, external references, events, wrong size/color',()=>{for(const s of [svg.replace('<g','<image href="x"/><g'),svg.replace('<g','<script>alert(1)</script><g'),svg.replace('<g','<g onload="x"'),svg.replace('width="75"','width="1024"'),svg.replace('stroke="black"','stroke="#fff1dc"')])assert.equal(validateHomeIconSvg(s).ok,false);});
+test('keyword contract does not impose irrelevant PDP gate; output QC remains independent',()=>{const c=attachHomeIconContract({branch:{slug:'home-icon'}});assert.equal(c.research_contract.keyword_sufficient,true);assert.match(c.readiness.delivery,/VISUAL_QC/);assert.equal(HOME_ICON_INPUT.output.format,'image/svg+xml');assert.match(HOME_ICON_CONTENT,/NOT baked/);});
+test('admin actions follow verified active admin check and forward only pinned revision',()=>{const edge=readFileSync(new URL('../supabase/functions/creative-dna-admin-feedback/index.ts',import.meta.url),'utf8');assert.ok(edge.indexOf('member.role !== "admin"')<edge.indexOf('body.mode === "home_icon_install"'));const server=readFileSync(new URL('../server.ts',import.meta.url),'utf8');assert.match(server,/confirm_revision: req.body\?\.confirm_revision/);});
+test('reject attribute substring spoofing, duplicate attrs, unbalanced XML and unsupported attrs',()=>{for(const s of [svg.replace('width="75"','data-width="75" width="100"'),svg.replace('width="75"','width="75" width="100"'),svg.replace('</svg>','</g></svg>'),svg.replace('stroke="black"','stroke="black" onclick="alert(1)"'),svg.replace('</g>','')])assert.equal(validateHomeIconSvg(s).ok,false);});

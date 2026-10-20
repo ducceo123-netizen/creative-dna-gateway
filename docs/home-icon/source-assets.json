@@ -1,0 +1,146 @@
+[
+  {
+    "topic": "camping",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-camping.svg?v=1788800989",
+    "sha256": "207a6232e9aad757229db156a0ededc726b8d3eb9903338acd02094d97fc7d27",
+    "bytes": 8791,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      3,
+      10,
+      70,
+      66
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "cooking",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-cooking.svg?v=1788800989",
+    "sha256": "e829e935d157c57399c797a678c118e4094a0d5e8580aa34a2364df3f71fcc57",
+    "bytes": 9206,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      15,
+      0,
+      60,
+      75
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "fishing",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-fishing.svg?v=1788800989",
+    "sha256": "6c2a91d3a6b8bc55b309190313a0f6b0a545f7b8c3905343c68210920bb2f3f1",
+    "bytes": 7812,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      6,
+      3,
+      71,
+      69
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "garage",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-garage.svg?v=1788800989",
+    "sha256": "9ea30a45b60e22b3cedd2168fafad7075a5e937da233299caa36301fd99eaf51",
+    "bytes": 10837,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      4,
+      10,
+      70,
+      65
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "gardening",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-gardening.svg?v=1788800989",
+    "sha256": "1d3726360e628ed61f403292d1beb81fabb5a54d7d7d4b13e0a7a409458cdf39",
+    "bytes": 5240,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      12,
+      3,
+      64,
+      72
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "golf",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-golf.svg?v=1788800989",
+    "sha256": "8f26f2044a05698fe1f30f3108174c7a80dcf57e8d853e5d51a51a14eb2c3572",
+    "bytes": 7703,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      0,
+      13,
+      66,
+      68
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "reading",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-reading.svg?v=1788800989",
+    "sha256": "690a6841422823c7b266aa4dfaf45dc36f891cc44c0e0909438836f49f3c2203",
+    "bytes": 7012,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      7,
+      18,
+      68,
+      61
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "sports",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-sports.svg?v=1788800989",
+    "sha256": "2e20d9660715b5fa98c3e2e1bcfee0b7550bfed02b628065ac8059df0d234195",
+    "bytes": 8706,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      10,
+      3,
+      66,
+      70
+    ],
+    "corner_alpha": 0
+  },
+  {
+    "topic": "traveling",
+    "url": "https://pawfecthouse.com/cdn/shop/files/pfh-interest-icon-traveling.svg?v=1788800989",
+    "sha256": "ecdaa9ba0662c1b4a98bdc56e93902bb10f28b45a75a4c3b091f9d96bbffa15e",
+    "bytes": 9625,
+    "width": 75,
+    "height": 75,
+    "viewBox": "0 0 75 75",
+    "alpha_bbox": [
+      1,
+      12,
+      73,
+      65
+    ],
+    "corner_alpha": 0
+  }
+]
