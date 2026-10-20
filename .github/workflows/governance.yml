@@ -71,6 +71,7 @@ jobs:
           UID_TEST_PG_MODULE: /tmp/uid-governance-test/node_modules/pg/lib/index.js
         run: |
           npm install --prefix /tmp/uid-governance-test --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
+          node tests/sql/uid_review_preflight_context_reuse.mjs
           node tests/sql/uid_agent_review_compiler.mjs
           node tests/sql/uid_direct_rule_accept_concurrency.mjs
           node tests/sql/uid_agent_review_queue_concurrency.mjs
