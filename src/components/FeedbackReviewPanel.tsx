@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
 import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
 
-export type FeedbackReviewPath = "covered" | "merge";
+export type FeedbackReviewPath = "covered" | "merge" | "owner";
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
 const field = "w-full rounded-lg border border-slate-300 bg-white p-2 text-xs disabled:opacity-60";
 const button = "rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50";
@@ -83,6 +83,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const [coveredScope,setCoveredScope]=useState(false);
   const [safeguards,setSafeguards]=useState(false);
   const [note,setNote]=useState("");
+  const [ownerConfirmed,setOwnerConfirmed]=useState(false);
   const [queueRequest,setQueueRequest]=useState<ReviewRequest|null|undefined>(undefined);
   const alive=useRef(false);
   const activeRead=useRef<AbortController|null>(null);
@@ -95,7 +96,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const sameIdentity=identity.current.id===proposal.id&&identity.current.path===path;
   const visibleData=sameIdentity?data:null;
 
-  const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);};
+  const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);setOwnerConfirmed(false);};
   const load=async(background=false)=>{
     if(mutation.current || (background&&activeRead.current))return;
     activeRead.current?.abort();
@@ -135,7 +136,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const canReview=!!visibleData&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
   const canCancel=!!visibleData&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
-  const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
+  const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true&&(path!=="owner"||ownerConfirmed);
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
@@ -178,8 +179,8 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   };
   const close=()=>{onBusyChangeRef.current?.(false);activeRead.current?.abort();alive.current=false;onClose();};
 
-  return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
-    <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
+  return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
+    <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
     {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
     {loading&&<p role="status" className="text-xs text-slate-600">Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…</p>}
     {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
@@ -219,8 +220,10 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>}
           {!visibleData.direct_rule&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng duyệt rule trực tiếp. Hãy tải lại sau khi cập nhật.</p>}
           {visibleData.direct_rule?.blockers.map((issue,i)=><p key={i} role="alert" className="text-xs text-amber-900">{issue.message} {issue.next_action}</p>)}
-          <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":"Duyệt rule & merge ngay"}</button>
+          {path==="owner"&&<label className="flex items-start gap-2 text-xs"><input type="checkbox" aria-label="Xác nhận nội dung và phạm vi hard merge" checked={ownerConfirmed} disabled={!canReview||visibleData.direct_rule?.eligible!==true||visibleData.direct_rule_plan?.eligible!==true} onChange={event=>setOwnerConfirmed(event.target.checked)}/><span>Tôi đã đọc bản so sánh, đồng ý áp dụng đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</span></label>}
+          <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":path==="owner"?"Xác nhận hard merge":"Duyệt rule & merge ngay"}</button>
         </div>
+        {path!=="owner"&&<>
         <h4 className="text-sm font-semibold">Review outcome và bằng chứng</h4>
         <p className="text-xs text-slate-600">Duyệt một lần cho đúng thay đổi và phạm vi ở trên. Nếu review hợp lệ đã có đủ, hệ thống merge ngay; nếu còn cần review, yêu cầu được lưu vào hàng đợi của bạn để dot đối chiếu nguồn và ảnh thật.</p>
         {visibleData.queue_available===false&&<p className="text-xs text-slate-600">Hàng đợi review chỉ dành cho owner đã cấu hình. Bạn vẫn có thể xem feedback và đối chiếu quy chuẩn.</p>}
@@ -243,6 +246,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
         </div>}
         <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canProcess} onClick={()=>post("process")}>{busy==="process"?"Đang tự kiểm tra…":automatic?.status==="ready_to_merge"?"Merge outcome đã review":"Duyệt & giao dot review"}</button>
         <p className="text-xs text-slate-500">Thiếu baseline hoặc ảnh thật sẽ dừng đúng bước cần bổ sung. Bạn không cần điền checklist, mã lần chạy, URL hay JSON. Dùng Tải lại để xem trạng thái mới nhất.</p>
+        </>}
       </section>}
       <details><summary className="cursor-pointer text-xs font-semibold">Advanced · IDs, hashes và dữ liệu đầy đủ</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-[11px]">{JSON.stringify({preflight:visibleData,review_request:currentRequest,action_error:error,action_issues:errorIssues},null,2)}</pre></details>
     </>}
