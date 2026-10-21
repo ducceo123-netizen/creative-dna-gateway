@@ -1,0 +1,26 @@
+{
+  "schema_version": "uid-ldp-applied-feedback/1",
+  "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
+  "source_version": "3",
+  "parent_content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
+  "parent_render_hash": "sha256:eecb7deefdf48c51ce9cb820fdae47fffbb660802bb1e9b76c9c083def6a656e",
+  "groups": [
+    {
+      "viewport": "desktop",
+      "viewport_width": 1440,
+      "preview_view": {
+        "mode": "landing"
+      },
+      "element_ids": [
+        "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/title"
+      ],
+      "feedback": "Chỗ này cái title hơi cụt, viết anh content khác nha",
+      "before": "Their Sport. Your Support.",
+      "after": "A Personal Gift for the Sport They Love",
+      "resolution": "Replace only desktop hero title. Preserve mobile title under explicit selected-viewport scope."
+    }
+  ],
+  "sbp_drafts": "Unapproved; no new SBP images or category changes included in this revision.",
+  "preserved": "All assets, other elements, layout, CSS and feedback runtime remain unchanged."
+}

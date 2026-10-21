@@ -498,7 +498,7 @@
   "copy": {
     "hero": {
       "eyebrow": "GIFTS FOR SPORTS LOVERS",
-      "title": "Their Sport. Your Support.",
+      "title": "A Personal Gift for the Sport They Love",
       "lead": "Celebrate your favorite player with a gift that feels personal."
     },
     "picks": {
@@ -567,7 +567,7 @@
   "layout": {
     "schema_version": "uid-ldp-preview-layout/1",
     "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
-    "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
+    "content_version": "sha256:00f804d4bf345e38a7402c873ef598cf6c52c3da17b1e16c6a23af898401585f",
     "sections": [
       {
         "section_id": "header",
@@ -731,7 +731,12 @@
     "Internal curated product subsets; no invented niche collection destinations.",
     "Figma not used or synchronized in this HTML workflow."
   ],
-  "viewport_copy": {},
+  "viewport_copy": {
+    "hero/title": {
+      "desktop": "A Personal Gift for the Sport They Love",
+      "mobile": "Their Sport. Your Support."
+    }
+  },
   "viewport_visibility": {
     "desktop": {
       "picks/lead": false,
@@ -789,58 +794,26 @@
     "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_version": "3",
-    "parent_content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
-    "parent_render_hash": "sha256:b990a8479c2f1c0742f110c6a441e7134b1b4494f8f033ee081f855f2aa50bc7",
+    "parent_content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
+    "parent_render_hash": "sha256:eecb7deefdf48c51ce9cb820fdae47fffbb660802bb1e9b76c9c083def6a656e",
     "groups": [
       {
-        "scope": "desktop_and_mobile",
+        "viewport": "desktop",
+        "viewport_width": 1440,
+        "preview_view": {
+          "mode": "landing"
+        },
         "element_ids": [
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_01",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_02",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_03",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_04",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche"
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/hero/title"
         ],
-        "feedback": "Chỗ niche này em chia theo bộ môn đi, ổn không? → oke em gen ảnh cho mấy đó luôn nha",
-        "resolution": "Four shared sports labels, four new two-SKU niche images, matching official store destinations. Keep all other sections, products, CSS and review IDs."
-      },
-      {
-        "scope": "desktop_and_mobile",
-        "element_ids": [
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_05",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_06",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/lead"
-        ],
-        "feedback": "Cho anh thêm 2 môn Golf Hockey nữa nha",
-        "resolution": "Add two standalone two-product images and two sport navigation cards; desktop 3 columns, mobile 2 columns. New element IDs allocated only for these two actual cards."
+        "feedback": "Chỗ này cái title hơi cụt, viết anh content khác nha",
+        "before": "Their Sport. Your Support.",
+        "after": "A Personal Gift for the Sport They Love",
+        "resolution": "Replace only desktop hero title. Preserve mobile title under explicit selected-viewport scope."
       }
     ],
-    "source_limits": [
-      "Only 12 selected original product images audited; complete galleries and entire assortment not audited.",
-      "Pinterest reference retrieval blocked; no visual Pinterest observation claimed.",
-      "Soccer destination is native store search; no invented collection URL.",
-      "Hockey live collection contains unrelated sports. Use verified native title:hockey search (7 matching product titles), not the mixed collection."
-    ],
-    "generation_tool": "built-in image_gen; six independent images plus targeted framing/support corrections on Football, Soccer and Golf."
+    "sbp_drafts": "Unapproved; no new SBP images or category changes included in this revision.",
+    "preserved": "All assets, other elements, layout, CSS and feedback runtime remain unchanged."
   },
   "niche_destinations": {
     "sport-football": "https://pawfecthouse.com/collections/american-football",
@@ -948,8 +921,8 @@
       ]
     }
   ],
-  "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
-  "render_hash": "sha256:eecb7deefdf48c51ce9cb820fdae47fffbb660802bb1e9b76c9c083def6a656e",
+  "content_version": "sha256:00f804d4bf345e38a7402c873ef598cf6c52c3da17b1e16c6a23af898401585f",
+  "render_hash": "sha256:5a159af3e97079aa62bc6251297a84d6265e8db339f4b8290f751e2b170fd9c0",
   "extra_niche_products": [
     {
       "id": "10131943260449",
