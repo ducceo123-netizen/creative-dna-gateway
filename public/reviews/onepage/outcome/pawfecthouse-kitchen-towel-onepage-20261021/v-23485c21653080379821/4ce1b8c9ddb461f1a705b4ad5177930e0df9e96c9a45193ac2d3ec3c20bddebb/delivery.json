@@ -1,0 +1,295 @@
+{
+  "schema_version": "uid-hosted-review/1",
+  "kind": "onepage",
+  "identity": {
+    "type": "outcome",
+    "id": "pawfecthouse-kitchen-towel-onepage-20261021"
+  },
+  "content_version": "approved-content-v2-faq4",
+  "render_hash": "8dfba7af386599cd9ba25876d88ed2b0321010d78cb7a76c295914f2e9778f84",
+  "source_manifest": {
+    "schema_version": "uid-onepage-preview/1",
+    "identity_type": "outcome",
+    "outcome_id": "pawfecthouse-kitchen-towel-onepage-20261021",
+    "content_version": "approved-content-v2-faq4",
+    "brand": "pawfecthouse",
+    "template_version": "2026-10-19.faq.v1",
+    "render_hash": "8dfba7af386599cd9ba25876d88ed2b0321010d78cb7a76c295914f2e9778f84",
+    "asset_manifest": [
+      {
+        "slot": "banner_desktop",
+        "asset_id": "kt-banner_desktop-v1",
+        "file_url": "assets/onepage-kitchen_towel-banner.webp",
+        "checksum": "sha256:2cb31112a922d0f32238c48465233d23e1f6662cc65b484eae151671a40ce56f",
+        "width": 2560,
+        "height": 960,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-d54f4f0d-1b4a-44be-aae4-4c9f59ff4388.png",
+        "source_checksum": "sha256:61a70bb127caff3d27af61e95063fb424b80253c8dffdf4c73168dcf323b1922",
+        "original_width": 2048,
+        "original_height": 768,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "banner_mobile",
+        "asset_id": "kt-banner_mobile-v1",
+        "file_url": "assets/onepage-kitchen_towel-banner-mobile.webp",
+        "checksum": "sha256:1cff33324eb41d527986c1f55e1cd05a3a300e074e34a9aee02ba3fac25578d1",
+        "width": 720,
+        "height": 700,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-b59c5f91-8a7c-4c2c-9e19-8841538863cd.png",
+        "source_checksum": "sha256:831aa019fba5c1a1bf93106c9b7e4117658952d247b94acb37790d4f54eccb86",
+        "original_width": 1247,
+        "original_height": 1261,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "wyl_01",
+        "asset_id": "kt-wyl_01-v1",
+        "file_url": "assets/onepage-kitchen_towel-wyl_01.webp",
+        "checksum": "sha256:7fec2f38487500984eb5ee631c69844fdbb1f5b0ceb78a39c4882fb049e45bfc",
+        "width": 732,
+        "height": 480,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-495c61af-9d0c-4796-8507-0f2b2d9cb09b.png",
+        "source_checksum": "sha256:65f5bd2bf469a42d867721eac464cf2fe13dec1987fd1628b59308c849500546",
+        "original_width": 1548,
+        "original_height": 1016,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "wyl_02",
+        "asset_id": "kt-wyl_02-v1",
+        "file_url": "assets/onepage-kitchen_towel-wyl_02.webp",
+        "checksum": "sha256:97ebd451d4d7008a8530ee0433febca31797f96c1a709824bae182456bcd8247",
+        "width": 732,
+        "height": 480,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-81ecd091-88fe-4299-bc09-d0ca564bba05.png",
+        "source_checksum": "sha256:003c0a9f2bdac9133d623af12f169fa308eac416927df03b2f5f83fe6accb2cd",
+        "original_width": 1547,
+        "original_height": 1016,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "wyl_03",
+        "asset_id": "kt-wyl_03-v1",
+        "file_url": "assets/onepage-kitchen_towel-wyl_03.webp",
+        "checksum": "sha256:c0f6889ed7df1efa716813d14fa3a63c012fe9ce6bf564427b728e5bc88de88b",
+        "width": 732,
+        "height": 480,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-0f797dd9-8d31-4ef3-8165-53415ca67638.png",
+        "source_checksum": "sha256:62c6a2a100ab6ec4930ce3390772cbc8366651475e47f676cfa63f8e78b8c3f9",
+        "original_width": 1547,
+        "original_height": 1016,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "detail_main",
+        "asset_id": "kt-detail_main-v1",
+        "file_url": "assets/onepage-kitchen_towel-detail_banner.webp",
+        "checksum": "sha256:1a053fbc6c15c2dab7b5b79b59baa2e651813b77ab40175f28132c6febb94a65",
+        "width": 950,
+        "height": 950,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-660f2219-42d7-454b-9486-05af56ec8bb0.png",
+        "source_checksum": "sha256:eb123a517ae2b419f1e7403183bd844f81fa15501f930bb8c9fc42a960b8c769",
+        "original_width": 1254,
+        "original_height": 1254,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "detail_01",
+        "asset_id": "kt-detail_01-v1",
+        "file_url": "assets/onepage-kitchen_towel-detail-01.webp",
+        "checksum": "sha256:4b85488fac1b61e9194714238839d58d567588b6511a129978846aee47139818",
+        "width": 240,
+        "height": 240,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-b1de3da1-2bea-4aa7-9c99-001de48a5f81.png",
+        "source_checksum": "sha256:4a0fdd4af1677e8205937eb074fe0dfb5158d9eaf4063c2783f16c02c809dc83",
+        "original_width": 1254,
+        "original_height": 1254,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "detail_02",
+        "asset_id": "kt-detail_02-v1",
+        "file_url": "assets/onepage-kitchen_towel-detail-02.webp",
+        "checksum": "sha256:c79b389702d66bc0b513f199803b7d9e5fd977573991a11d3be2f11040eef010",
+        "width": 240,
+        "height": 240,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-14f8bdcb-6883-4b2d-9878-316cc9e5c28a.png",
+        "source_checksum": "sha256:fda45b4db546ee8d376a9d239ae70e96bb5954b9b004d33976475a6bfa3deb10",
+        "original_width": 1254,
+        "original_height": 1254,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "detail_03",
+        "asset_id": "kt-detail_03-v1",
+        "file_url": "assets/onepage-kitchen_towel-detail-03.webp",
+        "checksum": "sha256:bd8b3363a763938d5ed8aa2a892f65a02e9bb8d7857a74d60b47293b18a49fd9",
+        "width": 240,
+        "height": 240,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-cd0e95c5-83e1-4970-ae62-cdd2e0906534.png",
+        "source_checksum": "sha256:6951379cccb9dde137ab20c97a4c5a4b8d904da4ddbe0c46c8356e2bd01ddbf3",
+        "original_width": 1254,
+        "original_height": 1254,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "occasion_icon_01",
+        "asset_id": "kt-occasion_icon_01-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_icon-01.webp",
+        "checksum": "sha256:c8b0e72cf98be745fab0915fcc217d69e3b56c402ab0253d86fd55d30b7e27d8",
+        "width": 426,
+        "height": 426,
+        "provenance": "native_vector",
+        "source_file": "source/occasion_icon_01.svg",
+        "source_checksum": "sha256:f859cac627a025d84e9acb9c1d9750bdf952229a5a9be4a06b19dcc32328b6b2"
+      },
+      {
+        "slot": "occasion_icon_02",
+        "asset_id": "kt-occasion_icon_02-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_icon-02.webp",
+        "checksum": "sha256:f85938292d17b923b85cf38225fb98a354e496c27cac68ecfa8baf58645ce807",
+        "width": 426,
+        "height": 426,
+        "provenance": "native_vector",
+        "source_file": "source/occasion_icon_02.svg",
+        "source_checksum": "sha256:1b02fd031ef1aeb37e1bc5cbe4437e88292ee339e6665693d60f506ade86f262"
+      },
+      {
+        "slot": "occasion_icon_03",
+        "asset_id": "kt-occasion_icon_03-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_icon-03.webp",
+        "checksum": "sha256:bb38bec0c0e3e1292424553632dda72af909950a024a4799c16f6cdd41f2936f",
+        "width": 426,
+        "height": 426,
+        "provenance": "native_vector",
+        "source_file": "source/occasion_icon_03.svg",
+        "source_checksum": "sha256:3747454c732d9e4cb8140e22bb0b353c5fa8bb86b1aa87cf00907e9ed561f390"
+      },
+      {
+        "slot": "occasion_icon_04",
+        "asset_id": "kt-occasion_icon_04-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_icon-04.webp",
+        "checksum": "sha256:c1dbfe452f05bd025e94c6750b0629cf2cadfb6e663ccb0d46a0731a05ba1a8e",
+        "width": 426,
+        "height": 426,
+        "provenance": "native_vector",
+        "source_file": "source/occasion_icon_04.svg",
+        "source_checksum": "sha256:41c5f93ba5e8bf58de3c5d9c6a8b30037d67457a4a46149a8a952eeb64348a66"
+      },
+      {
+        "slot": "occasion_story_01",
+        "asset_id": "kt-occasion_01-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_banner-01.webp",
+        "checksum": "sha256:82b77432907e0a1f577a543fc091326e3b4984dd53a041e73b64383cf6ba22d2",
+        "width": 1280,
+        "height": 720,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-3828c1aa-097d-4764-a580-48888af6698d.png",
+        "source_checksum": "sha256:2e813fc8ab7d92fa37e685a0a17f43bedab1e27b5031fba21afffa184ccbaed7",
+        "original_width": 1672,
+        "original_height": 941,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "occasion_story_02",
+        "asset_id": "kt-occasion_02-v1",
+        "file_url": "assets/onepage-kitchen_towel-occasion_banner-02.webp",
+        "checksum": "sha256:b853cafaf57f7adee1b4335c32d41a9025968459002f17fbd9c630b07c261b38",
+        "width": 1280,
+        "height": 720,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-534c323c-1151-4a76-955d-73bba00f8950.png",
+        "source_checksum": "sha256:325baf3e40e9b7b530d808c8caddf7d092bd0903edc180b8b71e7d1e71e14de6",
+        "original_width": 1672,
+        "original_height": 941,
+        "provenance": "generated_commercial"
+      },
+      {
+        "slot": "occasion_story_01_mobile",
+        "asset_id": "kt-detail_main-v1",
+        "file_url": "assets/onepage-kitchen_towel-detail_banner.webp",
+        "checksum": "sha256:1a053fbc6c15c2dab7b5b79b59baa2e651813b77ab40175f28132c6febb94a65",
+        "width": 950,
+        "height": 950,
+        "source_file": "/workspace/scratch/267582b74bfd/generated_images/exec-660f2219-42d7-454b-9486-05af56ec8bb0.png",
+        "source_checksum": "sha256:eb123a517ae2b419f1e7403183bd844f81fa15501f930bb8c9fc42a960b8c769",
+        "original_width": 1254,
+        "original_height": 1254,
+        "provenance": "generated_commercial"
+      }
+    ],
+    "source_html_sha256": "8dfba7af386599cd9ba25876d88ed2b0321010d78cb7a76c295914f2e9778f84"
+  },
+  "files": [
+    {
+      "path": "assets/1a053fbc6c15c2dab7b5b79b59baa2e651813b77ab40175f28132c6febb94a65.webp",
+      "sha256": "1a053fbc6c15c2dab7b5b79b59baa2e651813b77ab40175f28132c6febb94a65"
+    },
+    {
+      "path": "assets/1cff33324eb41d527986c1f55e1cd05a3a300e074e34a9aee02ba3fac25578d1.webp",
+      "sha256": "1cff33324eb41d527986c1f55e1cd05a3a300e074e34a9aee02ba3fac25578d1"
+    },
+    {
+      "path": "assets/2cb31112a922d0f32238c48465233d23e1f6662cc65b484eae151671a40ce56f.webp",
+      "sha256": "2cb31112a922d0f32238c48465233d23e1f6662cc65b484eae151671a40ce56f"
+    },
+    {
+      "path": "assets/4b85488fac1b61e9194714238839d58d567588b6511a129978846aee47139818.webp",
+      "sha256": "4b85488fac1b61e9194714238839d58d567588b6511a129978846aee47139818"
+    },
+    {
+      "path": "assets/7fec2f38487500984eb5ee631c69844fdbb1f5b0ceb78a39c4882fb049e45bfc.webp",
+      "sha256": "7fec2f38487500984eb5ee631c69844fdbb1f5b0ceb78a39c4882fb049e45bfc"
+    },
+    {
+      "path": "assets/82b77432907e0a1f577a543fc091326e3b4984dd53a041e73b64383cf6ba22d2.webp",
+      "sha256": "82b77432907e0a1f577a543fc091326e3b4984dd53a041e73b64383cf6ba22d2"
+    },
+    {
+      "path": "assets/97ebd451d4d7008a8530ee0433febca31797f96c1a709824bae182456bcd8247.webp",
+      "sha256": "97ebd451d4d7008a8530ee0433febca31797f96c1a709824bae182456bcd8247"
+    },
+    {
+      "path": "assets/b853cafaf57f7adee1b4335c32d41a9025968459002f17fbd9c630b07c261b38.webp",
+      "sha256": "b853cafaf57f7adee1b4335c32d41a9025968459002f17fbd9c630b07c261b38"
+    },
+    {
+      "path": "assets/bb38bec0c0e3e1292424553632dda72af909950a024a4799c16f6cdd41f2936f.webp",
+      "sha256": "bb38bec0c0e3e1292424553632dda72af909950a024a4799c16f6cdd41f2936f"
+    },
+    {
+      "path": "assets/bd8b3363a763938d5ed8aa2a892f65a02e9bb8d7857a74d60b47293b18a49fd9.webp",
+      "sha256": "bd8b3363a763938d5ed8aa2a892f65a02e9bb8d7857a74d60b47293b18a49fd9"
+    },
+    {
+      "path": "assets/c0f6889ed7df1efa716813d14fa3a63c012fe9ce6bf564427b728e5bc88de88b.webp",
+      "sha256": "c0f6889ed7df1efa716813d14fa3a63c012fe9ce6bf564427b728e5bc88de88b"
+    },
+    {
+      "path": "assets/c1dbfe452f05bd025e94c6750b0629cf2cadfb6e663ccb0d46a0731a05ba1a8e.webp",
+      "sha256": "c1dbfe452f05bd025e94c6750b0629cf2cadfb6e663ccb0d46a0731a05ba1a8e"
+    },
+    {
+      "path": "assets/c79b389702d66bc0b513f199803b7d9e5fd977573991a11d3be2f11040eef010.webp",
+      "sha256": "c79b389702d66bc0b513f199803b7d9e5fd977573991a11d3be2f11040eef010"
+    },
+    {
+      "path": "assets/c8b0e72cf98be745fab0915fcc217d69e3b56c402ab0253d86fd55d30b7e27d8.webp",
+      "sha256": "c8b0e72cf98be745fab0915fcc217d69e3b56c402ab0253d86fd55d30b7e27d8"
+    },
+    {
+      "path": "assets/f85938292d17b923b85cf38225fb98a354e496c27cac68ecfa8baf58645ce807.webp",
+      "sha256": "f85938292d17b923b85cf38225fb98a354e496c27cac68ecfa8baf58645ce807"
+    },
+    {
+      "path": "index.html",
+      "sha256": "a2b7ff437ffb54122ccb119fe1ea5334fb0890e3fbcf6628409448daaa3d83ed"
+    },
+    {
+      "path": "styles.css",
+      "sha256": "4671a41229fe5b3704d2825661f5ef1f7087500e513ddd2eb21eea3877291154"
+    }
+  ],
+  "script_hashes": [
+    "'sha256-ixT/TTfCR7a/ojqmtZHely++/fixTaeq5GDj3HlmQY8='"
+  ]
+}
