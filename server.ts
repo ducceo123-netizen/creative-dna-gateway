@@ -1,7 +1,8 @@
+import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
 import {registerHostedReviews} from './uid-hosted-review.ts';
 import { attachHomeIconContract } from "./supabase/functions/_shared/home-icon.ts";
 import { FIGMA_COMMENTS_INPUT, FIGMA_COMMENTS_DESCRIPTION, readFigmaComments } from "./uid-figma-comments.ts";
-import { attachLdpHtmlPreview } from "./uid-ldp-html-preview.ts";
+import { attachLdpDesignDraft } from "./uid-ldp-design-draft.ts";
 import { attachLdpWorkflow } from "./uid-ldp-planner.ts";
 import { UID_EXECUTION_AUTHORITY_GUIDANCE, UID_PROGRESS_GUIDANCE, uidProgressTool, withUidProgress } from "./uid-brands-progress.ts";
 import { attachResearch, RESEARCH_GUIDANCE, RESEARCH_INPUT_SCHEMA, type ResearchContext } from "./supabase/functions/_shared/product-research.ts";
@@ -380,7 +381,7 @@ export async function resolveCreativeDna(brand: string, branch: string, research
     branch: validated.branch,
   });
   if (result.ok && result.data?.brand?.slug === "pawfecthouse" && result.data?.branch?.slug === "home-icon") return { ...result, data: attachHomeIconContract(result.data) };
-  return { ...result, data: result.ok ? attachLdpHtmlPreview(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data };
+  return { ...result, data: result.ok ? attachLdpDesignDraft(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data };
 }
 
 export async function listCreativeDnaRoutes() {
@@ -1716,6 +1717,11 @@ export function createApp(): express.Application {
       capabilities: { tools: { listChanged: false } },
       tools: TOOL_DEFINITIONS.map(({ name, title, description, annotations }) => ({ name, title, description, annotations })),
     });
+  });
+
+  app.use((req: Request, res: Response, next) => {
+    if(isRetiredLdpDemo(req.path))return res.status(410).type('text/plain').send('LDP web demo retired. Use the complete desktop/mobile design draft and mapping from the task conversation.');
+    next();
   });
 
   // Explicit 404 handler for unmatched /api/* requests - guarantees API requests never fall through to the SPA index.html

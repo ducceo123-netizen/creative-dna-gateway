@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PREVIEW_SCRIPT,REVIEW_CHROME_CSS,REVIEW_CHROME_HTML} from '../uid-ldp-html-preview.ts';
-const html=readFileSync(new URL('../public/ldp-feedback-demo.html',import.meta.url),'utf8');
-test('public demo is labelled synthetic, self-contained and uses current copy-only interaction script',()=>{
+const html=readFileSync(new URL('../archive/ldp-web-demos/ldp-feedback-demo.html',import.meta.url),'utf8');
+test('archived test demo is labelled synthetic, self-contained and uses current copy-only interaction script',()=>{
  assert.ok(html.includes('SYNTHETIC INTERACTION DEMO ONLY'));
  assert.ok(html.includes('Not approved brand layout or real task'));
  const embedded=html.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)![1];

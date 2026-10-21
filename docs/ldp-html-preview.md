@@ -1,3 +1,7 @@
+# Delivery update
+
+The default LDP delivery is now the complete desktop/mobile design draft described in [ldp-design-draft.md](ldp-design-draft.md). No hosted HTML URL is required. The HTML-specific procedure below is legacy optional rendering guidance, not the default completion gate.
+
 # LDP HTML preview and direct feedback
 
 The default PawfectHouse LDP workflow now produces a responsive HTML/CSS review draft instead of requiring Figma assembly. Historical Figma modules and readback validators remain available for explicit legacy consumers; the resolver no longer attaches or requests Figma plans. No existing Figma file is deleted or altered. Other materials and brands are untouched; this adapter currently validates PawfectHouse only.

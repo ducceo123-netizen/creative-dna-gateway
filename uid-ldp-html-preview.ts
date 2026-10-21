@@ -5,7 +5,8 @@ import { LDP_JOB_SCHEMA, fingerprint, httpsUrl, ldpContentVersion } from './uid-
 import { validateLdpJob } from './uid-ldp-planner.ts';
 import type { ResearchContext } from './supabase/functions/_shared/product-research.ts';
 
-const output = z.object({asset_id:z.string().min(1),content_version:z.string(),file_url:httpsUrl,checksum:z.string().regex(/^sha256:[a-f0-9]{64}$/),width:z.number().int().positive(),height:z.number().int().positive(),pixel_review:z.literal('passed'),review_note:z.string().trim().min(1)}).strict();
+export const LDP_ASSET_OUTPUT_SCHEMA = z.object({asset_id:z.string().min(1),content_version:z.string(),file_url:httpsUrl,checksum:z.string().regex(/^sha256:[a-f0-9]{64}$/),width:z.number().int().positive(),height:z.number().int().positive(),pixel_review:z.literal('passed'),review_note:z.string().trim().min(1)}).strict();
+const output = LDP_ASSET_OUTPUT_SCHEMA;
 const layout = z.object({section_id:z.string().min(1),desktop:z.enum(['stack','split','grid']),mobile:z.enum(['stack','grid']),columns:z.number().int().min(1).max(6),mobile_columns:z.number().int().min(1).max(2),image_fit:z.enum(['contain','cover']),image_position:z.enum(['center','top','bottom','left','right']),source_url:httpsUrl,observed_at:z.string().datetime({offset:true}),evidence_note:z.string().min(20).max(4000)}).strict();
 export const LDP_PREVIEW_LAYOUT_SCHEMA=z.object({schema_version:z.literal('uid-ldp-preview-layout/1'),task_id:z.string(),content_version:z.string(),sections:z.array(layout).min(1).max(40),typography:z.object({heading_px:z.number().min(16).max(120),mobile_heading_px:z.number().min(16).max(64),body_px:z.number().min(12).max(30),line_height:z.number().min(1).max(2),source_url:httpsUrl,evidence_note:z.string().min(20).max(4000)}).strict()}).strict();
 export type PreviewElement={id:string;section_id:string;kind:'section'|'text'|'image'|'card';label:string;asset_id?:string};
