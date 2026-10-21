@@ -1,0 +1,28 @@
+[
+  {
+    "sport": "golf",
+    "asset_id": "combo_05",
+    "refs": [
+      "10335559778593",
+      "10353211375905"
+    ],
+    "prompt": "Create one photorealistic PawfectHouse landing-page Niche Product Combo photograph, 1:1 square at high resolution. Exact source images are PRODUCT DESIGN references; rebuild a NEW photograph, do not copy old scene/UI. Two different verified products only, tightly grouped but fully supported, natural asymmetry and overlap, no important printing obstructed. Same art direction as a coherent sports collection: warm soft daylight from upper-left, pale natural oak surface and quiet warm ivory upholstered interior, natural fabric texture and contact shadows. Full silhouettes and at least 6-8% breathing room, crisp recognizable products, realistic relative scale. No people, no hands, no extra merchandise, no labels/buttons/headlines/watermark. Preserve real print layouts, personalized names, shapes, material. Product print may remain, no extra text. No collage, no panels, no cropping, no floating. Reference 1: white rectangular waffle-weave GOLF TOWEL with black clip/grommet, four club illustrations personalized max / elise / david / sophia, and BEST DAD BY PAR at bottom. Retain this entire actual design. Reference 2: source shows three mug variants; include ONLY ONE top white mug with BLUE clubs, BEST DAD BY PAR and amelia ♥ sophia ♥ david. Do not include green/brown mugs, do not duplicate. Composition: towel lies on an oak bench with relaxed shallow folds, slight diagonal, its full artwork and clip visible; mug stands on exposed oak at front-right adjacent to the towel, slightly closer to camera. View gently from above at 35 degrees; a small blurred ivory bench back as quiet context. Towel is about 40 x 60cm; mug a normal 11oz coffee mug, not a huge mug or tiny towel. You can gently fold the towel's blank margin but do not fold over the printed names/message. No golf balls, clubs, glove, grass, plants or decoration. Golf niche reads through actual printed products.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10335559778593-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10353211375905-original.webp"
+    ]
+  },
+  {
+    "sport": "hockey",
+    "asset_id": "combo_06",
+    "refs": [
+      "10131943260449",
+      "10365302309153"
+    ],
+    "prompt": "Create one photorealistic PawfectHouse landing-page Niche Product Combo photograph, 1:1 square at high resolution. Exact source images are PRODUCT DESIGN references; rebuild a NEW photograph, do not copy old scene/UI. Two different verified products only, tightly grouped but fully supported, natural asymmetry and overlap, no important printing obstructed. Same art direction as a coherent sports collection: warm soft daylight from upper-left, pale natural oak surface and quiet warm ivory upholstered interior, natural fabric texture and contact shadows. Full silhouettes and at least 6-8% breathing room, crisp recognizable products, realistic relative scale. No people, no hands, no extra merchandise, no labels/buttons/headlines/watermark. Preserve real print layouts, personalized names, shapes, material. Product print may remain, no extra text. No collage, no panels, no cropping, no floating. Reference 1: maroon HENRY hockey sweatpants with black drawstring, repeating white HENRY names, grey crossed hockey sticks and black pucks, cuffed ankles. Source person and color swatch UI are NOT part of product. Show one pair naturally folded on oak bench, one leg gently turned to reveal repeat print and a cuff; not worn and no implied body. Reference 2: one 20oz ice blue tumbler with clear lid, silver base, BEST HOCKEY DAD EVER and four illustrated hockey sticks with names Michael / Jennifer / Thomas / Amanda. Preserve exact artwork, spelling and handleless tapered cup shape. All metallic/depth effects in artwork are flat printed illusion, not embossed attachments. Stand tumbler foreground-right beside folded pants, both resting firmly on bench. 3/4 view with enough downward angle to see sweatpant fabric and readable patterns; ivory wall/bench back softly out of focus. Product cluster occupies about 80% frame. No real hockey sticks/puck, rink, hands, extra sports or color dots. Warm, clear commercial product photography.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10131943260449-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10365302309153-original.webp"
+    ]
+  }
+]

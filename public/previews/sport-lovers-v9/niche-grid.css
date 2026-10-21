@@ -1,0 +1,3 @@
+
+/* Six approved sport cards: responsive layout only. */
+@container(min-width:800px){#page #niche .combo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}

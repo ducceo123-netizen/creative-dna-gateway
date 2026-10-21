@@ -422,47 +422,6 @@
     }
   ],
   "filters": {
-    "game-day": [
-      "10507401363745",
-      "10305845985569",
-      "10515729613089",
-      "10531193422113",
-      "10567401242913",
-      "10578150228257",
-      "10353211375905",
-      "10203075084577"
-    ],
-    "family": [
-      "10319659925793",
-      "10305845985569",
-      "10335559778593",
-      "10341066146081",
-      "10351175827745",
-      "10333213131041",
-      "10582182887713",
-      "10350078066977",
-      "10298789527841",
-      "10120588165409",
-      "10353211375905"
-    ],
-    "players": [
-      "10549224440097",
-      "10583428137249",
-      "10576150331681",
-      "10588280357153",
-      "10582182887713",
-      "10557875749153",
-      "10568863809825"
-    ],
-    "decor": [
-      "10537313435937",
-      "10588931227937",
-      "10350078066977",
-      "10298789527841",
-      "10214737543457",
-      "10120588165409",
-      "10120373535009"
-    ],
     "apparel": [
       "10507401363745",
       "10567401242913",
@@ -510,6 +469,30 @@
       "10341066146081",
       "10351175827745",
       "10333213131041"
+    ],
+    "sport-football": [
+      "10549224440097",
+      "10507401363745"
+    ],
+    "sport-baseball": [
+      "10319659925793",
+      "10305845985569"
+    ],
+    "sport-basketball": [
+      "10537313435937",
+      "10588931227937"
+    ],
+    "sport-soccer": [
+      "10583428137249",
+      "10586742161697"
+    ],
+    "sport-golf": [
+      "10335559778593",
+      "10353211375905"
+    ],
+    "sport-hockey": [
+      "10131943260449",
+      "10365302309153"
     ]
   },
   "copy": {
@@ -523,28 +506,28 @@
       "lead": "A personal touch for their favorite sport."
     },
     "niche": {
-      "title": "Find Their Kind of Sports Gift",
+      "title": "Gifts for Their Favorite Sport",
       "lead": "For the ones who play, cheer, or never miss a game."
     },
     "combo_01": {
-      "title": "Game Day at Home",
-      "lead": "Settle in with favorites made for watching the game.",
-      "filter": "game-day"
+      "title": "Football",
+      "lead": "",
+      "filter": "sport-football"
     },
     "combo_02": {
-      "title": "Sideline Support",
-      "lead": "For the ones who cheer them on, game after game.",
-      "filter": "family"
+      "title": "Baseball",
+      "lead": "",
+      "filter": "sport-baseball"
     },
     "combo_03": {
-      "title": "Gifts for Players",
-      "lead": "A personal reminder that you’re always behind them.",
-      "filter": "players"
+      "title": "Basketball",
+      "lead": "",
+      "filter": "sport-basketball"
     },
     "combo_04": {
-      "title": "Room Decor",
-      "lead": "Bring their favorite sport into their own space.",
-      "filter": "decor"
+      "title": "Soccer",
+      "lead": "",
+      "filter": "sport-soccer"
     },
     "sbp": {
       "title": "Pick a Sports Gift They’ll Love",
@@ -569,12 +552,22 @@
     "gift-picks": {
       "title": "Find a Gift That Fits",
       "lead": "Explore these picks, or browse the full collection."
+    },
+    "combo_05": {
+      "title": "Golf",
+      "lead": "",
+      "filter": "sport-golf"
+    },
+    "combo_06": {
+      "title": "Hockey",
+      "lead": "",
+      "filter": "sport-hockey"
     }
   },
   "layout": {
     "schema_version": "uid-ldp-preview-layout/1",
     "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
-    "content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
+    "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
     "sections": [
       {
         "section_id": "header",
@@ -628,13 +621,13 @@
         "section_id": "niche",
         "desktop": "grid",
         "mobile": "grid",
-        "columns": 4,
+        "columns": 3,
         "mobile_columns": 2,
         "image_fit": "contain",
         "image_position": "center",
         "source_url": "https://pawfecthouse.com/pages/book-lovers",
         "observed_at": "2026-10-20T04:26:17.871454+00:00",
-        "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
+        "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations. User requested six sport cards; retain brand geometry with three desktop columns and two mobile columns."
       },
       {
         "section_id": "sbp",
@@ -780,6 +773,15 @@
       "desktop": "carousel",
       "mobile": "two_column_grid",
       "same_product_ids": true
+    },
+    "niche_navigation": {
+      "axis": "sport",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ],
+      "destinations": "Four live official sport collections; Soccer uses verified native store search, Hockey uses verified title:hockey search to avoid unrelated items in the native collection.",
+      "uses_complete_live_destinations": true
     }
   },
   "revision": {
@@ -787,40 +789,179 @@
     "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_version": "3",
-    "parent_content_version": "sha256:c23cd778c86379356d95ee25641a10984eb432cff468b510e93f88f89413eefd",
-    "parent_render_hash": "sha256:b49122244505a5c84c1a5a4db7bed9891a3baacd4a2ba6e6e901a69cbc56b567",
-    "feedback": "ê sao anh thấy desktop với mobile nó không đồng bộ với nhau về content, các phần nội dung thể hiện. vậy?",
+    "parent_content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
+    "parent_render_hash": "sha256:b990a8479c2f1c0742f110c6a441e7134b1b4494f8f033ee081f855f2aa50bc7",
     "groups": [
       {
         "scope": "desktop_and_mobile",
-        "feedback": "Đồng bộ content giữa desktop và mobile",
         "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_01",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_02",
           "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
           "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp"
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_03",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_04",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche"
         ],
-        "resolution": "Use the latest revised copy as a shared source; remove viewport copy overrides."
+        "feedback": "Chỗ niche này em chia theo bộ môn đi, ổn không? → oke em gen ảnh cho mấy đó luôn nha",
+        "resolution": "Four shared sports labels, four new two-SKU niche images, matching official store destinations. Keep all other sections, products, CSS and review IDs."
       },
       {
         "scope": "desktop_and_mobile",
-        "feedback": "Đồng bộ các phần nội dung thể hiện",
         "element_ids": [
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks"
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_05",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_06",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/lead"
         ],
-        "resolution": "Apply approved pretext removal to both viewports; omit inline Gift Picks on both landing views. Keep identical category browse route on both."
+        "feedback": "Cho anh thêm 2 môn Golf Hockey nữa nha",
+        "resolution": "Add two standalone two-product images and two sport navigation cards; desktop 3 columns, mobile 2 columns. New element IDs allocated only for these two actual cards."
       }
     ],
-    "scope_resolution": [
-      "This cross-viewport synchronization supersedes earlier viewport-specific content and visibility overrides. Prior feedback groups remain separate in their original records.",
-      "Preserve all 311 review IDs, approved assets, product IDs, destination URLs, native brand components and source canonical identity.",
-      "Responsive column counts, CTA placement, heading alignment and desktop carousel/mobile grid remain layout adaptations; content and product order are shared."
-    ]
-  }
+    "source_limits": [
+      "Only 12 selected original product images audited; complete galleries and entire assortment not audited.",
+      "Pinterest reference retrieval blocked; no visual Pinterest observation claimed.",
+      "Soccer destination is native store search; no invented collection URL.",
+      "Hockey live collection contains unrelated sports. Use verified native title:hockey search (7 matching product titles), not the mixed collection."
+    ],
+    "generation_tool": "built-in image_gen; six independent images plus targeted framing/support corrections on Football, Soccer and Golf."
+  },
+  "niche_destinations": {
+    "sport-football": "https://pawfecthouse.com/collections/american-football",
+    "sport-baseball": "https://pawfecthouse.com/collections/baseball",
+    "sport-basketball": "https://pawfecthouse.com/collections/basketball",
+    "sport-soccer": "https://pawfecthouse.com/search?q=soccer&type=product",
+    "sport-golf": "https://pawfecthouse.com/collections/golf",
+    "sport-hockey": "https://pawfecthouse.com/search?q=title%3Ahockey&type=product"
+  },
+  "niche_cards": [
+    {
+      "asset_id": "combo_01",
+      "label": "Football",
+      "sport": "football",
+      "filter_key": "sport-football",
+      "product_ids": [
+        "10549224440097",
+        "10507401363745"
+      ],
+      "destination": "https://pawfecthouse.com/collections/american-football",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_02",
+      "label": "Baseball",
+      "sport": "baseball",
+      "filter_key": "sport-baseball",
+      "product_ids": [
+        "10319659925793",
+        "10305845985569"
+      ],
+      "destination": "https://pawfecthouse.com/collections/baseball",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_03",
+      "label": "Basketball",
+      "sport": "basketball",
+      "filter_key": "sport-basketball",
+      "product_ids": [
+        "10537313435937",
+        "10588931227937"
+      ],
+      "destination": "https://pawfecthouse.com/collections/basketball",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_04",
+      "label": "Soccer",
+      "sport": "soccer",
+      "filter_key": "sport-soccer",
+      "product_ids": [
+        "10583428137249",
+        "10586742161697"
+      ],
+      "destination": "https://pawfecthouse.com/search?q=soccer&type=product",
+      "destination_kind": "store_search",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_05",
+      "label": "Golf",
+      "sport": "golf",
+      "filter_key": "sport-golf",
+      "product_ids": [
+        "10335559778593",
+        "10353211375905"
+      ],
+      "destination": "https://pawfecthouse.com/collections/golf",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_06",
+      "label": "Hockey",
+      "sport": "hockey",
+      "filter_key": "sport-hockey",
+      "product_ids": [
+        "10131943260449",
+        "10365302309153"
+      ],
+      "destination": "https://pawfecthouse.com/search?q=title%3Ahockey&type=product",
+      "destination_kind": "store_search",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  ],
+  "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
+  "render_hash": "sha256:eecb7deefdf48c51ce9cb820fdae47fffbb660802bb1e9b76c9c083def6a656e",
+  "extra_niche_products": [
+    {
+      "id": "10131943260449",
+      "title": "Custom Unisex Sweatpants - Personalized Christmas Birthday Hockey Gifts For Hockey Lovers, Sports Fans, Sports Lovers - Goals Made With Power",
+      "url": "https://pawfecthouse.com/products/custom-unisex-sweatpants-personalized-christmas-birthday-hockey-gifts-for-hockey-lovers-sports-fans-sports-lovers-goals-made-with-power",
+      "source": "Exact live PDP JSON and original first image inspected; used only in Hockey niche image."
+    },
+    {
+      "id": "10365302309153",
+      "title": "Custom Hockey Tumbler - Personalized Father's Day Birthday Gifts For Dad, Grandpa, Hockey Lovers, Sports Fans, Sports Lovers - Best Hockey Dad Ever",
+      "url": "https://pawfecthouse.com/products/custom-hockey-tumbler-personalized-fathers-day-birthday-gifts-for-dad-grandpa-hockey-lovers-sports-fans-sports-lovers-best-hockey-dad-ever",
+      "source": "Exact live PDP JSON and original first image inspected; used only in Hockey niche image."
+    }
+  ]
 }

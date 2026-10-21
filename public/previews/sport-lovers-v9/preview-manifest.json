@@ -3,14 +3,14 @@
   "renderer_version": "uid-ldp-html-renderer/1",
   "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "task_id_basis": "Existing outcome Library identity, not a newly registered UID task",
-  "content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
+  "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
   "brand": "pawfecthouse",
   "scope": "complete_ldp",
   "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
   "source_version": "3",
-  "created_at": "2026-10-20T04:26:17.871454+00:00",
+  "created_at": "2026-10-21T04:43:21.294733+00:00",
   "canonical_snapshot": "sha256:45c9edae00cec9694961e419be4fff8d6d832213d7f7e7c0098917e47a995580",
-  "layout_hash": "sha256:c7fdbdc5596c918eb4b2756d6b1867712bde2685a47ac5aca1313876d242c435",
+  "layout_hash": "sha256:20412c39a5b4ab1a35520dd6005ce9092aacfff0e5873353bdf9bc764b78eb0a",
   "asset_manifest": [
     {
       "id": "hero-desktop-2560x800",
@@ -144,55 +144,75 @@
     },
     {
       "id": "combo_01",
-      "source_file": "03-niche-combos/combo_01.png",
-      "source_checksum": "sha256:2d8accfc5330d58fa3f9a319e9cd1e872e0c565d8f539f8721c4fbf75e13b9a3",
-      "checksum": "sha256:6bd6df3442ab5a7e54e7d5d41c6e6501dfc532d4115d011e2bd4193e362f9447",
+      "source_file": "originals/niche-football-v1.png",
+      "source_checksum": "sha256:3437ee292839de3f5799743aff871dd84e11938bb3a680bb27c0c3c561fbc453",
+      "checksum": "sha256:4ef222fb636c8b911d205557304e42326fd4982f0aaba2489c219f2706758960",
       "width": 1254,
       "height": 1254,
       "original_width": 1254,
       "original_height": 1254,
       "file_url": "assets/combo_01.webp",
       "provenance": "generated_commercial",
-      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10549224440097",
+        "10507401363745"
+      ],
+      "rule_route": "niche-product-combo"
     },
     {
       "id": "combo_02",
-      "source_file": "03-niche-combos/combo_02.png",
-      "source_checksum": "sha256:3c86aaac890f41adf5f3975f73190d553f0642194fe4e76ef7d4ad68faaeff97",
-      "checksum": "sha256:5b3cd89925cb9f2f02996d6385587457398e85c6e997ac6c94422723bcb54cb0",
+      "source_file": "originals/niche-baseball-v1.png",
+      "source_checksum": "sha256:f251a3d92164e2652f565cb9c48c3911f4fbe334f5a231aaf8340f7e60bc768f",
+      "checksum": "sha256:65bf8b3c7066871d6bb40626682363b0646c794332a31aafbdff6126f16f3c1e",
       "width": 1254,
       "height": 1254,
       "original_width": 1254,
       "original_height": 1254,
       "file_url": "assets/combo_02.webp",
       "provenance": "generated_commercial",
-      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10319659925793",
+        "10305845985569"
+      ],
+      "rule_route": "niche-product-combo"
     },
     {
       "id": "combo_03",
-      "source_file": "03-niche-combos/combo_03.png",
-      "source_checksum": "sha256:8c1ba91860aad95f743237f96e9bed0e16ec9294fd22178cfc95486f2c4cb2fd",
-      "checksum": "sha256:4a398ead52e737f4dcde4c17fda030636e790973d1b6842ddd959cb14f008e59",
+      "source_file": "originals/niche-basketball-v1.png",
+      "source_checksum": "sha256:436ad8fa1dca921111e028471dea9e0b0736c7fd522b62e50449af4b8fc7e79a",
+      "checksum": "sha256:3f07434a6a3d6b9a09d6ec532341aa8183c52399fbbfef38ab3bcad3bb9c62d5",
       "width": 1254,
       "height": 1254,
       "original_width": 1254,
       "original_height": 1254,
       "file_url": "assets/combo_03.webp",
       "provenance": "generated_commercial",
-      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10537313435937",
+        "10588931227937"
+      ],
+      "rule_route": "niche-product-combo"
     },
     {
       "id": "combo_04",
-      "source_file": "03-niche-combos/combo_04.png",
-      "source_checksum": "sha256:d7642990572a854fd44329b79e5fe16376bdf9f324a76e6d4a33749fde911f32",
-      "checksum": "sha256:45afef516aa47548c2374690787c522715e33c0bdad6fa5b6a4da44437a4266b",
+      "source_file": "originals/niche-soccer-v1.png",
+      "source_checksum": "sha256:da10d78c8cbfa2c6e528cf09a8dc6a71a8ae9170f12883b27ca413a603ea3f89",
+      "checksum": "sha256:7232ae3596de1488d1a9e34374140232edc42f947c1407cc8dc194b3b4ddeda7",
       "width": 1254,
       "height": 1254,
       "original_width": 1254,
       "original_height": 1254,
       "file_url": "assets/combo_04.webp",
       "provenance": "generated_commercial",
-      "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10583428137249",
+        "10586742161697"
+      ],
+      "rule_route": "niche-product-combo"
     },
     {
       "id": "featured_01",
@@ -739,6 +759,42 @@
       "file_url": "assets/catalog-10203075084577.webp",
       "provenance": "verified_source_media",
       "review_note": "Existing outcome asset reused; codec/size export only, no generative edit."
+    },
+    {
+      "id": "combo_05",
+      "source_file": "originals/niche-golf-v1.png",
+      "source_checksum": "sha256:0be0844a96d36cf54a6f71b910c3bb08527f2a1fb05df008e65fb05f4ddfdc99",
+      "checksum": "sha256:e9dd4010b3876c7d822bd47f8b02640312355725b95b0a408e19ff7cc87c7784",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_05.webp",
+      "provenance": "generated_commercial",
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10335559778593",
+        "10353211375905"
+      ],
+      "rule_route": "niche-product-combo"
+    },
+    {
+      "id": "combo_06",
+      "source_file": "originals/niche-hockey-v1.png",
+      "source_checksum": "sha256:4ac233e28c596d661b5adc681f9eec7fce6b39aa8b612b30c2b7b958d521080b",
+      "checksum": "sha256:ec4e3a56f36d9a80b85cc5dcfefe7fe06663eb4b890e3c28baab1eae2764b5c1",
+      "width": 1254,
+      "height": 1254,
+      "original_width": 1254,
+      "original_height": 1254,
+      "file_url": "assets/combo_06.webp",
+      "provenance": "generated_commercial",
+      "review_note": "New user-requested sport-axis composition; exact two source SKU/variant images inspected. Physical support, full silhouettes and readable names/graphics visually reviewed. Commercial imagery, not a purchasable bundle.",
+      "product_ids": [
+        "10131943260449",
+        "10365302309153"
+      ],
+      "rule_route": "niche-product-combo"
     }
   ],
   "elements": [
@@ -1042,26 +1098,26 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01",
       "section_id": "niche",
       "kind": "card",
-      "label": "Game Day at Home"
+      "label": "Football"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_01",
       "section_id": "niche",
       "kind": "image",
-      "label": "Game Day at Home",
+      "label": "Football",
       "asset_id": "combo_01"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/title",
       "section_id": "niche",
       "kind": "text",
-      "label": "Game Day at Home"
+      "label": "Football"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "Settle in with favorites made for watching the game.",
+      "label": "",
       "viewport_visibility": {
         "desktop": false,
         "mobile": false
@@ -1071,26 +1127,26 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
       "section_id": "niche",
       "kind": "card",
-      "label": "Sideline Support"
+      "label": "Baseball"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_02",
       "section_id": "niche",
       "kind": "image",
-      "label": "Sideline Support",
+      "label": "Baseball",
       "asset_id": "combo_02"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
       "section_id": "niche",
       "kind": "text",
-      "label": "Sideline Support"
+      "label": "Baseball"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "For the ones who cheer them on, game after game.",
+      "label": "",
       "viewport_visibility": {
         "desktop": false,
         "mobile": false
@@ -1100,26 +1156,26 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03",
       "section_id": "niche",
       "kind": "card",
-      "label": "Gifts for Players"
+      "label": "Basketball"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_03",
       "section_id": "niche",
       "kind": "image",
-      "label": "Gifts for Players",
+      "label": "Basketball",
       "asset_id": "combo_03"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/title",
       "section_id": "niche",
       "kind": "text",
-      "label": "Gifts for Players"
+      "label": "Basketball"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "A personal reminder that you’re always behind them.",
+      "label": "",
       "viewport_visibility": {
         "desktop": false,
         "mobile": false
@@ -1129,26 +1185,26 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
       "section_id": "niche",
       "kind": "card",
-      "label": "Room Decor"
+      "label": "Soccer"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_04",
       "section_id": "niche",
       "kind": "image",
-      "label": "Room Decor",
+      "label": "Soccer",
       "asset_id": "combo_04"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/title",
       "section_id": "niche",
       "kind": "text",
-      "label": "Room Decor"
+      "label": "Soccer"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
       "section_id": "niche",
       "kind": "text",
-      "label": "Bring their favorite sport into their own space.",
+      "label": "",
       "viewport_visibility": {
         "desktop": false,
         "mobile": false
@@ -1158,7 +1214,7 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
       "section_id": "niche",
       "kind": "text",
-      "label": "Find Their Kind of Sports Gift"
+      "label": "Gifts for Their Favorite Sport"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead",
@@ -1170,7 +1226,7 @@
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche",
       "section_id": "niche",
       "kind": "section",
-      "label": "Find Their Kind of Sports Gift"
+      "label": "Gifts for Their Favorite Sport"
     },
     {
       "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/card/sbp_01-apparel-v7",
@@ -2711,9 +2767,67 @@
       "section_id": "footer",
       "kind": "section",
       "label": "PawfectHouse footer"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Golf"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_05",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Golf",
+      "asset_id": "combo_05"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Golf"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "",
+      "viewport_visibility": {
+        "desktop": false,
+        "mobile": false
+      }
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06",
+      "section_id": "niche",
+      "kind": "card",
+      "label": "Hockey"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_06",
+      "section_id": "niche",
+      "kind": "image",
+      "label": "Hockey",
+      "asset_id": "combo_06"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/title",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "Hockey"
+    },
+    {
+      "id": "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/lead",
+      "section_id": "niche",
+      "kind": "text",
+      "label": "",
+      "viewport_visibility": {
+        "desktop": false,
+        "mobile": false
+      }
     }
   ],
-  "render_hash": "sha256:b990a8479c2f1c0742f110c6a441e7134b1b4494f8f033ee081f855f2aa50bc7",
+  "render_hash": "sha256:eecb7deefdf48c51ce9cb820fdae47fffbb660802bb1e9b76c9c083def6a656e",
   "verification_limits": [
     "Current collection JSON first 250 products; not an exhaustive assortment census.",
     "Historical approved/revised materials reused; full PDP media/spec research not repeated.",
@@ -2730,7 +2844,9 @@
       "niche/card/combo_01/lead": false,
       "niche/card/combo_02/lead": false,
       "niche/card/combo_03/lead": false,
-      "niche/card/combo_04/lead": false
+      "niche/card/combo_04/lead": false,
+      "niche/card/combo_05/lead": false,
+      "niche/card/combo_06/lead": false
     },
     "mobile": {
       "picks/lead": false,
@@ -2738,7 +2854,9 @@
       "niche/card/combo_01/lead": false,
       "niche/card/combo_02/lead": false,
       "niche/card/combo_03/lead": false,
-      "niche/card/combo_04/lead": false
+      "niche/card/combo_04/lead": false,
+      "niche/card/combo_05/lead": false,
+      "niche/card/combo_06/lead": false
     }
   },
   "view_contract": {
@@ -2764,6 +2882,15 @@
       "desktop": "carousel",
       "mobile": "two_column_grid",
       "same_product_ids": true
+    },
+    "niche_navigation": {
+      "axis": "sport",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ],
+      "destinations": "Four live official sport collections; Soccer uses verified native store search, Hockey uses verified title:hockey search to avoid unrelated items in the native collection.",
+      "uses_complete_live_destinations": true
     }
   },
   "brand_system_source": {
@@ -2799,40 +2926,156 @@
     "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_outcome": "libfile_51054066fdf48191a89e81d4b749e4f9",
     "source_version": "3",
-    "parent_content_version": "sha256:c23cd778c86379356d95ee25641a10984eb432cff468b510e93f88f89413eefd",
-    "parent_render_hash": "sha256:b49122244505a5c84c1a5a4db7bed9891a3baacd4a2ba6e6e901a69cbc56b567",
-    "feedback": "ê sao anh thấy desktop với mobile nó không đồng bộ với nhau về content, các phần nội dung thể hiện. vậy?",
+    "parent_content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
+    "parent_render_hash": "sha256:b990a8479c2f1c0742f110c6a441e7134b1b4494f8f033ee081f855f2aa50bc7",
     "groups": [
       {
         "scope": "desktop_and_mobile",
-        "feedback": "Đồng bộ content giữa desktop và mobile",
         "element_ids": [
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_01",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_02",
           "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/title",
           "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/title",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/sbp"
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_03",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_04",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche"
         ],
-        "resolution": "Use the latest revised copy as a shared source; remove viewport copy overrides."
+        "feedback": "Chỗ niche này em chia theo bộ môn đi, ổn không? → oke em gen ảnh cho mấy đó luôn nha",
+        "resolution": "Four shared sports labels, four new two-SKU niche images, matching official store destinations. Keep all other sections, products, CSS and review IDs."
       },
       {
         "scope": "desktop_and_mobile",
-        "feedback": "Đồng bộ các phần nội dung thể hiện",
         "element_ids": [
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/picks/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_01/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_02/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_03/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_04/lead",
-          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/gift-picks"
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_05",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_05/lead",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/asset/combo_06",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/title",
+          "task/libfile_51054066fdf48191a89e81d4b749e4f9/section/niche/card/combo_06/lead"
         ],
-        "resolution": "Apply approved pretext removal to both viewports; omit inline Gift Picks on both landing views. Keep identical category browse route on both."
+        "feedback": "Cho anh thêm 2 môn Golf Hockey nữa nha",
+        "resolution": "Add two standalone two-product images and two sport navigation cards; desktop 3 columns, mobile 2 columns. New element IDs allocated only for these two actual cards."
       }
     ],
-    "scope_resolution": [
-      "This cross-viewport synchronization supersedes earlier viewport-specific content and visibility overrides. Prior feedback groups remain separate in their original records.",
-      "Preserve all 311 review IDs, approved assets, product IDs, destination URLs, native brand components and source canonical identity.",
-      "Responsive column counts, CTA placement, heading alignment and desktop carousel/mobile grid remain layout adaptations; content and product order are shared."
-    ]
-  }
+    "source_limits": [
+      "Only 12 selected original product images audited; complete galleries and entire assortment not audited.",
+      "Pinterest reference retrieval blocked; no visual Pinterest observation claimed.",
+      "Soccer destination is native store search; no invented collection URL.",
+      "Hockey live collection contains unrelated sports. Use verified native title:hockey search (7 matching product titles), not the mixed collection."
+    ],
+    "generation_tool": "built-in image_gen; six independent images plus targeted framing/support corrections on Football, Soccer and Golf."
+  },
+  "niche_cards": [
+    {
+      "asset_id": "combo_01",
+      "label": "Football",
+      "sport": "football",
+      "filter_key": "sport-football",
+      "product_ids": [
+        "10549224440097",
+        "10507401363745"
+      ],
+      "destination": "https://pawfecthouse.com/collections/american-football",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_02",
+      "label": "Baseball",
+      "sport": "baseball",
+      "filter_key": "sport-baseball",
+      "product_ids": [
+        "10319659925793",
+        "10305845985569"
+      ],
+      "destination": "https://pawfecthouse.com/collections/baseball",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_03",
+      "label": "Basketball",
+      "sport": "basketball",
+      "filter_key": "sport-basketball",
+      "product_ids": [
+        "10537313435937",
+        "10588931227937"
+      ],
+      "destination": "https://pawfecthouse.com/collections/basketball",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_04",
+      "label": "Soccer",
+      "sport": "soccer",
+      "filter_key": "sport-soccer",
+      "product_ids": [
+        "10583428137249",
+        "10586742161697"
+      ],
+      "destination": "https://pawfecthouse.com/search?q=soccer&type=product",
+      "destination_kind": "store_search",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_05",
+      "label": "Golf",
+      "sport": "golf",
+      "filter_key": "sport-golf",
+      "product_ids": [
+        "10335559778593",
+        "10353211375905"
+      ],
+      "destination": "https://pawfecthouse.com/collections/golf",
+      "destination_kind": "live_collection",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "asset_id": "combo_06",
+      "label": "Hockey",
+      "sport": "hockey",
+      "filter_key": "sport-hockey",
+      "product_ids": [
+        "10131943260449",
+        "10365302309153"
+      ],
+      "destination": "https://pawfecthouse.com/search?q=title%3Ahockey&type=product",
+      "destination_kind": "store_search",
+      "shared_viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  ],
+  "render_hash_basis": "sha256(bound main HTML + full inline CSS + review runtime JS); content_version includes image digests."
 }

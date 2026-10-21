@@ -1,0 +1,923 @@
+{
+  "schema_version": "uid-product-research/1",
+  "scope": {
+    "source_url": "https://pawfecthouse.com/collections/gifts-for-sport-lover",
+    "source_type": "collection",
+    "products": [
+      {
+        "id": "10549224440097",
+        "url": "https://pawfecthouse.com/products/custom-leather-football-personalized-birthday-gifts-for-son-grandson-american-football-lovers-sports-fans-sports-lovers-made-for-game-day",
+        "variant": "Grandson DANIEL 25 football"
+      },
+      {
+        "id": "10507401363745",
+        "url": "https://pawfecthouse.com/products/custom-america-football-comfort-t-shirt-personalized-birthday-gifts-for-america-football-lovers-sports-fans-sports-lovers-forever-cheering-you-on",
+        "variant": "Grandson HARRY 37 charcoal tee"
+      },
+      {
+        "id": "10319659925793",
+        "url": "https://pawfecthouse.com/products/custom-hat-all-over-print-classic-cap-personalized-birthday-baseball-gifts-for-dad-grandpa-baseball-lovers-sports-fans-sports-lovers-best-dad-in-the-game",
+        "variant": "Baseball Dad DAVID EMILY HARRY cap"
+      },
+      {
+        "id": "10305845985569",
+        "url": "https://pawfecthouse.com/products/custom-tumbler-personalized-mothers-day-birthday-gifts-for-baseball-mom-grandma-sunshine-ballfields-and-baseball-mom-life",
+        "variant": "MOMMY 35 and LUCAS 12 tumbler"
+      },
+      {
+        "id": "10537313435937",
+        "url": "https://pawfecthouse.com/products/custom-sport-laundry-basket-personalized-birthday-gifts-for-sports-fans-sports-lovers-kids-play-like-a-pro",
+        "variant": "Basketball HENRY basket"
+      },
+      {
+        "id": "10588931227937",
+        "url": "https://pawfecthouse.com/products/custom-name-sports-ball-gifts-for-young-athletes-personalized-shaped-pillow",
+        "variant": "Basketball WILLIAM shaped pillow"
+      },
+      {
+        "id": "10583428137249",
+        "url": "https://pawfecthouse.com/products/custom-photo-soccer-gifts-for-son-and-grandson-personalized-soccer-ball",
+        "variant": "DANIEL photo soccer ball"
+      },
+      {
+        "id": "10586742161697",
+        "url": "https://pawfecthouse.com/products/custom-name-christmas-sports-gifts-for-athletes-sports-fans-sports-lovers-personalized-acrylic-ornament",
+        "variant": "Soccer JAMES 2026 Santa hat ornament"
+      },
+      {
+        "id": "10335559778593",
+        "url": "https://pawfecthouse.com/products/custom-golf-towel-personalized-fathers-day-birthday-golf-gifts-for-dad-grandpa-swing-smile-repeat",
+        "variant": "White Golf Towel, MAX ELISE DAVID SOPHIA golf clubs, Best Dad By Par"
+      },
+      {
+        "id": "10353211375905",
+        "url": "https://pawfecthouse.com/products/custom-mug-personalized-fathers-day-birthday-golf-gifts-for-dad-grandpa-golf-more-worry-less",
+        "variant": "White mug, blue clubs, BEST DAD BY PAR, amelia sophia david"
+      },
+      {
+        "id": "10131943260449",
+        "url": "https://pawfecthouse.com/products/custom-unisex-sweatpants-personalized-christmas-birthday-hockey-gifts-for-hockey-lovers-sports-fans-sports-lovers-goals-made-with-power",
+        "variant": "Maroon sweatpants, HENRY, crossed hockey sticks and pucks"
+      },
+      {
+        "id": "10365302309153",
+        "url": "https://pawfecthouse.com/products/custom-hockey-tumbler-personalized-fathers-day-birthday-gifts-for-dad-grandpa-hockey-lovers-sports-fans-sports-lovers-best-hockey-dad-ever",
+        "variant": "20oz ice-blue tumbler, BEST HOCKEY DAD EVER, Michael Jennifer Thomas Amanda"
+      }
+    ],
+    "inventory_complete": false,
+    "coverage_note": "Existing outcome revision, expanded by explicit user request to six sports. 12 selected exact product JSON descriptions/options and 12 original first-image pixels inspected. No complete collection/gallery audit claimed."
+  },
+  "sources": [
+    {
+      "id": "pdp-10549224440097",
+      "url": "https://pawfecthouse.com/products/custom-leather-football-personalized-birthday-gifts-for-son-grandson-american-football-lovers-sports-fans-sports-lovers-made-for-game-day",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10549224440097"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10549224440097": "Grandson DANIEL 25 football"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Leather Football - Personalized Birthday Gifts For Son, Grandson, American Football Lovers, Sports Fans, Sports Lovers - Made For Game Day",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10507401363745",
+      "url": "https://pawfecthouse.com/products/custom-america-football-comfort-t-shirt-personalized-birthday-gifts-for-america-football-lovers-sports-fans-sports-lovers-forever-cheering-you-on",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10507401363745"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10507401363745": "Grandson HARRY 37 charcoal tee"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom America Football Comfort T-Shirt - Personalized Birthday Gifts For America Football Lovers, Sports Fans, Sports Lovers - Forever Cheering You On",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10319659925793",
+      "url": "https://pawfecthouse.com/products/custom-hat-all-over-print-classic-cap-personalized-birthday-baseball-gifts-for-dad-grandpa-baseball-lovers-sports-fans-sports-lovers-best-dad-in-the-game",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10319659925793"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10319659925793": "Baseball Dad DAVID EMILY HARRY cap"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Hat, All Over Print Classic Cap - Personalized Birthday Baseball Gifts For Dad, Grandpa, Baseball Lovers, Sports Fans, Sports Lovers - Best Dad In The Game",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10305845985569",
+      "url": "https://pawfecthouse.com/products/custom-tumbler-personalized-mothers-day-birthday-gifts-for-baseball-mom-grandma-sunshine-ballfields-and-baseball-mom-life",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10305845985569"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10305845985569": "MOMMY 35 and LUCAS 12 tumbler"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Tumbler - Personalized Mother's Day Birthday Gifts For Baseball Mom, Grandma - Sunshine, Ballfields And Baseball Mom Life",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10537313435937",
+      "url": "https://pawfecthouse.com/products/custom-sport-laundry-basket-personalized-birthday-gifts-for-sports-fans-sports-lovers-kids-play-like-a-pro",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10537313435937"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10537313435937": "Basketball HENRY basket"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Sport Laundry Basket - Personalized Birthday Gifts For Sports Fans, Sports Lovers, Kids - Play Like A Pro",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10588931227937",
+      "url": "https://pawfecthouse.com/products/custom-name-sports-ball-gifts-for-young-athletes-personalized-shaped-pillow",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10588931227937"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10588931227937": "Basketball WILLIAM shaped pillow"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Name Sports Ball Gifts for Young Athletes - Personalized Shaped Pillow",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10583428137249",
+      "url": "https://pawfecthouse.com/products/custom-photo-soccer-gifts-for-son-and-grandson-personalized-soccer-ball",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10583428137249"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10583428137249": "DANIEL photo soccer ball"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Photo Soccer Gifts for Son and Grandson - Personalized Soccer Ball",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "inspected",
+          "note": "Read deflated shipping/pump not included, wipe damp, dry storage, avoid sharp/rough surfaces and faux 3D printed effect."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10586742161697",
+      "url": "https://pawfecthouse.com/products/custom-name-christmas-sports-gifts-for-athletes-sports-fans-sports-lovers-personalized-acrylic-ornament",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:15:54Z",
+      "product_ids": [
+        "10586742161697"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10586742161697": "Soccer JAMES 2026 Santa hat ornament"
+      },
+      "match_basis": "Live product id matches approved source-map ID; original selected image pixels inspected. Method: public PDP .js response, using canonical PDP URL for identity.",
+      "excerpts": [
+        "Custom Name Christmas Sports Gifts For Athletes, Sports Fans, Sports Lovers - Personalized Acrylic Ornament",
+        "Method: complete public product JSON description/options and first source image inspected; remaining gallery and interactive sections outside this scoped source coverage."
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read current public product JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read complete JSON description and size/product/color variant options; specifications absent from that payload except soccer leather, UV print and 3 diameters. No extra specs added."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Sport/design variant selected from original first image."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care block present in the fetched description; interactive page accordions not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used for image-only revision",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10335559778593",
+      "url": "https://pawfecthouse.com/products/custom-golf-towel-personalized-fathers-day-birthday-golf-gifts-for-dad-grandpa-swing-smile-repeat",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:33:15Z",
+      "product_ids": [
+        "10335559778593"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10335559778593": "White Golf Towel, MAX ELISE DAVID SOPHIA golf clubs, Best Dad By Par"
+      },
+      "match_basis": "Exact live product ID and original first-image variant inspected; complete public product JSON description/options read. Remaining gallery/interactive configurator not audited.",
+      "excerpts": [
+        "Exact visible variant: White Golf Towel, MAX ELISE DAVID SOPHIA golf clubs, Best Dad By Par"
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read full public JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read exposed product type/size/color options. No additional claims introduced."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Selected exactly pictured first-image variant."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care instructions in fetched description; other page sections not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used in image-only revision.",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10353211375905",
+      "url": "https://pawfecthouse.com/products/custom-mug-personalized-fathers-day-birthday-golf-gifts-for-dad-grandpa-golf-more-worry-less",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:33:15Z",
+      "product_ids": [
+        "10353211375905"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10353211375905": "White mug, blue clubs, BEST DAD BY PAR, amelia sophia david"
+      },
+      "match_basis": "Exact live product ID and original first-image variant inspected; complete public product JSON description/options read. Remaining gallery/interactive configurator not audited.",
+      "excerpts": [
+        "Exact visible variant: White mug, blue clubs, BEST DAD BY PAR, amelia sophia david"
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read full public JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read exposed product type/size/color options. No additional claims introduced."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Selected exactly pictured first-image variant."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care instructions in fetched description; other page sections not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used in image-only revision.",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10131943260449",
+      "url": "https://pawfecthouse.com/products/custom-unisex-sweatpants-personalized-christmas-birthday-hockey-gifts-for-hockey-lovers-sports-fans-sports-lovers-goals-made-with-power",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:33:15Z",
+      "product_ids": [
+        "10131943260449"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10131943260449": "Maroon sweatpants, HENRY, crossed hockey sticks and pucks"
+      },
+      "match_basis": "Exact live product ID and original first-image variant inspected; complete public product JSON description/options read. Remaining gallery/interactive configurator not audited.",
+      "excerpts": [
+        "Exact visible variant: Maroon sweatpants, HENRY, crossed hockey sticks and pucks"
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read full public JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read exposed product type/size/color options. No additional claims introduced."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Selected exactly pictured first-image variant."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care instructions in fetched description; other page sections not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used in image-only revision.",
+        "complete": false
+      }
+    },
+    {
+      "id": "pdp-10365302309153",
+      "url": "https://pawfecthouse.com/products/custom-hockey-tumbler-personalized-fathers-day-birthday-gifts-for-dad-grandpa-hockey-lovers-sports-fans-sports-lovers-best-hockey-dad-ever",
+      "kind": "target_pdp",
+      "status": "inspected",
+      "observed_at": "2026-10-21T04:33:15Z",
+      "product_ids": [
+        "10365302309153"
+      ],
+      "match": "exact",
+      "product_versions": {
+        "10365302309153": "20oz ice-blue tumbler, BEST HOCKEY DAD EVER, Michael Jennifer Thomas Amanda"
+      },
+      "match_basis": "Exact live product ID and original first-image variant inspected; complete public product JSON description/options read. Remaining gallery/interactive configurator not audited.",
+      "excerpts": [
+        "Exact visible variant: 20oz ice-blue tumbler, BEST HOCKEY DAD EVER, Michael Jennifer Thomas Amanda"
+      ],
+      "sections": [
+        {
+          "name": "description",
+          "status": "inspected",
+          "note": "Read full public JSON description."
+        },
+        {
+          "name": "specifications",
+          "status": "inspected",
+          "note": "Read exposed product type/size/color options. No additional claims introduced."
+        },
+        {
+          "name": "options",
+          "status": "inspected",
+          "note": "Selected exactly pictured first-image variant."
+        },
+        {
+          "name": "care_use",
+          "status": "not_present",
+          "note": "No care instructions in fetched description; other page sections not claimed inspected."
+        }
+      ],
+      "reviews": {
+        "inspected_count": 0,
+        "selection": "No reviews used in image-only revision.",
+        "complete": false
+      }
+    }
+  ],
+  "coverage": [
+    {
+      "category": "target_pdp",
+      "status": "partial",
+      "source_ids": [
+        "pdp-10549224440097",
+        "pdp-10507401363745",
+        "pdp-10319659925793",
+        "pdp-10305845985569",
+        "pdp-10537313435937",
+        "pdp-10588931227937",
+        "pdp-10583428137249",
+        "pdp-10586742161697",
+        "pdp-10335559778593",
+        "pdp-10353211375905",
+        "pdp-10131943260449",
+        "pdp-10365302309153"
+      ],
+      "notes": "Only relevant description and selected image pixels audited; whole gallery and interactive configurator not claimed."
+    },
+    {
+      "category": "target_reviews",
+      "status": "unavailable",
+      "source_ids": [],
+      "notes": "No new messaging, comparisons or specifications derived. This revision recomposes 8 previously approved verified products only; broader research not repeated."
+    },
+    {
+      "category": "marketplace",
+      "status": "unavailable",
+      "source_ids": [],
+      "notes": "No new messaging, comparisons or specifications derived. This revision recomposes 8 previously approved verified products only; broader research not repeated."
+    },
+    {
+      "category": "competitor",
+      "status": "unavailable",
+      "source_ids": [],
+      "notes": "No new messaging, comparisons or specifications derived. This revision recomposes 8 previously approved verified products only; broader research not repeated."
+    },
+    {
+      "category": "supplier",
+      "status": "unavailable",
+      "source_ids": [],
+      "notes": "No new messaging, comparisons or specifications derived. This revision recomposes 8 previously approved verified products only; broader research not repeated."
+    }
+  ],
+  "claims": [
+    {
+      "id": "variant-10549224440097",
+      "text": "Selected visible design: Grandson DANIEL 25 football",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10549224440097"
+      ],
+      "source_ids": [
+        "pdp-10549224440097"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10507401363745",
+      "text": "Selected visible design: Grandson HARRY 37 charcoal tee",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10507401363745"
+      ],
+      "source_ids": [
+        "pdp-10507401363745"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10319659925793",
+      "text": "Selected visible design: Baseball Dad DAVID EMILY HARRY cap",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10319659925793"
+      ],
+      "source_ids": [
+        "pdp-10319659925793"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10305845985569",
+      "text": "Selected visible design: MOMMY 35 and LUCAS 12 tumbler",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10305845985569"
+      ],
+      "source_ids": [
+        "pdp-10305845985569"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10537313435937",
+      "text": "Selected visible design: Basketball HENRY basket",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10537313435937"
+      ],
+      "source_ids": [
+        "pdp-10537313435937"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10588931227937",
+      "text": "Selected visible design: Basketball WILLIAM shaped pillow",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10588931227937"
+      ],
+      "source_ids": [
+        "pdp-10588931227937"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10583428137249",
+      "text": "Selected visible design: DANIEL photo soccer ball",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10583428137249"
+      ],
+      "source_ids": [
+        "pdp-10583428137249"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10586742161697",
+      "text": "Selected visible design: Soccer JAMES 2026 Santa hat ornament",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10586742161697"
+      ],
+      "source_ids": [
+        "pdp-10586742161697"
+      ],
+      "qualified": true,
+      "qualification": "Applies to the exact pictured sport/design only."
+    },
+    {
+      "id": "variant-10335559778593",
+      "text": "Selected visible design: White Golf Towel, MAX ELISE DAVID SOPHIA golf clubs, Best Dad By Par",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10335559778593"
+      ],
+      "source_ids": [
+        "pdp-10335559778593"
+      ],
+      "qualified": true,
+      "qualification": "Applies only to selected original visible variant."
+    },
+    {
+      "id": "variant-10353211375905",
+      "text": "Selected visible design: White mug, blue clubs, BEST DAD BY PAR, amelia sophia david",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10353211375905"
+      ],
+      "source_ids": [
+        "pdp-10353211375905"
+      ],
+      "qualified": true,
+      "qualification": "Applies only to selected original visible variant."
+    },
+    {
+      "id": "variant-10131943260449",
+      "text": "Selected visible design: Maroon sweatpants, HENRY, crossed hockey sticks and pucks",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10131943260449"
+      ],
+      "source_ids": [
+        "pdp-10131943260449"
+      ],
+      "qualified": true,
+      "qualification": "Applies only to selected original visible variant."
+    },
+    {
+      "id": "variant-10365302309153",
+      "text": "Selected visible design: 20oz ice-blue tumbler, BEST HOCKEY DAD EVER, Michael Jennifer Thomas Amanda",
+      "kind": "product_fact",
+      "scope": "sku",
+      "product_ids": [
+        "10365302309153"
+      ],
+      "source_ids": [
+        "pdp-10365302309153"
+      ],
+      "qualified": true,
+      "qualification": "Applies only to selected original visible variant."
+    }
+  ],
+  "analysis": {
+    "insights": [
+      {
+        "concern": "Can customers distinguish four sports at card size?",
+        "claim_ids": [
+          "variant-10549224440097",
+          "variant-10507401363745",
+          "variant-10319659925793",
+          "variant-10305845985569",
+          "variant-10537313435937",
+          "variant-10588931227937",
+          "variant-10583428137249",
+          "variant-10586742161697"
+        ],
+        "implication": "Use each sport-specific source design, 2 distinct products per image and plain sport labels in HTML.",
+        "section": "niche"
+      }
+    ],
+    "unknowns": [
+      "Full current assortment and all variants not audited; no exhaustive depth claim.",
+      "Fresh public web PDP fetches failed but exact direct product JSON succeeded.",
+      "Pinterest pixels inaccessible; only approved brand composition guides used."
+    ],
+    "conflicts": []
+  },
+  "pinterest_research": {
+    "schema_version": "pinterest-visual-research/1",
+    "scope": {
+      "source_url": "https://pawfecthouse.com/collections/gifts-for-sport-lover",
+      "product": "personalized sports gifts",
+      "theme_topic": "Football Baseball Basketball Soccer product combo",
+      "market": "US"
+    },
+    "searches": [
+      {
+        "query": "site:pinterest.com sports personalized gifts football baseball basketball soccer gift display",
+        "observed_at": "2026-10-21T04:15:54Z",
+        "status": "partial",
+        "limitations": [
+          "Search retrieved Pins. Selected Pin 6755468184794285 not accessible through web open; no Pinterest pixels inspected."
+        ]
+      }
+    ],
+    "references": [
+      {
+        "id": "pin-attempt-1",
+        "url": "https://www.pinterest.com/pin/6755468184794285/",
+        "status": "blocked",
+        "observed_at": "2026-10-21T04:15:54Z",
+        "relevance": "Sports personalized gift context only",
+        "limitations": [
+          "Could not inspect pixels; no visual observation inferred."
+        ]
+      }
+    ]
+  },
+  "reddit_research": {
+    "schema_version": "reddit-customer-research/1",
+    "scope": {
+      "source_url": "https://pawfecthouse.com/collections/gifts-for-sport-lover",
+      "product": "personalized sports gifts",
+      "buyer": "gift buyer",
+      "recipient": "sports fan",
+      "occasion": "birthday or holiday",
+      "market": "US; Reddit authors geography unknown"
+    },
+    "searches": [
+      {
+        "id": "reddit-1",
+        "query": "site:reddit.com personalized sports gifts football baseball soccer gift ideas",
+        "observed_at": "2026-10-21T04:15:54Z",
+        "status": "partial",
+        "sort_order": "Best",
+        "filters": [
+          "public search; SoccerNoobs thread"
+        ],
+        "threads_inspected": 1,
+        "comments_inspected": 5,
+        "limitations": [
+          "One selected thread; no general market or demand inference.",
+          "Promotional ornament thread inaccessible; no deleted text retained."
+        ]
+      }
+    ],
+    "observations": [],
+    "insights": []
+  }
+}

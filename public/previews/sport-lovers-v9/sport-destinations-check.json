@@ -1,0 +1,27 @@
+[
+  {
+    "requested_url": "https://pawfecthouse.com/collections/american-football",
+    "url": "https://pawfecthouse.com/collections/american-football",
+    "status": 200,
+    "title": "American Football - Pawfect House",
+    "soccer_links": []
+  },
+  {
+    "requested_url": "https://pawfecthouse.com/collections/baseball",
+    "url": "https://pawfecthouse.com/collections/baseball",
+    "status": 200,
+    "title": "Baseball - Pawfect House",
+    "soccer_links": []
+  },
+  {
+    "requested_url": "https://pawfecthouse.com/collections/basketball",
+    "url": "https://pawfecthouse.com/collections/basketball",
+    "status": 200,
+    "title": "Basketball - Pawfect House",
+    "soccer_links": []
+  },
+  {
+    "requested_url": "https://pawfecthouse.com/collections/soccer",
+    "error": "HTTP Error 404: Not Found"
+  }
+]

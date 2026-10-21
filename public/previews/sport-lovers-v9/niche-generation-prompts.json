@@ -1,0 +1,54 @@
+[
+  {
+    "sport": "football",
+    "asset_id": "combo_01",
+    "refs": [
+      "10549224440097",
+      "10507401363745"
+    ],
+    "prompt": "Use case: product-mockup. Asset type: PawfectHouse LDP Niche Product Combo navigation image, 1:1 square, high resolution. Create ONE standalone photorealistic photograph, not a montage and no split panels. Reference photos are exact product/design references only; remove their original scene/people and rebuild a new composition of the specified products. Preserve the exact silhouettes, printed artwork, names, colors and materials of the specified reference variants. Group exactly TWO products with believable support and contact shadows, slight natural overlap but leave main artwork unobscured. Coherent set art direction: soft warm daylight from upper left, pale natural oak and quiet warm ivory interior; restrained lived-in texture, crisp product focus, natural shadows, no decorative clutter. Keep full silhouettes within frame with about 7-10% breathing room; combined cluster fills roughly 80% of square. No people, no hands, no other sport or extra products, no decorative text, no UI/card label, no buttons, no watermark. Printed personalization already on products must remain readable. Avoid floating objects, cut off edges, exaggerated lens distortion, oversaturated props, artificial glossy plastic. Image 1: exact American football, brown pebbled leather with white printed message panel and DANIEL 25 player, white lacing. Image 2: exact pepper charcoal T-shirt with HARRY 37 player, 'HE’S NOT JUST MY GRANDSON HE’S ALSO MY Favorite FOOTBALL PLAYER' typography. Show the full T-shirt laid naturally on a pale oak bench/table, neckline and sleeves visible, print facing camera; one real football rests on table beside lower left edge of shirt, not on top of its lettering. Slightly elevated 3/4 composition, close enough for the shirt print and football design to read. Background only a subtle blurred ivory upholstered bench edge. Preserve both actual print layouts accurately, do not replace with generic football artwork.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10549224440097-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10507401363745-original.webp"
+    ]
+  },
+  {
+    "sport": "baseball",
+    "asset_id": "combo_02",
+    "refs": [
+      "10319659925793",
+      "10305845985569"
+    ],
+    "prompt": "Use case: product-mockup. Asset type: PawfectHouse LDP Niche Product Combo navigation image, 1:1 square, high resolution. Create ONE standalone photorealistic photograph, not a montage and no split panels. Reference photos are exact product/design references only; remove their original scene/people and rebuild a new composition of the specified products. Preserve the exact silhouettes, printed artwork, names, colors and materials of the specified reference variants. Group exactly TWO products with believable support and contact shadows, slight natural overlap but leave main artwork unobscured. Coherent set art direction: soft warm daylight from upper left, pale natural oak and quiet warm ivory interior; restrained lived-in texture, crisp product focus, natural shadows, no decorative clutter. Keep full silhouettes within frame with about 7-10% breathing room; combined cluster fills roughly 80% of square. No people, no hands, no other sport or extra products, no decorative text, no UI/card label, no buttons, no watermark. Printed personalization already on products must remain readable. Avoid floating objects, cut off edges, exaggerated lens distortion, oversaturated props, artificial glossy plastic. Image 1: exact navy-brim white pinstripe baseball cap with red printed stitching arcs, 'This BASEBALL DAD belongs to' and three capped ball graphics DAVID 30, EMILY 16, HARRY 07. Image 2: one tumbler only: use the front MOMMY 35 and LUCAS 12 illustration side from the left tumbler in source, with printed red baseball stitches and cream stadium background, clear lid and silver base. Source photo shows front/back views of ONE tumbler, never duplicate it. Stage cap foreground left at a gentle 20-degree angle and tumbler standing slightly behind right, full comfortable margins. Eye-level to slightly elevated view on pale oak entryway console, warm ivory wall behind. Products close as a coherent cluster, no plant, no other decor. Keep cap/tumbler proportions anchored to source and do not stretch the tumbler.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10319659925793-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10305845985569-original.webp"
+    ]
+  },
+  {
+    "sport": "basketball",
+    "asset_id": "combo_03",
+    "refs": [
+      "10537313435937",
+      "10588931227937"
+    ],
+    "prompt": "Use case: product-mockup. Asset type: PawfectHouse LDP Niche Product Combo navigation image, 1:1 square, high resolution. Create ONE standalone photorealistic photograph, not a montage and no split panels. Reference photos are exact product/design references only; remove their original scene/people and rebuild a new composition of the specified products. Preserve the exact silhouettes, printed artwork, names, colors and materials of the specified reference variants. Group exactly TWO products with believable support and contact shadows, slight natural overlap but leave main artwork unobscured. Coherent set art direction: soft warm daylight from upper left, pale natural oak and quiet warm ivory interior; restrained lived-in texture, crisp product focus, natural shadows, no decorative clutter. Keep full silhouettes within frame with about 7-10% breathing room; combined cluster fills roughly 80% of square. No people, no hands, no other sport or extra products, no decorative text, no UI/card label, no buttons, no watermark. Printed personalization already on products must remain readable. Avoid floating objects, cut off edges, exaggerated lens distortion, oversaturated props, artificial glossy plastic. Image 1 has two baskets; use ONLY the right BASKETBALL basket: orange basketball texture bottom, caramel drips/sprinkles top, HENRY name and two black loop handles. Do not include blue soccer basket, toy dog, teddy bear, jersey, water bottle or extra basketball. Image 2 has five pillows; use ONLY orange basketball shaped pillow WILLIAM. It is a SOFT circular plush pillow, visible sewn edge and thickness, not a spherical sports ball. Stage the upright empty/lightly open HENRY laundry basket rear left with both handles attached; WILLIAM plush pillow in front right, resting with visible base contact and leaning lightly against basket. Minimal pale oak floor and a single soft ivory bench edge in blurred background, no shelves or toys. Basket height approximately one and a half times pillow diameter, realistic scale from size options; soft product fabric, clear readable name prints. Distinct 3/4 camera angle, no rigid straight lineup.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10537313435937-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10588931227937-original.webp"
+    ]
+  },
+  {
+    "sport": "soccer",
+    "asset_id": "combo_04",
+    "refs": [
+      "10583428137249",
+      "10586742161697"
+    ],
+    "prompt": "Use case: product-mockup. Asset type: PawfectHouse LDP Niche Product Combo navigation image, 1:1 square, high resolution. Create ONE standalone photorealistic photograph, not a montage and no split panels. Reference photos are exact product/design references only; remove their original scene/people and rebuild a new composition of the specified products. Preserve the exact silhouettes, printed artwork, names, colors and materials of the specified reference variants. Group exactly TWO products with believable support and contact shadows, slight natural overlap but leave main artwork unobscured. Coherent set art direction: soft warm daylight from upper left, pale natural oak and quiet warm ivory interior; restrained lived-in texture, crisp product focus, natural shadows, no decorative clutter. Keep full silhouettes within frame with about 7-10% breathing room; combined cluster fills roughly 80% of square. No people, no hands, no other sport or extra products, no decorative text, no UI/card label, no buttons, no watermark. Printed personalization already on products must remain readable. Avoid floating objects, cut off edges, exaggerated lens distortion, oversaturated props, artificial glossy plastic. Image 1: exact leather black/white paneled soccer ball with DANIEL blue photo print, same pictured boy portrait, 'TO OUR GRANDSON' and 'Love, Grandma'; preserve printed face/photo, do not generate a new person, do not reproduce circular inset reference photo or yellow arrow, those are source UI graphics outside the product. Image 2: use ONLY the soccer Santa-hat acrylic ornament JAMES with 2026 pompom, no baseball/football ornaments. Ornament is FLAT printed acrylic with printed faux red hat depth, thin clear edge, NOT a plush toy or real cloth hat. Scene: soccer ball rests at rear left on pale oak tabletop; soccer ornament lies FACE UP on tabletop front right at slight diagonal with its gold hanging cord loosely coiled, fully supported, not standing. The ornament is about half the diameter of the ball (4.5 inch ornament vs 8.2 inch ball). Shoot gently overhead at about 35 degrees to make both ball print and flat ornament visible; an ivory wall in soft background. Ornament and ball prints sharp; no Christmas tree, grass, unrelated sports or holiday clutter.",
+    "referenced_image_paths": [
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10583428137249-original.webp",
+      "/workspace/scratch/4e2de45cef44/sport-lovers-sport-cards/product-evidence/10586742161697-original.webp"
+    ]
+  }
+]

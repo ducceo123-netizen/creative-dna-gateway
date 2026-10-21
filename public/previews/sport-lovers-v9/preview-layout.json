@@ -1,7 +1,7 @@
 {
   "schema_version": "uid-ldp-preview-layout/1",
   "task_id": "libfile_51054066fdf48191a89e81d4b749e4f9",
-  "content_version": "sha256:8d2507926d1984d3ae79496ac665f7a699ba57b7e02aaad43a265f28106de29c",
+  "content_version": "sha256:af66c9067ab31ec45702b9023b2c12e3d1aae367e7751ba2f5f7b36437eb1425",
   "sections": [
     {
       "section_id": "header",
@@ -55,13 +55,13 @@
       "section_id": "niche",
       "desktop": "grid",
       "mobile": "grid",
-      "columns": 4,
+      "columns": 3,
       "mobile_columns": 2,
       "image_fit": "contain",
       "image_position": "center",
       "source_url": "https://pawfecthouse.com/pages/book-lovers",
       "observed_at": "2026-10-20T04:26:17.871454+00:00",
-      "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations."
+      "evidence_note": "Live Book Lovers rendered desktop and Gardening/Fishing source CSS audited: 1280px commerce, left-aligned 28px/600 headings, inline text browse links, 20/15px grids, native 40:60 feature panels, 10/20px radii. Mobile adapted from actual source declarations. User requested six sport cards; retain brand geometry with three desktop columns and two mobile columns."
     },
     {
       "section_id": "sbp",
