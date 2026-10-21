@@ -1,3 +1,7 @@
+# Delivery update
+
+The default LDP delivery is now the complete desktop/mobile design draft described in [ldp-design-draft.md](ldp-design-draft.md). No hosted HTML URL is required. The HTML-specific procedure below is legacy optional rendering guidance, not the default completion gate.
+
 # LDP host execution: verified plan to HTML/CSS preview
 
 The active delivery flow is HTML/CSS with direct selection and grouped Copy prompt feedback. Figma assembly is no longer a production step. Preserve existing user files; old operational documentation is available through git history.

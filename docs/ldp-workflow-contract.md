@@ -1,3 +1,7 @@
+# Delivery update
+
+The default LDP delivery is now the complete desktop/mobile design draft described in [ldp-design-draft.md](ldp-design-draft.md). No hosted HTML URL is required. The HTML-specific procedure below is legacy optional rendering guidance, not the default completion gate.
+
 # UID Brands LDP: HTML/CSS preview workflow
 
 Effective 2026-10-19, the default LDP route delivers responsive HTML/CSS with direct element selection and grouped Copy prompt feedback. Figma assembly is removed from the active workflow. Existing user files are not touched; prior implementation documentation remains in git history.

@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {isRetiredLdpDemo,RETIRED_LDP_DEMO_PATHS} from '../uid-ldp-retired-demos.ts';
+import {createApp} from '../server.ts';
+test('retired LDP entrypoints are archived, not public; assets and Onepage are not retired',()=>{for(const p of ['ldp-feedback-demo.html','previews/sport-lovers-v9/index.html','previews/cooking-bbq-v1/index.html','previews/cooking-bbq-v1/page.html']){assert.equal(existsSync(new URL('../public/'+p,import.meta.url)),false);assert.ok(existsSync(new URL('../archive/ldp-web-demos/'+p,import.meta.url)));}for(const p of ['/onepage-panel.html','/reviews/onepage/outcome/a/b/c/index.html','/previews/sport-lovers-v9/assets/hero.png','/previews/sport-lovers-v9/preview-manifest.json'])assert.equal(isRetiredLdpDemo(p),false);});
+test('all retired URLs return 410 before SPA fallback',async()=>{const app=createApp();app.get('*',(_req,res)=>res.send('SPA'));const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));try{const port=(server.address() as any).port;for(const path of RETIRED_LDP_DEMO_PATHS){const r=await fetch(`http://127.0.0.1:${port}${path}`);assert.equal(r.status,410);assert.match(await r.text(),/retired/);}assert.equal((await fetch(`http://127.0.0.1:${port}/onepage-panel.html`)).status,200);}finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}});
