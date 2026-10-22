@@ -89,6 +89,9 @@ export default {
       const {data,error}=await adminDb.rpc(rpc,args);
       if(error){
         if(["42501","42883","PGRST202"].includes(error.code)||/not activated|not enabled|compiler release|permission denied/i.test(error.message||""))return unavailable();
+        // Only translate this exact, server-owned eligibility failure. Never expose
+        // arbitrary SQL messages/details or imply that an owner/auth check passed.
+        if(error.code==="P0001"&&error.message==="Rule structure/scope/compiler blocked")return Response.json({error:"Rule chưa đáp ứng cấu trúc, phạm vi hoặc khả năng biên dịch của luồng AI. Xem lý do cụ thể trong phần duyệt trực tiếp; đây không phải kết luận rằng quyền của bạn đã thay đổi.",code:"rule_review_eligibility_blocked"},{status:409,headers});
         return Response.json({error:"Chưa thể bàn giao: nội dung, phạm vi hoặc quyền đã thay đổi, hoặc còn lượt review khác. Hãy kiểm tra trạng thái và tải lại.",code:"rule_review_conflict"},{status:409,headers});
       }
       try {

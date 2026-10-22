@@ -73,6 +73,7 @@ jobs:
           npm install --prefix /tmp/uid-governance-test --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
           node tests/sql/uid_review_preflight_context_reuse.mjs
           node tests/sql/uid_rule_normalization_cache.mjs
+          node tests/sql/uid_rule_replacement_context.mjs
           node tests/sql/uid_agent_review_compiler.mjs
           node tests/sql/uid_direct_rule_accept_concurrency.mjs
           node tests/sql/uid_agent_review_queue_concurrency.mjs
