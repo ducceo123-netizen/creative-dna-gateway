@@ -101,6 +101,7 @@ export function validateReviewRequest(value:unknown,proposalId:string):ReviewReq
 }
 export type FeedbackPreflight = {
   preview_kind?:"owner_rule";
+  owner_user_id?:string;recovery_token?:string|null;direct_rule_receipt?:Record<string,unknown>|null;
   proposal:FeedbackProposal; candidate_hash:string; targets:ReviewTarget[]; baselines:ReviewBaseline[];
   evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null; automatic_review?:AutomaticReview; direct_rule?:DirectRuleReview; direct_rule_plan?:DirectRulePlan; review_request?:ReviewRequest|null; review_intent_hash?:string|null; queue_available?:boolean;
 };

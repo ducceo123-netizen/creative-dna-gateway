@@ -1,4 +1,4 @@
-import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock, reconcilesReview } from "../request-recovery";
+import { boundedFetch, ownerReviewLockKey, matchesOwnerReceipt, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock, reconcilesReview } from "../request-recovery";
 import { useEffect, useRef, useState } from "react";
 import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
 import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposalReviewKey, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validateOwnerPreflight, validatePreflight } from "./feedback-review";
@@ -69,12 +69,13 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   onComplete:(message:string, result:Record<string,unknown>)=>void;
   onBusyChange?:(busy:boolean)=>void;
 }) {
-  const lockKey=reviewLockKey(proposal.id);
+  const lockKey=path==="owner"?ownerReviewLockKey(proposal.id):reviewLockKey(proposal.id);
   const [uncertain,setUncertain]=useState(!!getReviewLock(lockKey));
   const dataRef=useRef<FeedbackPreflight|null>(null);
   const [data,setData]=useState<FeedbackPreflight|null>(null);
   const [loading,setLoading]=useState(true);
-  const [busy,setBusy]=useState<"covered"|"process"|"rule"|"cancel"|null>(null);
+  const [refreshing,setRefreshing]=useState(false);
+  const [busy,setBusy]=useState<"covered"|"process"|"rule"|"cancel"|"recover"|null>(null);
   const [error,setError]=useState("");
   const [errorIssues,setErrorIssues]=useState<string[]>([]);
   const [stale,setStale]=useState(false);
@@ -116,7 +117,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     const controller=new AbortController();activeRead.current=controller;
     const readProposalKey=proposalKeyRef.current;
     const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller&&proposalKeyRef.current===readProposalKey;
-    setLoading(true);
+    if(!background||!dataRef.current)setLoading(true);else setRefreshing(true);
     try {
       const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/${path==="owner"?"owner-preflight":"preflight"}`,{signal:controller.signal},requestRef.current);
       const result=await response.json();
@@ -127,11 +128,11 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
       if(previous&&(proposalReviewKey(previous.proposal)!==proposalReviewKey(next.proposal)||previous.candidate_hash!==next.candidate_hash||JSON.stringify(previous.targets)!==JSON.stringify(next.targets)||JSON.stringify(previous.covered_candidates)!==JSON.stringify(next.covered_candidates)||previous.review_intent_hash!==next.review_intent_hash||previous.direct_rule?.rule_hash!==next.direct_rule?.rule_hash||previous.direct_rule_plan?.plan_hash!==next.direct_rule_plan?.plan_hash||JSON.stringify(previous.baselines)!==JSON.stringify(next.baselines)))resetAttestations();
       loadedProposalKey.current=readProposalKey;dataRef.current=next;setData(next);setQueueRequest(undefined);setStale(false);
       const lock=getReviewLock(lockKey);
-      if(lock&&reconcilesReview(lock,next.proposal.status,next.review_request))clearReviewLock(lockKey);
+      if(lock&&(path==="owner"?matchesOwnerReceipt(lock,next.direct_rule_receipt):reconcilesReview(lock,next.proposal.status,next.review_request)))clearReviewLock(lockKey);
       const unresolved=!!getReviewLock(lockKey);setUncertain(unresolved);
       setError(unresolved?"Kết quả thao tác chưa rõ. Đang kiểm tra trạng thái; không gửi lại. Đóng cửa sổ không hủy thao tác trên máy chủ.":"");setErrorIssues([]);
     } catch(e:unknown){if(current()){setStale(true);setError(e instanceof Error?e.message:"Không tải được preflight.");}}
-    finally {if(current()){activeRead.current=null;setLoading(false);schedulePoll();}}
+    finally {if(current()){activeRead.current=null;setLoading(false);setRefreshing(false);schedulePoll();}}
   };
   useEffect(()=>{
     alive.current=true;identity.current={id:proposal.id,path};observedProposalKey.current=proposalKey;loadedProposalKey.current=null;dataRef.current=null;setData(null);setNote("");resetAttestations();setBusy(null);mutation.current=false;load();
@@ -152,10 +153,10 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const automatic=visibleData?.automatic_review;
   const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
   const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
-  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
+  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!refreshing&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
-  const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
-  const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
+  const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!refreshing&&!busy&&!stale&&!uncertain;
+  const canAcceptRule=canReview&&typeof visibleData?.owner_user_id==="string"&&!!visibleData.owner_user_id&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
@@ -167,9 +168,13 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     const current=()=>alive.current&&identity.current===operationIdentity;
     const url=`/api/admin/feedback/${encodeURIComponent(currentId)}/${action==="covered"?"resolve-covered":action==="rule"?"accept-rule":action==="cancel"?"cancel-review":"process"}`;
     const payload=action==="covered"?{candidate_hash:visibleData.candidate_hash,covered_proposal_id:candidate!.id,covered_hash:candidate!.candidate_hash,review_note:note.trim()}:
-      action==="rule"?{approve_rule:true,candidate_hash:visibleData.candidate_hash,rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash}:
+      action==="rule"?{approve_rule:true,candidate_hash:visibleData.candidate_hash,rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash,recovery_token:visibleData.recovery_token??null}:
       action==="cancel"?{request_id:currentRequest!.id}:{approve:true,review_intent_hash:visibleData.review_intent_hash};
-    setReviewLock(lockKey,{action,requestId:currentRequest?.id});
+    const persisted=setReviewLock(lockKey,{action,requestId:currentRequest?.id,...(action==="rule"?{ownerApproval:{
+      proposal_id:currentId,owner_user_id:visibleData.owner_user_id||"",candidate_hash:visibleData.candidate_hash,
+      rule_hash:visibleData.direct_rule!.rule_hash,plan_hash:visibleData.direct_rule_plan!.plan_hash!,
+      recovery_token:visibleData.recovery_token??null,operation_id:crypto.randomUUID()}}:{})});
+    if(action==="rule"&&!persisted){clearReviewLock(lockKey);mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);setError("Không lưu được định danh thao tác trong trình duyệt. Chưa gửi lệnh merge; hãy cho phép session storage rồi thử lại.");schedulePoll();return;}
     try {
       const response=await boundedFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)},requestRef.current,45000);
       const result=await response.json();
@@ -190,18 +195,62 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
         if(action==="covered"&&result.status!=="resolved")throw Error("Chưa xác nhận trạng thái resolved. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
         if((action==="process"||action==="rule")&&(result.proposal?.id!==currentId||result.proposal?.status!=="merged"||result.canonical_changed!==true))throw Error("Chưa xác nhận trạng thái merged cho feedback này. Tải lại để kiểm tra; không gửi lặp khi kết quả chưa rõ.");
         if(action==="process"&&(result.decision_kind==="owner_direct_rule"||result.rule_decision_id!==undefined))throw Error("Kết quả duyệt rule không phải kết quả review outcome. Hãy tải lại.");
-        if(action==="rule"&&(result.status!=="merged"||result.decision_kind!=="owner_direct_rule"||result.visual_qc_performed!==false||typeof result.rule_decision_id!=="string"||!result.rule_decision_id||typeof result.proposal?.merged_at!=="string"||!Number.isFinite(Date.parse(result.proposal.merged_at))||result.candidate_hash!==visibleData.candidate_hash||result.rule_hash!==visibleData.direct_rule?.rule_hash||result.plan_hash!==visibleData.direct_rule_plan?.plan_hash))throw Error("Chưa xác nhận đúng quyết định duyệt rule. Hãy tải lại.");
+        if(action==="rule"&&(result.owner_user_id!==visibleData.owner_user_id||result.status!=="merged"||result.decision_kind!=="owner_direct_rule"||result.visual_qc_performed!==false||typeof result.rule_decision_id!=="string"||!result.rule_decision_id||typeof result.proposal?.merged_at!=="string"||!Number.isFinite(Date.parse(result.proposal.merged_at))||result.candidate_hash!==visibleData.candidate_hash||result.rule_hash!==visibleData.direct_rule?.rule_hash||result.plan_hash!==visibleData.direct_rule_plan?.plan_hash))throw Error("Chưa xác nhận đúng quyết định duyệt rule. Hãy tải lại.");
         clearReviewLock(lockKey);setUncertain(false);
         onCompleteRef.current(action==="rule"?"Đã merge rule do bạn duyệt trực tiếp. Đã lưu lịch sử và snapshot để rollback; đây không phải kết quả QC hình ảnh.":action==="covered"?"Đã đóng feedback: quy chuẩn hiện có đã bao phủ. Nội dung canonical không thay đổi.":"Đã merge: kiểm tra tự động và review đã lưu đều hợp lệ. Quy chuẩn đã được cập nhật.",result);
       }
     } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Không nhận được kết quả. Tải lại để kiểm tra trạng thái.");setUncertain(true);setStale(true);resetAttestations();}}
     finally {if(current()){mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);schedulePoll();}}
   };
+  // Explicit recovery never resends an unknown merge. The server fences all older
+  // attempts under the same transaction locks before returning not-applied.
+  const recoverOwner=async()=>{
+    if(path!=="owner"||mutation.current||activeRead.current||!alive.current)return;
+    const lock=getReviewLock(lockKey);if(!lock||lock.action!=="rule")return;
+    const recoveryId=lock.recoveryId||crypto.randomUUID();
+    if(!setReviewLock(lockKey,{...lock,recoveryId})){setError("Không lưu được định danh khôi phục. Chưa gửi yêu cầu; hãy cho phép session storage.");return;}
+    clearPoll();mutation.current=true;setBusy("recover");onBusyChangeRef.current?.(true);
+    const operationIdentity=identity.current;const current=()=>alive.current&&identity.current===operationIdentity;
+    let refresh=false;
+    try {
+      const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/recover-owner-rule`,{
+        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recover:true,recovery_id:recoveryId})},requestRef.current,45000);
+      const result=await response.json();if(!current())return;
+      if(!response.ok)throw Error(result.error||"Chưa xác minh được thao tác cũ. Chưa gửi lại lệnh merge.");
+      if(result.proposal_id!==proposal.id||result.recovery_id!==recoveryId||typeof result.owner_user_id!=="string"||!result.owner_user_id||
+         (lock.ownerApproval?.owner_user_id&&result.owner_user_id!==lock.ownerApproval.owner_user_id)||
+         (visibleData?.owner_user_id&&result.owner_user_id!==visibleData.owner_user_id))
+        throw Error("Kết quả khôi phục không khớp owner hoặc feedback. Chưa mở lại thao tác.");
+      if(result.status==="merged"&&result.receipt?.owner_user_id===result.owner_user_id&&(!lock.ownerApproval||matchesOwnerReceipt(lock,result.receipt))&&result.receipt?.proposal_id===proposal.id&&result.receipt?.status==="merged"&&
+         result.receipt?.decision_kind==="owner_direct_rule"&&result.receipt?.visual_qc_performed===false&&
+         typeof result.receipt?.rule_decision_id==="string"&&!!result.receipt.rule_decision_id&&
+         typeof result.receipt?.merged_at==="string"&&Number.isFinite(Date.parse(result.receipt.merged_at))) {
+        clearReviewLock(lockKey);setUncertain(false);
+        onCompleteRef.current("Thao tác trước đã merge. Đã lấy lại quyết định đã lưu, không gửi merge lần hai.",{
+          ...result.receipt,proposal:{id:proposal.id,status:"merged",merged_at:result.receipt.merged_at},canonical_changed:true});
+      } else if(result.status==="superseded") {
+        // Another explicitly requested recovery advanced the fence. Never reuse
+        // its token or silently rotate again; the next user click starts anew.
+        setReviewLock(lockKey,{...lock,recoveryId:undefined});
+        throw Error("Một lần khôi phục khác đã thay đổi trạng thái. Chưa gửi merge; bấm khôi phục để xác minh lại.");
+      } else if(["resolved","rejected"].includes(result.status)&&result.canonical_changed===false) {
+        clearReviewLock(lockKey);setUncertain(false);
+        onCompleteRef.current("Feedback đã được đóng. Đã xác minh trạng thái hiện tại, không gửi lại merge.",{...result,proposal:{id:proposal.id,status:result.status}});
+      } else if(result.status==="fenced_not_applied"&&typeof result.recovery_token==="string"&&result.recovery_token) {
+        clearReviewLock(lockKey);setUncertain(false);resetAttestations();setStale(true);
+        // A fresh preview binds the next confirmation to the current generation.
+        refresh=true;
+      } else throw Error("Thao tác cũ chưa được xác minh dứt điểm. Không gửi lại lệnh merge.");
+    } catch(e:unknown){if(current()){setError(e instanceof Error?e.message:"Chưa xác minh được thao tác cũ.");setUncertain(true);}}
+    finally {if(current()){mutation.current=false;setBusy(null);onBusyChangeRef.current?.(false);if(refresh)void load();else schedulePoll();}}
+  };
   const close=()=>{onBusyChangeRef.current?.(false);activeRead.current?.abort();alive.current=false;clearPoll();onClose();};
 
   return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
     <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
+    {path==="owner"&&uncertain&&<button type="button" className={button} disabled={!!busy||loading||refreshing} onClick={recoverOwner}>Khôi phục thao tác chưa rõ kết quả</button>}
     {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
+    {refreshing&&!loading&&<p role="status" className="text-xs text-slate-500">Đang cập nhật trạng thái…</p>}
     {loading&&<p role="status" className="text-xs text-slate-600">{path==="owner"?"Đang tải nội dung rule và phạm vi áp dụng hiện tại…":"Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…"}</p>}
     {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
     {visibleData&&<>

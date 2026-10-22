@@ -16,6 +16,15 @@ function validReviewContext(value:any):boolean {
     (value.direct_rule===undefined||(value.direct_rule&&Array.isArray(value.direct_rule.blockers)));
 }
 
+const isUuid=(value:unknown):value is string=>typeof value==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
+function validOwnerReceipt(value:any,proposalId:string,ownerId:string):boolean {
+  return !!value&&value.proposal_id===proposalId&&value.owner_user_id===ownerId&&value.status==="merged"&&
+    value.decision_kind==="owner_direct_rule"&&value.visual_qc_performed===false&&
+    value.check_scope==="STRUCTURE_SCOPE_AND_DETECTABLE_CONFLICTS_ONLY"&&isUuid(value.rule_decision_id)&&
+    typeof value.merged_at==="string"&&Number.isFinite(Date.parse(value.merged_at))&&
+    [value.candidate_hash,value.rule_hash,value.plan_hash].every(hash=>typeof hash==="string"&&hash.length>0);
+}
+
 /** Allowlisted public projection; worker capabilities and raw nested payloads never leave the edge. */
 function publicRuleReviewRequest(value:any,proposalId:string) {
   if(value===null)return null;
@@ -111,6 +120,27 @@ export default {
     }
 
 
+    // This explicit recovery request is NOT approval and cannot merge. The SQL
+    // transaction either returns a committed owner receipt or fences delayed
+    // legacy accepts before reporting that no owner acceptance took effect.
+    if(body.mode === "owner_rule_recover") {
+      const headers={"Cache-Control":"no-store"};
+      if(body.recover!==true||!isUuid(body.proposal_id)||!isUuid(body.recovery_id))
+        return Response.json({error:"Explicit recovery and stable proposal/recovery UUIDs required"},{status:422,headers});
+      const {data,error}=await adminDb.rpc("uid_rule_recover",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id,p_recovery_id:body.recovery_id});
+      if(error)return Response.json({error:"Chưa xác minh được lượt duyệt. Giữ nguyên mã khôi phục và thử kiểm tra lại.",code:"owner_recovery_unresolved"},{status:error.code==="42501"?403:409,headers});
+      if(data?.proposal_id!==body.proposal_id||data.owner_user_id!==user.id||data.recovery_id!==body.recovery_id)
+        return Response.json({error:"Cannot verify owner recovery identity",code:"owner_recovery_invalid_receipt"},{status:502,headers});
+      const identity={proposal_id:body.proposal_id,owner_user_id:user.id,recovery_id:body.recovery_id};
+      if(data.status==="merged"&&data.canonical_changed===true&&validOwnerReceipt(data.receipt,body.proposal_id,user.id))
+        return Response.json({...identity,status:"merged",receipt:data.receipt,canonical_changed:true},{headers});
+      if(data.status==="fenced_not_applied"&&data.canonical_changed===false&&isUuid(data.recovery_token))
+        return Response.json({...identity,status:data.status,recovery_token:data.recovery_token,canonical_changed:false},{headers});
+      if(["superseded","resolved","rejected"].includes(data.status)&&data.canonical_changed===false)
+        return Response.json({...identity,status:data.status,canonical_changed:false},{headers});
+      return Response.json({error:"Cannot verify owner recovery outcome",code:"owner_recovery_invalid_receipt"},{status:502,headers});
+    }
+
     // Explicit owner surface, selected before any request. Not a fallback for
     // queue errors: it uses the same authenticated snapshot as accept_rule.
     if(body.mode === "owner_rule_preflight") {
@@ -122,6 +152,10 @@ export default {
       if(data?.proposal?.id!==body.proposal_id)return Response.json({error:"Proposal not found"},{status:404,headers});
       if(!validReviewContext(data))return Response.json({error:"Incomplete owner snapshot. Reload before approving."},{status:503,headers});
       if(data.direct_rule?.owner_authorized!==true)return Response.json({error:"Enabled verified configured owner required"},{status:403,headers});
+      if(data.owner_user_id!==user.id||!(data.recovery_token===null||isUuid(data.recovery_token)))
+        return Response.json({error:"Owner recovery snapshot unavailable. Reload after the update completes."},{status:503,headers});
+      if(data.direct_rule_receipt!==null&&data.direct_rule_receipt!==undefined&&!validOwnerReceipt(data.direct_rule_receipt,body.proposal_id,user.id))
+        return Response.json({error:"Cannot verify saved owner receipt"},{status:502,headers});
       const compiled=await buildOwnerRulePlan(data);
       const {plan:_plan,...direct_rule_plan}=compiled;
       // Do not compute outcome readiness or expose queue authority on this path.
@@ -150,7 +184,7 @@ export default {
         return Response.json({error:"Review queue unavailable. Retry after the update completes."},{status:503});
       const compiled = await buildOwnerRulePlan(data);
       const {plan:_plan,...direct_rule_plan}=compiled;
-      const {compiler_context:_compilerContext,...visible}=reviewReadiness(data);
+      const {compiler_context:_compilerContext,owner_user_id:_ownerUserId,recovery_token:_recoveryToken,...visible}=reviewReadiness(data);
       return Response.json({ ...visible, direct_rule_plan,queue_available,
         review_intent_hash:queue_available?data.review_intent_hash:null,review_request:queue_available?(data.review_request||null):null,
         direct_rule:data.direct_rule ? {...data.direct_rule,eligible:data.direct_rule.eligible===true&&compiled.eligible,
@@ -160,6 +194,9 @@ export default {
     // This deliberately records owner authority over the displayed creative
     // rule, never visual QC. Forged client plans/actors are never used.
     if(body.mode === "accept_rule") {
+      const tokenAware=Object.hasOwn(body,"recovery_token");
+      if(tokenAware&&body.recovery_token!==null&&!isUuid(body.recovery_token))
+        return Response.json({error:"Valid owner recovery token required"},{status:422});
       if(body.approve_rule!==true||!body.proposal_id||![body.candidate_hash,body.rule_hash,body.plan_hash].every(value=>typeof value==="string"&&value.length>0))
         return Response.json({error:"Explicit approval of the displayed rule, effective guidance and current scope is required."},{status:422});
       const {data:context,error:contextError}=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
@@ -168,10 +205,12 @@ export default {
       let plan:unknown=null;
       const receipt=context.direct_rule_receipt;
       if(context.proposal.status==="merged"&&receipt) {
-        if(receipt.proposal_id!==body.proposal_id||receipt.status!=="merged"||receipt.decision_kind!=="owner_direct_rule"||receipt.visual_qc_performed!==false||typeof receipt.rule_decision_id!=="string"||!receipt.rule_decision_id||typeof receipt.merged_at!=="string"||!Number.isFinite(Date.parse(receipt.merged_at))||
+        if(!validOwnerReceipt(receipt,body.proposal_id,user.id)||
            receipt.candidate_hash!==body.candidate_hash||receipt.rule_hash!==body.rule_hash||receipt.plan_hash!==body.plan_hash)
           return Response.json({error:"The completed rule does not match this approval. Reload to inspect its audit."},{status:409});
       } else {
+        if(tokenAware&&(context.owner_user_id!==user.id||context.recovery_token!==body.recovery_token))
+          return Response.json({error:"Owner recovery fence changed. Reload the owner preview before approving."},{status:409});
         if(context.proposal.status!=="pending"||context.direct_rule?.eligible!==true||context.direct_rule.owner_authorized!==true||
            context.candidate_hash!==body.candidate_hash||context.direct_rule.rule_hash!==body.rule_hash)
           return Response.json({error:"The rule, scope, owner authority or canonical version changed. Reload before approving."},{status:409});
@@ -180,13 +219,13 @@ export default {
           return Response.json({error:"The effective rule plan is blocked or changed. Reload and review the current guidance.",issues:compiled.blockers.map(item=>item.message)},{status:409});
         plan=compiled.plan;
       }
-      const {data,error}=await adminDb.rpc("uid_rule_accept",{
+      const {data,error}=await adminDb.rpc(tokenAware?"uid_rule_accept_fenced":"uid_rule_accept",{
         p_proposal_id:body.proposal_id,p_actor_user_id:user.id,
         p_expected_candidate_hash:body.candidate_hash,p_expected_rule_hash:body.rule_hash,p_plan:plan,p_expected_plan_hash:body.plan_hash,
+        ...(tokenAware?{p_recovery_token:body.recovery_token}:{}),
       });
       if(error)return Response.json({error:error.message},{status:409});
-      if(data?.proposal_id!==body.proposal_id||data.status!=="merged"||data.decision_kind!=="owner_direct_rule"||
-         data.visual_qc_performed!==false||typeof data.rule_decision_id!=="string"||!data.rule_decision_id||typeof data.merged_at!=="string"||!Number.isFinite(Date.parse(data.merged_at))||data.candidate_hash!==body.candidate_hash||data.rule_hash!==body.rule_hash||data.plan_hash!==body.plan_hash)
+      if(!validOwnerReceipt(data,body.proposal_id,user.id)||data.candidate_hash!==body.candidate_hash||data.rule_hash!==body.rule_hash||data.plan_hash!==body.plan_hash)
         return Response.json({error:"Cannot verify the rule merge receipt. Reload to inspect the saved outcome; do not submit again blindly."},{status:502});
       return Response.json({...data,proposal:{id:data.proposal_id,status:data.status,merged_at:data.merged_at},canonical_changed:true},{headers:{"Cache-Control":"no-store"}});
     }

@@ -39,7 +39,7 @@ test('body read deadline aborts even after headers; mutation is never replayed',
 
 test('pending state cannot prove failed write; only observed terminal or new request unlocks reconciliation',()=>{
  assert.equal(reconcilesReview({action:'rule'},'pending'),false);
- assert.equal(reconcilesReview({action:'rule'},'merged'),true);
+ assert.equal(reconcilesReview({action:'rule'},'merged'),false);
  assert.equal(reconcilesReview({action:'rule'},'unknown'),false);
  assert.equal(reconcilesReview({action:'process',requestId:'old'},'pending',{id:'old',status:'cancelled'}),false);
  assert.equal(reconcilesReview({action:'process',requestId:'old'},'pending',{id:'new',status:'queued'}),true);

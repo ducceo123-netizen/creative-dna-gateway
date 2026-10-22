@@ -1,5 +1,5 @@
 import { HomeIconInstall } from "./HomeIconInstall";
-import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock } from "../request-recovery";
+import { boundedFetch, ownerReviewLockKey, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock } from "../request-recovery";
 import { feedbackStatuses, sourceBrand, feedbackTitle, materialKey, materialLabel, filterFeedback, groupFeedback, feedbackDate } from "./feedback-inbox";
 import { RuleReviewHandoff } from "./RuleReviewHandoff";
 import { GovernancePanel } from "./GovernancePanel";
@@ -250,7 +250,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       if (!Array.isArray(data?.proposals) || data.proposals.some((p:any) => !p || typeof p.id !== "string" || typeof p.status !== "string")) {
         throw new Error("Dữ liệu feedback trả về không hợp lệ. Vui lòng thử lại.");
       }
-      for(const proposal of data.proposals){const key=reviewLockKey(proposal.id);const lock=getReviewLock(key);if(lock&&["merged","resolved","rejected"].includes(proposal.status))clearReviewLock(key);}
+      for(const proposal of data.proposals){const key=reviewLockKey(proposal.id);const lock=getReviewLock(key);if(lock&&lock.action!=="rule"&&["merged","resolved","rejected"].includes(proposal.status))clearReviewLock(key);}
       setProposals(data.proposals);
       setQueueLoaded(true);
       setQueueError("");
@@ -262,7 +262,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   };
 
   const reject = async (id:string) => {
-    if (actionBusy.current || getReviewLock(reviewLockKey(id))) {setActionErrors(previous=>({...previous,[id]:"Kết quả thao tác trước chưa rõ. Đang kiểm tra trạng thái; không gửi lại."}));return;}
+    if (actionBusy.current || getReviewLock(reviewLockKey(id)) || getReviewLock(ownerReviewLockKey(id))) {setActionErrors(previous=>({...previous,[id]:"Kết quả thao tác trước chưa rõ. Đang kiểm tra trạng thái; không gửi lại."}));return;}
     actionBusy.current = true;
     setReviewLock(reviewLockKey(id),{action:"reject"});
     setLoading(true); setActiveAction({ id, type:"reject" }); setMessage("");

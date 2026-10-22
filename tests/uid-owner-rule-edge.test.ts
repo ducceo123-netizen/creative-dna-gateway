@@ -42,6 +42,7 @@ async function makeSnapshot() {
   const block = '\n\n## ACCEPTED ADMIN FEEDBACK — 2026-10-13\n' + canonicalRule + '\n';
   return {
     proposal: { id: proposalId, status: 'pending', merged_at: null, knowledge_node_id: target.id, proposed_content_md: canonicalRule, proposed_scope: canonicalScope },
+    owner_user_id: ownerId, recovery_token: null,
     candidate_hash: 'scope-v2:owner-current', targets: [target], baselines: [], evaluations: [], covered_candidates: [],
     scope: { branch_slug: target.slug, structural: true, cross_brand: false, proposed_scope: canonicalScope, source_node_id: target.id, target_node_ids: [target.id] },
     direct_rule: {
@@ -70,6 +71,7 @@ async function approval(context?: any) {
   };
 }
 const sqlReceipt = {
+  owner_user_id: ownerId,
   proposal_id: proposalId, status: 'merged', merged_at: '2026-10-13T04:00:00Z',
   decision_kind: 'owner_direct_rule', visual_qc_performed: false,
   rule_decision_id: '00000000-0000-4000-8000-000000000102',
@@ -80,6 +82,7 @@ type Options = {
   snapshot?: any; preflightError?: string; acceptError?: string; acceptResult?: any;
   queueSnapshot?: any; queueError?: { message: string; code?: string };
   user?: { id: string } | null; role?: string; active?: boolean;
+  recoveryResult?: any; recoveryError?: any;
 };
 const edgeCode = transformSync(
   readFileSync('supabase/functions/creative-dna-admin-feedback/index.ts', 'utf8')
@@ -104,7 +107,8 @@ async function invoke(payload: any, options: Options = {}) {
       };
       if (name === 'uid_rule_preflight') return options.preflightError ? { error: { message: options.preflightError } } : { data: context };
       if (name === 'uid_review_enqueue') return { data: { id: 'synthetic-owner-queue-request', proposal_id: proposalId, status: 'queued' } };
-      assert.equal(name, 'uid_rule_accept', 'only owner-authorized protected SQL may apply a direct rule');
+      if(name==='uid_rule_recover')return {data:options.recoveryResult,error:options.recoveryError};
+      assert.ok(['uid_rule_accept','uid_rule_accept_fenced'].includes(name), 'only owner-authorized protected SQL may apply a direct rule');
       return options.acceptError ? { error: { message: options.acceptError } } : { data: Object.hasOwn(options, 'acceptResult') ? options.acceptResult : { ...sqlReceipt, plan_hash: payload.plan_hash } };
     },
   };
@@ -120,7 +124,7 @@ async function invoke(payload: any, options: Options = {}) {
   }));
   return { response, body: await response.json(), rpcCalls, compilerCalls };
 }
-const accepts = (result: Awaited<ReturnType<typeof invoke>>) => result.rpcCalls.filter(call => call.name === 'uid_rule_accept');
+const accepts = (result: Awaited<ReturnType<typeof invoke>>) => result.rpcCalls.filter(call => ['uid_rule_accept','uid_rule_accept_fenced'].includes(call.name));
 
 test('owner-rule preflight recomputes a source-bound plan from one authenticated read without any QC pass', async () => {
   const context = await snapshot();
@@ -598,7 +602,9 @@ test('dedicated owner preview uses only the session-bound rule snapshot and retu
   assert.equal(Object.hasOwn(result.body.direct_rule_plan, 'plan'), false);
   assert.equal(Object.hasOwn(result.body, 'compiler_context'), false);
   assert.doesNotMatch(JSON.stringify(result.body), /must-not-expose|forged-owner/);
-  assert.doesNotMatch(JSON.stringify(result.body), new RegExp(ownerId));
+  assert.equal(result.body.owner_user_id, ownerId);
+  assert.equal(result.body.recovery_token, null);
+  assert.doesNotMatch(JSON.stringify(result.body.direct_rule_plan), new RegExp(ownerId));
 });
 
 test('dedicated owner preview requires explicit server owner authorization without client overrides', async () => {
@@ -694,4 +700,80 @@ test('dedicated owner preview validates proposal identity before protected reads
     assert.deepEqual(result.rpcCalls, []);
     assert.deepEqual(result.compilerCalls, []);
   }
+});
+
+const recoveryId='00000000-0000-4000-8000-000000000801';
+const recoveryToken='00000000-0000-4000-8000-000000000802';
+const recoveryPayload={mode:'owner_rule_recover',proposal_id:proposalId,recover:true,recovery_id:recoveryId};
+const fencedRecovery={proposal_id:proposalId,owner_user_id:ownerId,recovery_id:recoveryId,status:'fenced_not_applied',recovery_token:recoveryToken,canonical_changed:false};
+
+test('explicit authenticated owner recovery calls only the protected recovery RPC',async()=>{
+ const result=await invoke({...recoveryPayload,actor_user_id:'forged-owner',owner_user_id:'forged-owner',approve_rule:true,plan:{}},{recoveryResult:fencedRecovery});
+ assert.equal(result.response.status,200);assert.equal(result.response.headers.get('cache-control'),'no-store');
+ assert.deepEqual(result.body,fencedRecovery);assert.equal(result.compilerCalls.length,0);
+ assert.deepEqual(result.rpcCalls,[{name:'uid_rule_recover',args:{p_proposal_id:proposalId,p_actor_user_id:ownerId,p_recovery_id:recoveryId}}]);
+});
+
+test('recovery requires an explicit request, valid identities and active authenticated admin',async()=>{
+ for(const payload of [{...recoveryPayload,recover:false},{...recoveryPayload,recovery_id:'bad'},{...recoveryPayload,proposal_id:'bad'},{...recoveryPayload,recovery_id:undefined}]){
+  const result=await invoke(payload);assert.equal(result.response.status,422);assert.equal(result.rpcCalls.length,0);
+ }
+ for(const options of [{user:null},{role:'member'},{active:false}]){
+  const result=await invoke(recoveryPayload,options);assert.ok([401,403].includes(result.response.status));assert.equal(result.rpcCalls.length,0);
+ }
+ const denied=await invoke(recoveryPayload,{recoveryError:{code:'42501',message:'private debug text'}});
+ assert.equal(denied.response.status,403);assert.doesNotMatch(JSON.stringify(denied.body),/private debug/);
+});
+
+test('recovery validates every receipt identity and outcome, with no automatic accept',async()=>{
+ const receipt={...sqlReceipt,plan_hash:'a'.repeat(64)};
+ const merged={...fencedRecovery,status:'merged',receipt,canonical_changed:true};delete (merged as any).recovery_token;
+ for(const data of [fencedRecovery,merged,...['superseded','resolved','rejected'].map(status=>({proposal_id:proposalId,owner_user_id:ownerId,recovery_id:recoveryId,status,canonical_changed:false}))]){
+  const result=await invoke(recoveryPayload,{recoveryResult:data});assert.equal(result.response.status,200);assert.equal(accepts(result).length,0);
+ }
+ for(const bad of [{...fencedRecovery,owner_user_id:'forged'},{...fencedRecovery,proposal_id:'forged'},{...fencedRecovery,recovery_id:'forged'},
+  {...fencedRecovery,recovery_token:null},{...fencedRecovery,canonical_changed:true},{...merged,receipt:{...receipt,owner_user_id:'forged'}},
+  {...merged,receipt:{...receipt,visual_qc_performed:true}},{...merged,receipt:{...receipt,plan_hash:null}},{...merged,receipt:{...receipt,check_scope:'wrong'}}]){
+  const result=await invoke(recoveryPayload,{recoveryResult:bad});assert.equal(result.response.status,502,JSON.stringify(bad));assert.equal(accepts(result).length,0);
+ }
+});
+
+test('token-aware acceptance forwards the exact null/current fence, rejects stale tokens, and preserves prior receipts',async()=>{
+ for(const token of [null,recoveryToken]){
+  const context:any=await snapshot();context.recovery_token=token;
+  const result=await invoke({...await approval(context),recovery_token:token},{snapshot:context});
+  assert.equal(result.response.status,200);assert.equal(result.body.owner_user_id,ownerId);
+  assert.equal(accepts(result)[0].name,'uid_rule_accept_fenced');assert.equal(accepts(result)[0].args.p_recovery_token,token);
+ }
+ const context:any=await snapshot();context.recovery_token=recoveryToken;
+ const stale=await invoke({...await approval(context),recovery_token:null},{snapshot:context});
+ assert.equal(stale.response.status,409);assert.equal(accepts(stale).length,0);
+ const bad=await invoke({...await approval(),recovery_token:'bad'});assert.equal(bad.response.status,422);assert.equal(bad.rpcCalls.length,0);
+ const payload={...await approval(context),recovery_token:null};context.proposal.status='merged';context.direct_rule_receipt={...sqlReceipt,plan_hash:payload.plan_hash};
+ const replay=await invoke(payload,{snapshot:context});assert.equal(replay.response.status,200);assert.equal(accepts(replay)[0].args.p_plan,null);
+});
+
+test('owner preview fails closed on missing/wrong owner identity or malformed fence',async()=>{
+ for(const changes of [{owner_user_id:undefined},{owner_user_id:'wrong'},{recovery_token:undefined},{recovery_token:'bad'}]){
+  const result=await invoke({mode:'owner_rule_preflight',proposal_id:proposalId},{snapshot:{...await snapshot(),...changes}});
+  assert.equal(result.response.status,503);assert.equal(result.compilerCalls.length,0);
+ }
+});
+
+test('recovery gateway pins its mode, validates explicit UUID request, and strips forged authority',async()=>{
+ const original=process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL='https://example.test/recover';
+ const realFetch=globalThis.fetch,calls:any[]=[];const server=createApp().listen(0,'127.0.0.1');await once(server,'listening');
+ const base=`http://127.0.0.1:${(server.address() as any).port}/api/admin/feedback/${proposalId}`;
+ globalThis.fetch=async(url,init)=>{assert.equal(String(url),'https://example.test/recover');assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer test');calls.push(JSON.parse(String(init?.body)));return Response.json(fencedRecovery);};
+ try{
+  const headers={Authorization:'Bearer test','Content-Type':'application/json'};
+  assert.equal((await realFetch(base+'/recover-owner-rule',{method:'POST'})).status,401);
+  assert.equal((await realFetch(base+'/recover-owner-rule',{method:'POST',headers,body:JSON.stringify({...recoveryPayload,recover:undefined})})).status,422);
+  const result=await realFetch(base+'/recover-owner-rule',{method:'POST',headers,body:JSON.stringify({...recoveryPayload,mode:'accept_rule',proposal_id:'forged',owner_user_id:'forged'})});
+  assert.equal(result.status,200);assert.equal(result.headers.get('cache-control'),'no-store');assert.deepEqual(calls,[recoveryPayload]);
+  for(const recovery_token of [null,recoveryToken]){
+   const payload={...await approval(),recovery_token};
+   await realFetch(base+'/accept-rule',{method:'POST',headers,body:JSON.stringify(payload)});assert.deepEqual(calls.at(-1),payload);
+  }
+ }finally{globalThis.fetch=realFetch;if(original===undefined)delete process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;else process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL=original;await new Promise<void>(r=>server.close(()=>r()));}
 });

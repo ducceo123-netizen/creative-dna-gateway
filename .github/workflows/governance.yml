@@ -76,4 +76,5 @@ jobs:
           node tests/sql/uid_rule_replacement_context.mjs
           node tests/sql/uid_agent_review_compiler.mjs
           node tests/sql/uid_direct_rule_accept_concurrency.mjs
+          node tests/sql/uid_owner_rule_recovery_concurrency.mjs
           node tests/sql/uid_agent_review_queue_concurrency.mjs
