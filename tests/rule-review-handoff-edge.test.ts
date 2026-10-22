@@ -64,3 +64,12 @@ test('delayed cancel A binds old key and cannot accept a receipt from delegation
  assert.equal((await invoke({...payload,idempotency_key:undefined})).response.status,422);
  const stale=await invoke(payload,{error:{code:'P0001',message:'Exact delegation changed'}});assert.equal(stale.response.status,409);assert.equal(stale.calls[0].args.p_expected_idempotency_key,key);
 });
+
+test('exact eligibility failure is explained without leaking SQL or masking drift/auth failures',async()=>{
+ const r=await invoke({mode:'rule_review_preflight',proposal_id:'p1'},{error:{code:'P0001',message:'Rule structure/scope/compiler blocked',details:'secret snapshot'}});
+ assert.equal(r.response.status,409);assert.equal(r.body.code,'rule_review_eligibility_blocked');assert.doesNotMatch(JSON.stringify(r.body),/secret snapshot/);
+ for(const error of [{code:'P0001',message:'Rule structure/scope/compiler blocked: secret'}, {code:'P0001',message:'Exact delegation changed'}]){
+  const other=await invoke(handoff,{error});assert.equal(other.body.code,'rule_review_conflict');assert.doesNotMatch(JSON.stringify(other.body),/secret/);
+ }
+ assert.equal((await invoke(handoff,{error:{code:'42501',message:'Rule structure/scope/compiler blocked'}})).body.code,'rule_review_unavailable');
+});
