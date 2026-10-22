@@ -1,7 +1,7 @@
 import { boundedFetch, reviewLockKey, getReviewLock, setReviewLock, clearReviewLock, reconcilesReview } from "../request-recovery";
 import { useEffect, useRef, useState } from "react";
 import type { ReviewRequest, FeedbackPreflight, FeedbackProposal, ReviewBaseline, ReviewEvaluation, ReviewTarget } from "./feedback-review";
-import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposalReviewKey, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validatePreflight } from "./feedback-review";
+import { affectedBrands, baselineBrand, baselineName, meaningfulNote, proposalAddition, proposalReviewKey, proposedLines, readableIssue, safeHttpUrl, searchCoveredCandidates, validateReviewRequest, validateOwnerPreflight, validatePreflight } from "./feedback-review";
 
 export type FeedbackReviewPath = "covered" | "merge" | "owner";
 type Http = (url:string, init?:RequestInit)=>Promise<Response>;
@@ -83,7 +83,6 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const [coveredScope,setCoveredScope]=useState(false);
   const [safeguards,setSafeguards]=useState(false);
   const [note,setNote]=useState("");
-  const [ownerConfirmed,setOwnerConfirmed]=useState(false);
   const [queueRequest,setQueueRequest]=useState<ReviewRequest|null|undefined>(undefined);
   const alive=useRef(false);
   const activeRead=useRef<AbortController|null>(null);
@@ -101,7 +100,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const sameIdentity=identity.current.id===proposal.id&&identity.current.path===path;
   const visibleData=sameIdentity?data:null;
 
-  const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);setOwnerConfirmed(false);};
+  const resetAttestations=()=>{setSelected("");setCoveredScope(false);setSafeguards(false);};
   const clearPoll=()=>{if(pollTimer.current!==null)window.clearTimeout(pollTimer.current);pollTimer.current=null;};
   const schedulePoll=()=>{
     clearPoll();
@@ -119,11 +118,11 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     const current=()=>alive.current&&!controller.signal.aborted&&activeRead.current===controller&&proposalKeyRef.current===readProposalKey;
     setLoading(true);
     try {
-      const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/preflight`,{signal:controller.signal},requestRef.current);
+      const response=await boundedFetch(`/api/admin/feedback/${encodeURIComponent(proposal.id)}/${path==="owner"?"owner-preflight":"preflight"}`,{signal:controller.signal},requestRef.current);
       const result=await response.json();
       if(!current())return;
       if(!response.ok)throw Error([result.error||"Không tải được preflight.",...(Array.isArray(result.issues)?result.issues:[])].join(" · "));
-      const next=validatePreflight(result,proposal.id);
+      const next=path==="owner"?validateOwnerPreflight(result,proposal.id):validatePreflight(result,proposal.id);
       const previous=dataRef.current;
       if(previous&&(proposalReviewKey(previous.proposal)!==proposalReviewKey(next.proposal)||previous.candidate_hash!==next.candidate_hash||JSON.stringify(previous.targets)!==JSON.stringify(next.targets)||JSON.stringify(previous.covered_candidates)!==JSON.stringify(next.covered_candidates)||previous.review_intent_hash!==next.review_intent_hash||previous.direct_rule?.rule_hash!==next.direct_rule?.rule_hash||previous.direct_rule_plan?.plan_hash!==next.direct_rule_plan?.plan_hash||JSON.stringify(previous.baselines)!==JSON.stringify(next.baselines)))resetAttestations();
       loadedProposalKey.current=readProposalKey;dataRef.current=next;setData(next);setQueueRequest(undefined);setStale(false);
@@ -156,7 +155,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
   const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!busy&&!stale&&!uncertain;
-  const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true&&(path!=="owner"||ownerConfirmed);
+  const canAcceptRule=canReview&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
@@ -203,7 +202,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   return <section aria-label={path==="covered"?"Đã có trong quy chuẩn":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"} aria-busy={loading||!!busy} className="rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 space-y-4">
     <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
     {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
-    {loading&&<p role="status" className="text-xs text-slate-600">Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…</p>}
+    {loading&&<p role="status" className="text-xs text-slate-600">{path==="owner"?"Đang tải nội dung rule và phạm vi áp dụng hiện tại…":"Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…"}</p>}
     {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
     {visibleData&&<>
       {visibleData.proposal.status!=="pending"&&<p role="alert" className="text-xs text-amber-900">Feedback hiện có trạng thái {visibleData.proposal.status}. Chỉ xem; không thể gửi review mới.</p>}
@@ -241,7 +240,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>}
           {!visibleData.direct_rule&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng duyệt rule trực tiếp. Hãy tải lại sau khi cập nhật.</p>}
           {visibleData.direct_rule?.blockers.map((issue,i)=><p key={i} role="alert" className="text-xs text-amber-900">{issue.message} {issue.next_action}</p>)}
-          {path==="owner"&&<label className="flex items-start gap-2 text-xs"><input type="checkbox" aria-label="Xác nhận nội dung và phạm vi hard merge" checked={ownerConfirmed} disabled={!canReview||visibleData.direct_rule?.eligible!==true||visibleData.direct_rule_plan?.eligible!==true} onChange={event=>setOwnerConfirmed(event.target.checked)}/><span>Tôi đã đọc bản so sánh, đồng ý áp dụng đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</span></label>}
+          {path==="owner"&&<p className="text-xs">Nhấn Xác nhận hard merge để duyệt đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</p>}
           <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":path==="owner"?"Xác nhận hard merge":"Duyệt rule & merge ngay"}</button>
         </div>
         {path!=="owner"&&<>

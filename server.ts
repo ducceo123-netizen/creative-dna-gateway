@@ -1120,18 +1120,20 @@ export function createApp(): express.Application {
   }
 
   // The gateway forwards the existing Admin session; resolution stays atomic in SQL.
-  app.get("/api/admin/feedback/:id/preflight", async (req: Request, res: Response) => {
+  for (const [previewPath,previewMode] of [["preflight","review_preflight"],["owner-preflight","owner_rule_preflight"]]) {
+  app.get(`/api/admin/feedback/:id/${previewPath}`, async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({ error: "Admin upstream unavailable" });
     const authorization = req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
     try {
       const upstream = await fetch(adminUpstreamUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: authorization },
-        body: JSON.stringify({ mode: "review_preflight", proposal_id: req.params.id }) });
+        body: JSON.stringify({ mode: previewMode, proposal_id: req.params.id }) });
       const data = await upstream.json();
       res.setHeader("Cache-Control", "no-store");
       return res.status(upstream.status).json(data);
     } catch (err: any) { return res.status(502).json({ error: sanitizePublicError(err, "Unable to load current review") }); }
   });
+  }
   app.post("/api/admin/feedback/:id/accept-rule", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
     const authorization=req.header("authorization");

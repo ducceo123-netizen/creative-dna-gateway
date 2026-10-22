@@ -221,7 +221,7 @@ test('one atomic owner preview supports queued outcome review and separately app
 });
 
 test('direct rule routes reject unauthenticated, inactive and non-admin actors before protected reads', async () => {
-  for (const mode of ['review_preflight', 'accept_rule']) {
+  for (const mode of ['review_preflight', 'owner_rule_preflight', 'accept_rule']) {
     for (const [options, status] of [[{ user: null }, 401], [{ role: 'member' }, 403], [{ active: false }, 403]] as [Options, number][]) {
       const result = await invoke({ ...await approval(), mode }, options);
       assert.equal(result.response.status, status);
@@ -566,4 +566,132 @@ test('schema4 Edge rejects malformed or divergent history before any owner accep
  drift.compiler_context.projected_targets[0].metadata.creative_quality_contract.contracts['synthetic-brand'].agent_rule_reviewed_supplemental_rules[0].review_hash='c'.repeat(64);
  const rejected=await invoke(payload,{snapshot:drift});
  assert.equal(rejected.response.status,409);assert.equal(accepts(rejected).length,0);
+});
+
+
+test('dedicated owner preview uses only the session-bound rule snapshot and returns no queue or output-QC capability', async () => {
+  const context: any = await snapshot();
+  context.review_intent_hash = 'must-not-expose-queue-intent';
+  context.review_request = { id: 'must-not-expose-queue-request' };
+  context.automatic_review = { status: 'ready_to_merge', evaluation_id: 'must-not-expose-qc' };
+  const expected = await buildCompatibleOwnerRulePlan(context);
+  const result = await invoke({ mode: 'owner_rule_preflight', proposal_id: proposalId,
+    actor_user_id: 'forged-owner', owner_user_id: 'forged-owner',
+    plan: { targets: [] }, visual_qc_performed: true,
+  }, { snapshot: context, queueError: { code: 'XX000', message: 'Legacy queue unavailable' } });
+  assert.equal(result.response.status, 200);
+  assert.equal(result.response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(result.rpcCalls, [{ name: 'uid_rule_preflight', args: { p_proposal_id: proposalId, p_actor_user_id: ownerId } }]);
+  assert.equal(result.compilerCalls.length, 1);
+  assert.deepEqual(result.compilerCalls[0], context);
+  assert.equal(result.body.preview_kind, 'owner_rule');
+  assert.equal(result.body.proposal.id, proposalId);
+  assert.equal(result.body.candidate_hash, context.candidate_hash);
+  assert.equal(result.body.queue_available, false);
+  assert.equal(result.body.review_intent_hash, null);
+  assert.equal(result.body.review_request, null);
+  assert.equal(Object.hasOwn(result.body, 'automatic_review'), false);
+  assert.equal(result.body.direct_rule.eligible, true);
+  assert.equal(result.body.direct_rule.owner_authorized, true);
+  assert.equal(result.body.direct_rule.visual_qc_performed, false);
+  assert.equal(result.body.direct_rule_plan.plan_hash, expected.plan_hash);
+  assert.equal(Object.hasOwn(result.body.direct_rule_plan, 'plan'), false);
+  assert.equal(Object.hasOwn(result.body, 'compiler_context'), false);
+  assert.doesNotMatch(JSON.stringify(result.body), /must-not-expose|forged-owner/);
+  assert.doesNotMatch(JSON.stringify(result.body), new RegExp(ownerId));
+});
+
+test('dedicated owner preview requires explicit server owner authorization without client overrides', async () => {
+  for (const owner_authorized of [false, undefined, null, 'true', 1]) {
+    const context: any = await snapshot();
+    context.direct_rule.owner_authorized = owner_authorized;
+    const result = await invoke({ mode: 'owner_rule_preflight', proposal_id: proposalId,
+      direct_rule: { owner_authorized: true, eligible: true }, actor_user_id: ownerId,
+    }, { snapshot: context });
+    assert.equal(result.response.status, 403, `owner_authorized=${String(owner_authorized)}`);
+    assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_rule_preflight']);
+    assert.equal(result.compilerCalls.length, 0);
+    assert.equal(Object.hasOwn(result.body, 'direct_rule_plan'), false);
+  }
+});
+
+test('dedicated owner preview rejects malformed, wrong-proposal and failed snapshots without any fallback', async () => {
+  const valid: any = await snapshot();
+  const malformed = [null, {}, { ...valid, proposal: { ...valid.proposal, id: 'wrong-proposal' } },
+    { ...valid, candidate_hash: '' }, { ...valid, targets: null },
+    { ...valid, targets: [{ id: 'malformed-target' }] }, { ...valid, baselines: {} },
+    { ...valid, evaluations: null }, { ...valid, covered_candidates: null },
+    { ...valid, direct_rule: { ...valid.direct_rule, blockers: null } }];
+  for (const options of [...malformed.map(snapshot => ({ snapshot })), { preflightError: 'Owner rule snapshot unavailable' }]) {
+    const result = await invoke({ mode: 'owner_rule_preflight', proposal_id: proposalId, plan: { targets: [] } }, options);
+    assert.ok(result.response.status >= 400, JSON.stringify(options));
+    assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_rule_preflight']);
+    assert.equal(result.compilerCalls.length, 0);
+    assert.equal(Object.hasOwn(result.body, 'direct_rule_plan'), false);
+  }
+});
+
+test('dedicated owner preview reports incompatible projections as blockers without mutation or queue fallback', async () => {
+  const context = await snapshot();
+  context.compiler_context.projected_targets[0].content_md += '\nUnapproved projection change.';
+  const result = await invoke({ mode: 'owner_rule_preflight', proposal_id: proposalId }, { snapshot: context });
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.preview_kind, 'owner_rule');
+  assert.equal(result.body.direct_rule.eligible, false);
+  assert.equal(result.body.direct_rule_plan.plan_hash, null);
+  assert.ok(result.body.direct_rule.blockers.length > 0);
+  assert.equal(result.body.queue_available, false);
+  assert.equal(Object.hasOwn(result.body, 'automatic_review'), false);
+  assert.deepEqual(result.rpcCalls.map(call => call.name), ['uid_rule_preflight']);
+});
+
+test('dedicated owner preview gateway authenticates and pins GET routing to the owner mode and path proposal', async () => {
+  const originalUrl = process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;
+  process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL = 'https://example.test/owner-preview-edge';
+  const realFetch = globalThis.fetch;
+  const calls: any[] = [];
+  let upstreamStatus = 200;
+  let upstreamBody: any = { preview_kind: 'owner_rule', queue_available: false, review_intent_hash: null, review_request: null };
+  const server = createApp().listen(0, '127.0.0.1'); await once(server, 'listening');
+  const base = `http://127.0.0.1:${(server.address() as any).port}`;
+  globalThis.fetch = async (url, init) => {
+    assert.equal(String(url), 'https://example.test/owner-preview-edge');
+    assert.equal(init?.method, 'POST');
+    assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer synthetic.owner');
+    calls.push(JSON.parse(String(init?.body)));
+    return Response.json(upstreamBody, { status: upstreamStatus });
+  };
+  try {
+    const url = `${base}/api/admin/feedback/${proposalId}/owner-preflight?mode=process_review&proposal_id=forged&actor_user_id=forged`;
+    assert.equal((await realFetch(url)).status, 401);
+    assert.equal((await realFetch(url, { headers: { Authorization: 'Basic forged' } })).status, 401);
+    assert.equal(calls.length, 0);
+    const headers = { Authorization: 'Bearer synthetic.owner' };
+    const response = await realFetch(url, { headers });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await response.json(), upstreamBody);
+    assert.deepEqual(calls, [{ mode: 'owner_rule_preflight', proposal_id: proposalId }]);
+    upstreamStatus = 403; upstreamBody = { error: 'Configured owner required' };
+    const denied = await realFetch(url, { headers });
+    assert.equal(denied.status, 403);
+    assert.equal(denied.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await denied.json(), upstreamBody);
+    assert.deepEqual(calls[1], { mode: 'owner_rule_preflight', proposal_id: proposalId });
+  } finally {
+    globalThis.fetch = realFetch;
+    if (originalUrl === undefined) delete process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL;
+    else process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL = originalUrl;
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
+
+
+test('dedicated owner preview validates proposal identity before protected reads', async () => {
+  for (const proposal_id of [undefined, null, '', 123, {}]) {
+    const result = await invoke({ mode: 'owner_rule_preflight', proposal_id });
+    assert.equal(result.response.status, 422);
+    assert.deepEqual(result.rpcCalls, []);
+    assert.deepEqual(result.compilerCalls, []);
+  }
 });
