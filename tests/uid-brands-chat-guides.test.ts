@@ -122,23 +122,23 @@ test("group exclusion keeps separate instructions and echoes only final included
   assert.deepEqual(result.next_actions, []);
 });
 
-test("each Onepage outcome offers Render link with same-chat instructions and stage relevance", () => {
+test("Onepage outcome directs feedback to live preview, never the retired tab", () => {
   const url = "https://uid-brands-gateway-preview.onrender.com/onepage-panel.html";
   for (const stage of ["content_approval", "asset_review", "packaging", "complete"] as const) {
     const result = guide({ stage, branch: "onepage-system" });
-    assert.ok(result.text.includes(url));
-    assert.match(result.text, /Mở tab Feedback.*chọn các mục.*sao chép prompt.*dán và gửi vào chính cuộc trò chuyện này/);
+    assert.ok(!result.text.includes(url));
+    assert.match(result.text, /preview thực tế.*chọn ảnh.*sao chép prompt.*dán và gửi vào chính cuộc trò chuyện này/);
     assert.match(result.text, /góp ý trực tiếp trong chat/);
     assert.doesNotMatch(result.text, /vercel\.app/);
-    assert.equal(result.guide_data.external_panel?.url, url);
-    assert.equal(result.guide_data.external_panel?.opens_automatically, false);
+    assert.equal("external_panel" in result.guide_data, false);
+    assert.doesNotMatch(result.text, /tab Feedback|Góp ý tổng thể/);
   }
   const content = guide({ stage: "content_approval", branch: "onepage-system", assets: undefined });
   assert.match(content.text, /góp ý câu chữ trực tiếp/);
   assert.match(content.text, /Chỉ chọn vị trí ảnh khi ảnh đó thực sự đã được tạo/);
   assert.match(guide({stage:"packaging", branch:"onepage-system"}).text, /không kiểm tra QC hay ZIP/);
   const brief=buildChatBrief();
-  assert.match(brief.text,/Mở tab Tạo tác vụ/);
+  assert.match(brief.text,/Chọn Brand và Material/);
   assert.match(brief.text,/chính chat này/);
   assert.ok(brief.text.includes(url));
 });

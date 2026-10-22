@@ -1,4 +1,6 @@
-# External Prompt Master visual parity
+# External Prompt Master visual parity (historical)
+
+Superseded on 2026-10-20: the page is now task-only. The Feedback tab/picker and outcome links described below were retired in favor of feedback on the actual preview. See [current behavior](uid-external-panel-and-guided-chat.md). The compact shell, palette, collapse and copy dock remain.
 
 The external Render page restores the compact visual language from the historical ChatGPT Prompt Master source retained in `uid-brands-workflow.ts`: 600px shell, original light/dark tokens, mint selected pills, toolbar/collapse, Task/Feedback tabs, grouped feedback cards and bottom copy dock. It does not serve the old embedded runtime.
 

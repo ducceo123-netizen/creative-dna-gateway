@@ -1,29 +1,13 @@
-# External Onepage selector and guided chat
+# Task creation panel and live Onepage feedback
 
-## Behavior
+## Current behavior
 
-- The gateway returns a plain, user-opened link to `/onepage-panel.html` on the existing gateway host. It does not attach an output template or auto-open a widget.
-- The public page contains only the 18 canonical production slots from `ONEPAGE_DELIVERY_ROLES`. Template aliases are not additional generated assets; optional GTK slots must exist in the current task before use.
-- Select several slots, write one instruction, save that group, then add another. Saved groups cannot silently overlap. Overall feedback remains a separate scope.
-- Every page action stays local to the tab and ultimately copies text. There is no API call, host bridge, login, task registry, persistence, image fetching, queue or Train submission. Clipboard denial leaves a manual text-selection path. Closing/reloading loses the draft.
-- The page does not know any task, version, generated image or inventory. Its link has no private query/fragment payload. Generic labels are not previews.
-
-## Binding pasted feedback
-
-A copied prompt targets the current Onepage task in the destination conversation. The assistant must verify that this is unambiguous, obtain the exact current task/version and actual asset inventory, then resolve each separate `canonical_slots` block against that bound index. A canonical slot matches only an exact canonical asset ID or an explicitly verified `assets[].canonical_slot`; names and template aliases are not silently guessed. Missing, ambiguous, stale or overlapping selectors fail closed. Unselected assets remain untouched.
-
-The index hash correlates the supplied context; it is not authentication and does not prove latest backend state. Pasting the generic prompt in another conversation does not carry the original task lock. If the intended task/version is unclear, clarify before edits. Clear, authorized requests receive a scope echo without a redundant confirmation loop. Repeated prompts must reconcile previous execution before retrying.
-
-## Guided fallback
-
-Brief, research, content review, assets, feedback, packaging and delivery include human-readable next-step prompts. Missing input, in-progress, blocked and failed results receive recovery guidance rather than invented progress. Technical IDs stay in structured context. Research, current creative-quality contract, reference inspection and real ZIP verification gates remain enforced; feedback is never automatically submitted as training.
-
-## Compatibility and boundaries
-
-Existing nine tool names remain. Review/native schemas gain only optional state, feedback selectors, image-to-asset mapping and canonical-slot fields. Other tool schemas remain unchanged. Legacy v2/v3/v4 HTML resources remain inert and script-free. Existing cached HTML in a ChatGPT session cannot be invalidated by this patch; actual host behavior requires separate validation.
-
-No authentication, access-control, backend datastore or deployment credentials are changed. The Vercel rewrite additions expose only the three generic static files; Render uses the existing built static directory. CI path filters include the new modules and public page.
+- `/onepage-panel.html` remains available at the same URL for bookmarked/shared links, but opens the task brief composer directly. There is no feedback tab or canonical-slot picker on this page.
+- Brand/material filtering, per-route local brief drafts, validation, collapse and clipboard/manual-copy fallback remain. Closing or reloading loses the local draft. The page does not execute tasks or access the network.
+- Onepage feedback belongs on the actual bound preview: select image/text/section, group feedback and copy into the same chat. Without a preview, ask in chat to reopen the correct result. Verify identity, version and actual inventory before editing.
+- The live preview runtime, feedback backend/history, admin review and rule approval, content and assets are unchanged. Legacy MCP resource URLs still return their inert chat guidance; retired embedded scripts are not reactivated.
+- Stage guidance no longer advertises the obsolete feedback tab or routes an existing outcome back to task creation. The launcher continues to offer the task composer URL.
 
 ## Validation
 
-Automated coverage checks exact canonical inventory, separate groups and exclusions, stale indices, ambiguous/missing/conflicting mappings, preserved task/version, untouched targets, unchanged legacy schemas, no automatic widgets, no upstream feedback execution and stage/error guidance. Node full suite currently passes 667 tests; TypeScript check and production build pass. Independent code review found no blocking issue. Local Chromium startup is blocked by the execution environment; the available cloud browser cannot reach this local server, so real-browser/visual behavior awaits an accessible preview. DOM-harness checks cover group editing and copy/manual fallback; final test totals and any preview-browser outcomes are recorded in the pull request.
+Regression coverage checks task-only entry, unchanged brand/material routes and input validation, per-route draft preservation, collapse, clipboard rejection/manual selection, no network/storage bridge and preview-specific chat guidance. Live preview feedback tests are retained unchanged.
