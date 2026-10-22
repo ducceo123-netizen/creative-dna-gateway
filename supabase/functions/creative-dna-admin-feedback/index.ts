@@ -108,6 +108,27 @@ export default {
     }
 
 
+    // Explicit owner surface, selected before any request. Not a fallback for
+    // queue errors: it uses the same authenticated snapshot as accept_rule.
+    if(body.mode === "owner_rule_preflight") {
+      const headers={"Cache-Control":"no-store"};
+      if(typeof body.proposal_id!=="string"||!body.proposal_id)
+        return Response.json({error:"proposal_id required"},{status:422,headers});
+      const {data,error}=await adminDb.rpc("uid_rule_preflight",{p_proposal_id:body.proposal_id,p_actor_user_id:user.id});
+      if(error)return Response.json({error:error.message},{status:409,headers});
+      if(data?.proposal?.id!==body.proposal_id)return Response.json({error:"Proposal not found"},{status:404,headers});
+      if(!validReviewContext(data))return Response.json({error:"Incomplete owner snapshot. Reload before approving."},{status:503,headers});
+      if(data.direct_rule?.owner_authorized!==true)return Response.json({error:"Enabled verified configured owner required"},{status:403,headers});
+      const compiled=await buildOwnerRulePlan(data);
+      const {plan:_plan,...direct_rule_plan}=compiled;
+      // Do not compute outcome readiness or expose queue authority on this path.
+      const {compiler_context:_compilerContext,automatic_review:_automatic,review_intent_hash:_intent,review_request:_request,...visible}=data;
+      return Response.json({...visible,preview_kind:"owner_rule",issues:[],automatic_evaluation_id:null,
+        direct_rule_plan,queue_available:false,review_intent_hash:null,review_request:null,
+        direct_rule:{...data.direct_rule,eligible:data.direct_rule.eligible===true&&compiled.eligible,
+          blockers:[...data.direct_rule.blockers,...compiled.blockers]}},{headers});
+    }
+
     // The displayed patch, full trigger scope and owner-bound rule hash come
     // from ONE SQL snapshot. The effective plan is derived only on the server.
     if (body.mode === "review_preflight") {

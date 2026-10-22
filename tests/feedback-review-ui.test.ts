@@ -47,6 +47,9 @@ function directPreflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPrefli
     target_node_ids:[target.id],affected_brands:[target.brand_name.toLowerCase()],
    }))},...overrides};
 }
+function ownerPreflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPreflight {
+ return {...directPreflight(overrides),preview_kind:'owner_rule',queue_available:false,review_intent_hash:null,review_request:null,automatic_review:undefined,...overrides};
+}
 function directReceipt(data=directPreflight()) {return {
  status:'merged',proposal_id:data.proposal.id,proposal:{id:data.proposal.id,status:'merged',merged_at:'2026-10-13T04:00:00Z'},
  merged_at:'2026-10-13T04:00:00Z',decision_kind:'owner_direct_rule',visual_qc_performed:false,
@@ -550,36 +553,40 @@ test('visible refresh never overlaps, updates open queue and invalidates version
 
 
 test('hard merge opens a read-only scoped preview and requires deliberate owner confirmation',async t=>{
- const ui=setup('owner');t.after(ui.unmount);const data=directPreflight();await ready(ui,data);
+ const ui=setup('owner');t.after(ui.unmount);const data=ownerPreflight();await ready(ui,data);
  assert.equal(ui.calls.length,1);
- assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ assert.equal(ui.all('input').length,0);
+ assert.equal(ui.calls[0].url,`/api/admin/feedback/${proposal.id}/owner-preflight`);
+ assert.notEqual(ui.calls[0].init.method,'POST');
  assert.match(ui.text(),/Phạm vi đầy đủ: PawfectHouse/);
  assert.ok(ui.text().includes(data.proposal.proposed_content_md!));
  assert.ok(!ui.text().includes('Review outcome và bằng chứng'));
- ui.button('Xác nhận hard merge').props.onClick();await flush();assert.equal(ui.calls.length,1);
- ui.checkAll();await flush();const action=ui.button('Xác nhận hard merge').props.onClick;action();action();await flush();
+ await flush();assert.equal(ui.calls.length,1,'Rendering the preview never writes');
+ const action=ui.button('Xác nhận hard merge').props.onClick;action();action();await flush();
  assert.equal(ui.calls.length,2);assert.match(ui.calls[1].url,/accept-rule$/);
  assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
  ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();assert.equal(ui.completed.length,1);
 });
 
-test('hard merge clears owner confirmation when scope changes and cannot bypass ineligible plans',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+test('hard merge refreshes scoped preview without auto-writing and cannot bypass ineligible plans',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
- ui.click('Tải lại / Retry');await flush();ui.calls[1].resolve(Response.json(directPreflight({candidate_hash:'scope-v2:new'})));await flush();
- assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
- ui.checkAll();await flush();ui.click('Tải lại / Retry');await flush();
- const blocked=directPreflight();blocked.direct_rule!.eligible=false;blocked.direct_rule!.owner_authorized=false;
- blocked.direct_rule!.blockers=[{code:'owner_required',message:'Owner required',next_action:'Sign in as owner'}];
+ ui.click('Tải lại / Retry');await flush();ui.calls[1].resolve(Response.json(ownerPreflight({candidate_hash:'scope-v2:new'})));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
+ ui.click('Tải lại / Retry');await flush();
+ const blocked=ownerPreflight();blocked.direct_rule!.eligible=false;
+ blocked.direct_rule!.blockers=[{code:'scope_conflict',message:'Rule scope conflicts',next_action:'Resolve the scope conflict'}];
  blocked.direct_rule_plan!.eligible=false;
  ui.calls[2].resolve(Response.json(blocked));await flush();
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.disabled,true);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
 });
 
 test('hard merge uncertain response locks retries and close causes no extra writes',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();ui.click('Xác nhận hard merge');await flush();
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());ui.click('Xác nhận hard merge');await flush();
  ui.calls[1].reject(Error('Connection lost'));await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
  ui.button('Xác nhận hard merge').props.onClick();await flush();assert.equal(ui.calls.length,2);
  ui.click('Đóng');await flush();assert.equal(ui.calls.length,2);assert.equal(ui.completed.length,0);
@@ -597,75 +604,75 @@ test('proposal refresh identity compares JSON values including nested evidence a
  ])assert.notEqual(proposalReviewKey(original),proposalReviewKey(changed));
 });
 
-test('equal inbox replacements do not reload preflight or erase owner confirmation',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+test('equal inbox replacements do not reload preflight or submit a decision',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  for(let i=0;i<5;i++){ui.changeProposal({...proposal});await flush();}
  assert.equal(ui.calls.length,1);
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,true);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
  assert.equal(ui.pendingPolls,1);
  ui.advance(9999);assert.equal(ui.calls.length,1);ui.advance(1);await flush();assert.equal(ui.calls.length,2);
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Actual refresh still disables submit');
- ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,true);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
 });
 
 test('slow refresh waits a full interval after completion and manual refresh replaces the timer',async t=>{
  const ui=setup('owner');t.after(ui.unmount);
  ui.advance(18000);assert.equal(ui.calls.length,1);assert.equal(ui.pendingPolls,0);
- await ready(ui,directPreflight());ui.checkAll();await flush();
+ await ready(ui,ownerPreflight());
  ui.advance(9999);assert.equal(ui.calls.length,1);ui.advance(1);await flush();assert.equal(ui.calls.length,2);
  ui.advance(18000);ui.changeProposal({...proposal});await flush();assert.equal(ui.calls.length,2);assert.equal(ui.pendingPolls,0);
- ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
  ui.advance(9999);assert.equal(ui.calls.length,2);assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
  ui.click('Tải lại / Retry');await flush();assert.equal(ui.calls.length,3);assert.equal(ui.pendingPolls,0);
  ui.advance(1);assert.equal(ui.calls.length,3);
- ui.calls[2].resolve(Response.json(directPreflight()));await flush();
+ ui.calls[2].resolve(Response.json(ownerPreflight()));await flush();
  ui.advance(9999);assert.equal(ui.calls.length,3);ui.advance(1);assert.equal(ui.calls.length,4);
 });
 
-test('meaningful inbox change aborts the old preflight and clears owner confirmation before fresh scope',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+test('meaningful inbox change aborts the old preflight and rejects old handlers before and after fresh scope',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  const oldAction=ui.button('Xác nhận hard merge').props.onClick;
  ui.poll();await flush();assert.equal(ui.calls.length,2);
  const changed={...proposal,proposed_scope:'brand_only',proposed_content_md:'New owner rule'};
  ui.changeProposal(changed);await flush();
  assert.equal(ui.calls.length,3);assert.equal(ui.calls[1].init.signal?.aborted,true);
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
  oldAction();assert.equal(ui.calls.length,3,'An old handler cannot submit while the current revision is unread');
- ui.calls[1].resolve(Response.json(directPreflight()));await flush();
+ ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
- ui.calls[2].resolve(Response.json(directPreflight({proposal:changed,candidate_hash:'scope-v2:new'})));await flush();
- assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Fresh scope still requires new confirmation');
+ ui.calls[2].resolve(Response.json(ownerPreflight({proposal:changed,candidate_hash:'scope-v2:new'})));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false,'Fresh scope permits a new deliberate click only');
  oldAction();assert.equal(ui.calls.length,3,'An old handler cannot submit after the new preflight completes');
- ui.checkAll();await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
 });
 
 test('changed proposal cannot use prior preflight even before refresh effects execute',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  const oldAction=ui.button('Xác nhận hard merge').props.onClick;
  ui.changeProposal({...proposal,proposed_content_md:'Another rule'},false);
  assert.equal(ui.calls.length,1,'No refresh effect has run yet');
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
  oldAction();assert.equal(ui.calls.length,1,'A stale event handler cannot submit the old revision');
  ui.commitEffects();await flush();assert.equal(ui.calls.length,2);
- assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
+ assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
 });
 
 test('failed polling remains stale and schedules one retry only after completion',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  ui.poll();ui.advance(7000);ui.calls[1].reject(Error('Preflight unavailable'));await flush();
  assert.equal(ui.pendingPolls,1);assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
  ui.changeProposal({...proposal});await flush();ui.advance(9999);assert.equal(ui.calls.length,2);
  ui.advance(1);await flush();assert.equal(ui.calls.length,3);assert.equal(ui.pendingPolls,0);
- ui.calls[2].resolve(Response.json(directPreflight()));await flush();
+ ui.calls[2].resolve(Response.json(ownerPreflight()));await flush();
  assert.equal(ui.pendingPolls,1);assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
 });
 
 test('mutation removes polling until it completes and does not refresh while a write is pending',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  assert.equal(ui.pendingPolls,1);ui.click('Xác nhận hard merge');await flush();
  assert.equal(ui.pendingPolls,0);ui.advance(30000);ui.focus();assert.equal(ui.calls.length,2);
  ui.calls[1].resolve(Response.json({error:'Scope changed'},{status:409}));await flush();
@@ -673,37 +680,81 @@ test('mutation removes polling until it completes and does not refresh while a w
  ui.advance(9999);assert.equal(ui.calls.length,2);ui.advance(1);assert.equal(ui.calls.length,3);
 });
 
-test('poll refresh resets owner approval for each changed hash or target scope but never auto-writes',async t=>{
- const base=directPreflight();
+test('poll refresh invalidates old handlers for each changed hash or target scope but never auto-writes',async t=>{
+ const base=ownerPreflight();
  for(const data of [
-  directPreflight({candidate_hash:'scope-v2:new'}),
-  directPreflight({review_intent_hash:'intent:new'}),
-  directPreflight({direct_rule:{...base.direct_rule!,rule_hash:'rule:new'}}),
-  directPreflight({direct_rule_plan:{...base.direct_rule_plan!,plan_hash:'plan:new'}}),
-  directPreflight({targets:[{...base.targets[0],node_hash:'node:new',version:4}]}),
-  directPreflight({proposal:{...proposal,change_summary:'A changed review summary'}}),
+  ownerPreflight({candidate_hash:'scope-v2:new'}),
+  ownerPreflight({direct_rule:{...base.direct_rule!,rule_hash:'rule:new'}}),
+  ownerPreflight({direct_rule_plan:{...base.direct_rule_plan!,plan_hash:'plan:new'}}),
+  ownerPreflight({targets:[{...base.targets[0],node_hash:'node:new',version:4}]}),
+  ownerPreflight({proposal:{...proposal,change_summary:'A changed review summary'}}),
  ]) {
-  const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
+  const oldAction=ui.button('Xác nhận hard merge').props.onClick;
   ui.poll();await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
   ui.calls[1].resolve(Response.json(data));await flush();
-  assert.equal(ui.all('input').find(n=>n.props.type==='checkbox')!.props.checked,false);
-  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+  assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+  oldAction();await flush();
   assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
+  ui.click('Xác nhận hard merge');await flush();
+  assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,1);
+  assert.deepEqual(JSON.parse(String(ui.calls.at(-1)!.init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
  }
 });
 
 test('focus refresh coalesces with active reads and closing clears the sole scheduled poll',async t=>{
- const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
  ui.focus();ui.focus();await flush();assert.equal(ui.calls.length,2);assert.equal(ui.pendingPolls,0);
- ui.calls[1].resolve(Response.json(directPreflight()));await flush();assert.equal(ui.pendingPolls,1);
+ ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();assert.equal(ui.pendingPolls,1);
  ui.click('Đóng');assert.equal(ui.pendingPolls,0);ui.advance(60000);ui.focus();assert.equal(ui.calls.length,2);
 });
 
 test('retained owner handler cannot submit after close or unmount',async t=>{
  for(const close of [true,false]) {
-  const ui=setup('owner');t.after(ui.unmount);await ready(ui,directPreflight());ui.checkAll();await flush();
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
   const action=ui.button('Xác nhận hard merge').props.onClick;
   if(close)ui.click('Đóng');else ui.unmount();
   action();await flush();assert.equal(ui.calls.length,1);assert.equal(ui.lateWrites,0);
  }
+});
+
+test('owner preview failures retry only owner-preflight and never fall back to generic reads',async t=>{
+ for(const status of [401,403,404,500])await t.test(String(status),async t=>{
+  const ui=setup('owner');t.after(ui.unmount);
+  assert.equal(ui.calls[0].url,`/api/admin/feedback/${proposal.id}/owner-preflight`);
+  ui.calls[0].resolve(Response.json({error:'Owner preview unavailable'},{status}));await flush();
+  assert.equal(ui.calls.length,1);assert.match(ui.text(),/Owner preview unavailable/);
+  assert.equal(ui.all('button').some(button=>textOf(button)==='Xác nhận hard merge'&&!button.props.disabled),false);
+  ui.click('Tải lại / Retry');await flush();
+  assert.equal(ui.calls.length,2);
+  assert.ok(ui.calls.every(call=>call.url===`/api/admin/feedback/${proposal.id}/owner-preflight`&&call.init.method!=='POST'));
+  ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);assert.equal(ui.calls.length,2);
+ });
+});
+
+test('owner preview rejects generic or malformed authority markers without enabling writes',async t=>{
+ const base=ownerPreflight();
+ const cases:[string,unknown][]=[
+  ['generic direct preview',directPreflight()],
+  ['missing preview kind',{...base,preview_kind:undefined}],
+  ['wrong preview kind',{...base,preview_kind:'generic'}],
+  ['automatic review payload',{...base,automatic_review:automaticReview()}],
+  ['queue available',{...base,queue_available:true}],
+  ['missing queue marker',{...base,queue_available:undefined}],
+  ['queue intent',{...base,review_intent_hash:'intent:forged'}],
+  ['missing queue intent',{...base,review_intent_hash:undefined}],
+  ['queue request',{...base,review_request:queueRequest()}],
+  ['missing queue request',{...base,review_request:undefined}],
+  ['not owner',{...base,direct_rule:{...base.direct_rule!,owner_authorized:false}}],
+  ['missing owner marker',{...base,direct_rule:{...base.direct_rule!,owner_authorized:undefined}}],
+  ['wrong proposal',{...base,proposal:{...proposal,id:'another-proposal'}}],
+ ];
+ for(const [label,data] of cases)await t.test(label,async t=>{
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,data as FeedbackPreflight);
+  assert.equal(ui.all('button').some(button=>textOf(button)==='Xác nhận hard merge'&&!button.props.disabled),false);
+  assert.equal(ui.calls.length,1);assert.equal(ui.all('input').length,0);
+  assert.equal(ui.calls[0].url,`/api/admin/feedback/${proposal.id}/owner-preflight`);
+ });
 });

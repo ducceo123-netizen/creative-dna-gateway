@@ -54,3 +54,5 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python tests/browser/onepage-review.py
       - run: python tests/browser/hosted-review.py
+
+      - run: python tests/browser/owner-review.py

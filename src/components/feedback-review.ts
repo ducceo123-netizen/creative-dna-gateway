@@ -100,6 +100,7 @@ export function validateReviewRequest(value:unknown,proposalId:string):ReviewReq
  return request;
 }
 export type FeedbackPreflight = {
+  preview_kind?:"owner_rule";
   proposal:FeedbackProposal; candidate_hash:string; targets:ReviewTarget[]; baselines:ReviewBaseline[];
   evaluations:ReviewEvaluation[]; covered_candidates:CoveredCandidate[]; issues:string[]; automatic_evaluation_id:string|null; automatic_review?:AutomaticReview; direct_rule?:DirectRuleReview; direct_rule_plan?:DirectRulePlan; review_request?:ReviewRequest|null; review_intent_hash?:string|null; queue_available?:boolean;
 };
@@ -131,6 +132,14 @@ export function validatePreflight(value:unknown, proposalId:string):FeedbackPref
   if(data.queue_available!==undefined&&typeof data.queue_available!=="boolean")throw Error("Trạng thái quyền review không hợp lệ.");
   if(data.queue_available===false&&(data.review_intent_hash!==null||data.review_request!==null))throw Error("Dữ liệu hàng đợi không khớp quyền truy cập.");
   if(data.review_intent_hash!==undefined&&!(data.queue_available===false&&data.review_intent_hash===null)&&(typeof data.review_intent_hash!=="string"||!data.review_intent_hash.trim()))throw Error("Ý duyệt hiện tại chưa xác định. Hãy tải lại.");
+  return data;
+}
+/** Owner preview is selected explicitly, never accepted as a queue fallback. */
+export function validateOwnerPreflight(value:unknown, proposalId:string):FeedbackPreflight {
+  const data=validatePreflight(value,proposalId);
+  if(data.preview_kind!=="owner_rule"||data.queue_available!==false||data.review_intent_hash!==null||
+     data.review_request!==null||data.automatic_review!==undefined||data.direct_rule?.owner_authorized!==true||!data.direct_rule_plan)
+    throw Error("Chưa xác minh được bản duyệt riêng của owner. Hãy tải lại.");
   return data;
 }
 export function validateAutomaticReview(value:unknown, candidateHash:string):AutomaticReview {
