@@ -25,7 +25,7 @@ function automaticReview(overrides:Partial<AutomaticReview>={}):AutomaticReview 
  host_review:{available:false,packet_version:'uid.review-packet.v1',instruction:'Inspect real sources and pixels.',required_capabilities:['actual_media_inspection'],packet:{}},...overrides,
 };}
 function preflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPreflight{return {
-  proposal,candidate_hash:'scope-v2:synthetic',review_intent_hash:'intent:synthetic',review_request:null,
+  proposal,owner_user_id:'synthetic-owner',recovery_token:null,candidate_hash:'scope-v2:synthetic',review_intent_hash:'intent:synthetic',review_request:null,
   targets:[{id:'node-1',brand_id:'brand-1',brand_name:'PawfectHouse',slug:'onepage-system',title:'Onepage System',content_md:'Preserve the real product silhouette.',node_hash:'node-hash',version:3}],
   baselines:[{id:'base-1',brand_id:'brand-1',brand_name:'PawfectHouse',branch_slug:'onepage-system',case_key:'approved-product-visual',approved_at:'2026-10-11T00:00:00Z'}],
   automatic_review:automaticReview({candidate_hash:overrides.candidate_hash||'scope-v2:synthetic'}),evaluations:[],covered_candidates:[{id:'covered-1',summary:'Nolan · protect product truth',text:'Preserve the real product silhouette.',merged_at:'2026-10-10T00:00:00Z',candidate_hash:'covered-hash',brand_names:['PawfectHouse']}],issues:[],automatic_evaluation_id:null,...overrides,
@@ -51,13 +51,14 @@ function ownerPreflight(overrides:Partial<FeedbackPreflight>={}):FeedbackPreflig
  return {...directPreflight(overrides),preview_kind:'owner_rule',queue_available:false,review_intent_hash:null,review_request:null,automatic_review:undefined,...overrides};
 }
 function directReceipt(data=directPreflight()) {return {
- status:'merged',proposal_id:data.proposal.id,proposal:{id:data.proposal.id,status:'merged',merged_at:'2026-10-13T04:00:00Z'},
+ status:'merged',proposal_id:data.proposal.id,owner_user_id:data.owner_user_id,proposal:{id:data.proposal.id,status:'merged',merged_at:'2026-10-13T04:00:00Z'},
  merged_at:'2026-10-13T04:00:00Z',decision_kind:'owner_direct_rule',visual_qc_performed:false,
  rule_decision_id:'synthetic-owner-decision',candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,
  plan_hash:data.direct_rule_plan!.plan_hash,canonical_changed:true,
 };}
 const passed={id:'evaluation-1',candidate_hash:'scope-v2:synthetic',evaluation_status:'passed',completed_at:'2026-10-11T00:00:00Z',critical_failures:0,baseline_ids:['base-1'],test_results:[{baseline_id:'base-1',status:'passed',issues:[],artifact_url:'https://example.test/output'}]};
-function setup(path:'covered'|'merge'|'owner'='covered'){
+let uuidCounter=0;
+function setup(path:'covered'|'merge'|'owner'='covered',storage=new Map<string,string>()){
  const deadlines=new Map<number,()=>void>(),polls=new Map<number,{run:()=>void;at:number}>();let timerId=0,now=0;
  const listeners=new Map<string,()=>void>();
  const document={visibilityState:'visible',addEventListener(name:string,run:()=>void){listeners.set(name,run);},removeEventListener(name:string){listeners.delete(name);}};
@@ -74,7 +75,8 @@ function setup(path:'covered'|'merge'|'owner'='covered'){
  vm.runInNewContext(code,{module,exports:module.exports,Error,AbortController,Response,setTimeout:(run:()=>void)=>{const id=++timerId;deadlines.set(id,run);return id;},clearTimeout:(id:number)=>deadlines.delete(id),
  document,
  window:{setTimeout(run:()=>void,ms:number){const id=++timerId;polls.set(id,{run,at:now+ms});return id;},clearTimeout(id:number){polls.delete(id);},addEventListener(name:string,run:()=>void){listeners.set(name,run);},removeEventListener(name:string){listeners.delete(name);}},
- sessionStorage:{getItem(){return null;},setItem(){},removeItem(){}},require(name:string){if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('Fragment')};throw Error(name);}});
+ crypto:{randomUUID:()=>`11111111-1111-4111-8111-${String(++uuidCounter).padStart(12,'0')}`},
+ sessionStorage:{getItem:(key:string)=>storage.get(key)||null,setItem:(key:string,value:string)=>storage.set(key,value),removeItem:(key:string)=>storage.delete(key)},require(name:string){if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('Fragment')};throw Error(name);}});
  function request(url:string,init:RequestInit={}){return new Promise<Response>((resolve,reject)=>calls.push({url,init,resolve,reject}));}
  function materialize(value:any):any{if(Array.isArray(value))return value.map(materialize);if(!value||typeof value!=='object'||!('props'in value))return value;if(typeof value.type==='function')return materialize(value.type(value.props));return {...value,props:{...value.props,children:materialize(value.props.children)}};}
  function commitEffects(){for(const effect of queued.splice(0))effect.cleanup=effect.create()||undefined;}
@@ -275,7 +277,7 @@ test('direct-rule approval sends only explicit intent and displayed hashes once,
  const ui=setup('merge');t.after(ui.unmount);const data=directPreflight();await ready(ui,data);
  const action=ui.button('Duyệt rule & merge ngay').props.onClick;action();action();await flush();
  assert.equal(ui.calls.length,2);assert.equal(ui.calls[1].url,`/api/admin/feedback/${proposal.id}/accept-rule`);
- assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,recovery_token:data.recovery_token??null});
  assert.equal(ui.button('Đang merge rule…').props.disabled,true);assert.equal(!!ui.button('Đóng').props.disabled,false);
  assert.equal(ui.button('Duyệt & giao dot review').props.disabled,true);
  ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();
@@ -302,7 +304,7 @@ test('direct-rule stale response requires reload and reapproval of fresh candida
  ui.click('Tải lại / Retry');const newer=directPreflight({candidate_hash:'scope-v2:new'});
  newer.direct_rule!.rule_hash='owner-rule-v1:new';newer.direct_rule_plan!.plan_hash='plan-sha256:new';
  ui.calls[2].resolve(Response.json(newer));await flush();ui.click('Duyệt rule & merge ngay');await flush();
- assert.deepEqual(JSON.parse(String(ui.calls[3].init.body)),{approve_rule:true,candidate_hash:'scope-v2:new',rule_hash:'owner-rule-v1:new',plan_hash:'plan-sha256:new'});
+ assert.deepEqual(JSON.parse(String(ui.calls[3].init.body)),{approve_rule:true,candidate_hash:'scope-v2:new',rule_hash:'owner-rule-v1:new',plan_hash:'plan-sha256:new',recovery_token:null});
  assert.equal(ui.completed.length,0);
 });
 
@@ -370,7 +372,7 @@ test('canonical append preview stays literal and owner-approved without a compil
  assert.match(ui.text(),/không gắn nhãn đã biên dịch chất lượng hay QC hình ảnh/);
  assert.equal(ui.all('input').length,0);assert.equal(ui.all('textarea').length,0);
  ui.click('Duyệt rule & merge ngay');await flush();
- assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,recovery_token:data.recovery_token??null});
  ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();
  assert.equal(ui.completed.length,1);assert.match(ui.completed[0][0],/không phải kết quả QC hình ảnh/);
 });
@@ -401,7 +403,7 @@ test('queue approval and direct-rule approval remain distinct in the same owner 
  ui.click('Duyệt rule & merge ngay');await flush();
  assert.equal(ui.button('Hủy yêu cầu').props.disabled,true);
  assert.equal(ui.calls[2].url,`/api/admin/feedback/${proposal.id}/accept-rule`);
- assert.deepEqual(JSON.parse(String(ui.calls[2].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ assert.deepEqual(JSON.parse(String(ui.calls[2].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,recovery_token:data.recovery_token??null});
  ui.calls[2].resolve(Response.json(directReceipt(data)));await flush();
  assert.equal(ui.completed.length,1);assert.equal(ui.completed[0][1].decision_kind,'owner_direct_rule');
 });
@@ -565,7 +567,7 @@ test('hard merge opens a read-only scoped preview and requires deliberate owner 
  await flush();assert.equal(ui.calls.length,1,'Rendering the preview never writes');
  const action=ui.button('Xác nhận hard merge').props.onClick;action();action();await flush();
  assert.equal(ui.calls.length,2);assert.match(ui.calls[1].url,/accept-rule$/);
- assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+ assert.deepEqual(JSON.parse(String(ui.calls[1].init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,recovery_token:data.recovery_token??null});
  ui.calls[1].resolve(Response.json(directReceipt(data)));await flush();assert.equal(ui.completed.length,1);
 });
 
@@ -612,7 +614,8 @@ test('equal inbox replacements do not reload preflight or submit a decision',asy
  assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
  assert.equal(ui.pendingPolls,1);
  ui.advance(9999);assert.equal(ui.calls.length,1);ui.advance(1);await flush();assert.equal(ui.calls.length,2);
- assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Actual refresh still disables submit');
+ assert.doesNotMatch(ui.text(),/Đang tải nội dung rule và phạm vi áp dụng hiện tại/,'Background refresh is not initial loading');
+ const before=ui.calls.length;ui.button('Xác nhận hard merge').props.onClick();assert.equal(ui.calls.length,before,'Active background read still guards writes');
  ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
  assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
@@ -691,7 +694,8 @@ test('poll refresh invalidates old handlers for each changed hash or target scop
  ]) {
   const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
   const oldAction=ui.button('Xác nhận hard merge').props.onClick;
-  ui.poll();await flush();assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+  ui.poll();await flush();assert.doesNotMatch(ui.text(),/Đang tải nội dung rule và phạm vi áp dụng hiện tại/);
+  oldAction();assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0,'No write during active background read');
   ui.calls[1].resolve(Response.json(data));await flush();
   assert.equal(ui.all('input').filter(n=>n.props.type==='checkbox').length,0);
   assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
@@ -699,7 +703,7 @@ test('poll refresh invalidates old handlers for each changed hash or target scop
   assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
   ui.click('Xác nhận hard merge');await flush();
   assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,1);
-  assert.deepEqual(JSON.parse(String(ui.calls.at(-1)!.init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash});
+  assert.deepEqual(JSON.parse(String(ui.calls.at(-1)!.init.body)),{approve_rule:true,candidate_hash:data.candidate_hash,rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,recovery_token:data.recovery_token??null});
  }
 });
 
@@ -756,5 +760,216 @@ test('owner preview rejects generic or malformed authority markers without enabl
   assert.equal(ui.all('button').some(button=>textOf(button)==='Xác nhận hard merge'&&!button.props.disabled),false);
   assert.equal(ui.calls.length,1);assert.equal(ui.all('input').length,0);
   assert.equal(ui.calls[0].url,`/api/admin/feedback/${proposal.id}/owner-preflight`);
+ });
+});
+
+const ownerLockKey=`uid-pending-owner-review:${proposal.id}`;
+const legacyLockKey=`uid-pending-review:${proposal.id}`;
+const recoverLabel='Khôi phục thao tác chưa rõ kết quả';
+function ownerApproval(data=ownerPreflight()) {return {
+ proposal_id:data.proposal.id,owner_user_id:data.owner_user_id,candidate_hash:data.candidate_hash,
+ rule_hash:data.direct_rule!.rule_hash,plan_hash:data.direct_rule_plan!.plan_hash,
+ recovery_token:data.recovery_token??null,operation_id:'11111111-1111-4111-8111-111111111111',
+};}
+function lockedOwnerStorage(data=ownerPreflight()) {return new Map([[ownerLockKey,JSON.stringify({action:'rule',ownerApproval:ownerApproval(data)})]]);}
+function posted(ui:ReturnType<typeof setup>,suffix:string) {return ui.calls.filter(call=>call.init.method==='POST'&&call.url.endsWith(suffix));}
+function recoveryResponse(call:Call,extra:Record<string,unknown>={}) {return {
+ proposal_id:proposal.id,owner_user_id:'synthetic-owner',recovery_id:JSON.parse(String(call.init.body)).recovery_id,
+ status:'fenced_not_applied',recovery_token:'22222222-2222-4222-8222-222222222222',...extra,
+};}
+
+test('legacy hashless owner lock migrates and explicit recovery fences before a fresh one-click approval',async t=>{
+ const storage=new Map([[legacyLockKey,JSON.stringify({action:'rule'})]]);
+ const ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+ assert.equal(storage.has(legacyLockKey),false);assert.equal(storage.has(ownerLockKey),true);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(ui,'accept-rule').length,0);
+ ui.poll();ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'A pending preview does not prove a prior write failed');
+ const click=ui.button(recoverLabel).props.onClick;click();click();await flush();
+ const recovery=posted(ui,'recover-owner-rule');assert.equal(recovery.length,1);
+ const body=JSON.parse(String(recovery[0].init.body));assert.deepEqual(Object.keys(body).sort(),['recover','recovery_id']);assert.equal(body.recover,true);
+ assert.match(body.recovery_id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+ assert.equal(JSON.parse(storage.get(ownerLockKey)!).recoveryId,body.recovery_id);
+ recovery[0].resolve(Response.json(recoveryResponse(recovery[0])));await flush();
+ assert.equal(storage.has(ownerLockKey),false);assert.equal(posted(ui,'accept-rule').length,0);
+ assert.equal(ui.calls.at(-1)!.url,`/api/admin/feedback/${proposal.id}/owner-preflight`);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true,'Recovery itself does not approve the new generation');
+ const fresh=ownerPreflight({candidate_hash:'scope-v2:fresh',recovery_token:'22222222-2222-4222-8222-222222222222'});
+ fresh.direct_rule!.rule_hash='owner-rule-v1:fresh';fresh.direct_rule_plan!.plan_hash='plan-sha256:fresh';
+ ui.calls.at(-1)!.resolve(Response.json(fresh));await flush();
+ assert.equal(posted(ui,'accept-rule').length,0);assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+ const confirm=ui.button('Xác nhận hard merge').props.onClick;confirm();confirm();await flush();
+ assert.equal(posted(ui,'accept-rule').length,1);
+ assert.deepEqual(JSON.parse(String(posted(ui,'accept-rule')[0].init.body)),{
+  approve_rule:true,candidate_hash:fresh.candidate_hash,rule_hash:fresh.direct_rule!.rule_hash,
+  plan_hash:fresh.direct_rule_plan!.plan_hash,recovery_token:fresh.recovery_token,
+ });
+ const approved=JSON.parse(storage.get(ownerLockKey)!).ownerApproval;
+ assert.equal(approved.owner_user_id,fresh.owner_user_id);assert.equal(approved.plan_hash,fresh.direct_rule_plan!.plan_hash);
+ posted(ui,'accept-rule')[0].resolve(Response.json(directReceipt(fresh)));await flush();
+ assert.equal(ui.completed.length,1);assert.equal(storage.has(ownerLockKey),false);
+});
+
+test('timed-out and lost recovery responses retain one stable UUID across retry and remount without replaying merge',async t=>{
+ for(const failure of ['timeout','lost response'] as const)await t.test(failure,async t=>{
+  const storage=lockedOwnerStorage(),ui=setup('owner',storage);await ready(ui,ownerPreflight());
+  ui.click(recoverLabel);await flush();const first=posted(ui,'recover-owner-rule')[0];
+  const original=JSON.parse(String(first.init.body));
+  if(failure==='timeout'){ui.timeout();await flush();assert.equal(first.init.signal?.aborted,true);}
+  else {first.reject(Error('Recovery response lost'));await flush();}
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(ui,'accept-rule').length,0);
+  ui.unmount();const reopened=setup('owner',storage);t.after(reopened.unmount);await ready(reopened,ownerPreflight());
+  assert.equal(posted(reopened,'recover-owner-rule').length,0,'Remount never sends a recovery mutation');
+  reopened.click(recoverLabel);await flush();const retry=posted(reopened,'recover-owner-rule')[0];
+  assert.deepEqual(JSON.parse(String(retry.init.body)),original);
+  assert.equal(JSON.parse(storage.get(ownerLockKey)!).recoveryId,original.recovery_id);
+  if(failure==='timeout'){first.resolve(Response.json(recoveryResponse(first)));await flush();assert.equal(ui.completed.length,0);assert.equal(storage.has(ownerLockKey),true);}
+  retry.resolve(Response.json(recoveryResponse(retry)));await flush();
+  assert.equal(posted(reopened,'accept-rule').length,0);assert.equal(reopened.button('Xác nhận hard merge').props.disabled,true);
+  reopened.calls.at(-1)!.resolve(Response.json(ownerPreflight({recovery_token:'22222222-2222-4222-8222-222222222222'})));await flush();
+  assert.equal(reopened.button('Xác nhận hard merge').props.disabled,false);
+ });
+});
+
+test('lost accept response persists exact approved identity and newer preview cannot replace it',async t=>{
+ const data=ownerPreflight(),storage=new Map<string,string>(),ui=setup('owner',storage);await ready(ui,data);
+ ui.click('Xác nhận hard merge');await flush();const saved=JSON.parse(storage.get(ownerLockKey)!);
+ assert.deepEqual({...saved.ownerApproval,operation_id:'11111111-1111-4111-8111-111111111111'},ownerApproval(data));
+ ui.calls[1].reject(Error('Connection lost after submit'));await flush();ui.unmount();
+ const reopened=setup('owner',storage);t.after(reopened.unmount);
+ const changed=ownerPreflight({candidate_hash:'scope-v2:later'});changed.direct_rule!.rule_hash='rule:later';changed.direct_rule_plan!.plan_hash='plan:later';
+ await ready(reopened,changed);
+ assert.deepEqual(JSON.parse(storage.get(ownerLockKey)!).ownerApproval,saved.ownerApproval);
+ assert.equal(reopened.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(reopened,'accept-rule').length,0);
+ reopened.poll();reopened.calls.at(-1)!.resolve(Response.json({...changed,proposal:{...proposal,status:'merged'},direct_rule_receipt:directReceipt(data)}));await flush();
+ assert.equal(storage.has(ownerLockKey),false,'Polling compares the original approval rather than the new preview hashes');
+ assert.equal(reopened.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(reopened,'accept-rule').length,0);
+});
+
+test('recovery observes a previously committed owner receipt or terminal close without another accept',async t=>{
+ for(const status of ['merged','resolved','rejected'])await t.test(status,async t=>{
+  const storage=lockedOwnerStorage(),ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+  ui.click(recoverLabel);await flush();const recovery=posted(ui,'recover-owner-rule')[0];
+  recovery.resolve(Response.json(recoveryResponse(recovery,status==='merged'?{status,receipt:directReceipt()}:{status,canonical_changed:false})));
+  await flush();assert.equal(ui.completed.length,1);assert.equal(storage.has(ownerLockKey),false);
+  assert.equal(ui.completed[0][1].proposal.status,status);assert.equal(posted(ui,'accept-rule').length,0);
+ });
+});
+
+test('malformed, unrelated or wrong-actor recovery results keep the lock and never enable a merge',async t=>{
+ const cases:[string,Record<string,unknown>][]=[
+  ['wrong proposal',{proposal_id:'other-proposal'}],['wrong recovery attempt',{recovery_id:'33333333-3333-4333-8333-333333333333'}],
+  ['missing owner',{owner_user_id:undefined}],['wrong owner',{owner_user_id:'another-owner'}],
+  ['unknown status',{status:'pending'}],['missing recovery generation',{recovery_token:undefined}],
+  ['empty recovery generation',{recovery_token:''}],['unproven close',{status:'resolved',canonical_changed:true}],
+  ['no committed receipt',{status:'merged',receipt:null}],
+  ['wrong receipt actor',{status:'merged',receipt:{...directReceipt(),owner_user_id:'another-owner'}}],
+  ['wrong receipt approval',{status:'merged',receipt:{...directReceipt(),plan_hash:'plan:unrelated'}}],
+  ['wrong receipt proposal',{status:'merged',receipt:{...directReceipt(),proposal_id:'other-proposal'}}],
+  ['receipt claims QC',{status:'merged',receipt:{...directReceipt(),visual_qc_performed:true}}],
+  ['invalid receipt time',{status:'merged',receipt:{...directReceipt(),merged_at:'not-a-date'}}],
+ ];
+ for(const [label,change] of cases)await t.test(label,async t=>{
+  const storage=lockedOwnerStorage(),ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+  ui.click(recoverLabel);await flush();const recovery=posted(ui,'recover-owner-rule')[0];
+  recovery.resolve(Response.json(recoveryResponse(recovery,change)));await flush();
+  assert.equal(storage.has(ownerLockKey),true);assert.equal(ui.completed.length,0);
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(ui,'accept-rule').length,0);
+  assert.equal(ui.calls.length,2,'Invalid recovery must not trigger a fresh unlocked preview');
+ });
+});
+
+test('owner recovery is isolated from queue, cancel and covered locks',async t=>{
+ for(const action of ['process','cancel','covered','reject'])await t.test(action,async t=>{
+  const value=JSON.stringify({action,requestId:'queue-request-1'}),storage=new Map([[legacyLockKey,value]]);
+  const ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+  assert.equal(storage.get(legacyLockKey),value);assert.equal(storage.has(ownerLockKey),false);
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);
+  assert.equal(ui.all('button').some(node=>textOf(node)===recoverLabel),false);
+  assert.equal(posted(ui,'recover-owner-rule').length,0);assert.equal(posted(ui,'accept-rule').length,0);
+ });
+ const storage=lockedOwnerStorage(),queue=setup('merge',storage);t.after(queue.unmount);await ready(queue,preflight());
+ assert.equal(queue.button('Duyệt & giao dot review').props.disabled,false,'An owner lock is not queue approval or a queue lock');
+ assert.equal(storage.has(ownerLockKey),true);assert.equal(storage.has(legacyLockKey),false);
+});
+
+test('background owner polling preserves content without showing initial-loading spinner or replaying writes',async t=>{
+ const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight());
+ const content=proposal.proposed_content_md!;ui.poll();await flush();
+ assert.ok(ui.text().includes(content));assert.doesNotMatch(ui.text(),/Đang tải nội dung rule và phạm vi áp dụng hiện tại/);
+ assert.equal(ui.all('section')[0].props['aria-busy'],false,'No page-wide initial loading during a background read');
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.button('Xác nhận hard merge').props.onClick();assert.equal(posted(ui,'accept-rule').length,0);
+ ui.calls[1].resolve(Response.json(ownerPreflight()));await flush();
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,false);assert.equal(posted(ui,'accept-rule').length,0);
+});
+
+test('unpersistable owner approval or recovery identity causes no mutation',async t=>{
+ class UnwritableStorage extends Map<string,string> {set(key:string,value:string):this {throw Error('Session storage unavailable');}}
+ for(const recovery of [false,true])await t.test(recovery?'recovery':'approval',async t=>{
+  const storage=new UnwritableStorage();if(recovery)Map.prototype.set.call(storage,ownerLockKey,JSON.stringify({action:'rule',ownerApproval:ownerApproval()}));
+  const ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+  ui.click(recovery?recoverLabel:'Xác nhận hard merge');await flush();
+  assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
+  assert.match(ui.text(),/Không lưu được/);assert.equal(ui.completed.length,0);
+ });
+});
+
+test('superseded recovery retains approval and only a new explicit click starts a new recovery UUID',async t=>{
+ const storage=lockedOwnerStorage(),ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+ ui.click(recoverLabel);await flush();const first=posted(ui,'recover-owner-rule')[0];
+ const firstId=JSON.parse(String(first.init.body)).recovery_id;
+ first.resolve(Response.json(recoveryResponse(first,{status:'superseded'})));await flush();
+ const lock=JSON.parse(storage.get(ownerLockKey)!);
+ assert.deepEqual(lock.ownerApproval,ownerApproval());assert.equal(lock.recoveryId,undefined);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(ui,'recover-owner-rule').length,1);
+ ui.poll();ui.calls.at(-1)!.resolve(Response.json(ownerPreflight()));await flush();
+ assert.equal(posted(ui,'recover-owner-rule').length,1,'Polling must not rotate a recovery attempt');
+ ui.click(recoverLabel);await flush();const second=posted(ui,'recover-owner-rule')[1];
+ assert.notEqual(JSON.parse(String(second.init.body)).recovery_id,firstId);
+ assert.equal(posted(ui,'accept-rule').length,0);assert.equal(ui.completed.length,0);
+});
+
+test('missing owner identity blocks acceptance and foreign direct receipt cannot clear approved owner lock',async t=>{
+ for(const owner of [undefined,''])await t.test(String(owner),async t=>{
+  const ui=setup('owner');t.after(ui.unmount);await ready(ui,ownerPreflight({owner_user_id:owner}));
+  assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);ui.button('Xác nhận hard merge').props.onClick();
+  assert.equal(posted(ui,'accept-rule').length,0);
+ });
+ const storage=new Map<string,string>(),ui=setup('owner',storage);t.after(ui.unmount);await ready(ui,ownerPreflight());
+ ui.click('Xác nhận hard merge');await flush();posted(ui,'accept-rule')[0].resolve(Response.json({...directReceipt(),owner_user_id:'another-owner'}));await flush();
+ assert.equal(ui.completed.length,0);assert.equal(storage.has(ownerLockKey),true);assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+});
+
+test('failed persistence of legacy owner-lock migration preserves the original across remount',async t=>{
+ class UnwritableMigrationStorage extends Map<string,string> {set():this {throw Error('Quota exceeded');}}
+ const storage=new UnwritableMigrationStorage(),original=JSON.stringify({action:'rule'});
+ Map.prototype.set.call(storage,legacyLockKey,original);
+ const ui=setup('owner',storage);await ready(ui,ownerPreflight());
+ assert.equal(storage.get(legacyLockKey),original,'Never delete the only durable unknown-operation lock before its replacement is stored');
+ assert.equal(storage.has(ownerLockKey),false);assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);
+ ui.unmount();const reopened=setup('owner',storage);t.after(reopened.unmount);await ready(reopened,ownerPreflight());
+ assert.equal(reopened.button('Xác nhận hard merge').props.disabled,true);assert.equal(posted(reopened,'accept-rule').length,0);
+});
+
+test('legacy recovery response must match the authenticated preview owner when no saved actor is available',async t=>{
+ const storage=new Map([[legacyLockKey,JSON.stringify({action:'rule'})]]),ui=setup('owner',storage);t.after(ui.unmount);
+ await ready(ui,ownerPreflight());ui.click(recoverLabel);await flush();const recovery=posted(ui,'recover-owner-rule')[0];
+ recovery.resolve(Response.json(recoveryResponse(recovery,{owner_user_id:'different-owner'})));await flush();
+ assert.equal(storage.has(ownerLockKey),true);assert.equal(ui.completed.length,0);
+ assert.equal(ui.button('Xác nhận hard merge').props.disabled,true);assert.equal(ui.calls.length,2);
+});
+
+test('generic terminal preflights cannot reconcile a legacy hashless owner lock',async t=>{
+ for(const path of ['covered','merge'] as const)for(const status of ['merged','resolved','rejected'])await t.test(`${path} ${status}`,async t=>{
+  const original=JSON.stringify({action:'rule'}),storage=new Map([[legacyLockKey,original]]);
+  const ui=setup(path,storage);t.after(ui.unmount);
+  await ready(ui,preflight({proposal:{...proposal,status}}));
+  assert.equal(storage.get(legacyLockKey),original,'A generic terminal status is not an owner receipt or explicit recovery');
+  assert.equal(storage.has(ownerLockKey),false,'Generic review must not migrate or claim owner authority');
+  assert.equal(ui.completed.length,0);assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
+  ui.poll();ui.calls.at(-1)!.resolve(Response.json(preflight({proposal:{...proposal,status}})));await flush();
+  assert.equal(storage.get(legacyLockKey),original,'Repeated generic reads must preserve the unresolved owner lock');
+  assert.equal(ui.calls.filter(call=>call.init.method==='POST').length,0);
  });
 });

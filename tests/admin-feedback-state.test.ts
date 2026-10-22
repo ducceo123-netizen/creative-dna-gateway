@@ -641,3 +641,32 @@ test('logout then relogin still aborts current session when admin unmounts',asyn
  const request=ui.loginCalls[0];ui.unmount();assert.equal(request.init.signal?.aborted,true);
  request.resolve(Response.json({access_token:'must-not-return'}));await flush();assert.equal(ui.storage.get('creative_dna_admin_token'),undefined);
 });
+
+test('generic terminal inbox reads never discard owner approval locks, including legacy rule locks',async t=>{
+ for(const status of ['merged','resolved','rejected'])for(const prefix of ['uid-pending-review:','uid-pending-owner-review:'])await t.test(`${prefix} ${status}`,async t=>{
+  const ui=setup();t.after(ui.unmount);
+  const key=prefix+'synthetic-action',lock=JSON.stringify({action:'rule',ownerApproval:{owner_user_id:'original-owner',plan_hash:'original-plan'}});
+  ui.storage.set(key,lock);ui.calls[0].resolve(page([proposal('synthetic-action',status)]));await flush();
+  assert.equal(ui.storage.get(key),lock,'A terminal list status is not proof of the exact owner decision');
+  assert.equal(ui.mutationCalls.length,0);
+ });
+});
+
+test('generic terminal inbox still reconciles non-owner locks without granting owner recovery authority',async t=>{
+ for(const action of ['covered','process','cancel','reject'])await t.test(action,async t=>{
+  const ui=setup();t.after(ui.unmount);const key='uid-pending-review:synthetic-action';
+  ui.storage.set(key,JSON.stringify({action}));ui.calls[0].resolve(page([proposal('synthetic-action','resolved')]));await flush();
+  assert.equal(ui.storage.has(key),false);assert.equal(ui.storage.has('uid-pending-owner-review:synthetic-action'),false);
+  assert.equal(ui.mutationCalls.length,0);
+ });
+});
+
+test('reject cannot overtake a pending owner recovery or legacy owner merge',async t=>{
+ for(const prefix of ['uid-pending-review:','uid-pending-owner-review:'])await t.test(prefix,async t=>{
+  const ui=setup({mockMutationUrl:'/api/admin/feedback/synthetic-action/review'});t.after(ui.unmount);
+  const key=prefix+'synthetic-action',lock=JSON.stringify({action:'rule'});ui.storage.set(key,lock);
+  ui.calls[0].resolve(page([proposal('synthetic-action')]));await flush();ui.open();await flush();ui.click('Reject');await flush();
+  assert.equal(ui.mutationCalls.length,0);assert.match(ui.fullText(),/Kết quả thao tác trước chưa rõ/);
+  assert.equal(ui.storage.get(key),lock);
+ });
+});

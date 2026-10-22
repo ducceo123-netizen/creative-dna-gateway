@@ -1134,15 +1134,33 @@ export function createApp(): express.Application {
     } catch (err: any) { return res.status(502).json({ error: sanitizePublicError(err, "Unable to load current review") }); }
   });
   }
+  app.post("/api/admin/feedback/:id/recover-owner-rule", async (req: Request, res: Response) => {
+    res.setHeader("Cache-Control","no-store");
+    if(!adminUpstreamUrl)return res.status(503).json({error:"Admin upstream unavailable"});
+    const authorization=req.header("authorization");
+    if(!authorization?.startsWith("Bearer "))return res.status(401).json({error:"Admin authentication required"});
+    const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+    if(req.body?.recover!==true||!uuid.test(String(req.params.id))||typeof req.body?.recovery_id!=="string"||!uuid.test(req.body.recovery_id))
+      return res.status(422).json({error:"Explicit recovery and stable proposal/recovery UUIDs required"});
+    try {
+      const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
+        body:JSON.stringify({mode:"owner_rule_recover",proposal_id:req.params.id,recover:true,recovery_id:req.body.recovery_id})});
+      return res.status(upstream.status).json(await upstream.json());
+    }catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Recovery outcome unknown. Keep the same recovery id and check again.")});}
+  });
   app.post("/api/admin/feedback/:id/accept-rule", async (req: Request, res: Response) => {
     if (!adminUpstreamUrl) return res.status(503).json({error:"Admin upstream unavailable"});
     const authorization=req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({error:"Admin authentication required"});
     if(req.body?.approve_rule!==true||typeof req.body?.candidate_hash!=="string"||!req.body.candidate_hash||typeof req.body?.rule_hash!=="string"||!req.body.rule_hash||typeof req.body?.plan_hash!=="string"||!req.body.plan_hash)
       return res.status(422).json({error:"Explicit approval of the displayed rule and current scope is required."});
+    const tokenAware=Object.hasOwn(req.body,"recovery_token");
+    if(tokenAware&&req.body.recovery_token!==null&&(typeof req.body.recovery_token!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(req.body.recovery_token)))
+      return res.status(422).json({error:"Valid owner recovery token required"});
     try {
       const upstream=await fetch(adminUpstreamUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
-        body:JSON.stringify({mode:"accept_rule",proposal_id:req.params.id,approve_rule:true,candidate_hash:req.body.candidate_hash,rule_hash:req.body.rule_hash,plan_hash:req.body.plan_hash})});
+        body:JSON.stringify({mode:"accept_rule",proposal_id:req.params.id,approve_rule:true,candidate_hash:req.body.candidate_hash,rule_hash:req.body.rule_hash,plan_hash:req.body.plan_hash,
+          ...(tokenAware?{recovery_token:req.body.recovery_token}:{})})});
       const data=await upstream.json();res.setHeader("Cache-Control","no-store");return res.status(upstream.status).json(data);
     } catch(err:any){return res.status(502).json({error:sanitizePublicError(err,"Unable to accept rule. Reload before retrying.")});}
   });
