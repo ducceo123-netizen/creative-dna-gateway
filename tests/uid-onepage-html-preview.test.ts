@@ -25,7 +25,7 @@ test('manifest cannot escape its JSON script container',()=>{
  const out=packageOnepageReview(source,{...input,task_id:'</script><script>alert(1)</script>'},'','');
  assert.ok(out.html.includes('\\u003c/script\\u003e'));assert.ok(!out.html.includes('<script>alert(1)'));
 });
-test('real compiler and template delivery expose live review without altering canonical template bytes',()=>{
+test('real compiler and template delivery expose feedback-first review without altering canonical template bytes',()=>{
  const contract=getOnepageReviewContract();assert.equal(contract.auto_send,false);assert.match(contract.instruction,/actual bound HTML/);assert.match(contract.instruction,/overall PNG/);
  const gtk:any=getOnepageUiTemplate(undefined,'source');const faq:any=getOnepageUiTemplate('2026-10-19.faq.v1','source');
  assert.deepEqual(gtk.live_html_feedback,contract);assert.deepEqual(faq.live_html_feedback,contract);
@@ -38,7 +38,7 @@ test('outcome-only provenance is explicit and never pretends to be a registered 
  const {task_id,...rest}=input;const result=packageOnepageReview(source,{...rest,identity_type:'outcome',outcome_id:'libfile_actual'},'','');assert.equal(result.manifest.outcome_id,'libfile_actual');assert.equal(result.manifest.task_id,undefined);assert.equal(result.manifest.identity_type,'outcome');
  assert.throws(()=>packageOnepageReview(source,{...input,identity_type:'outcome',outcome_id:'libfile_actual'},'',''));
 });
-test('both generation delivery contracts require verified hosted URLs, not downloads or demos',()=>{
- const onepage=getOnepageReviewContract();assert.equal(onepage.hosted_delivery.delivery_requirement,'REQUIRED_HOSTED_VERIFIED_URL');assert.equal(onepage.hosted_delivery.status,'REQUIRES_HOSTED_PUBLICATION');assert.match(onepage.instruction,/Download-only HTML is not completed delivery/);
+test('Onepage feedback-first removes hosting gates while legacy LDP preview remains explicit',()=>{
+ const onepage=getOnepageReviewContract();assert.equal(onepage.hosted_url_required,false);assert.equal('hosted_delivery' in onepage,false);assert.equal(onepage.delivery_mode,'CHAT_OUTCOME_WITH_GROUPED_FEEDBACK');assert.equal(onepage.feedback.opens_automatically,false);assert.equal(onepage.feedback.private_context_transferred,false);assert.match(onepage.instruction,/Do not deliver or require a hosted web preview/);assert.match(onepage.instruction,/At content approval, review prose only/);assert.match(onepage.instruction,/render hash/);assert.match(onepage.instruction,/packaging is explicitly requested/);assert.match(onepage.instruction,/Unregistered outcomes use host-verified direct chat/);assert.match(onepage.instruction,/do not pass them through the task-only review-index tool/);
  const ldp=readFileSync(new URL('../uid-ldp-html-preview.ts',import.meta.url),'utf8');assert.match(ldp,/hostedReviewDeliveryContract\('ldp'/);assert.match(ldp,/downloads, ZIP, screenshots and Figma are supplemental only/);
 });
