@@ -113,7 +113,9 @@ try{
  assert.deepEqual((await duplicate).value,f6);assert.equal(await value(setup,'select count(*)::int value from uid_rule_private.recovery_requests where recovery_id=$1',[r(10)]),1);
  console.log('PASS concurrent duplicate recovery preserves one immutable generation');
  for(const [n,status] of [[7,'rejected'],[8,'resolved']]){
-  await setup.query('update public.knowledge_proposals set status=$2 where id=$1',[p(n),status]);
+  // The real schema couples resolved status to a non-null immutable resolution
+  // audit. Supply synthetic audit data instead of weakening that constraint.
+  await setup.query("update public.knowledge_proposals set status=$2,resolution=case when $2='resolved' then jsonb_build_object('synthetic_fixture',true,'resolution_kind','already_covered','covered_proposal_id',$3::text) else null end where id=$1",[p(n),status,p(0)]);
   const terminal=await recover(b,p(n),r(11+n));assert.equal(terminal.status,status);assert.equal(terminal.canonical_changed,false);
  }
  console.log('PASS closed proposals recover without approval or canonical writes');
