@@ -67,8 +67,22 @@ test('PDP coverage follows canonical resolver identity, not caller alias or over
   globalThis.fetch=async()=>Response.json({resolved:{brand:'pawfecthouse',branch:'onepage-system'}});
   const alias=await resolveCreativeDna('PawfectHouse','Custom Onepage Alias',{source_url:source,require_pdp_coverage:false} as any);
   assert.equal(alias.data.research_validation.pdp_coverage,'REQUIRED_HOST_REPORTED_ONLY');
+  assert.equal(alias.data.insight_value_assessment.status,'NOT_ASSESSED');
   globalThis.fetch=async()=>Response.json({branch:{slug:'home-hero'}});
   const other=await resolveCreativeDna('PawfectHouse','Onepage',{source_url:source,require_pdp_coverage:true} as any);
   assert.equal(other.data.research_validation.pdp_coverage,'NOT_REQUIRED_FOR_THIS_ROUTE');
+  assert.equal('insight_value_assessment' in other.data,false);
+ }finally{globalThis.fetch=original;}
+});
+
+
+test('gateway overlays the selection stage before mapping on older upstream packets without changing existing gates',async()=>{
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>Response.json({execution:['VALIDATE_RESEARCH_BEFORE_CONTENT','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE'],hard_gates:{content_approval:'HARD'},readiness:{asset_generation:'REQUIRES_PRODUCT_PIXEL_INSPECTION'}});
+  const result=await compileOnepageJob('PawfectHouse',source);
+  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
+  assert.equal(result.data.hard_gates.content_approval,'HARD');
+  assert.equal(result.data.insight_value_contract.invoke_with.includes('Same compile_onepage_job'),true);
  }finally{globalThis.fetch=original;}
 });
