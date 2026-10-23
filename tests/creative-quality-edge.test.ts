@@ -82,7 +82,9 @@ test('edge resolver attaches research to legacy routes and compiler classifies n
   assert.equal(packet.body.dynamic_job.source_type,'product');
   assert.equal(packet.body.acquisition_contract.diversity_gate,'N/A_BY_SINGLE_PDP');
   assert.equal(packet.body.research_validation.status,'AWAITING_RESEARCH');
-  assert.ok(packet.body.execution.indexOf('VALIDATE_RESEARCH_BEFORE_CONTENT')<packet.body.execution.indexOf('BUILD_CONTENT_MAP'));
+  assert.ok(packet.body.execution.indexOf('VALIDATE_RESEARCH_BEFORE_CONTENT')<packet.body.execution.indexOf('SELECT_INCREMENTAL_CUSTOMER_VALUE'));
+  assert.ok(packet.body.execution.indexOf('SELECT_INCREMENTAL_CUSTOMER_VALUE')<packet.body.execution.indexOf('BUILD_CONTENT_MAP'));
+  assert.equal(packet.body.insight_value_assessment.status,'NOT_ASSESSED');
   const unknown=await invoke('creative-dna-compile-onepage',{brand:'PawfectHouse',source_url:'https://store.example/custom-path'},dna);
   assert.equal(unknown.body.dynamic_job.source_type,'unknown');
   assert.equal(unknown.body.acquisition_contract.diversity_gate,'REQUIRES_SOURCE_CLASSIFICATION');

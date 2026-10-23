@@ -19,8 +19,9 @@ test("Historical interactive workflow remains unchanged but is never imported or
   assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
   assert.doesNotMatch(source("server.ts"), /from ["']\.\/uid-brands-workflow(?:\.ts)?["']|launcherHtml|REVIEW_UI_META/);
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
-  // Pinterest/Reddit contracts change research bytes embedded by the historical launcher; keep exact pins.
-  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "fba5478106ff2a374e5deca7d1ebedfd1afad21b6bce4c229695ec242b3e188f");
+  // Research source includes the additive Onepage insight-value contract; keep exact source pins.
+  // RESEARCH_GUIDANCE and the historical launcher output remain byte-identical.
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "755ff2f0776dd4a94f502e4eedacaaecb4f2b61af994104a1db72ef9261fa788");
   // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
   // during transpilation, so its emitted bytes differ even on the approved base.
   // Do not normalize that difference or bless a second output hash. The exact
