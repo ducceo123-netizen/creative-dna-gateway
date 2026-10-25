@@ -21,7 +21,7 @@ test("Historical interactive workflow remains unchanged but is never imported or
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
   // Research source includes the narrow release-owned CuddleTwin audio scope; keep exact source pins.
   // RESEARCH_GUIDANCE and the historical launcher output remain byte-identical.
-  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "4d90cc892d31865c38db4c61b8a2c8a66aae20ca9d4ec0d775240eba6cd295ff");
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "f805ebabf2cb3a3f6282504abe037ae0a98c81fb578f633cf8804279b5072b35");
   // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
   // during transpilation, so its emitted bytes differ even on the approved base.
   // Do not normalize that difference or bless a second output hash. The exact

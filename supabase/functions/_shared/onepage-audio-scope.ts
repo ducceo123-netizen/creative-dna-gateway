@@ -1,3 +1,4 @@
+import { BLANKET_THIEF_AUDIO_MANIFEST } from './blanket-thief-audio-manifest.ts';
 /** Release-scoped owner allowance, NOT caller authentication, playback proof or canonical policy. */
 export const AUDIO_SCOPE_ID = 'cuddletwin-onepage-20261025-v1';
 export const AUDIO_SCOPE_CONTRACT = {
@@ -112,26 +113,38 @@ const REELS: Record<string,string> = {
   "https://cdn.shopify.com/videos/c/o/v/3e245f92db2746eeadf9e10257a5905b.mp4": "0400dfeb17167412e8dc9fb8c47635dbf15810edb62e6884196ba7c9d7a4305d"
 };
 export const AUDIO_SCOPE_MANIFEST = {source_url:SOURCE, product:PRODUCT, inventory:INVENTORY, reels:REELS};
-export const isPinnedAudioPresent = (url:unknown) => typeof url==='string' && Object.hasOwn(REELS,url);
+const CUDDLETWIN_GRANT = {...AUDIO_SCOPE_MANIFEST,scope_id:AUDIO_SCOPE_ID,starts_at:'2026-10-25T09:59:33Z',expires_at:AUDIO_SCOPE_CONTRACT.expires_at,duration_seconds:8};
+const GRANTS = [CUDDLETWIN_GRANT, BLANKET_THIEF_AUDIO_MANIFEST];
+export function audioScopeContract(sourceUrl?:string) {
+  const grant=GRANTS.find(g=>g.source_url===sourceUrl);
+  return {...AUDIO_SCOPE_CONTRACT, selection:grant?{...AUDIO_SCOPE_CONTRACT.selection,scope_id:grant.scope_id}:null,
+    expires_at:grant?.expires_at??null,
+    instruction:grant?.scope_id===BLANKET_THIEF_AUDIO_MANIFEST.scope_id?AUDIO_SCOPE_CONTRACT.instruction.replace('CuddleTwin recovery','Blanket Thief Onepage'):AUDIO_SCOPE_CONTRACT.instruction,
+    visual_review_shape:{...AUDIO_SCOPE_CONTRACT.visual_review_shape,end_seconds:grant?.duration_seconds??null,duration_seconds:grant?.duration_seconds??null}};
+}
+export const isPinnedAudioPresent = (url:unknown) => typeof url==='string' && GRANTS.some(g=>Object.hasOwn(g.reels,url));
 const object = (v: any): v is Record<string,any> => !!v && typeof v === 'object' && !Array.isArray(v);
 const same = (a: any,b: any) => JSON.stringify(a) === JSON.stringify(b);
 export function evaluateAudioScope(context: {source_url?:string; require_pdp_coverage?:boolean; resolved_brand?:string}, r:any, now=Date.now()) {
   const selected = r?.review_scope;
   const fail = (issue:string) => ({active:false, issues:[issue], excludedIds:[] as string[]});
   if (selected === undefined) return {active:false,issues:[] as string[],excludedIds:[] as string[]};
-  if (!object(selected) || Object.keys(selected).sort().join(',') !== 'audio,output_audio,scope_id' || selected.scope_id !== AUDIO_SCOPE_ID || selected.audio !== 'excluded_by_owner' || selected.output_audio !== 'excluded') return fail('AUDIO_SCOPE_NOT_AUTHORIZED');
-  if (now < Date.parse('2026-10-25T09:59:33Z') || now >= Date.parse(AUDIO_SCOPE_CONTRACT.expires_at)) return fail('AUDIO_SCOPE_EXPIRED_OR_NOT_ACTIVE');
+  if (!object(selected) || Object.keys(selected).sort().join(',') !== 'audio,output_audio,scope_id' || selected.audio !== 'excluded_by_owner' || selected.output_audio !== 'excluded') return fail('AUDIO_SCOPE_NOT_AUTHORIZED');
+  const grant=GRANTS.find(g=>g.scope_id===selected.scope_id);
+  if (!grant) return fail('AUDIO_SCOPE_NOT_AUTHORIZED');
+  const {source_url:SOURCE,product:PRODUCT,inventory:INVENTORY,reels:REELS,starts_at,expires_at,duration_seconds}=grant;
+  if (now < Date.parse(starts_at) || now >= Date.parse(expires_at)) return fail('AUDIO_SCOPE_EXPIRED_OR_NOT_ACTIVE');
   if (!context.require_pdp_coverage || context.resolved_brand !== 'pawfecthouse' || context.source_url !== SOURCE || r.scope?.source_url !== SOURCE || r.scope?.source_type !== 'product' || !Array.isArray(r.scope.products) || r.scope.products.length !== 1 || !Object.keys(PRODUCT).every(k=>r.scope.products[0]?.[k] === (PRODUCT as any)[k])) return fail('AUDIO_SCOPE_IDENTITY_MISMATCH');
   const pdps = Array.isArray(r.sources) ? r.sources.filter((s:any)=>s?.kind==='target_pdp') : [];
   const source=pdps[0], items=source?.pdp_coverage?.gallery?.items;
   if (pdps.length!==1 || source.id!=='target' || source.url!==SOURCE || !same(source.product_ids,[PRODUCT.id]) || source.product_versions?.[PRODUCT.id]!==PRODUCT.variant || !Array.isArray(items) || items.length!==INVENTORY.length || items.some((item:any,i:number)=>!object(item)||!Object.keys(INVENTORY[i]).every(k=>item[k]===(INVENTORY[i] as any)[k]))) return fail('AUDIO_SCOPE_INVENTORY_DRIFT');
   const excludedIds:string[]=[];
   for (const item of items.filter((item:any)=>item.kind==='video')) {
-    const receipt=item.visual_review, sha=REELS[item.url];
-    if (item.audio_status!=='excluded_by_owner' || item.audio_reviewed!==false || item.status!=='inspected' || item.method!=='video_playback' || !object(receipt) || receipt.sha256!==sha || receipt.revalidated_sha256!==sha || typeof receipt.tool!=='string' || receipt.tool.trim().length<3 || receipt.start_seconds!==0 || receipt.end_seconds!==8 || receipt.duration_seconds!==8) return fail('AUDIO_SCOPE_GENUINE_VISUAL_REVIEW_REQUIRED');
+    const receipt=item.visual_review, sha=(REELS as Record<string,string>)[item.url];
+    if (item.audio_status!=='excluded_by_owner' || item.audio_reviewed!==false || item.status!=='inspected' || item.method!=='video_playback' || !object(receipt) || receipt.sha256!==sha || receipt.revalidated_sha256!==sha || typeof receipt.tool!=='string' || receipt.tool.trim().length<3 || receipt.start_seconds!==0 || receipt.end_seconds!==duration_seconds || receipt.duration_seconds!==duration_seconds) return fail('AUDIO_SCOPE_GENUINE_VISUAL_REVIEW_REQUIRED');
     if (![receipt.started_at,receipt.revalidated_at].every(t=>typeof t==='string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(t))) return fail('AUDIO_SCOPE_INVALID_REVIEW_TIME');
     const started=Date.parse(receipt.started_at), checked=Date.parse(receipt.revalidated_at);
-    if (!Number.isFinite(started)||!Number.isFinite(checked)||started<Date.parse('2026-10-25T09:59:33Z')||checked<started+8000||checked>now||now-checked>900000) return fail('AUDIO_SCOPE_FRESH_REVALIDATION_REQUIRED');
+    if (!Number.isFinite(started)||!Number.isFinite(checked)||started<Date.parse(starts_at)||checked<started+duration_seconds*1000||checked>now||now-checked>900000) return fail('AUDIO_SCOPE_FRESH_REVALIDATION_REQUIRED');
     excludedIds.push(item.id);
   }
   // Conservative: none of these videos may support claims, including speech/testimonials.

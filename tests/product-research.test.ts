@@ -134,7 +134,11 @@ test("research attachment preserves payload and initializes the same explicit co
   const payload = { brand: "FixtureBrand", content: { title: "Brief initialization" } };
   const result = attachResearch(payload, { source_url: PDP });
   assert.equal(result.content, payload.content);
-  assert.equal(result.research_contract, RESEARCH_CONTRACT);
+  const {owner_audio_scope: _staticScope,...staticContract}=RESEARCH_CONTRACT;
+  const {owner_audio_scope,...returnedContract}=result.research_contract;
+  assert.deepEqual(returnedContract,staticContract);
+  assert.equal(owner_audio_scope.selection,null); // Unrelated source never advertises a grant.
+  assert.equal(owner_audio_scope.expires_at,null);
   assert.equal(result.research_validation.status, "AWAITING_RESEARCH");
   assert.equal(result.readiness.content_authoring, "REQUIRES_RESEARCH");
   assert.equal(result.readiness.policy_initialization, "ALLOWED");
