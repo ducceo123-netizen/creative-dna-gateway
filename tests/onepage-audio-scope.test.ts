@@ -51,3 +51,50 @@ test('limited readiness preserves policy, approval and pixel gates; no receipt i
  delete r.review_scope;assert.equal(evaluateResearch(context(r)).status,'NEEDS_EVIDENCE');
  }finally{mock.timers.reset();}
 });
+
+import {BLANKET_THIEF_AUDIO_MANIFEST as blanket} from '../supabase/functions/_shared/blanket-thief-audio-manifest.ts';
+import {audioScopeContract} from '../supabase/functions/_shared/onepage-audio-scope.ts';
+const BLANKET_NOW=Date.parse('2026-10-25T10:50:00Z');
+function blanketFixture():any {
+ const r=fixture(), oldVideo=structuredClone(reel(r)), oldImage=r.sources[0].pdp_coverage.gallery.items[0],s=r.sources[0];
+ r.review_scope.scope_id=blanket.scope_id;r.scope.source_url=blanket.source_url;r.scope.products=[{...blanket.product}];
+ s.url=blanket.source_url;s.product_ids=[blanket.product.id];s.product_versions={[blanket.product.id]:blanket.product.variant};
+ s.pdp_coverage.gallery.items=blanket.inventory.map(i=>({...structuredClone(i.kind==='video'?oldVideo:oldImage),...i,...(i.kind==='video'?{visual_review:{...oldVideo.visual_review,sha256:(blanket.reels as any)[i.url],revalidated_sha256:(blanket.reels as any)[i.url],started_at:'2026-10-25T10:49:00Z',revalidated_at:'2026-10-25T10:49:30Z',duration_seconds:10,end_seconds:10}}:{})}));
+ s.pdp_coverage.gallery.discovered_count=blanket.inventory.length;s.pdp_coverage.details.items[0].variant=blanket.product.variant;r.claims[0].product_ids=[blanket.product.id];return r;
+}
+const blanketContext=(r:any)=>({...context(r),source_url:blanket.source_url});
+const blanketCheck=(r:any)=>evaluateAudioScope(blanketContext(r),r,BLANKET_NOW);
+const blanketReel=(r:any)=>r.sources[0].pdp_coverage.gallery.items[7];
+test('separate Blanket Thief grant is exact, 10seconds, and advertises only matching-source selection',()=>{
+ assert.equal(blanketCheck(blanketFixture()).active,true);
+ assert.equal(audioScopeContract(blanket.source_url).selection?.scope_id,blanket.scope_id);
+ assert.equal(audioScopeContract(blanket.source_url).visual_review_shape.duration_seconds,10);
+ assert.equal(audioScopeContract(manifest.source_url).selection?.scope_id,contract.selection.scope_id);
+ assert.equal(audioScopeContract(manifest.source_url).visual_review_shape.duration_seconds,8);
+ assert.equal(audioScopeContract('https://other.example').selection,null);
+});
+for(const [name,mutate] of Object.entries({
+ cuddleSelection:(r:any):any=>r.review_scope.scope_id=contract.selection.scope_id,
+ variant:(r:any):any=>r.scope.products[0].variant='Different size',source:(r:any):any=>r.scope.source_url=manifest.source_url,
+ inventory:(r:any):any=>r.sources[0].pdp_coverage.gallery.items.pop(),newGallery:(r:any):any=>r.sources[0].pdp_coverage.gallery.items[0].url+='?new',
+ shortPlayback:(r:any):any=>blanketReel(r).visual_review.end_seconds=8,
+ priorApproval:(r:any):any=>blanketReel(r).visual_review.started_at='2026-10-25T10:40:00Z',
+ wrongHash:(r:any):any=>blanketReel(r).visual_review.sha256=manifest.reels[Object.keys(manifest.reels)[0]],
+ revalidationDrift:(r:any):any=>blanketReel(r).visual_review.revalidated_sha256='0'.repeat(64),
+ fakeSilent:(r:any):any=>blanketReel(r).audio_status='verified_no_audio',fakeReviewed:(r:any):any=>blanketReel(r).audio_reviewed=true,
+ samples:(r:any):any=>blanketReel(r).method='frame_samples',claim:(r:any):any=>r.claims[0].evidence_items[0].item_id='pdp-reel-1',
+}))test(`Blanket Thief rejects ${name}`,()=>{const r=blanketFixture();mutate(r);assert.equal(blanketCheck(r).active,false);});
+test('CuddleTwin scope cannot inherit Blanket Thief extension or expiry',()=>{
+ const r=fixture();r.review_scope.scope_id=blanket.scope_id;assert.equal(evaluateAudioScope(context(r),r,BLANKET_NOW).active,false);
+ assert.equal(evaluateAudioScope(blanketContext(r),blanketFixture(),Date.parse(blanket.expires_at)).active,false);
+ assert.equal(evaluateAudioScope(context(fixture()),fixture(),Date.parse('2026-10-26T10:00:00Z')).active,false);
+});
+test('Blanket Thief accepted only with limitations; canonical and inspection gates unchanged',()=>{
+ mock.timers.enable({apis:['Date'],now:BLANKET_NOW});
+ try {const r=blanketFixture();assert.equal(evaluateResearch(blanketContext(r)).status,'READY_WITH_LIMITATIONS');
+ const out=attachResearch({resolved:{brand:'pawfecthouse'},readiness:{human_artistic_review:'REQUIRED',asset_generation:'PIXELS_REQUIRED'}},blanketContext(r));
+ assert.ok(out.research_validation.limitations.includes('AUDIO_EXCLUDED_BY_OWNER'));assert.equal(out.readiness.human_artistic_review,'REQUIRED');assert.equal(out.readiness.asset_generation,'PIXELS_REQUIRED');
+ assert.equal(out.research_contract.owner_audio_scope.selection?.scope_id,blanket.scope_id);
+ delete r.review_scope;assert.equal(evaluateResearch(blanketContext(r)).status,'NEEDS_EVIDENCE');
+ }finally{mock.timers.reset();}
+});
