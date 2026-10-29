@@ -159,7 +159,7 @@ test('Onepage attachment preserves all gates and does not leak an assessment int
   const r = fixture(), data = { content: { locked: 'Keep exact approved copy' }, readiness: { asset_generation: 'REQUIRES_CONTENT_APPROVAL_AND_PRODUCT_PIXELS' } };
   const result = attachResearch(data, context(r));
   assert.deepEqual(result.insight_value_assessment?.eligible_insight_indexes, [0]);
-  assert.equal(result.readiness.content_authoring, 'REQUIRES_HOST_EVIDENCE_REVIEW');
+  assert.equal(result.readiness.content_authoring, 'REQUIRES_VALID_CONTENT_PLAN');
   assert.equal(result.readiness.asset_generation, data.readiness.asset_generation);
   assert.deepEqual(result.content, data.content);
   const blocked = attachResearch({ ...data, creative_quality_contract: { status: 'BLOCKED' } }, context(r));
