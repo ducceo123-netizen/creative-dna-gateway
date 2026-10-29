@@ -81,7 +81,7 @@ test('gateway overlays the selection stage before mapping on older upstream pack
  try{
   globalThis.fetch=async()=>Response.json({execution:['VALIDATE_RESEARCH_BEFORE_CONTENT','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE'],hard_gates:{content_approval:'HARD'},readiness:{asset_generation:'REQUIRES_PRODUCT_PIXEL_INSPECTION'}});
   const result=await compileOnepageJob('PawfectHouse',source);
-  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
+  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','VALIDATE_ONEPAGE_CONTENT_PLAN','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
   assert.equal(result.data.hard_gates.content_approval,'HARD');
   assert.equal(result.data.insight_value_contract.invoke_with.includes('Same compile_onepage_job'),true);
  }finally{globalThis.fetch=original;}

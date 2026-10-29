@@ -45,7 +45,7 @@ test('limited readiness preserves policy, approval and pixel gates; no receipt i
  const r=fixture(),before=structuredClone(r),validation=evaluateResearch(context(r));
  assert.equal(validation.status,'READY_WITH_LIMITATIONS');assert.ok(validation.limitations.includes('AUDIO_EXCLUDED_BY_OWNER'));
  const data={resolved:{brand:'pawfecthouse'},hard_gates:{content_approval:'HARD'},readiness:{asset_generation:'REQUIRES_PRODUCT_PIXELS'}};
- const result=attachResearch(data,context(r));assert.equal(result.readiness.asset_generation,'REQUIRES_PRODUCT_PIXELS');assert.equal(result.hard_gates.content_approval,'HARD');assert.equal(result.readiness.content_authoring,'REQUIRES_HOST_EVIDENCE_REVIEW');assert.deepEqual(r,before);
+ const result=attachResearch(data,context(r));assert.equal(result.readiness.asset_generation,'REQUIRES_PRODUCT_PIXELS');assert.equal(result.hard_gates.content_approval,'HARD');assert.equal(result.readiness.content_authoring,'REQUIRES_VALID_CONTENT_PLAN');assert.deepEqual(r,before);
  assert.equal(attachResearch({...data,creative_quality_contract:{status:'BLOCKED'}},context(r)).readiness.content_authoring,'BLOCKED');
  assert.equal(attachResearch({...data,resolved:{brand:'giftsoul'}},context(r)).research_validation.status,'NEEDS_EVIDENCE');
  delete r.review_scope;assert.equal(evaluateResearch(context(r)).status,'NEEDS_EVIDENCE');
