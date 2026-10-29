@@ -41,6 +41,9 @@ export function evaluateOnepageContentPlan(research: unknown, validation: { stat
     }));
   });
   const b = p.banner;
+  const bannerFields = new Set(['product_keyword', 'keyword_source_ids', 'desktop_title', 'mobile_title', 'desktop_support', 'mobile_support', 'subtitle']);
+  if (obj(b) && Object.keys(b).some(key => !bannerFields.has(key))) issues.push('UNKNOWN_BANNER_COPY_FIELD');
+  if (obj(b) && ['product_keyword', 'desktop_title', 'mobile_title'].some(key => typeof b[key] === 'string' && /[\r\n\u2028\u2029]/u.test(b[key]))) issues.push('MULTILINE_BANNER_COPY_FORBIDDEN');
   if (!obj(b) || !text(b.product_keyword) || !ids(b.keyword_source_ids) || b.keyword_source_ids.some((id: string) => sources.get(id)?.kind !== 'target_pdp' || sources.get(id)?.match !== 'exact' || sources.get(id)?.status !== 'inspected' || sources.get(id)?.evidence_origin === 'ai_generated_illustration')) issues.push('VERIFIED_PRODUCT_KEYWORD_REQUIRED');
   if (!obj(b) || !text(b.desktop_title) || !text(b.mobile_title) || !text(b.product_keyword) || normalize(b.desktop_title) !== normalize(b.product_keyword) || normalize(b.mobile_title) !== normalize(b.product_keyword)) issues.push('BANNER_TITLE_MUST_EQUAL_PRODUCT_KEYWORD');
   if (!obj(b) || typeof b.desktop_support !== 'string' || b.desktop_support.length > 4000 || b.mobile_support !== '' || b.subtitle !== '') issues.push('BANNER_SUPPORT_DESKTOP_ONLY_NO_SUBTITLE');

@@ -122,3 +122,24 @@ test('malformed content-plan envelopes fail closed without crashing', () => {
     assert.equal(check(r).selected_mode, null);
   }
 });
+
+test('subtitle cannot hide in multiline copy or unvalidated title aliases', () => {
+  for (const separator of ['\n', '\r\n', '\u2028', '\u2029']) {
+    const r = fixture();
+    for (const key of ['product_keyword', 'desktop_title', 'mobile_title']) r.analysis.content_plan.banner[key] += separator + 'Carry Your Memories';
+    assert.ok(check(r).issues.includes('MULTILINE_BANNER_COPY_FORBIDDEN'));
+  }
+  for (const alias of ['title', 'headline', 'mobile_subtitle', 'desktop_subtitle', 'support_text', 'tagline']) {
+    const r = fixture(); r.analysis.content_plan.banner[alias] = 'Carry Your Memories';
+    assert.ok(check(r).issues.includes('UNKNOWN_BANNER_COPY_FIELD'));
+  }
+});
+
+test('subset fact cannot be promoted to the whole collection and PDP cannot drift to another SKU', () => {
+  const r = fixture(true); r.claims[0].product_ids = ['a'];
+  assert.equal(check(r).status, 'AWAITING_VALID_RESEARCH');
+  assert.ok(evaluateResearch(context(r)).issues.includes('UNSUPPORTED_COLLECTION_GENERALIZATION:material'));
+  const single = fixture(); single.scope.products.push({ id: 'b', url: 'https://store.example/products/b', variant: 'selected' });
+  assert.equal(check(single).status, 'AWAITING_VALID_RESEARCH');
+  assert.ok(evaluateResearch(context(single)).issues.includes('PDP_SCOPE_DRIFT'));
+});
