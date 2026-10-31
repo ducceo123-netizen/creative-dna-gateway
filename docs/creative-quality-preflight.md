@@ -28,7 +28,7 @@ Example above abbreviates inventory; real manifests must list **every** selected
 slot, including repeated FAQ copy when applicable. Unknown text slots, including an
 invented Occasion heading, are rejected by the binder. Missing/mismatched/duplicate
 asset slots, traversal, symlinks, corrupt/truncated/animated or unsupported media fail.
-No URLs are fetched. Limit: 100 assets, 1 MiB manifest, 32 MiB encoded asset, 32 million
+Local references use canonical ASCII filename segments only; URL query/fragment/percent escapes, backslashes and dot segments are rejected so decoded files match browser references. Every manifest/image/revalidation read uses a bounded regular-file descriptor, rejects symlinks and checks identity/mtime before returning. No URLs are fetched. Limit: 100 assets, 1 MiB manifest, 32 MiB encoded asset, 32 million
 pixels per full decode; processing is sequential to bound peak memory.
 
 ### Print placement, never header DPI
@@ -60,7 +60,7 @@ source CSS. No Style Dictionary dependency is needed for six fixed mappings.
 
 `source = fixed_ui.capture(sourcePage, selector, tokens)` and the same call for the
 candidate, followed by `fixed_ui.compare`, compare exact DOM attributes/text/control
-state, non-color computed styles and geometry. Use identical viewport/font/runtime and
+state, non-color computed styles, ::before/::after generated content/styles and geometry. Use identical viewport/font/runtime and
 repeat each meaningful real source state: default, custom choice, text length, upload,
 preview open/close, validation, disabled and reset. Tokens only exclude corresponding
 computed color properties and currentColor derivatives; exact CSS generation remains

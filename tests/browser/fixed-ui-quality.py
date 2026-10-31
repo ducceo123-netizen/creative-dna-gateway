@@ -33,6 +33,9 @@ with sync_playwright() as p:
   for mutation in ["document.querySelector('#name').remove()", "document.querySelector('label').prepend('Invented heading')", "document.querySelector('#name').style.fontFamily='serif'", "document.querySelector('form').style.padding='20px'", "document.querySelector('#name').required=false", "document.querySelector('#bg').selectedIndex=1", "document.querySelector('#teeAtcButton').textContent='Buy differently'", "document.querySelector('#teeAtcButton').style.borderRadius='30px'"]:
    a.set_content(fixture);b.set_content(fixture+overlay);b.evaluate(mutation)
    assert qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))['differences'],mutation
+  a.set_content(fixture);b.set_content(fixture+overlay)
+  b.add_style_tag(content='#form::before{content:"Invented heading";position:absolute;top:0;left:0}')
+  assert qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))['status']=='BLOCKED'
   # Real checked-in canonical source: fixed slot counts and layout, not a new mockup.
   t=json.loads((ROOT/'templates/onepage-ui-v1.json').read_text())
   image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aDZkAAAAASUVORK5CYII='

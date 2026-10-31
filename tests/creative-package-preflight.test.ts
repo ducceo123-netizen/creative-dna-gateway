@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises';
+import { readBoundedPackageFile, packagePath } from '../scripts/quality/bounded-file.ts';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { preflightAsset } from '../uid-asset-preflight.ts';
@@ -58,7 +60,21 @@ test('package pipeline re-reads bytes and binds genuine Onepage only to fully de
   const r=await preflightCreativePackage(path);assert.equal(r.onepage?.status,'BOUND_REQUIRES_VISUAL_QA');assert.equal(r.receipts.length,t.asset_slots.length);assert.ok(r.receipts.every(x=>x.revalidated_at>=x.read_at));
   manifest.onepage.bindings.text.occasion_heading='Invented';await writeFile(path,JSON.stringify(manifest));await assert.rejects(preflightCreativePackage(path),/UI_COPY/);
   delete manifest.onepage.bindings.text.occasion_heading;manifest.assets[0].placement={width_inches:20,height_inches:10};await writeFile(path,JSON.stringify(manifest));const blocked=await preflightCreativePackage(path);assert.equal(blocked.status,'BLOCKED');assert.equal(blocked.onepage,null);
-  manifest.assets=[{id:'outside',path:'../asset.png'}];delete manifest.onepage;await writeFile(path,JSON.stringify(manifest));await assert.rejects(preflightCreativePackage(path),/OUTSIDE/);
+  manifest.assets=[{id:'outside',path:'../asset.png'}];delete manifest.onepage;await writeFile(path,JSON.stringify(manifest));await assert.rejects(preflightCreativePackage(path),/UNSAFE_PACKAGE_REFERENCE/);
   await symlink(join(dir,'asset.png'),join(dir,'link.png'));manifest.assets=[{id:'link',path:'link.png'}];await writeFile(path,JSON.stringify(manifest));await assert.rejects(preflightCreativePackage(path),/SYMLINK/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+
+test('all reads reject nonregular/oversized/symlink files and URL-ambiguous names',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'uid-bounded-'));
+ try {
+  await writeFile(join(dir,'good.json'),'{}');
+  await symlink(join(dir,'good.json'),join(dir,'manifest.json'));
+  await assert.rejects(preflightCreativePackage(join(dir,'manifest.json')),/SYMLINK/);
+  await assert.rejects(readBoundedPackageFile(dir,'good.json',1),/OVERSIZE/);
+  for(const name of ['../bad','./good.json','a/../good.json','good.json?x','good.json#x','%67ood.json','a\\b','white space.png','a//b'])assert.throws(()=>packagePath(dir,name),/UNSAFE_PACKAGE_REFERENCE/);
+  await symlink(dir,join(dir,'linkdir'));await assert.rejects(readBoundedPackageFile(dir,'linkdir/good.json',100),/SYMLINK/);
+  if(process.platform!=='win32') { const result=spawnSync('mkfifo',[join(dir,'pipe')]);assert.equal(result.status,0);await assert.rejects(readBoundedPackageFile(dir,'pipe',100),/NONREGULAR/); }
  }finally{await rm(dir,{recursive:true,force:true});}
 });

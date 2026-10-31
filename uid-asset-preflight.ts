@@ -8,7 +8,7 @@ const positive = (n: unknown): n is number => typeof n === 'number' && Number.is
 export async function preflightAsset(bytes: Buffer, options: { expected_sha256?: string; placement?: PrintPlacement; supplier_spec?: SupplierSpec } = {}) {
   if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > ASSET_LIMITS.bytes) throw new Error('ASSET_BYTE_LIMIT');
   const sha256 = createHash('sha256').update(bytes).digest('hex');
-  if (options.expected_sha256 && options.expected_sha256 !== sha256) throw new Error('ASSET_HASH_MISMATCH');
+  if (options.expected_sha256 !== undefined && (!/^[a-f0-9]{64}$/.test(options.expected_sha256) || options.expected_sha256 !== sha256)) throw new Error('ASSET_HASH_MISMATCH');
   const decoder = sharp(bytes, { limitInputPixels: ASSET_LIMITS.pixels, failOn: 'warning', sequentialRead: true });
   const meta = await decoder.metadata();
   if (!['png', 'jpeg', 'webp', 'avif'].includes(meta.format || '') || (meta.pages || 1) !== 1) throw new Error('UNSUPPORTED_OR_ANIMATED_ASSET');

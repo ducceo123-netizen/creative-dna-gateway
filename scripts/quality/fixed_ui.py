@@ -15,6 +15,7 @@ CAPTURE = r'''(root, permitted) => {
     const attributes = Object.fromEntries([...n.attributes].map(a => [a.name,a.value]));
     return {tag:n.tagName, attributes, text:[...n.childNodes].filter(c=>c.nodeType===3).map(c=>c.textContent),
       rect:[r.x-origin.x,r.y-origin.y,r.width,r.height].map(v=>Math.round(v*100)/100), styles, allowed_colors:allowedColors,
+      pseudos:['::before','::after'].map(p=>{const pc=getComputedStyle(n,p);return {pseudo:p,styles:Object.fromEntries([...pc].map(k=>[k,pc.getPropertyValue(k)])),allowed_colors:allowedColors.filter(k=>k==='color')};}),
       state:{value:'value' in n?n.value:null,checked:'checked' in n?n.checked:null,
         selected:'selected' in n?n.selected:null,disabled:'disabled' in n?n.disabled:null,
         valid:'validity' in n?n.validity.valid:null,hidden:n.hidden,expanded:n.getAttribute('aria-expanded')},
@@ -45,6 +46,20 @@ def capture(page, selector, color_tokens=()):
         raise ValueError('IMAGE_BYTES_NOT_LOADED')
     return {'viewport':page.viewport_size,'nodes':data}
 
+def style_differences(a, b):
+    differences=[]
+    allowed=set(a['allowed_colors']) & set(b.get('allowed_colors',[]))
+    for prop in a['styles'].keys() | b.get('styles',{}).keys():
+        av=a['styles'].get(prop);bv=b.get('styles',{}).get(prop)
+        if av == bv or prop in allowed: continue
+        # Chromium exposes this shorthand as well as all longhands. Comparing
+        # longhands retains line/style/thickness checks without color duplication.
+        if prop == 'text-decoration' and all(k in a['styles'] and k in b['styles'] for k in ('text-decoration-line','text-decoration-style','text-decoration-thickness','text-decoration-color')): continue
+        # Only derivatives actually following both text colors; never background.
+        if 'color' in allowed and prop.endswith('color') and prop != 'background-color' and av == a['styles'].get('color') and bv == b['styles'].get('color'): continue
+        differences.append(prop)
+    return differences
+
 def compare(source, candidate):
     differences = []
     if source['viewport'] != candidate['viewport']: differences.append('VIEWPORT_MISMATCH')
@@ -52,16 +67,11 @@ def compare(source, candidate):
     for i,(a,b) in enumerate(zip(source['nodes'],candidate['nodes'])):
         for key in a:
             if key == 'styles':
-                for prop in a['styles'].keys() | b.get('styles',{}).keys():
-                    av=a['styles'].get(prop);bv=b.get('styles',{}).get(prop)
-                    if av == bv: continue
-                    allowed=set(a['allowed_colors']) & set(b.get('allowed_colors',[]))
-                    if prop in allowed: continue
-                    # A currentColor derivative is allowed only when both sides
-                    # actually track their respective text color. Equal explicit
-                    # border colors remain compared, avoiding asymmetric omission.
-                    if 'color' in allowed and prop.endswith('color') and prop != 'background-color' and av == a['styles'].get('color') and bv == b['styles'].get('color'): continue
-                    differences.append(f'NODE_{i}_STYLE_{prop}_CHANGED')
+                differences.extend(f'NODE_{i}_STYLE_{p}_CHANGED' for p in style_differences(a,b))
+            elif key == 'pseudos':
+                for ap,bp in zip(a['pseudos'],b.get('pseudos',[])):
+                    differences.extend(f'NODE_{i}_{ap["pseudo"]}_{p}_CHANGED' for p in style_differences(ap,bp))
+                if len(a['pseudos']) != len(b.get('pseudos',[])): differences.append(f'NODE_{i}_PSEUDOS_CHANGED')
             elif a[key] != b.get(key): differences.append(f'NODE_{i}_{key.upper()}_CHANGED')
     digest = lambda x: hashlib.sha256(json.dumps(x,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'schema_version':'uid.fixed-ui-comparison.v1','status':'BLOCKED' if differences else 'STRUCTURE_STATE_STYLE_MATCH_NOT_VISUAL_QC',

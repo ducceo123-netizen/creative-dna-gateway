@@ -1,42 +1,34 @@
 /** Read-only local gate. node --import tsx scripts/preflight-creative-package.ts manifest.json
  * Local files only, no URL fetches or service writes. Prints evidence; exits nonzero on blocked.
  */
-import { readFile, lstat, realpath } from 'node:fs/promises';
-import { resolve, dirname, relative, isAbsolute, sep } from 'node:path';
+import { realpath } from 'node:fs/promises';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { preflightAsset, ASSET_LIMITS } from '../uid-asset-preflight.ts';
 import { compileBrandColors } from '../uid-brand-colors.ts';
 import { bindOnepageUiTemplate } from '../onepage-ui-template.ts';
+import { readBoundedPackageFile } from './quality/bounded-file.ts';
 const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 export async function preflightCreativePackage(manifestPath: string) {
   const root = await realpath(dirname(resolve(manifestPath)));
-  if ((await lstat(manifestPath)).size > 1024 * 1024) throw new Error('MANIFEST_BYTE_LIMIT');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const manifest = JSON.parse((await readBoundedPackageFile(root, basename(manifestPath), 1024 * 1024)).toString('utf8'));
   if (manifest.schema_version !== 'uid.creative-package-input.v1' || !Array.isArray(manifest.assets) || !manifest.assets.length || manifest.assets.length > 100) throw new Error('INVALID_PACKAGE_MANIFEST');
   if (Object.keys(manifest).some(k => !['schema_version','assets','brand_colors','onepage'].includes(k))) throw new Error('UNKNOWN_MANIFEST_FIELD');
   const ids = new Set<string>();
   const inspected = [];
   for (const a of manifest.assets) {
-    if (typeof a.id !== 'string' || !a.id.trim() || ids.has(a.id) || typeof a.path !== 'string' || isAbsolute(a.path)) throw new Error('INVALID_ASSET_ID_OR_PATH');
+    if (typeof a.id !== 'string' || !a.id.trim() || ids.has(a.id) || typeof a.path !== 'string') throw new Error('INVALID_ASSET_ID_OR_PATH');
     ids.add(a.id);
-    const path = resolve(root, a.path), rel = relative(root, path);
-    if (!rel || rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel)) throw new Error('ASSET_OUTSIDE_PACKAGE');
-    // Every component, not just the leaf: do not traverse symlink directories.
-    let component = root;
-    for (const part of rel.split(sep)) { component = resolve(component, part); if ((await lstat(component)).isSymbolicLink()) throw new Error('SYMLINK_ASSET_FORBIDDEN'); }
-    const stat = await lstat(path);
-    if (!stat.isFile() || stat.size > ASSET_LIMITS.bytes) throw new Error('ASSET_BYTE_LIMIT');
-    const bytes = await readFile(path);
+    const bytes = await readBoundedPackageFile(root, a.path, ASSET_LIMITS.bytes);
     const read_at = new Date().toISOString();
     const report = await preflightAsset(bytes, { expected_sha256: a.sha256, placement: a.placement, supplier_spec: a.supplier_spec });
-    inspected.push({ path, id: a.id, read_at, ...report });
+    inspected.push({ reference: a.path, id: a.id, read_at, ...report });
   }
   // Revalidate the whole inventory after all decodes, immediately before binding.
   const receipts = [];
-  for (const { path, ...report } of inspected) {
-    if ((await lstat(path)).isSymbolicLink()) throw new Error('SYMLINK_ASSET_FORBIDDEN');
-    const revalidated = await readFile(path);
+  for (const { reference, ...report } of inspected) {
+    const revalidated = await readBoundedPackageFile(root, reference, ASSET_LIMITS.bytes);
     if (sha(revalidated) !== report.sha256) throw new Error('ASSET_BYTES_CHANGED_DURING_PREFLIGHT');
     receipts.push({ ...report, revalidated_at: new Date().toISOString() });
   }
