@@ -22,6 +22,12 @@ on:
       - 'server.ts'
       - 'uid-muse.ts'
       - 'onepage-ui-template.ts'
+      - 'uid-asset-preflight.ts'
+      - 'uid-brand-colors.ts'
+      - 'scripts/quality/**'
+      - 'scripts/preflight-creative-package.ts'
+      - 'package.json'
+      - 'bun.lock'
       - 'uid-private-reference-*.ts'
       - 'supabase/functions/_shared/reference-library*.ts'
       - 'supabase/functions/_shared/private-reference*.ts'
@@ -56,3 +62,13 @@ jobs:
       - run: python tests/browser/hosted-review.py
 
       - run: python tests/browser/owner-review.py
+
+      - run: python tests/browser/fixed-ui-quality.py
+        env:
+          FIXED_UI_ARTIFACTS: artifacts/fixed-ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fixed-ui-quality-evidence
+          path: artifacts/fixed-ui
+          if-no-files-found: ignore
