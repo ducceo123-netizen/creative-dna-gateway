@@ -11,6 +11,8 @@ test('complete versioned template includes matching hashes, fonts, slots and fix
   const source = getOnepageUiTemplate(undefined, 'source') as ReturnType<typeof getOnepageUiTemplate> & { html: string; css: string };
   assert.equal(sha(source.html), manifest.sha256.html);
   assert.equal(sha(source.css), manifest.sha256.css);
+  assert.equal(manifest.ui_content_contract.schema_version, 'uid-onepage-ui-content/1');
+  assert.equal(manifest.ui_content_contract.approval_scope, 'COPY_AND_ASSETS_IN_EXISTING_SLOTS_ONLY_NOT_LAYOUT_PERMISSION');
   assert.equal(manifest.asset_slots.length, 19);
   assert.equal(manifest.text_slots.length, 26);
   assert.ok(source.css.includes('data:font/woff2;base64,'));

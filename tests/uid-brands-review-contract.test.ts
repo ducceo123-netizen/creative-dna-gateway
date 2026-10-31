@@ -51,7 +51,13 @@ test("seven public schemas remain exact; review/native extend the baseline addit
   };
   for (const tool of TOOL_DEFINITIONS) {
     const schema: any = structuredClone(tool.inputSchema);
-    if (legacyPins[tool.name]) {
+    if (tool.name === 'get_onepage_ui_template') {
+      assert.ok(schema.properties.bindings);
+      assert.ok(!schema.required?.includes('bindings'));
+      assert.equal(schema.properties.bindings.additionalProperties, false);
+      delete schema.properties.bindings;
+      assert.equal(createHash("sha256").update(JSON.stringify(schema)).digest("hex"), baseline[tool.name], 'old no-bindings schema remains exact');
+    } else if (legacyPins[tool.name]) {
       for (const field of ["workflow_state", "feedback_request"]) {
         assert.ok(schema.properties[field]);
         assert.ok(!schema.required?.includes(field), `${field} must remain optional`);
