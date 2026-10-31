@@ -16,7 +16,7 @@ export async function preflightCreativePackage(manifestPath: string) {
   if (manifest.schema_version !== 'uid.creative-package-input.v1' || !Array.isArray(manifest.assets) || !manifest.assets.length || manifest.assets.length > 100) throw new Error('INVALID_PACKAGE_MANIFEST');
   if (Object.keys(manifest).some(k => !['schema_version','assets','brand_colors','onepage'].includes(k))) throw new Error('UNKNOWN_MANIFEST_FIELD');
   const ids = new Set<string>();
-  const receipts = [];
+  const inspected = [];
   for (const a of manifest.assets) {
     if (typeof a.id !== 'string' || !a.id.trim() || ids.has(a.id) || typeof a.path !== 'string' || isAbsolute(a.path)) throw new Error('INVALID_ASSET_ID_OR_PATH');
     ids.add(a.id);
@@ -30,9 +30,15 @@ export async function preflightCreativePackage(manifestPath: string) {
     const bytes = await readFile(path);
     const read_at = new Date().toISOString();
     const report = await preflightAsset(bytes, { expected_sha256: a.sha256, placement: a.placement, supplier_spec: a.supplier_spec });
+    inspected.push({ path, id: a.id, read_at, ...report });
+  }
+  // Revalidate the whole inventory after all decodes, immediately before binding.
+  const receipts = [];
+  for (const { path, ...report } of inspected) {
+    if ((await lstat(path)).isSymbolicLink()) throw new Error('SYMLINK_ASSET_FORBIDDEN');
     const revalidated = await readFile(path);
     if (sha(revalidated) !== report.sha256) throw new Error('ASSET_BYTES_CHANGED_DURING_PREFLIGHT');
-    receipts.push({ id: a.id, read_at, revalidated_at: new Date().toISOString(), ...report });
+    receipts.push({ ...report, revalidated_at: new Date().toISOString() });
   }
   const branding = manifest.brand_colors === undefined ? null : compileBrandColors(manifest.brand_colors);
   let onepage = null;

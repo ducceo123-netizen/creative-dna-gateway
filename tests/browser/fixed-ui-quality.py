@@ -23,7 +23,8 @@ with sync_playwright() as p:
     if state=='selected':page.locator('#bg').select_option(label='Pine');page.locator('#gift').check()
     if state=='cleared':page.locator('#name').fill('');page.locator('#gift').uncheck()
     if state=='disabled':page.locator('#teeAtcButton').evaluate('(n)=>n.disabled=true')
-   assert not qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))['differences'],state
+   report=qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))
+   assert not report['differences'], (state,report['differences'])
   if os.environ.get('FIXED_UI_ARTIFACTS'):
    out=Path(os.environ['FIXED_UI_ARTIFACTS']);out.mkdir(parents=True,exist_ok=True)
    a.screenshot(path=str(out/f'form-source-{width}.png'),full_page=True)
