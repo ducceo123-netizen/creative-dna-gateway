@@ -10,18 +10,21 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "quality:preflight": "node --import tsx scripts/preflight-creative-package.ts",
+    "quality:fixed-ui": "python tests/browser/fixed-ui-quality.py"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
-    "@modelcontextprotocol/server": "^2.0.0",
     "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "sharp": "0.35.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
