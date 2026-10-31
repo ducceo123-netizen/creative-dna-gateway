@@ -8,14 +8,15 @@ import json
 CAPTURE = r'''(root, permitted) => {
   const all = [root, ...root.querySelectorAll('*')];
   const ignored = new Set(['STYLE','SCRIPT']);
+  const stylesOf = c => Object.fromEntries([...new Set([...c,'text-decoration-line','text-decoration-style','text-decoration-thickness','text-decoration-color'])].map(p => [p,c.getPropertyValue(p)]));
   return all.filter(n => !ignored.has(n.tagName)).map(n => {
     const c = getComputedStyle(n), r = n.getBoundingClientRect(), origin = root.getBoundingClientRect();
-    const styles = Object.fromEntries([...c].map(p => [p,c.getPropertyValue(p)]));
+    const styles = stylesOf(c);
     const allowedColors = permitted.filter(([selector,property]) => n.matches(selector) || (property==='color' && n.closest(selector))).map(([,property])=>property);
     const attributes = Object.fromEntries([...n.attributes].map(a => [a.name,a.value]));
     return {tag:n.tagName, attributes, text:[...n.childNodes].filter(c=>c.nodeType===3).map(c=>c.textContent),
       rect:[r.x-origin.x,r.y-origin.y,r.width,r.height].map(v=>Math.round(v*100)/100), styles, allowed_colors:allowedColors,
-      pseudos:['::before','::after'].map(p=>{const pc=getComputedStyle(n,p);return {pseudo:p,styles:Object.fromEntries([...pc].map(k=>[k,pc.getPropertyValue(k)])),allowed_colors:allowedColors.filter(k=>k==='color')};}),
+      pseudos:['::before','::after'].map(p=>{const pc=getComputedStyle(n,p);return {pseudo:p,styles:stylesOf(pc),allowed_colors:allowedColors.filter(k=>k==='color')};}),
       state:{value:'value' in n?n.value:null,checked:'checked' in n?n.checked:null,
         selected:'selected' in n?n.selected:null,disabled:'disabled' in n?n.disabled:null,
         valid:'validity' in n?n.validity.valid:null,hidden:n.hidden,expanded:n.getAttribute('aria-expanded')},

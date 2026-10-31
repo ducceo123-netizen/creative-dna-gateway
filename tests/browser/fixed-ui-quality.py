@@ -23,6 +23,10 @@ with sync_playwright() as p:
     if state=='selected':page.locator('#bg').select_option(label='Pine');page.locator('#gift').check()
     if state=='cleared':page.locator('#name').fill('');page.locator('#gift').uncheck()
     if state=='disabled':page.locator('#teeAtcButton').evaluate('(n)=>n.disabled=true')
+   if state=='default' and os.environ.get('FIXED_UI_ARTIFACTS'):
+    out=Path(os.environ['FIXED_UI_ARTIFACTS']);out.mkdir(parents=True,exist_ok=True)
+    a.screenshot(path=str(out/f'form-source-{width}.png'),full_page=True)
+    b.screenshot(path=str(out/f'form-color-candidate-{width}.png'),full_page=True)
    report=qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))
    assert not report['differences'], (state,report['differences'])
   if os.environ.get('FIXED_UI_ARTIFACTS'):
@@ -30,7 +34,7 @@ with sync_playwright() as p:
    a.screenshot(path=str(out/f'form-source-{width}.png'),full_page=True)
    b.screenshot(path=str(out/f'form-color-candidate-{width}.png'),full_page=True)
   # Each deliberate error must be caught; never approve or overwrite the source.
-  for mutation in ["document.querySelector('#name').remove()", "document.querySelector('label').prepend('Invented heading')", "document.querySelector('#name').style.fontFamily='serif'", "document.querySelector('form').style.padding='20px'", "document.querySelector('#name').required=false", "document.querySelector('#bg').selectedIndex=1", "document.querySelector('#teeAtcButton').textContent='Buy differently'", "document.querySelector('#teeAtcButton').style.borderRadius='30px'"]:
+  for mutation in ["document.querySelector('#name').remove()", "document.querySelector('label').prepend('Invented heading')", "document.querySelector('#name').style.fontFamily='serif'", "document.querySelector('form').style.padding='20px'", "document.querySelector('#name').required=false", "document.querySelector('#bg').selectedIndex=1", "document.querySelector('#teeAtcButton').textContent='Buy differently'", "document.querySelector('#teeAtcButton').style.borderRadius='30px'", "document.querySelector('#teeAtcButton').style.textDecoration='underline'"]:
    a.set_content(fixture);b.set_content(fixture+overlay);b.evaluate(mutation)
    assert qa.compare(qa.capture(a,'#form',colors),qa.capture(b,'#form',colors))['differences'],mutation
   a.set_content(fixture);b.set_content(fixture+overlay)
@@ -53,4 +57,4 @@ with sync_playwright() as p:
   assert qa.compare(source,qa.capture(b,'body'))['status']=='BLOCKED'
   a.close();b.close()
  browser.close()
-print('PASS: fixed UI desktop/mobile, 5 native states, 8 deliberate form drifts, real Onepage extra-heading drift; no visual/native-provider QC claimed')
+print('PASS: fixed UI desktop/mobile, 5 native states, 9 deliberate form drifts, real Onepage extra-heading drift; no visual/native-provider QC claimed')
