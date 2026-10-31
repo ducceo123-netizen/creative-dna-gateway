@@ -6,6 +6,7 @@ import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS,
 import { ONEPAGE_FAQ_TEMPLATE_VERSION, replacePostStorySection } from './onepage-faq-template.ts';
 import faqSection from './templates/onepage-faq-section-v1.json' with { type: 'json' };
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
+import { ONEPAGE_UI_CONTENT_CONTRACT, validateOnepageUiCopy } from './supabase/functions/_shared/onepage-ui-content.ts';
 
 const canvasCss = `
 /* Owner-approved UI mapping canvas gutters — 2026-10-03.v2 */
@@ -43,7 +44,8 @@ const templates: Record<string, typeof originalTemplate> = {
 export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://uid-brands-gateway-preview.onrender.com';
 const LEGACY_TEMPLATE_ORIGIN = 'https://creative-dna-gateway.vercel.app';
-export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout.';
+export const ONEPAGE_BINDINGS_SCHEMA = { type: 'object', additionalProperties: false, required: ['text', 'assets'], properties: { text: { type: 'object', additionalProperties: { type: 'string' } }, assets: { type: 'object', additionalProperties: { type: 'string' } }, faq_count: { type: 'integer', minimum: 1, maximum: 100 } } };
+export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.';
 
 export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format: 'manifest' | 'source' = 'manifest') {
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
@@ -60,6 +62,8 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
     urls: { html: `${base}/template.html`, css: `${base}/styles.css`, bundle: `${base}/bundle.json`, manifest: `${base}/manifest.json` },
     sha256: { html: template.html_sha256, css: template.css_sha256, original_app_css: template.app_css_sha256 },
     asset_slots: template.asset_slots, text_slots: template.text_slots,
+    ui_content_contract: ONEPAGE_UI_CONTENT_CONTRACT,
+    deterministic_binding: { tool: 'get_onepage_ui_template', input: { version, bindings: { text: 'Exact complete data-text-slot map; no section heading aliases', assets: 'Exact complete data-asset-slot map; HTTPS or relative file references', ...(version === faqTemplate.version ? { faq_count: 'Number of approved FAQ answers, 1–100' } : {}) } }, required_before: 'RENDER_UI_MAPPING', output: 'Use returned bound html and unchanged css, not a manually reconstructed page', limitations: 'Cannot prevent an external host from ignoring or later editing the bound output. Does not certify product truth or visual QC.' },
     verification: template.verification,
     canvas_gutter: version !== originalTemplate.version ? { desktop_px: 32, mobile_px: 16, mobile_max_width_px: 798 } : null,
     layout_lock: 'HARD: preserve captured DOM/classes/section order, widths, columns, gaps, padding, typography, borders, backgrounds, masks, object-fit, object-position and responsive CSS. Preserve the approved outer canvas gutters in this version. Substitute approved images and exact copy only. Render mapping from this template; never use imagegen to redraw the page.',
@@ -79,6 +83,55 @@ export function getTemplateFile(version: string, file: string) {
   if (!value) return null;
   const body = JSON.stringify(value);
   return { type: 'application/json', body, hash: createHash('sha256').update(body).digest('hex') };
+}
+
+export type OnepageBindings = { text: Record<string, string>; assets: Record<string, string>; faq_count?: number };
+/** Deterministic substitution into trusted source, never accepting caller HTML/CSS.
+ * The only repeated structure is the existing FAQ row prototype.
+ */
+export function bindOnepageUiTemplate(version: string | undefined, bindings: OnepageBindings) {
+  const source = getOnepageUiTemplate(version, 'source') as ReturnType<typeof getOnepageUiTemplate> & { html: string; css: string };
+  if (!bindings || typeof bindings !== 'object' || Array.isArray(bindings) || Object.keys(bindings).some(key => !['text', 'assets', 'faq_count'].includes(key))) throw new Error('INVALID_TEMPLATE_BINDINGS');
+  const mode = source.post_story_section;
+  if (mode === 'gtk' && bindings.faq_count !== undefined) throw new Error('FAQ_COUNT_FORBIDDEN_IN_GTK');
+  const issues = validateOnepageUiCopy(bindings.text, mode, bindings.faq_count ?? 0);
+  if (issues.length) throw new Error(issues.join(','));
+  const assets = bindings.assets;
+  if (!assets || typeof assets !== 'object' || Array.isArray(assets) || Object.keys(assets).some(key => !source.asset_slots.includes(key)) || source.asset_slots.some(key => !Object.hasOwn(assets, key))) throw new Error('ASSETS_MUST_MATCH_TEMPLATE_SLOTS');
+  for (const value of Object.values(assets)) {
+    // This tool never fetches URLs. Restrict generated src attributes nonetheless.
+    if (typeof value !== 'string' || !value || value.length > 4000 || /[\u0000-\u0020\u007f\\]/u.test(value) || value.startsWith('//') || value.startsWith('/') || value.startsWith('#') || (/^[a-z][a-z0-9+.-]*:/i.test(value) && !value.startsWith('https://'))) throw new Error('UNSAFE_ASSET_REFERENCE');
+    if (value.startsWith('https://')) { const url = new URL(value); if (!url.hostname || url.username || url.password) throw new Error('UNSAFE_ASSET_REFERENCE'); }
+  }
+  let html = source.html;
+  if (mode === 'faq') {
+    const marker = '<div class="uid-faqs-item" data-faq-item="01">';
+    const start = html.indexOf(marker);
+    if (start < 0 || html.indexOf(marker, start + marker.length) >= 0) throw new Error('INVALID_FAQ_TEMPLATE_ROW');
+    const tags = /<div\b[^>]*>|<\/div\s*>/g; tags.lastIndex = start;
+    let depth = 0, end = -1;
+    for (let match = tags.exec(html); match; match = tags.exec(html)) { depth += match[0].startsWith('</') ? -1 : 1; if (depth === 0) { end = tags.lastIndex; break; } }
+    if (end < 0) throw new Error('INVALID_FAQ_TEMPLATE_ROW');
+    const row = html.slice(start, end);
+    const repeated = Array.from({ length: bindings.faq_count! }, (_, i) => {
+      const n = String(i + 1).padStart(2, '0');
+      return row.replace(/faq_question_01/g, `faq_question_${n}`).replace(/faq_answer_01/g, `faq_answer_${n}`).replace(/uid-faq-01/g, `uid-faq-${n}`).replace('data-faq-item="01"', `data-faq-item="${n}"`);
+    }).join('');
+    html = html.slice(0, start) + repeated + html.slice(end);
+  }
+  const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const values = { ...assets, ...bindings.text };
+  html = html.replace(/\{\{([a-z0-9_]+)\}\}/g, (_, slot) => {
+    if (!Object.hasOwn(values, slot)) throw new Error('UNBOUND_TEMPLATE_SLOT');
+    return escape(values[slot]);
+  });
+  return {
+    status: 'BOUND_REQUIRES_VISUAL_QA', template_version: source.version,
+    template_sha256: source.sha256, html, css: source.css,
+    sha256: { html: createHash('sha256').update(html).digest('hex'), css: source.sha256.css },
+    visual_qc_performed: false, content_approval: 'HOST_MUST_VERIFY_EXISTING_APPROVAL',
+    instruction: 'Save this exact bound HTML beside unchanged styles.css and supplied assets, then render and inspect desktop/mobile. Do not insert or rewrite nodes after binding. A changed copy/asset requires a fresh binding. Binding validates structure/slots only, not product truth, asset bytes, content approval or visual quality. No content is stored, uploaded or published by this call.',
+  };
 }
 
 export function attachOnepageUiTemplate(data: any, brand: string, branch: string) {
@@ -152,5 +205,5 @@ export function attachOnepageUiTemplate(data: any, brand: string, branch: string
     } } : {}),
     ui_mapping_templates: { gtk: getOnepageUiTemplate(), faq: getOnepageUiTemplate(faqTemplate.version) },
     onepage_preview_contract: getOnepageReviewContract(),
-    quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nSelect exactly one ui_mapping_templates variant from the approved GTK/FAQ content decision; ui_mapping_template is the backward-compatible GTK default, not an FAQ fallback. For FAQ use the faq version, bind only approved questions and answers, keep every answer expanded, and omit GTK assets. UI mapping MUST use the selected template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page. Deliver the actual bound output in chat with grouped Feedback Onepage guidance using onepage_preview_contract, alongside the required PNG and production assets at their approved stages. Do not require or deliver a hosted web preview; preserve canonical layout and do not substitute the demo.`.trim() };
+    quality_execution_guard, template_policy_compatibility, ui_mapping_template: getOnepageUiTemplate(), instruction: `${data.instruction || ''}\nBefore rendering, call get_onepage_ui_template with bindings for the selected version, then use its returned bound HTML/CSS without adding nodes. This deterministic path rejects copy outside declared UI slots; never reconstruct a layout to fit an approved draft. Select exactly one ui_mapping_templates variant from the approved GTK/FAQ content decision; ui_mapping_template is the backward-compatible GTK default, not an FAQ fallback. For FAQ use the faq version, bind only approved questions and answers, keep every answer expanded, and omit GTK assets. UI mapping MUST use the selected template's backend-owned HTML/CSS download URLs; these supersede Library file IDs and split template feedback. Bind assets/copy and render without rebuilding the layout from a live page. Deliver the actual bound output in chat with grouped Feedback Onepage guidance using onepage_preview_contract, alongside the required PNG and production assets at their approved stages. Do not require or deliver a hosted web preview; preserve canonical layout and do not substitute the demo.`.trim() };
 }

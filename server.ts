@@ -10,7 +10,7 @@ import { UID_ATTACHMENT_OUTPUT_SCHEMA, UID_ATTACHMENT_INPUT_SCHEMA, UID_ATTACHME
 import { gatewayJson, gatewayBudget, gatewayFailure, GATEWAY_TIMEOUTS, type GatewayBudget } from "./uid-gateway-upstream.ts";
 import express, { Request, Response } from "express";
 import path from "path";
-import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, ONEPAGE_TEMPLATE_DESC } from "./onepage-ui-template.ts";
+import { attachOnepageUiTemplate, getOnepageUiTemplate, getTemplateFile, bindOnepageUiTemplate, ONEPAGE_BINDINGS_SCHEMA, ONEPAGE_TEMPLATE_DESC } from "./onepage-ui-template.ts";
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
@@ -515,7 +515,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
-    inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] } } },
+    inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] }, bindings: ONEPAGE_BINDINGS_SCHEMA } },
   },
   {
     name: "resolve_creative_dna",
@@ -663,12 +663,12 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
 
   server.registerTool("get_onepage_ui_template", uidProgressTool("get_onepage_ui_template", {
     title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
-    inputSchema: { version: z.string().trim().max(80).optional(), format: z.enum(["manifest", "source"]).optional() },
-  }), async ({ version, format }) => {
+    inputSchema: { version: z.string().trim().max(80).optional(), format: z.enum(["manifest", "source"]).optional(), bindings: z.object({ text: z.record(z.string(), z.string()), assets: z.record(z.string(), z.string()), faq_count: z.number().int().min(1).max(100).optional() }).strict().optional() },
+  }), async ({ version, format, bindings }) => {
     try {
-      return withUidProgress({ content: [{ type: "text", text: JSON.stringify(getOnepageUiTemplate(version, format), null, 2) }] }, "template");
+      return withUidProgress({ content: [{ type: "text", text: JSON.stringify(bindings === undefined ? getOnepageUiTemplate(version, format) : bindOnepageUiTemplate(version, bindings), null, 2) }] }, "template");
     } catch {
-      return withUidProgress({ content: [{ type: "text", text: JSON.stringify({ error: "Unknown Onepage UI template version or format" }) }], isError: true }, "template");
+      return withUidProgress({ content: [{ type: "text", text: JSON.stringify({ error: "Invalid Onepage template version, format or bindings" }) }], isError: true }, "template");
     }
   });
 
@@ -912,8 +912,8 @@ export function createApp(): express.Application {
   });
   app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
-    try { return res.json(getOnepageUiTemplate(input.version, input.format)); }
-    catch { return res.status(400).json({ error: "Unknown Onepage UI template version or format" }); }
+    try { getOnepageUiTemplate(input.version, input.format); return res.json(input.bindings === undefined ? getOnepageUiTemplate(input.version, input.format) : bindOnepageUiTemplate(input.version, input.bindings)); }
+    catch { return res.status(400).json({ error: "Invalid Onepage template version, format or bindings" }); }
   });
   app.post("/api/tools/compile_onepage_job", async (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
@@ -1592,7 +1592,7 @@ export function createApp(): express.Application {
         },
       ],
       paths: {
-        "/api/tools/get_onepage_ui_template": { post: { operationId: "get_onepage_ui_template", description: ONEPAGE_TEMPLATE_DESC, requestBody: { content: { "application/json": { schema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] } } } } } }, responses: { "200": { description: "Versioned UI template manifest or inline source" } } } },
+        "/api/tools/get_onepage_ui_template": { post: { operationId: "get_onepage_ui_template", description: ONEPAGE_TEMPLATE_DESC, requestBody: { content: { "application/json": { schema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] }, bindings: ONEPAGE_BINDINGS_SCHEMA } } } } }, responses: { "200": { description: "Versioned UI template manifest or inline source" } } } },
         "/api/health": {
           get: {
             operationId: "get_health_status",

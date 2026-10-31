@@ -143,3 +143,43 @@ test('subset fact cannot be promoted to the whole collection and PDP cannot drif
   assert.equal(check(single).status, 'AWAITING_VALID_RESEARCH');
   assert.ok(evaluateResearch(context(single)).issues.includes('PDP_SCOPE_DRIFT'));
 });
+
+test('rejects invented Occasion UI blocks even when copy was approved outside the template', () => {
+  for (const key of ['occasion', 'occasion_heading', 'occasion_support', 'sections', 'layout', 'ui']) {
+    const r = fixture(); r.analysis.content_plan[key] = { title: 'A Gift For Their Moments', support: 'Invented support from an approved draft.' };
+    const result = attachResearch({}, context(r));
+    assert.ok(result.content_plan_assessment!.issues.includes('UNKNOWN_CONTENT_PLAN_FIELD'), key);
+    assert.equal(result.readiness.content_authoring, 'REQUIRES_VALID_CONTENT_PLAN');
+  }
+  for (const block of ['post_story', 'details', 'collection']) {
+    const r = fixture(true); r.analysis.content_plan[block].heading = 'Invented UI heading';
+    assert.ok(check(r).issues.includes('UNKNOWN_CONTENT_PLAN_FIELD'));
+  }
+});
+
+test('full UI draft permits product copy only in existing slots, not fixed UI headings or image pair', () => {
+  const r = fixture();
+  const copy = Object.fromEntries(Array.from({ length: 13 }, (_, i) => String(i + 1).padStart(2, '0')).flatMap(n => [[`title_${n}`, `Product-specific title ${n}`], [`description_${n}`, `Evidence-backed product copy ${n}`]]));
+  r.analysis.content_plan.ui_copy = copy;
+  assert.equal(check(r).status, 'READY_FOR_HOST_REVIEW');
+  for (const key of ['occasion_heading', 'occasion_support', 'product_details_heading', 'title_14', 'banner_title']) {
+    r.analysis.content_plan.ui_copy = { ...copy, [key]: 'A Gift For Their Moments' };
+    assert.ok(check(r).issues.includes('UI_COPY_OUTSIDE_TEMPLATE_SLOTS'), key);
+  }
+  r.analysis.content_plan.ui_copy = { ...copy }; delete r.analysis.content_plan.ui_copy.title_07;
+  assert.ok(check(r).issues.includes('UI_COPY_MISSING_TEMPLATE_SLOTS'));
+  r.analysis.content_plan.ui_copy = { ...copy, title_07: { html: '<h2>Extra block</h2>' } };
+  assert.ok(check(r).issues.includes('UI_COPY_REQUIRES_NONEMPTY_TEXT'));
+});
+
+test('FAQ copy allows exactly selected answer rows without GTK slots or arbitrary UI additions', () => {
+  const r = fixture(); r.analysis.content_plan.post_story.mode = 'faq'; r.analysis.content_plan.post_story.insight_indexes = [0, 1];
+  const copy = Object.fromEntries(Array.from({ length: 10 }, (_, i) => String(i + 1).padStart(2, '0')).flatMap(n => [[`title_${n}`, `Product title ${n}`], [`description_${n}`, `Product copy ${n}`]]));
+  const faq = { ...copy, faq_heading: 'Questions about this product', faq_question_01: 'Question one?', faq_answer_01: 'Supported answer one.', faq_question_02: 'Question two?', faq_answer_02: 'Supported answer two.' };
+  r.analysis.content_plan.ui_copy = faq;
+  assert.equal(check(r).status, 'READY_FOR_HOST_REVIEW');
+  for (const key of ['title_11', 'faq_question_03', 'occasion_support']) {
+    r.analysis.content_plan.ui_copy = { ...faq, [key]: 'Unmapped copy' };
+    assert.ok(check(r).issues.includes('UI_COPY_OUTSIDE_TEMPLATE_SLOTS'));
+  }
+});

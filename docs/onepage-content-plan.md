@@ -20,3 +20,19 @@ The immutable UI templates contain banner image slots, not separate banner headl
 ## Verification
 
 `npm test`, `npm run lint`, `npm run build`. On macOS, run tests with `TMPDIR` pointing to a real directory inside the checkout because hosted-review tests reject symlink ancestors (`/var` and `/tmp`). This avoids altering their security checks. No browser layout changed in this patch.
+
+## Fixed UI content slots (2026-10-31)
+
+The selected backend template owns UI headings, section order and slot counts. Content approval does **not** grant permission to add layout blocks. Brand style applies within permitted assets; product copy remains variable within the declared text slots. Existing template HTML/CSS and hashes are unchanged.
+
+The captured structure is Product Details → two Occasion images without text → four icon cards. There is no Occasion heading/support slot. `title_07`–`title_10` and matching descriptions belong to the four icon cards, not the image pair. Fixed template headings remain unchanged. Only the approved FAQ variant permits row repetition via its existing binding contract.
+
+Both research preflight and the template manifest now carry `uid-onepage-ui-content/1`. Unknown content-plan fields (including invented section/header blocks) are rejected. An optional `content_plan.ui_copy` submits a **complete** draft keyed by actual `data-text-slot` IDs. If present it must contain exactly the selected template's slots; FAQ row count matches selected insights. Unknown/missing slots and non-text values fail preflight. Banner raster copy remains in the separate banner plan, not extra HTML slots.
+
+Research-only preflight still works without `ui_copy`; READY_FOR_HOST_REVIEW is not proof that unsubmitted copy or downstream HTML is valid. The gateway supplies the contract and templates, not the external host's HTML renderer. The host must submit the draft for validation, bind only those approved slots using `textContent`, preserve all other DOM/CSS, and inspect actual desktop/mobile renders before delivery. If an already-approved draft contains unmappable copy, correct the draft instead of creating new nodes or silently hiding it. No semantic or pixel-QC receipt is fabricated by these checks.
+
+### Deterministic mapping path
+
+`get_onepage_ui_template` (both existing MCP and REST entrypoints) now accepts optional `bindings: {text, assets, faq_count?}`. Legacy calls without bindings still return the same manifest/source shape plus additive guidance. Binding accepts exact complete text/asset slot maps only, rejects caller HTML/CSS and fixed UI/unknown slots, escapes values, and substitutes into the versioned source. HTTPS or relative asset references are accepted without fetching them; fixed embedded checkmarks are not caller-overridable. FAQ mode requires its approved row count and repeats only the existing row prototype with unique IDs and expanded answers. GTK rejects FAQ count/slots. No source template or CSS bytes are modified.
+
+The template manifest and compiled packet direct the host to use this bound HTML/CSS before rendering rather than hand-assembling blocks. A successful binding returns `BOUND_REQUIRES_VISUAL_QA`, source/output hashes and `visual_qc_performed:false`; it neither stores/publishes content nor certifies copy approval, fetched asset bytes or product truth. The earlier limitation applies to hosts that ignore this app path or edit the result afterwards; the app cannot certify arbitrary external HTML. The bound output itself cannot gain a caller-supplied Occasion heading/support or a new layout block.

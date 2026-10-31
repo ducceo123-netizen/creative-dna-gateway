@@ -1,8 +1,10 @@
+import { ONEPAGE_UI_CONTENT_CONTRACT, validateOnepageUiCopy } from './onepage-ui-content.ts';
 /** New-run structural checks. This is not a canonical patch, source receipt or approval. */
 export const ONEPAGE_CONTENT_PLAN_VERSION = 'uid-onepage-content-plan/1';
 export const ONEPAGE_CONTENT_PLAN_CONTRACT = {
   schema_version: ONEPAGE_CONTENT_PLAN_VERSION,
   required_before: 'BUILD_CONTENT_MAP',
+  ui_content: ONEPAGE_UI_CONTENT_CONTRACT,
   provenance: 'Owner-requested banner simplification; enforcement of existing adaptive section and collection evidence rules. No canonical mutation.',
   instruction: 'Submit analysis.content_plan with the same research object before content authoring. Choose the verified product keyword as the entire banner title on both devices, without an appended emotional phrase, slogan or subtitle. Keep approved desktop support separate; mobile has no support/subtitle. Compare FAQ and Good To Know using unresolved buyer questions, practical visual explanations, source coverage and overlap with existing content. Neither mode is the default. Record why one is more useful and why the other is not selected. Preserve canonical counts: GTK uses three distinct supported notes; FAQ has one row per useful supported answer, no filler. Missing evidence blocks the affected content plan; never invent sources or substitute modes to pass. For collections, enumerate available products, disclose inspected coverage and exceptions, and distinguish shared claims from SKU-only details. Product Details retain one anchor SKU and three distinct factual closeups; choose their features from evidence, never assume board edges, flat print or hooks. Existing approved outcomes are not rewritten. Host semantic, evidence and pixel review plus content approval remain mandatory.',
   input_shape: {
@@ -11,6 +13,7 @@ export const ONEPAGE_CONTENT_PLAN_CONTRACT = {
     post_story: { mode: 'gtk | faq', rationale: 'specific comparison grounded in this research', alternative_rejected_reason: 'why the other mode adds less value', source_ids: ['inspected research sources informing the choice'], insight_indexes: ['distinct zero-based analysis.insights indexes; supported claim_ids required'] },
     details: { anchor_product_id: 'one verified scope product', items: [{ slot: 'detail_01 | detail_02 | detail_03', claim_ids: ['supported product facts applying to anchor'], visible_proof: 'distinct closeup proving this fact at the circular UI crop' }] },
     collection: { discovered_product_count: 'known count of matching valid products; document excluded/nonmatching products separately', enumeration_note: 'actual enumeration method and exclusions; no invented completeness', shared_claim_ids: ['supported collection/shared_subset facts used for line-level copy'], exceptions: 'variant exceptions and coverage limits, or explicit none verified' },
+    ui_copy: 'Optional full draft keyed ONLY by selected template data-text-slot IDs. When supplied, all slots are required; FAQ row count equals selected insight count. Never add occasion heading/support or fixed section headings. Omit during research preflight when copy is not authored yet.',
   },
 };
 type Obj = Record<string, any>;
@@ -28,6 +31,14 @@ export function evaluateOnepageContentPlan(research: unknown, validation: { stat
   const p = obj(research) && obj(research.analysis) ? research.analysis.content_plan : undefined;
   if (p === undefined) return finish('REQUIRES_CONTENT_PLAN');
   if (!obj(research) || !obj(research.analysis) || !obj(research.scope) || !rows(research.scope.products) || !rows(research.sources) || !rows(research.claims) || !rows(research.analysis.insights) || !obj(p) || p.schema_version !== ONEPAGE_CONTENT_PLAN_VERSION) return finish('INVALID_CONTENT_PLAN');
+  // Reject alternate block/copy fields rather than approving a draft that cannot map.
+  const only = (value: unknown, keys: string[]) => obj(value) && Object.keys(value).some(key => !keys.includes(key));
+  if (only(p, ['schema_version', 'banner', 'post_story', 'details', 'collection', 'ui_copy']) ||
+      only(p.post_story, ['mode', 'rationale', 'alternative_rejected_reason', 'source_ids', 'insight_indexes']) ||
+      only(p.details, ['anchor_product_id', 'items']) ||
+      (rows(p.details?.items) && p.details.items.some((item: Obj) => only(item, ['slot', 'claim_ids', 'visible_proof']))) ||
+      only(p.collection, ['discovered_product_count', 'enumeration_note', 'shared_claim_ids', 'exceptions'])) issues.push('UNKNOWN_CONTENT_PLAN_FIELD');
+  if (Object.hasOwn(p, 'ui_copy')) issues.push(...validateOnepageUiCopy(p.ui_copy, p.post_story?.mode, Array.isArray(p.post_story?.insight_indexes) ? p.post_story.insight_indexes.length : 0));
   const sources = new Map(research.sources.map(s => [s.id, s]));
   const claims = new Map(research.claims.map(c => [c.id, c]));
   const supported = new Set(validation.structurally_supported_claim_ids);
