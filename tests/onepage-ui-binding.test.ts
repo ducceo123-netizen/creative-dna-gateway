@@ -71,7 +71,9 @@ test('existing REST and MCP tool execute strict binding; legacy reads stay uncha
   const f=fixture();const app=createApp();const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));
   try {
     const origin=`http://127.0.0.1:${(server.address() as any).port}`;
-    const post=(path:string,input:any)=>fetch(origin+path,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify(input)});
+    // Bun runs files in one process: isolate this synthetic client's rate-limit bucket.
+    // Keep the production limiter and every denial/threshold test unchanged.
+    const post=(path:string,input:any)=>fetch(origin+path,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream','X-Forwarded-For':'192.0.2.121'},body:JSON.stringify(input)});
     const old=await post('/api/tools/get_onepage_ui_template',{}); assert.deepEqual(await old.json(),getOnepageUiTemplate());
     const good=await post('/api/tools/get_onepage_ui_template',{version:f.version,bindings:f.bindings});assert.equal(good.status,200);assert.equal((await good.json()).html,bindOnepageUiTemplate(f.version,f.bindings).html);
     const bad={...f.bindings,text:{...f.bindings.text,occasion_heading:'A Gift For Their Moments'}};
