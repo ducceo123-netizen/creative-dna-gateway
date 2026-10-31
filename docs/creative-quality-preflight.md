@@ -8,7 +8,7 @@ still only binds strings and explicitly does not fetch/decode assets.
 
 1. Download the exact approved assets through the existing authorized provider path.
    Preserve revision and asset identities in the calling job; never infer them from filenames.
-2. Run `npm run quality:preflight -- /absolute/path/manifest.json`.
+2. Run `node --import tsx scripts/preflight-creative-package.ts /absolute/path/manifest.json`.
 3. Supply `onepage` to make this the **actual binding pipeline**: it decodes every asset,
    re-reads bytes and hashes them, checks slot-to-path equality, then invokes the existing
    deterministic binder. A blocked print check returns `onepage:null`, not a usable output.
@@ -66,7 +66,7 @@ preview open/close, validation, disabled and reset. Tokens only exclude correspo
 computed color properties and currentColor derivatives; exact CSS generation remains
 owned by the strict compiler. Browser comparison does not auto-accept baselines.
 
-`npm run quality:fixed-ui` runs Chromium at 390 and 1280px against the real checked-in
+`python tests/browser/fixed-ui-quality.py` runs Chromium at 390 and 1280px against the real checked-in
 Onepage template plus a **clearly synthetic form fixture**, with 5 native fixture states
 and deliberate structural/font/spacing/control/content faults. It is wired into existing
 Gateway UI CI, reusing Playwright rather than another automation framework. The fixture
@@ -81,3 +81,15 @@ forces complete decode with input limits. Source: https://sharp.pixelplumbing.co
 and https://sharp.pixelplumbing.com/api-constructor/ . No package install scripts needed.
 Existing CI uses Python Playwright 1.55.0; no new browser service/subscription required.
 No production DB, queue, credential, provider artwork, publish or paid worker is changed.
+
+
+## Isolated dependencies preserve compiler trust
+
+Root `package.json` and `bun.lock` are immutable inputs to existing pinned review
+compiler releases. Do not add host tooling to those files or update SQL/release hashes
+to accommodate a tooling change. Install this optional host runtime separately with
+`bun install --cwd tools/creative-quality --frozen-lockfile --ignore-scripts`.
+It has its own exact Sharp package and integrity lock. Existing gateway build/start
+commands are unchanged; the root API remains a manifest/binding path, not image decode.
+CI installs the host subpackage explicitly before its tests and type checking. Governance
+PR triggers include root manifests so pin changes are caught before merging.

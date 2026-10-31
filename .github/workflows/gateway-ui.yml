@@ -40,6 +40,7 @@ on:
       - 'supabase/functions/creative-dna-compile-onepage/**'
       - 'tests/**'
       - '.github/workflows/gateway-ui.yml'
+      - 'tools/creative-quality/**'
   push:
     branches: [main]
 jobs:
@@ -52,6 +53,7 @@ jobs:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
       - run: bun install
+      - run: bun install --cwd tools/creative-quality --frozen-lockfile --ignore-scripts
       - run: bun run lint
       - run: bun run build
       - run: bun test tests/*.test.ts
