@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import sharp from 'sharp';
+import sharp from '../tools/creative-quality/sharp.ts';
 import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises';
 import { readBoundedPackageFile, packagePath } from '../scripts/quality/bounded-file.ts';
