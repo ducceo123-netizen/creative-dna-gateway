@@ -12,6 +12,8 @@ export const UID_PROGRESS_DESCRIPTION = " Give concise factual progress before r
 // Static completion labels describe the end of a call, never success of the task.
 // They remain true for isError, auth failures, missing evidence and unknown outcomes.
 export const UID_TOOL_INVOCATION_LABELS = {
+  compile_scale_brands_job: ["Preparing Scale Brands workflow…", "Scale Brands call ended"],
+  get_scale_brands_reference: ["Reading Scale Brands methodology…", "Methodology call ended"],
   read_ldp_figma_comments: ["Reading Figma comments…", "Figma comments call ended"],
   ingest_uid_brands_attachment: ["Reading attachment reference…", "Attachment call ended"],
   show_uid_brands_review: ["Preparing outcome and actions…", "Review call ended"],

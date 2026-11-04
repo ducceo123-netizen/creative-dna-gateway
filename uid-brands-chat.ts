@@ -1,3 +1,4 @@
+import { SCALE_ROUTING_GUIDANCE } from "./uid-scale-brands.ts";
 import type { z } from "zod";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "./uid-brands-review-contract.ts";
 import { buildFeedbackIndex, resolveFeedbackBlocks } from "./uid-brands-feedback-index.ts";
@@ -17,7 +18,7 @@ export function externalPanelGuidance(stage: string) {
   return context + "\n" + EXTERNAL_PANEL_GUIDANCE;
 }
 
-export const CHAT_BRIEF_GUIDANCE = "Bước 1 · Brief. Cho biết brand, loại sản phẩm thiết kế (material) và link sản phẩm hoặc bộ sưu tập; thêm theme/yêu cầu riêng nếu có. Ví dụ: ‘Brand: thương hiệu của tôi; Material: loại thiết kế tôi cần; Link: link sản phẩm; Theme: tối giản.’ Chỉ hỏi phần còn thiếu. Nếu bạn đang góp ý kết quả cũ, hãy nói ‘Cho tôi xem lại kết quả đang góp ý’, không cần nhập lại brief hay mã kỹ thuật. Ảnh/tệp gốc được gửi trong chat. Đây là hướng dẫn bằng lời, chưa chạy tác vụ hay mở giao diện tương tác." + "\n" + externalPanelGuidance("launcher");
+export const CHAT_BRIEF_GUIDANCE = SCALE_ROUTING_GUIDANCE + "Bước 1 · Brief. Cho biết brand, loại sản phẩm thiết kế (material) và link sản phẩm hoặc bộ sưu tập; thêm theme/yêu cầu riêng nếu có. Ví dụ: ‘Brand: thương hiệu của tôi; Material: loại thiết kế tôi cần; Link: link sản phẩm; Theme: tối giản.’ Chỉ hỏi phần còn thiếu. Nếu bạn đang góp ý kết quả cũ, hãy nói ‘Cho tôi xem lại kết quả đang góp ý’, không cần nhập lại brief hay mã kỹ thuật. Ảnh/tệp gốc được gửi trong chat. Đây là hướng dẫn bằng lời, chưa chạy tác vụ hay mở giao diện tương tác." + "\n" + externalPanelGuidance("launcher");
 
 type ReviewInput = z.infer<typeof REVIEW_INPUT_SCHEMA>;
 type ReviewContext = ReturnType<typeof createReviewContext>;

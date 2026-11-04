@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "brand",
+    "version",
+    "releaseStatus",
+    "tokens"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "brand": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "releaseStatus": {
+      "enum": [
+        "pilot",
+        "review",
+        "approved"
+      ]
+    },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "value",
+          "status",
+          "basis",
+          "scope",
+          "usage",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {},
+          "status": {
+            "enum": [
+              "observed",
+              "inferred",
+              "proposed",
+              "unknown"
+            ]
+          },
+          "basis": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "brand-specific",
+              "shared-ecommerce",
+              "product-category",
+              "campaign"
+            ]
+          },
+          "usage": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "pointer"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "pointer": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

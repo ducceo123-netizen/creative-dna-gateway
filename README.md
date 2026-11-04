@@ -48,3 +48,7 @@ Use the lightweight [Muse bootstrap](https://uid-brands-gateway-preview.onrender
 - **Strictly Read-Only:** Zero write actions or database mutations permitted.
 - **Authoritative Source:** Upstream Supabase edge gateway remains the single source of truth.
 - **Serverless & Lightweight:** Built without runtime dependencies on frontend build tools or bundlers.
+
+### Scale Brands
+
+Use `compile_scale_brands_job` for store-wide brand adaptation with protected Teeinblue PDP, Track Order, Policy, Judge.me and Cart Drawer regions. This chat-first workflow resolves current Brand DNA independently of LDP, carries the Mac `website-brand-ui` methodology, and records evidence gaps without claiming QA or changing stores. See [workflow and limits](docs/scale-brands-workflow.md).

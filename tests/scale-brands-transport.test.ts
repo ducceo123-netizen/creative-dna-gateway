@@ -1,0 +1,40 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createApp} from '../server.ts';
+
+test('plugin discovery, MCP initialize/reference/validate and HTTP paths use the same Scale Brands workflow',async()=>{
+ const original=globalThis.fetch; const calls:any[]=[];
+ globalThis.fetch=async(_url,options)=>{
+  const input=JSON.parse(String(options?.body));calls.push(input);
+  if(input.action==='routes')return Response.json({routes:['pawfecthouse','giftsoul','soulprise'].map(brand=>({brand,branch:'brand-dna'}))});
+  assert.equal(input.action,'resolve');assert.equal(input.branch,'brand-dna');
+  return Response.json({resolved:{brand:input.brand,branch:'brand-dna'},brand:{slug:input.brand},branch:{slug:'brand-dna',metadata:{source_urls:['https://'+input.brand+(input.brand==='giftsoul'?'.co':'.com')]},content_md:'Synthetic canonical test rules'}});
+ };
+ const app=createApp().listen(0,'127.0.0.1');await new Promise<void>(r=>app.once('listening',r));
+ const base=`http://127.0.0.1:${(app.address() as any).port}`;
+ let seq=0;
+ const mcp=async(method:string,params:any)=>{
+  const response=await original(base+'/api/mcp',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:++seq,method,params})});
+  const wire=await response.text(); const packet=JSON.parse(wire.startsWith('{')?wire:wire.split('\n').find(l=>l.startsWith('data: '))!.slice(6));
+  assert.equal(packet.error,undefined,wire);return packet.result;
+ };
+ try{
+  const discovery:any=await (await original(base+'/api/tools')).json();assert.ok(discovery.tools.some((t:any)=>t.name==='compile_scale_brands_job'));
+  const listed=await mcp('tools/list',{});assert.ok(listed.tools.some((t:any)=>t.name==='get_scale_brands_reference'));
+  for(const brand of ['pawfecthouse','giftsoul','soulprise']){
+   const store='https://'+brand+(brand==='giftsoul'?'.co':'.com');
+   const result=await mcp('tools/call',{name:'compile_scale_brands_job',arguments:{brand,store_url:store}});
+   assert.equal(result.isError,false);assert.equal(result.structuredContent.status,'AWAITING_BASELINES');assert.equal(result.structuredContent.brand,brand);
+   assert.equal(result.structuredContent.regions.length,5);assert.equal(result.structuredContent.ldp_workflow,undefined);
+  }
+  const reference=await mcp('tools/call',{name:'get_scale_brands_reference',arguments:{name:'pic-playbooks.md'}});
+  assert.match(reference.structuredContent.content,/Candidate-common/);
+  const bad=await mcp('tools/call',{name:'compile_scale_brands_job',arguments:{brand:'giftsoul',store_url:'https://pawfecthouse.com'}});
+  assert.equal(bad.isError,true);assert.equal(bad.structuredContent.status,'STORE_BRAND_MISMATCH');
+  const pending:any=await (await original(base+'/api/scale-brands/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand:'giftsoul',store_url:'https://giftsoul.co'})})).json();
+  const payload={brand:'giftsoul',store_url:'https://giftsoul.co',job:{schema_version:'uid-scale-brands/1',task_id:'transport-fixture',revision:'v1',canonical_snapshot:pending.canonical_snapshot,evidence:[],regions:pending.regions.map((r:any)=>({id:r.id}))}};
+  const validation=await mcp('tools/call',{name:'compile_scale_brands_job',arguments:payload});assert.equal(validation.structuredContent.status,'INCOMPLETE');
+  const invalid=await original(base+'/api/tools/compile_scale_brands_job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand:'giftsoul',store_url:'https://giftsoul.co',secret:'not allowed'})});assert.equal(invalid.status,400);
+  assert.ok(calls.every(c=>c.action==='routes'||c.action==='resolve')); // no writes and no LDP fallback
+ }finally{globalThis.fetch=original;await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));}
+});
