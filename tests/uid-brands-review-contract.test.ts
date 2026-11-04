@@ -42,7 +42,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
     list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
   };
-  assert.deepEqual(TOOL_DEFINITIONS.map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  assert.deepEqual(TOOL_DEFINITIONS.map(tool => tool.name).sort(), [...Object.keys(baseline), "compile_scale_brands_job", "get_scale_brands_reference"].sort());
   const normalize = (value: any): any => Array.isArray(value) ? value.map(normalize) : value && typeof value === "object"
     ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== "description").map(([key, item]) => [key, normalize(item)])) : value;
   const legacyPins: Record<string, string> = {
@@ -50,6 +50,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     get_uid_brands_native_workflow: "0de4fcab2c97245442a7743c427f77f7657f22a3299bc8f720bf408f6335ea3d",
   };
   for (const tool of TOOL_DEFINITIONS) {
+    if (["compile_scale_brands_job", "get_scale_brands_reference"].includes(tool.name)) continue; // New strict schemas are exercised by Scale Brands transport tests.
     const schema: any = structuredClone(tool.inputSchema);
     if (tool.name === 'get_onepage_ui_template') {
       assert.ok(schema.properties.bindings);
