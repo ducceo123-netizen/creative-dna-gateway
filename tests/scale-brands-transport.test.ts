@@ -1,8 +1,21 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createApp} from '../server.ts';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
 test('plugin discovery, MCP initialize/reference/validate and HTTP paths use the same Scale Brands workflow',async()=>{
+ // Bun shares the server module and its production rate limiter across test files.
+ // Isolate transport requests in Node; do not weaken/reset the production limit for tests.
+ if(process.env.UID_SCALE_TRANSPORT_ISOLATED !== '1'){
+  const env:NodeJS.ProcessEnv={...process.env,UID_SCALE_TRANSPORT_ISOLATED:'1'};
+  delete env.NODE_TEST_CONTEXT;
+  const child=spawnSync('node',['--import','tsx','--test','--test-reporter=tap',fileURLToPath(import.meta.url)],{env,encoding:'utf8',timeout:30000});
+  assert.equal(child.status,0,child.stdout+'\n'+child.stderr);
+  assert.match(child.stdout,/^# pass 1$/m);assert.match(child.stdout,/^# fail 0$/m);assert.match(child.stdout,/^# skipped 0$/m);
+  assert.match(child.stdout,/UID_SCALE_TRANSPORT_ASSERTIONS_COMPLETED/);
+  return;
+ }
  const original=globalThis.fetch; const calls:any[]=[];
  globalThis.fetch=async(_url,options)=>{
   const input=JSON.parse(String(options?.body));calls.push(input);
@@ -47,6 +60,7 @@ test('plugin discovery, MCP initialize/reference/validate and HTTP paths use the
   const payload={brand:'giftsoul',store_url:'https://giftsoul.co',job:{schema_version:'uid-scale-brands/1',task_id:'transport-fixture',revision:'v1',canonical_snapshot:pending.canonical_snapshot,evidence:[],regions:pending.regions.map((r:any)=>({id:r.id}))}};
   const validation=await mcp('tools/call',{name:'compile_scale_brands_job',arguments:payload});assert.equal(validation.structuredContent.status,'INCOMPLETE');
   const invalid=await original(base+'/api/tools/compile_scale_brands_job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand:'giftsoul',store_url:'https://giftsoul.co',secret:'not allowed'})});assert.equal(invalid.status,400);
+  console.log('UID_SCALE_TRANSPORT_ASSERTIONS_COMPLETED');
   assert.ok(calls.every(c=>c.action==='routes'||c.action==='resolve')); // no writes and no LDP fallback
  }finally{globalThis.fetch=original;await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));}
 });
