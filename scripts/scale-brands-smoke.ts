@@ -5,6 +5,10 @@ const server=createApp().listen(0,'127.0.0.1');
 await new Promise<void>(resolve=>server.once('listening',resolve));
 const base=`http://127.0.0.1:${(server.address() as any).port}`;
 try{
+ const routes:any=await (await fetch(base+'/api/routes',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+ const entries=routes.routes.filter((r:any)=>r.branch==='scale-brands').map((r:any)=>r.brand).sort();
+ console.log(JSON.stringify({entrypoint:'scale-brands',listed_brands:entries}));
+ if(!['pawfecthouse','giftsoul','soulprise'].every(b=>entries.includes(b)))throw new Error('Scale Brands entry missing from route discovery');
  for(const [brand,store_url] of [['pawfecthouse','https://pawfecthouse.com'],['giftsoul','https://giftsoul.co'],['soulprise','https://soulprise.co']]){
   const response=await fetch(base+'/api/mcp',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:brand,method:'tools/call',params:{name:'compile_scale_brands_job',arguments:{brand,store_url}}})});
   const wire=await response.text();

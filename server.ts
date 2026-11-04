@@ -1,4 +1,4 @@
-import { compileScaleBrands, getScaleReference, SCALE_INPUT_SCHEMA, SCALE_REFERENCE_SCHEMA, SCALE_DESCRIPTION, SCALE_ROUTING_GUIDANCE } from "./uid-scale-brands.ts";
+import { compileScaleBrands, getScaleReference, SCALE_INPUT_SCHEMA, SCALE_REFERENCE_SCHEMA, SCALE_DESCRIPTION, SCALE_ROUTING_GUIDANCE, SCALE_CONTRACT } from "./uid-scale-brands.ts";
 import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
 import {registerHostedReviews} from './uid-hosted-review.ts';
 import { attachHomeIconContract } from "./supabase/functions/_shared/home-icon.ts";
@@ -362,6 +362,24 @@ function applyNicheProductComboOverlay(data: any, requestedBrand: string, reques
 export async function resolveCreativeDna(brand: string, branch: string, researchContext: ResearchContext = {}) {
   const validated = validateResolveInput(brand, branch);
 
+  if (normalizeRouteKey(validated.branch) === "scale-brands") {
+    const routes = await fetchUpstream({action:"routes"});
+    if (!routes.ok) return routes;
+    const target = routes.data.routes.find((r:any)=>normalizeRouteKey(String(r.brand))===normalizeRouteKey(validated.brand));
+    if (!target) return {ok:false,status:404,data:{error:"Scale Brands requires a brand in the current gateway routes."}};
+    if (researchContext.source_url) {
+      const data = await runScaleBrands({brand:target.brand,store_url:researchContext.source_url});
+      return {ok:data.ok,status:data.ok?200:422,data};
+    }
+    return {ok:true,status:200,data:{
+      mode:"read_only", status:"STORE_URL_REQUIRED", resolved:{brand:target.brand,branch:"scale-brands"},
+      brand:{slug:target.brand}, branch:{slug:"scale-brands",title:"Scale Brands",node_type:"gateway_workflow",content_md:
+        "# Scale Brands\nPreserve Teeinblue PDP, Track Order, Policy, Judge.me and Cart Drawer; adapt only target-brand styling.\n\nEntry point: compile_scale_brands_job({brand, store_url}). Use the verified target store URL from the current user context; ask only if it cannot be resolved. The gateway plans and validates host-reported evidence, it does not edit or verify the live store."},
+      entrypoint:{tool:"compile_scale_brands_job",http_path:"/api/scale-brands/compile",required_inputs:["brand","store_url"]},
+      workflow:SCALE_CONTRACT,
+    }};
+  }
+
   if (isPawfectHouseNicheProductCombo(validated.brand, validated.branch)) {
     const parent = await fetchUpstream({
       action: "resolve",
@@ -402,6 +420,9 @@ export async function listCreativeDnaRoutes() {
 
   if (!result.ok) return result;
 
+  const scaleRoutes = [...new Set<string>(result.data.routes.map((r:any)=>String(r.brand||"").trim()).filter(Boolean))]
+    .filter(brand=>!result.data.routes.some((r:any)=>String(r.brand)===brand && normalizeRouteKey(String(r.branch))==="scale-brands"))
+    .map(brand=>({brand,branch:"scale-brands",title:"Scale Brands — preserve store modules, adapt brand style"}));
   const exists = result.data.routes.some((r: any) =>
     normalizeRouteKey(String(r.brand || "")) === "pawfecthouse" &&
     normalizeRouteKey(String(r.branch || "")) === NICHE_PRODUCT_COMBO_SLUG
@@ -411,8 +432,9 @@ export async function listCreativeDnaRoutes() {
     ...result,
     data: {
       ...result.data,
-      routes: exists ? result.data.routes : [
+      routes: exists ? [...result.data.routes,...scaleRoutes] : [
         ...result.data.routes,
+        ...scaleRoutes,
         {
           brand: "pawfecthouse",
           branch: NICHE_PRODUCT_COMBO_SLUG,

@@ -4,7 +4,7 @@ UID Brands now has an independent, chat-first Scale Brands workflow. It preserve
 
 Example user request: “Scale Brands cho GiftSoul tại https://giftsoul.co; giữ Teeinblue PDP, Track Order, Policy, Judge.me và Cart Drawer, chỉ adapt style brand.”
 
-The host calls `compile_scale_brands_job({brand:"GiftSoul",store_url:"https://giftsoul.co"})`, reads the current Brand DNA, inspects target-store baselines, implements an isolated draft, and resubmits a versioned `job`. `get_scale_brands_reference({name:"pic-playbooks.md"})` exposes the original methods to plugin clients without requiring a Mac filesystem. Available reference names are returned in the compiler packet. MCP discovery, HTTP tool aliases, OpenAPI and chat routing all expose the workflow.
+The host calls `compile_scale_brands_job({brand:"GiftSoul",store_url:"https://giftsoul.co"})`, reads the current Brand DNA, inspects target-store baselines, implements an isolated draft, and resubmits a versioned `job`. `get_scale_brands_reference({name:"pic-playbooks.md"})` exposes the original methods to plugin clients without requiring a Mac filesystem. Available reference names are returned in the compiler packet. MCP discovery, HTTP tool aliases, OpenAPI and chat routing all expose the workflow. `list_creative_dna_routes`, `/api/routes` and the launcher also list `scale-brands` once for each currently discovered brand. The Gateway dashboard consumes `/api/routes`, so its branch list displays Scale Brands. Resolving that branch returns an explicit compiler entry point; with `source_url` it initializes the same workflow. This is a gateway workflow overlay, not a canonical datastore write.
 
 ## Source and boundaries
 

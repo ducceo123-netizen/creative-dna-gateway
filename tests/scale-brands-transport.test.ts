@@ -20,6 +20,18 @@ test('plugin discovery, MCP initialize/reference/validate and HTTP paths use the
  };
  try{
   const discovery:any=await (await original(base+'/api/tools')).json();assert.ok(discovery.tools.some((t:any)=>t.name==='compile_scale_brands_job'));
+  const routeCall=await mcp('tools/call',{name:'list_creative_dna_routes',arguments:{}});
+  const routeData=JSON.parse(routeCall.content[0].text);
+  assert.deepEqual(routeData.routes.filter((r:any)=>r.branch==='scale-brands').map((r:any)=>r.brand).sort(),['giftsoul','pawfecthouse','soulprise']);
+  const httpRoutes:any=await (await original(base+'/api/routes',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+  assert.equal(httpRoutes.routes.filter((r:any)=>r.branch==='scale-brands').length,3);
+  const launcher=await mcp('tools/call',{name:'launch_creative_dna',arguments:{}});
+  assert.match(JSON.stringify(launcher),/scale-brands/);
+  const entry=await mcp('tools/call',{name:'resolve_creative_dna',arguments:{brand:'GiftSoul',branch:'Scale Brands'}});
+  const entryData=JSON.parse(entry.content[0].text);
+  assert.equal(entryData.entrypoint.tool,'compile_scale_brands_job');assert.equal(entryData.resolved.branch,'scale-brands');
+  const routed=await mcp('tools/call',{name:'resolve_creative_dna',arguments:{brand:'GiftSoul',branch:'scale-brands',source_url:'https://giftsoul.co'}});
+  assert.equal(JSON.parse(routed.content[0].text).status,'AWAITING_BASELINES');
   const listed=await mcp('tools/list',{});assert.ok(listed.tools.some((t:any)=>t.name==='get_scale_brands_reference'));
   for(const brand of ['pawfecthouse','giftsoul','soulprise']){
    const store='https://'+brand+(brand==='giftsoul'?'.co':'.com');
