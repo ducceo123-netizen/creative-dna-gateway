@@ -35,7 +35,7 @@ test('HTTP, MCP and Actions schemas preserve optional research intake and old in
   const origin=`http://127.0.0.1:${(app.address() as any).port}`, original=globalThis.fetch;
   try {
     globalThis.fetch=async(url:any,init:any)=>String(url).startsWith(origin)?original(url,init):Response.json({brand:{slug:'pawfecthouse'},branch:{slug:'home-hero',content_md:'unchanged'}});
-    const post=async(path:string,body:any)=>(await original(origin+path,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify(body)}));
+    const post=async(path:string,body:any)=>(await original(origin+path,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream','X-Forwarded-For':'203.0.113.126'},body:JSON.stringify(body)}));
     for(const path of ['/api/resolve','/api/tools/resolve_creative_dna']) {
       const init=await post(path,{brand:'PawfectHouse',branch:'Home Hero'});
       assert.equal(init.status,200);assert.equal((await init.json()).research_validation.status,'AWAITING_RESEARCH');

@@ -129,7 +129,7 @@ test('HTTP and MCP compile pass the research sidecar and return its gate; tools 
   try {
     globalThis.fetch = async (url: any, init: any) => String(url).startsWith(origin) ? original(url, init) : Response.json({ resolved: { brand: 'pawfecthouse', branch: 'onepage-system' } });
     const research = { scope: { products }, trustpilot_research: blockedTrustpilotFixture(source_url, ['mug-blue']) };
-    const post = (path: string, body: any) => original(origin + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' }, body: JSON.stringify(body) });
+    const post = (path: string, body: any) => original(origin + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'X-Forwarded-For': '203.0.113.125' }, body: JSON.stringify(body) });
     const http = await (await post('/api/tools/compile_onepage_job', { brand: 'PawfectHouse', source_url, research })).json();
     assert.equal(http.trustpilot_validation.status, 'ATTEMPTED_WITH_LIMITATIONS');
     assert.equal(http.readiness.content_authoring, 'BLOCKED'); // Missing upstream quality contract remains blocked.
