@@ -19,9 +19,9 @@ test("Historical interactive workflow remains unchanged but is never imported or
   assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
   assert.doesNotMatch(source("server.ts"), /from ["']\.\/uid-brands-workflow(?:\.ts)?["']|launcherHtml|REVIEW_UI_META/);
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
-  // Research source includes Onepage content-plan validation; keep exact source pins.
+  // Research source now includes the requested Onepage Trustpilot gate; pin the reviewed source.
   // RESEARCH_GUIDANCE and the historical launcher output remain byte-identical.
-  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "adb34d8db13838c8c370f8b7308a97c6cb4d714b47c8b9e6ac6da7f870442a50");
+  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "dcbd7e6f34c088ea6144f28bfd66e9c7c8bf640174e12dd3a07fdb4ab41c9132");
   // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
   // during transpilation, so its emitted bytes differ even on the approved base.
   // Do not normalize that difference or bless a second output hash. The exact

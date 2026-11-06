@@ -1,3 +1,4 @@
+import { blockedTrustpilotFixture } from './fixtures/trustpilot.fixture.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { attachResearch, evaluateResearch, RESEARCH_VERSION } from '../supabase/functions/_shared/product-research.ts';
@@ -13,6 +14,7 @@ const REVIEW = 'https://www.trustpilot.com/reviews/6ada5c651dbe9c8e13269064';
 function fixture(): any {
   return {
     schema_version: RESEARCH_VERSION,
+    trustpilot_research: blockedTrustpilotFixture(PDP, [SKU]),
     scope: { source_url: PDP, source_type: 'product', products: [{ id: SKU, url: PDP, variant: VARIANT }], inventory_complete: true, coverage_note: 'Offline structural fixture for the selected Fleece option; not an inspection attestation.' },
     sources: [{
       id: 'pdp', url: PDP, kind: 'target_pdp', status: 'inspected', match: 'exact', product_ids: [SKU], product_versions: { [SKU]: VARIANT },
@@ -42,7 +44,7 @@ function fixture(): any {
     },
   };
 }
-const context = (r: any) => ({ source_url: PDP, research: r, require_pdp_coverage: true });
+const context = (r: any) => ({ source_url: PDP, research: r, resolved_brand: 'pawfecthouse', require_pdp_coverage: true });
 const evaluate = (r: any) => evaluateInsightValue(r, evaluateResearch(context(r)));
 
 test('blanket concern improves an existing decision using the same official claim, not the unmatched review', () => {

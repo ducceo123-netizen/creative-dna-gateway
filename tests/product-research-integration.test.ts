@@ -18,7 +18,7 @@ test('gateway overlays research on every brand/material including virtual routes
       assert.equal(result.data.research_validation.status,'AWAITING_RESEARCH');
       assert.equal(result.data.research_contract.schema_version,RESEARCH_VERSION);
       assert.equal(result.data.research_validation.pdp_coverage,branch==='Onepage'?'REQUIRED_HOST_REPORTED_ONLY':'NOT_REQUIRED_FOR_THIS_ROUTE');
-      assert.ok(['REQUIRES_RESEARCH','BLOCKED'].includes(result.data.readiness.content_authoring));
+      assert.ok(['REQUIRES_RESEARCH','REQUIRES_TRUSTPILOT_RESEARCH_ATTEMPT','BLOCKED'].includes(result.data.readiness.content_authoring));
       assert.equal(result.data.branch.content_md,'Original canonical rules');
     }
     const combo=await resolveCreativeDna('PawfectHouse','Niche Product Combo',{source_url:source,research:{schema_version:RESEARCH_VERSION}});
@@ -81,7 +81,7 @@ test('gateway overlays the selection stage before mapping on older upstream pack
  try{
   globalThis.fetch=async()=>Response.json({execution:['VALIDATE_RESEARCH_BEFORE_CONTENT','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE'],hard_gates:{content_approval:'HARD'},readiness:{asset_generation:'REQUIRES_PRODUCT_PIXEL_INSPECTION'}});
   const result=await compileOnepageJob('PawfectHouse',source);
-  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','VALIDATE_ONEPAGE_CONTENT_PLAN','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
+  assert.deepEqual(result.data.execution,['RESEARCH_TRUSTPILOT_PRODUCT_AND_STORE_REVIEWS','VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','VALIDATE_ONEPAGE_CONTENT_PLAN','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
   assert.equal(result.data.hard_gates.content_approval,'HARD');
   assert.equal(result.data.insight_value_contract.invoke_with.includes('Same compile_onepage_job'),true);
  }finally{globalThis.fetch=original;}
