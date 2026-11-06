@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { attachResearch, evaluateResearch, RESEARCH_VERSION } from '../supabase/functions/_shared/product-research.ts';
 import { ONEPAGE_CONTENT_PLAN_VERSION, evaluateOnepageContentPlan } from '../supabase/functions/_shared/onepage-content-plan.ts';
+import { blockedTrustpilotFixture } from './fixtures/trustpilot.fixture.ts';
 
 // Synthetic structural fixtures only, never production inspection/approval receipts.
 function fixture(collection = false): any {
@@ -20,8 +21,28 @@ function fixture(collection = false): any {
     } },
   };
 }
-const context = (r: any) => ({ research: r, source_url: r.scope.source_url, require_pdp_coverage: true });
+const context = (r: any) => ({ research: r, source_url: r.scope.source_url, resolved_brand: 'SoulPrise', require_pdp_coverage: true });
 const check = (r: any) => evaluateOnepageContentPlan(r, evaluateResearch(context(r)));
+
+test('valid product research and content plan cannot bypass the Onepage Trustpilot attempt', () => {
+  for (const brand of ['pawfecthouse', 'giftsoul']) {
+    const r = fixture(), c = { ...context(r), resolved_brand: brand };
+    assert.equal(check(r).status, 'READY_FOR_HOST_REVIEW');
+    const missing = attachResearch({}, c);
+    assert.equal(missing.readiness.content_authoring, 'REQUIRES_TRUSTPILOT_RESEARCH_ATTEMPT');
+    assert.equal(missing.content_plan_assessment?.status, 'AWAITING_VALID_RESEARCH');
+    r.trustpilot_research = blockedTrustpilotFixture(r.scope.source_url, r.scope.products.map((p: any) => p.id), brand);
+    for (const outcome of ['blocked', 'no_product_matches']) {
+      r.trustpilot_research.attempts[0].status = outcome;
+      const limited = attachResearch({}, c);
+      assert.equal(limited.trustpilot_validation?.status, 'ATTEMPTED_WITH_LIMITATIONS');
+      assert.equal(limited.readiness.content_authoring, 'REQUIRES_HOST_EVIDENCE_REVIEW');
+      assert.equal(limited.content_plan_assessment?.status, 'READY_FOR_HOST_REVIEW');
+    }
+    r.trustpilot_research.attempts[0].queries = [];
+    assert.equal(attachResearch({}, c).content_plan_assessment?.status, 'AWAITING_VALID_RESEARCH');
+  }
+});
 
 test('valid GTK and FAQ decisions retain research, approval and canonical gates', () => {
   for (const collection of [false, true]) for (const mode of ['gtk', 'faq']) {
