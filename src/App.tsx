@@ -134,6 +134,7 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [brandUiUrl, setBrandUiUrl] = useState("");
   const [brandUiCopied, setBrandUiCopied] = useState(false);
+  const [showScaleStoreBrand, setShowScaleStoreBrand] = useState(false);
   const [loading, setLoading] = useState(false);
   const resolveRequest=useRef<AbortController|null>(null);
   useEffect(()=>()=>{resolveRequest.current?.abort();},[]);
@@ -234,6 +235,7 @@ export default function App() {
     resolveRequest.current?.abort();resolveRequest.current=null;setLoading(false);
     setBrand(nextBrand);
     setBranch(nextBranch);
+    setShowScaleStoreBrand(false);
     setResponseData(null);
     setResponseMeta(null);
     requestAnimationFrame(() => {
@@ -347,38 +349,6 @@ export default function App() {
           </p>
         </section>
 
-        <section aria-labelledby="brand-ui-heading" className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h2 id="brand-ui-heading" className="text-base font-bold text-slate-900">Scale Store Brand · Website Brand UI</h2>
-              <p className="text-sm text-slate-500">Research a website's brand identity, style and UI rules using the shared UID Brands skill.</p>
-            </div>
-            <a href="/api/website-brand-ui" target="_blank" rel="noreferrer" className="text-xs font-semibold text-indigo-700 hover:underline">View skill guide</a>
-          </div>
-          <div className="flex flex-col md:flex-row gap-2">
-            <input
-              aria-label="Public website URL for brand research"
-              type="url"
-              value={brandUiUrl}
-              onChange={event => { setBrandUiUrl(event.target.value); setBrandUiCopied(false); }}
-              placeholder="https://example.com"
-              className="flex-1 min-w-0 border border-slate-300 rounded-lg px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              disabled={!/^https?:\/\//i.test(brandUiUrl.trim())}
-              onClick={async () => {
-                const request = "Use UID Brands tool get_website_brand_ui_skill (SKILL.md then references/workflow.md) to research this public website: " + brandUiUrl.trim() + ". Produce evidence-backed Brand Identity, Brand Style, UI Rules, fidelity notes and source links. Verify what you actually observe. Do not claim browser captures if you cannot perform them.";
-                try { await navigator.clipboard.writeText(request); setBrandUiCopied(true); } catch { setBrandUiCopied(false); }
-              }}
-              className="bg-indigo-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-semibold"
-            >{brandUiCopied ? "Brief copied" : "Copy brief for ChatGPT"}</button>
-          </div>
-          <p className="text-xs text-slate-500">
-            Use from any account connected to this UID Brands MCP endpoint: <code className="text-slate-800">/api/mcp</code>. The shared tool provides the skill instructions; website investigation happens in the requesting chat, not automatically from this form.
-          </p>
-        </section>
-
         <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-7 xl:gap-9 items-start">
           <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
@@ -417,10 +387,76 @@ export default function App() {
                   </div>
                 </div>
               ))}
+              <div className={`rounded-xl border p-4 transition-colors ${showScaleStoreBrand ? "border-indigo-300 bg-indigo-50/50" : "border-slate-200 bg-slate-50/60"}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3">
+                  <span className="text-sm font-extrabold text-slate-900">Website Brand UI</span>
+                  <span className="text-[11px] text-slate-500">Shared Brand System Tool</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={showScaleStoreBrand}
+                    onClick={() => {
+                      resolveRequest.current?.abort();
+                      resolveRequest.current=null;
+                      setLoading(false);
+                      setShowScaleStoreBrand(true);
+                      setResponseData(null);
+                      setResponseMeta(null);
+                      requestAnimationFrame(() => document.getElementById("branch-preview")?.scrollIntoView({behavior:"smooth",block:"center"}));
+                    }}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold border transition-colors ${showScaleStoreBrand ? "bg-slate-950 text-white border-slate-950" : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"}`}
+                  >Scale Store Brand</button>
+                  <span className="text-xs text-slate-500">Website → Brand DNA → UI Rules</span>
+                </div>
+              </div>
             </div>
           </section>
 
           <section id="branch-preview" className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs xl:sticky xl:top-20">
+            {showScaleStoreBrand ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <span className="inline-flex px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">Brand Research / UI System</span>
+                  <h3 className="text-xl font-extrabold text-slate-900">Website Brand UI / Scale Store Brand</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">Nghiên cứu website để tổng hợp Brand Identity, Brand Style, UI Rules và Brand Fidelity. Kết quả cần dẫn chứng từ các trang và viewport thực sự kiểm tra.</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Output chính</div>
+                  <p className="text-xs text-slate-700 mt-1">Brand Manual, hệ thống UI/tokens, bằng chứng desktop/mobile và đề xuất áp dụng cho thiết kế mới.</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Website cần phân tích <span className="text-rose-600">Required</span></div>
+                  <label htmlFor="scale-brand-url" className="sr-only">Website URL</label>
+                  <input
+                    id="scale-brand-url"
+                    type="url"
+                    value={brandUiUrl}
+                    onChange={e=>{setBrandUiUrl(e.target.value);setBrandUiCopied(false);}}
+                    placeholder="https://example.com"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+                  />
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Prompt gửi ChatGPT</div>
+                  <pre className="whitespace-pre-wrap rounded-lg bg-slate-950 px-3 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 overflow-x-auto">{`UID Brands — Use: Website Brand UI / Scale Store Brand
+Website: ${brandUiUrl.trim() || "<Website URL>"}
+Task: Research Brand Identity, Brand Style, UI Rules and Brand Fidelity.
+First call get_website_brand_ui_skill (SKILL.md and references/workflow.md), then inspect homepage, collection, PDP and mobile with actual evidence. Distinguish observed / inferred / proposed. Produce a reusable Brand Manual and UI system. Do not claim captures or scans not actually performed.`}</pre>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    disabled={!/^https?:\/\//i.test(brandUiUrl.trim())}
+                    onClick={() => {
+                      const prompt = `UID Brands — Use: Website Brand UI / Scale Store Brand\nWebsite: ${brandUiUrl.trim()}\nTask: Research Brand Identity, Brand Style, UI Rules and Brand Fidelity.\nFirst call get_website_brand_ui_skill (SKILL.md and references/workflow.md), then inspect homepage, collection, PDP and mobile with actual evidence. Distinguish observed / inferred / proposed. Produce a reusable Brand Manual and UI system. Do not claim captures or scans not actually performed.`;
+                      void navigator.clipboard.writeText(prompt).then(()=>setBrandUiCopied(true)).catch(()=>setBrandUiCopied(false));
+                    }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-xs font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  >{brandUiCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4"/>}{brandUiCopied?"Đã copy prompt":"Copy prompt để gọi trong ChatGPT"}</button>
+                  <a href="/api/website-brand-ui" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">Skill guide</a>
+                </div>
+                <p className="text-xs text-slate-500">Dùng với các tài khoản đã kết nối UID Brands qua MCP. Tool cung cấp hướng dẫn research chung; không tự quét website khi chỉ nhấn nút copy.</p>
+              </div>
+            ) : (
             <div className="space-y-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -477,6 +513,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+            )}
           </section>
         </div>
 
