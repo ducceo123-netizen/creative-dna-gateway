@@ -30,6 +30,17 @@ element('composerBrief').value='Create a Christmas Onepage for custom pet orname
 run("createFromComposer()");
 assert.match(element('view').innerHTML,/Create a Christmas Onepage/);
 assert.match(element('view').innerHTML,/custom pet ornaments/);
+assert.equal(run("state.prefillWorkflow"),'Onepage');
+assert.equal(run("state.prefillSource"),'custom pet ornaments');
+assert.match(element('view').innerHTML,/custom pet ornaments · Onepage/);
+const parsed=run("parseTaskRequest('Anh cần làm Onepage cho - LED Bottle Light Topper')");
+assert.equal(parsed.workflow,'Onepage');
+assert.equal(parsed.source,'LED Bottle Light Topper');
+assert.equal(parsed.title,'LED Bottle Light Topper · Onepage');
+assert.equal(run("parseTaskRequest('Build UGC for besties').workflow"),'UGC');
+assert.equal(run("parseTaskRequest('Make an LDP for kids').workflow"),'LDP');
+assert.equal(run("parseTaskRequest('Scale Store Brand for GiftSoul').brand"),'GiftSoul');
+
 run("navigate('dashboard')");
 element('composerBrief').value='';
 run("createFromComposer()");
