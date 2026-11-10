@@ -157,6 +157,11 @@ function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" 
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
 function selectTask(id){state.selected=id;state.page='tasks';render();}
 function navigate(page){
+ // All Create task entry points from Home preserve the user's typed request.
+ if(page==='create'&&state.page==='dashboard'){
+   const typed=String(el('composerBrief')?.value??state.composerDraft??'').trim();
+   if(typed){createFromComposer();return;}
+ }
  state.page=page;
  if(page==='create')state.selected=null;
  else {state.prefillWorkflow=null;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';}
@@ -169,6 +174,19 @@ function openWorkflow(workflow){
 }
 function startWorkflow(workflow){
  if(!types.includes(workflow))return;
+ // Quick workflow choices should not discard a Home composer draft.
+ if(state.page==='dashboard'){
+  const typed=String(el('composerBrief')?.value??state.composerDraft??'').trim();
+  if(typed){
+   createFromComposer();
+   state.prefillWorkflow=workflow;
+   // Keep title and source aligned when user explicitly overrides workflow.
+   const parsed=parseTaskRequest(typed);
+   state.prefillTitle=parsed.source?parsed.title.replace(/ · (Onepage|LDP|UGC|Scale Store Brand)$/,' · '+workflow):workflow+' · New task';
+   render();
+   return;
+  }
+ }
  state.prefillWorkflow=workflow;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';state.selected=null;state.page='create';render();
 }
 
