@@ -30,8 +30,13 @@ element('composerBrief').value='Create a Christmas Onepage for custom pet orname
 run("createFromComposer()");
 assert.match(element('view').innerHTML,/Create a Christmas Onepage/);
 assert.match(element('view').innerHTML,/custom pet ornaments/);
-element('composerBrief').value='';
 run("navigate('dashboard')");
+element('composerBrief').value='';
 run("createFromComposer()");
-assert.match(element('view').innerHTML,/custom pet ornaments/);
+assert.equal(run("state.page"),'dashboard','empty composer must not open a task');
+assert.equal(element('composerBrief').focused,true,'empty composer prompts the user');
+element('composerBrief').value='New UGC photo concepts for personalized ornaments';
+run("createFromComposer()");
+assert.equal(run("state.page"),'create');
+assert.match(element('view').innerHTML,/New UGC photo concepts/);
 console.log('Interactive workflow routing and draft prefill checks passed');
