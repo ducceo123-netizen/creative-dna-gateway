@@ -1,0 +1,11 @@
+{
+ "$schema":"http://json-schema.org/draft-07/schema#","type":"object","required":["mode","inputs","approvedBase","mappings","openDecisions","executionStatus"],
+ "properties":{
+  "mode":{"enum":["new-brand","retrospective-comparison","hypothetical-demonstration"]},
+  "executionStatus":{"type":"string"},
+  "inputs":{"type":"array","items":{"type":"object","required":["id","type","source","status","rights"],"properties":{"id":{"type":"string"},"type":{"enum":["strategy","target","demo","moodboard","inspiration","product","constraint","source-evidence"]},"source":{"type":["string","null"]},"status":{"enum":["owner-provided","observed","inferred","unknown"]},"rights":{"type":"string"}}}},
+  "approvedBase":{"type":"array","items":{"type":"object","required":["id","ownerDecisionEvidence","scope"],"properties":{"id":{"type":"string"},"ownerDecisionEvidence":{"type":"string","minLength":1},"scope":{"type":"string","minLength":1}}}},
+  "mappings":{"type":"array","items":{"type":"object","required":["id","inputIds","baseId","operation","rationale","output","verification","status"],"properties":{"id":{"type":"string"},"inputIds":{"type":"array","minItems":1,"items":{"type":"string"}},"baseId":{"type":["string","null"]},"operation":{"enum":["retain-approved-base","candidate-retain","adapt-parameter","replace-expression","category-specific","campaign-only","conflict","unresolved"]},"rationale":{"type":"string","minLength":1},"output":{"type":["string","null"]},"verification":{"type":"string","minLength":1},"status":{"enum":["proposed","approved","unknown"]}},"allOf":[{"if":{"properties":{"operation":{"const":"retain-approved-base"}}},"then":{"properties":{"baseId":{"type":"string","minLength":1}}}},{"if":{"properties":{"status":{"const":"unknown"}}},"then":{"properties":{"output":{"type":"null"}}}}]}},
+  "openDecisions":{"type":"array","items":{"type":"string"}}
+ }
+}

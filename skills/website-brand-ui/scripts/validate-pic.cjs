@@ -1,0 +1,10 @@
+const fs=require('fs'),path=require('path');const Ajv=require(process.env.AJV_MODULE||'ajv');
+function validate(d){const errs=[];const ajv=new Ajv({allErrors:true,strict:false});const check=ajv.compile(JSON.parse(fs.readFileSync(path.join(__dirname,'../references/pic-playbook.schema.json'))));if(!check(d))return check.errors.map(e=>e.instancePath+' '+e.message);
+ const unique=(xs,label)=>{const seen=new Set();for(const x of xs){if(seen.has(x.id))errs.push('duplicate '+label+': '+x.id);seen.add(x.id)}return seen};
+ const ev=unique(d.evidence,'evidence'),assets=unique(d.assets,'asset');unique(d.brands,'brand');const rows=unique(d.comparison,'comparison');const claims=[];
+ for(const b of d.brands)for(const s of b.sections){for(const a of s.assetIds)if(!assets.has(a))errs.push('missing asset '+a);for(const c of s.claims){claims.push(c);for(const e of c.evidence)if(!ev.has(e))errs.push('missing evidence '+e)}}unique(claims,'claim');
+ for(const a of d.assets)if(!ev.has(a.sourceEvidence))errs.push('missing asset evidence '+a.sourceEvidence);
+ for(const r of d.comparison){for(const e of r.evidence)if(!ev.has(e))errs.push('missing comparison evidence '+e);if(r.status==='approved-invariant'&&!d.approvedBaseInvariants.some(a=>a.comparisonId===r.id))errs.push('unapproved invariant '+r.id);if(r.status!=='approved-invariant'&&r.approval!==null)errs.push('candidate/expression cannot imply approval '+r.id)}
+ for(const a of d.approvedBaseInvariants){if(!rows.has(a.comparisonId))errs.push('missing invariant row');if(!ev.has(a.decisionEvidence))errs.push('missing approval evidence');const e=d.evidence.find(e=>e.id===a.decisionEvidence);if(e&&e.type!=='owner decision')errs.push('approval requires scoped owner decision, not similarity/general feedback');}
+ return errs;}
+module.exports=validate;if(require.main===module){const d=JSON.parse(fs.readFileSync(process.argv[2]));const errs=validate(d);if(errs.length){console.error(errs.join('\n'));process.exit(1)}console.log('PIC schema, references, unknowns and approval gates passed');}

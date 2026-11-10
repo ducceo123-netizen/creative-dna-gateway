@@ -132,6 +132,8 @@ export default function App() {
   const [branch, setBranch] = useState("Onepage");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [brandUiUrl, setBrandUiUrl] = useState("");
+  const [brandUiCopied, setBrandUiCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const resolveRequest=useRef<AbortController|null>(null);
   useEffect(()=>()=>{resolveRequest.current?.abort();},[]);
@@ -342,6 +344,38 @@ export default function App() {
           </h1>
           <p className="text-sm text-slate-500 max-w-2xl">
             Chọn Brand và Material để tra cứu quy tắc sáng tạo; quản lý feedback, evidence và quality review tại một nơi.
+          </p>
+        </section>
+
+        <section aria-labelledby="brand-ui-heading" className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h2 id="brand-ui-heading" className="text-base font-bold text-slate-900">Scale Store Brand · Website Brand UI</h2>
+              <p className="text-sm text-slate-500">Research a website's brand identity, style and UI rules using the shared UID Brands skill.</p>
+            </div>
+            <a href="/api/website-brand-ui" target="_blank" rel="noreferrer" className="text-xs font-semibold text-indigo-700 hover:underline">View skill guide</a>
+          </div>
+          <div className="flex flex-col md:flex-row gap-2">
+            <input
+              aria-label="Public website URL for brand research"
+              type="url"
+              value={brandUiUrl}
+              onChange={event => { setBrandUiUrl(event.target.value); setBrandUiCopied(false); }}
+              placeholder="https://example.com"
+              className="flex-1 min-w-0 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={!/^https?:\/\//i.test(brandUiUrl.trim())}
+              onClick={async () => {
+                const request = "Use UID Brands tool get_website_brand_ui_skill (SKILL.md then references/workflow.md) to research this public website: " + brandUiUrl.trim() + ". Produce evidence-backed Brand Identity, Brand Style, UI Rules, fidelity notes and source links. Verify what you actually observe. Do not claim browser captures if you cannot perform them.";
+                try { await navigator.clipboard.writeText(request); setBrandUiCopied(true); } catch { setBrandUiCopied(false); }
+              }}
+              className="bg-indigo-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-semibold"
+            >{brandUiCopied ? "Brief copied" : "Copy brief for ChatGPT"}</button>
+          </div>
+          <p className="text-xs text-slate-500">
+            Use from any account connected to this UID Brands MCP endpoint: <code className="text-slate-800">/api/mcp</code>. The shared tool provides the skill instructions; website investigation happens in the requesting chat, not automatically from this form.
           </p>
         </section>
 
