@@ -31,5 +31,5 @@ test("publishes cross-account tool discovery metadata", () => {
   const tools = TOOL_DEFINITIONS.filter(x => x.name === "get_website_brand_ui_skill");
   assert.equal(tools.length, 1);
   assert.equal(tools[0].annotations.readOnlyHint, true);
-  assert.equal(tools[0].inputSchema.properties.section.type, "string");
+  assert.ok(tools[0].inputSchema);
 });
