@@ -48,7 +48,7 @@ createServer(async(req,res)=>{
   res.setHeader('Referrer-Policy','no-referrer');
   res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method==='GET'&&(path==='/'||path==='/index.html')){
-    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
+    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
   }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.2',aiConfigured:aiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
   if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')){
