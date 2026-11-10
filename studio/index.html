@@ -112,6 +112,24 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .original-request .optional-label{font-size:11px;color:#888;font-weight:400;margin-left:8px}
 .original-request s-text-area{margin-top:12px}
 
+
+/* Compact, purposeful task intake: built-in workflows and one CTA. */
+.welcome-hero{max-width:810px;padding:clamp(35px,6vw,76px) 0 42px}
+.welcome-hero h2{font-size:clamp(29px,3vw,42px);font-weight:690;letter-spacing:-.055em;margin-bottom:9px}
+.welcome-hero>p{font-size:15px;color:#777;letter-spacing:-.012em;margin-bottom:28px;font-weight:400}
+.welcome-hero .sidekick-composer{max-width:720px;min-height:0;padding:21px 23px 18px;border-radius:18px;border-color:#dedede;box-shadow:0 7px 25px rgba(0,0,0,.045);gap:0}
+.welcome-hero .composer-label{display:block;font-size:12px;font-weight:650;color:#464646;margin:0 0 9px;line-height:1.35}
+.welcome-hero .composer-input{display:block;width:100%;min-height:68px!important;max-height:220px!important;height:72px;resize:none!important;overflow-y:auto;font-size:15px!important;line-height:1.52!important;color:#202020}
+.welcome-hero .composer-input::placeholder{color:#989898}
+.welcome-hero .composer-footer{border-top:1px solid #f0f0f0;margin-top:14px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.welcome-hero .composer-workflow{display:flex;align-items:center;gap:10px;min-width:0}
+.welcome-hero .composer-footer-label{font-size:11px;letter-spacing:.01em;color:#929292;white-space:nowrap}
+.welcome-hero .quick-workflows{margin:0;display:flex;gap:5px;justify-content:flex-start;flex-wrap:wrap}
+.welcome-hero .quick-workflows button{font-size:11px;border-radius:7px;padding:7px 9px;font-weight:560;border-color:#ececec;background:#f7f7f7;color:#575757;line-height:1.3}
+.welcome-hero .quick-workflows button:hover,.welcome-hero .quick-workflows button:focus-visible{background:#ececec;border-color:#cfcfcf;color:#232323}
+.welcome-hero .composer-footer s-button{flex:none}
+.welcome-hero>.composer-help{max-width:720px;margin:9px auto 0;text-align:left;font-size:11px!important;color:#999!important;line-height:1.55!important;font-weight:400!important}
+@media(max-width:710px){.welcome-hero{padding:38px 0}.welcome-hero h2{font-size:30px}.welcome-hero>p{font-size:13px;margin-bottom:20px}.welcome-hero .sidekick-composer{padding:17px 16px}.welcome-hero .composer-footer{align-items:flex-start;flex-direction:column}.welcome-hero .composer-workflow{align-items:flex-start;flex-direction:column;gap:6px}.welcome-hero .quick-workflows{gap:5px}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -232,7 +250,7 @@ function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
  const signed=state.cloud?'<div class="dashboard-user"><span class="workspace-chip">Signed in · '+escapeHtml(state.user?.email||'')+'</span>'+button('Sign out','logout')+'</div>':'';
  return '<div class="home-metrics">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([label,count])=>'<div class="home-metric"><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
- '<section class="welcome-hero"><h2>Welcome to UID Brands.</h2><p>Let’s continue creating something meaningful.</p><div class="sidekick-composer"><label class="label" for="composerBrief">What would you like to work on?</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="Describe a creative task, paste a PDP link, or add a brief…">'+escapeHtml(state.composerDraft)+'</textarea><div class="composer-bottom"><span class="composer-mark" aria-hidden="true">✳</span>'+button('Continue to task setup','composerCreate','')+'</div></div><p class="composer-help">Creates a real brief and task. AI research and image generation are not connected.</p><div class="quick-workflows">'+types.map(type=>'<button data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></section>'+
+ '<section class="welcome-hero"><h2>What will we create today?</h2><p>Start with a product, an idea, or a link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Create a Onepage for LED Bottle Light Topper…">'+escapeHtml(state.composerDraft)+'</textarea><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div class="quick-workflows">'+types.map(type=>'<button type="button" data-create-workflow="'+escapeHtml(type)+'" title="Create '+escapeHtml(type)+' task">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft task for review. AI generation is not connected.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
 function taskList(){
