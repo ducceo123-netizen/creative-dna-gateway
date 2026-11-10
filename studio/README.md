@@ -1,30 +1,42 @@
-# UID Brands Studio — isolated Web App MVP
+# UID Brands Studio — isolated Web App
 
-Branch: `webapp/uid-brands-studio-mvp` (separate from `main` and existing MCP gateway).
+Branch: `webapp/uid-brands-studio-mvp` — stays separate from gateway `main`.
+Production: https://uid-brands-studio-webapp.onrender.com
 
-Start locally: `node studio/server.mjs`; open `http://localhost:10000`.
-Separate Render web service: build command `echo "No build needed"`, start command `node studio/server.mjs`, runtime Node, free plan, branch above.
+## Current status (Nov 10, 2026)
 
-## Implemented
-- Responsive independent Web App UI: dashboard, create task, Onepage/LDP/Scale Store Brand/UGC workflow choice; task detail, editable copy, feedback/QA, approvals, filter, JSON export.
-- Local task drafts in browser localStorage only. **No cloud persistence, accounts, cross-browser sync or team collaboration yet.**
-- Isolated `POST /api/ai/content` optional content drafting via the official OpenAI Responses API. Only available when **both** `OPENAI_API_KEY` and `STUDIO_ACCESS_TOKEN` are securely configured server-side. Never add them to repository or the UI. One-click disabled without config. Token entered per browser session; do not persist.
-- AI drafts are marked for review, never published. No material image generation or automated external research yet. Source URLs in briefs are not fetched and cannot be treated as inspected.
-- No change to existing UID Brands MCP, primary Render service, main branch or store products.
+- Dedicated Render service, auto-deploying this branch; gateway and MCP unchanged.
+- Standalone responsive task manager for Onepage, LDP, Scale Store Brand, UGC; briefs, copy draft, QA feedback, state, JSON export.
+- **Cloud sync enabled only when `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are configured.** Login requires an **existing** Supabase Auth email/password account with active `public.creative_dna_team_members` membership. No public signup or self-provisioning.
+- Task records and revision snapshots are stored in separate RLS-enabled `public.studio_tasks` and `public.studio_task_versions` tables. Each member sees only tasks **they own**; this is not a shared team queue yet. Contributor/admin can create/edit/delete; viewer is read-only.
+- The frontend keeps session tokens in memory only, without localStorage persistence. Users sign in again after tab reload. The server uses a publishable key plus the **user's access token** for all Supabase REST calls, not service-role bypass. Refresh tokens are used only for silent token renewal in the current tab.
+- If Cloud auth is not configured, drafts fall back to **browser-local** storage with no collaboration or account protection.
+- Optional text generation endpoint requires server-side `OPENAI_API_KEY` **and** `STUDIO_ACCESS_TOKEN`. These are **not configured**. No live paid AI actions are enabled. Source URLs are never automatically fetched or inspected by AI.
+- No automated research crawler, image generation, asset uploads, ZIP export or Shopify publishing yet.
 
-## Security and production gates
-- Until real user authentication, role-based authorization, rate limits, budget controls, account separation and durable storage exist, **do not configure paid AI keys on a public deployment**. The token is a temporary developer gate, not production authentication.
-- Never persist secrets or sensitive merchant/customer information to localStorage; this MVP suits non-sensitive drafts only.
-- Before enabling production AI, implement user identity, strict budgets, tenant isolation and request accounting; protect any provider access with authenticated backend routes.
-- Environment: PORT (optional), OPENAI_API_KEY (optional), STUDIO_ACCESS_TOKEN (optional), STUDIO_MODEL (optional, defaults to gpt-4.1-mini).
-- No external domains, managed database, billing or model calls are provisioned by deployment.
+## Security and limitations
 
-## Smoke checks
-`node --check studio/server.mjs`
-`node studio/tests/smoke.mjs`
+- **Do not enable paid AI** on a publicly reachable service until per-user authentication is attached to the AI route, plus rate limits, usage ledger and budget caps. Temporary static token protection is only for controlled development.
+- No private keys in browser or source control. The Supabase publishable key is intentionally public but all tasks require both authenticated role and Row Level Security.
+- Team access currently reuses `creative_dna_team_members`. New users must be invited/provisioned **explicitly** in Supabase Auth and added as active team members; database tables do not auto-create members.
+- Other people's tasks are not visible. Shared organization workspaces and role-based review assignments are a separate follow-up.
+- Revisions record a best-effort post-write snapshot. If snapshot creation fails, API reports `versionSaved:false`; there is no automatic transaction rollback yet.
+- Existing Supabase governance tables `uid_tasks`, `uid_task_revisions`, and gateway MCP endpoints remain unchanged.
+- Runtime env: `PORT`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, optional `OPENAI_API_KEY`, `STUDIO_ACCESS_TOKEN`, `STUDIO_MODEL`.
 
-## Roadmap
-1. Supabase authenticated per-workspace task/version persistence, migration from local drafts.
-2. Safe budgeted AI orchestration for research & copy, explicit approval stages.
-3. Generated images, manifest and ZIP export backed by object storage.
-4. Playwright visual regression for key task flows and responsive QA.
+## Smoke tests
+
+```sh
+node --check studio/server.mjs
+node studio/tests/smoke.mjs
+```
+
+CI runs the above on pushes to the Studio branch. Production Auth+RLS CRUD must still be tested with an authorized team member; CI intentionally does not use real credentials.
+
+## Next production milestones
+
+1. Real browser acceptance test with an authorized team account.
+2. Workspace/team ownership model, explicit user invitations, shared review queue and role-separated approvals.
+3. Atomic version persistence, optimistic concurrency regression tests and private attachments with storage RLS.
+4. Account-level AI budget controls, usage logging, and staged Research → Content → Materials executor.
+5. Image quality controls, materials manifests, visual previews, ZIP export, and review QA.
