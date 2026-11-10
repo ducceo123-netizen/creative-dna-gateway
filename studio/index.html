@@ -98,6 +98,20 @@ html,body{height:100%;background:#0b0b0b}
 s-text-field,s-text-area,s-select{margin:14px 0}
 @media(max-width:1040px){.shell{grid-template-columns:210px minmax(0,1fr)}.sidebar{padding-inline:9px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.content{padding-inline:25px}}
 @media(max-width:720px){.shell{display:block;background:#fff}.sidebar{position:relative;top:auto;min-height:0;height:auto;padding:11px 13px;gap:9px;overflow:visible}.sidebar-top{display:flex;align-items:center;gap:12px}.brand{flex:none;padding:0;font-size:13px}.brand-collapse,.nav-search kbd,.sidebar-bottom,.nav-heading{display:none}.nav-search{flex:1;min-width:0;min-height:34px}.sidebar .menu{flex-direction:row;overflow-x:auto;padding:4px 0;gap:4px;scrollbar-width:none}.sidebar .menu::-webkit-scrollbar{display:none}.sidebar .menu button{flex:none;white-space:nowrap;font-size:12px;padding:7px 10px}.workspace-frame{margin:0;min-height:calc(100vh - 110px);border-radius:0}.main{min-height:0}.top{padding:24px 19px 10px;flex-direction:column;align-items:flex-start;gap:15px}.top h1{font-size:23px}.header-actions{width:100%;justify-content:space-between}.content{padding:15px 15px 50px}.stats{gap:9px}.polaris-stat{min-height:95px}.grid{grid-template-columns:1fr!important}.panel{padding:14px}.polaris-task-table{max-width:100%;overflow:auto}}
+
+/* Brief intake: concise hierarchy and no pseudo-chat oversized helper copy. */
+.welcome-hero>.composer-help{font-size:12px!important;font-weight:400!important;line-height:1.55!important;color:#858585!important;max-width:635px;margin:10px auto 0;text-align:left}
+.welcome-hero .sidekick-composer .label{font-size:12px!important;letter-spacing:0;font-weight:600;color:#525252;margin:0 0 9px}
+.welcome-hero .composer-input{min-height:56px!important;font-size:15px!important;line-height:1.5!important}
+.welcome-hero{padding-bottom:39px}
+.task-setup-intro{border-left:3px solid #626262;padding:5px 0 5px 12px;margin:0 0 12px}
+.task-setup-intro .setup-eyebrow{font-size:10px;color:#888;letter-spacing:.09em;font-weight:700}
+.task-setup-intro p{font-size:12px;line-height:1.6;color:#707070;margin:3px 0 0}
+.original-request{border:1px solid #e5e5e5;border-radius:11px;padding:13px 15px;margin:12px 0;background:#fcfcfc}
+.original-request summary{cursor:pointer;font-size:12px;font-weight:650;color:#454545;list-style-position:inside}
+.original-request .optional-label{font-size:11px;color:#888;font-weight:400;margin-left:8px}
+.original-request s-text-area{margin-top:12px}
+
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -130,7 +144,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -150,7 +164,7 @@ function selectTask(id){state.selected=id;state.page='tasks';render();}
 function navigate(page){
  state.page=page;
  if(page==='create')state.selected=null;
- else {state.prefillWorkflow=null;state.prefillBrief='';state.prefillTitle='';}
+ else {state.prefillWorkflow=null;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';}
  if(page==='tasks')state.workflowFilter=null;
  render();
 }
@@ -160,16 +174,43 @@ function openWorkflow(workflow){
 }
 function startWorkflow(workflow){
  if(!types.includes(workflow))return;
- state.prefillWorkflow=workflow;state.prefillBrief='';state.prefillTitle='';state.selected=null;state.page='create';render();
+ state.prefillWorkflow=workflow;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';state.selected=null;state.page='create';render();
 }
+
+function parseTaskRequest(raw){
+ const input=String(raw||'').replace(/\s+/g,' ').trim();
+ const lower=input.toLowerCase();
+ const workflow=/scale\s*(store\s*)?brand|brand\s*ui|creative\s*dna/i.test(input)?'Scale Store Brand':/\bugc\b|user.generated.content/i.test(input)?'UGC':/\bldp\b|landing\s*pages?|landingpage/i.test(input)?'LDP':'Onepage';
+ const brand=/\bgift\s*soul\b/i.test(input)?'GiftSoul':/\bsoul\s*prise\b/i.test(input)?'SoulPrise':'PawfectHouse';
+ const explicit=/\b(?:Onepage|Landing\s*pages?|Landingpage|LDP|UGC(?:\s*materials?)?|Scale\s*Store\s*Brand)\s+(?:cho|for|of|về|sản phẩm|collection)\s*[-–—:]?\s*(.+)$/i.exec(input);
+ const afterFor=/\b(?:cho|for)\s*[-–—:]\s*(.+)$/i.exec(input);
+ const urlMatch=input.match(/https:\/\/[^\s<>"']+/i);
+ let source=(explicit?.[1]||afterFor?.[1]||urlMatch?.[0]||'').trim().replace(/[.!?]+$/,'');
+ if(source.length>160)source=source.slice(0,160);
+ const hasSource=Boolean(source)&&!/(^onepage$|^ldp$|^ugc$)/i.test(source);
+ let productName=source;
+ if(/^https:\/\//i.test(source)){
+  try{const url=new URL(source);const part=url.pathname.split('/').filter(Boolean).at(-1)||url.hostname;productName=decodeURIComponent(part).replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}catch{productName='Linked product or collection';}
+ }
+ productName=productName.replace(/\s+/g,' ').trim();
+ const taskTitle=hasSource?productName.slice(0,120)+' · '+workflow:workflow+' · New task';
+ // Original request remains the editable brief; product and workflow are stored separately.
+ return {workflow,brand,source:hasSource?source:'',title:taskTitle,brief:input};
+}
+
 function createFromComposer(){
  const input=el('composerBrief');
  const brief=String(input?input.value:state.composerDraft||'').trim();
  if(!brief){input?.focus();toast('Anh nhập brief hoặc PDP/collection link trước khi tạo task.');return;}
  state.composerDraft=brief;
- state.prefillBrief=brief;
- state.prefillTitle=brief.replace(/^https?:\/\//,'').split(/[\n.!?]/)[0].slice(0,105).trim()||'New creative task';
- state.prefillWorkflow='Onepage';state.selected=null;state.page='create';render();
+ const intent=parseTaskRequest(brief);
+ state.prefillBrief=intent.brief;
+ state.prefillTitle=intent.title;
+ state.prefillWorkflow=intent.workflow;
+ state.prefillBrand=intent.brand;
+ state.prefillSource=intent.source;
+ state.selected=null;state.page='create';render();
+ if(intent.source&&state.cloud&&state.auth&&!intent.source.startsWith('https://'))setTimeout(()=>lookupStore(),0);
 }
 function taskRow(t){return '<s-table-row data-select="'+escapeHtml(t.id)+'"><s-table-cell><strong>'+escapeHtml(t.title)+'</strong></s-table-cell><s-table-cell>'+escapeHtml(t.brand)+'</s-table-cell><s-table-cell>'+escapeHtml(t.workflow)+'</s-table-cell><s-table-cell>'+statusBadge(t.status)+'</s-table-cell><s-table-cell>'+new Date(t.updatedAt).toLocaleDateString('vi-VN')+'</s-table-cell></s-table-row>';}
 function taskTable(rows){return '<div class="polaris-task-table"><s-table><s-table-header-row><s-table-header listSlot="primary">Task</s-table-header><s-table-header>Brand</s-table-header><s-table-header>Workflow</s-table-header><s-table-header>Status</s-table-header><s-table-header>Updated</s-table-header></s-table-header-row><s-table-body>'+rows.map(taskRow).join('')+'</s-table-body></s-table></div>';}
@@ -187,14 +228,14 @@ function taskList(){
  const context=workflow?'<section class="workflow-context"><h2>'+escapeHtml(workflow==='LDP'?'Landing pages':workflow==='UGC'?'UGC materials':workflow)+'</h2><p>'+escapeHtml(({Onepage:'Create and manage a product-specific Onepage brief, content review and material QA.',LDP:'Organize a landing page brief around niche, recipient, occasion, collections and featured items.',UGC:'Prepare UGC concepts, image requirements, creative feedback and exportable briefs.','Scale Store Brand':'Record brand-specific UI guidance, research references and implementation tasks.'})[workflow])+'</p><div class="actions">'+button('＋ Create '+escapeHtml(workflow)+' task','createFiltered','')+button('View all tasks','clearWorkflow')+'</div><p class="composer-help">Task planning and review are active. AI execution, rendering and automatic publishing are not available.</p></section>':'';
  return context+'<s-section heading="'+(workflow?escapeHtml(workflow)+' tasks':'All tasks')+'"><div class="panelhead"><div><p class="slim">Select a task to edit or review it</p></div>'+button('＋ New task',workflow?'createFiltered':'create','')+'</div><div class="filters">'+['All',...statuses].map(s=>'<button class="'+(state.filter===s?'active':'')+'" data-filter="'+s+'">'+s+'</button>').join('')+'</div>'+(filtered.length?taskTable(filtered.sort((a,b)=>b.updatedAt-a.updatedAt)) :'<div class="empty">'+(workflow?'No '+escapeHtml(workflow)+' tasks yet. Use Create to start a brief.':'No tasks in this category.')+'</div>')+'</s-section>';
 }
-function taskEditor(t){const fresh=!t; t=t||{id:'',title:state.prefillTitle||'',brand:'PawfectHouse',workflow:state.prefillWorkflow||'Onepage',url:'',brief:state.prefillBrief||'',content:'',feedback:'',status:'Draft'};return '<s-section heading="'+(fresh?'Create creative task':'Task workspace')+'"><div class="panelhead"><div><p class="slim">'+(fresh?'Add a brief to start a traceable task':'Edit brief, content draft, feedback and approval status')+'</p></div>'+(fresh?'':'<span class="badge">'+escapeHtml(t.id)+'</span>')+'</div>'+
-polarisField('title','Task name',t.title,'e.g. Christmas Bone Stockings Onepage')+
+function taskEditor(t){const fresh=!t; t=t||{id:'',title:state.prefillTitle||'',brand:state.prefillBrand||'PawfectHouse',workflow:state.prefillWorkflow||'Onepage',url:state.prefillSource||'',brief:state.prefillBrief||'',content:'',feedback:'',status:'Draft'};return '<s-section heading="'+(fresh?'Create creative task':'Task workspace')+'"><div class="panelhead"><div><p class="slim">'+(fresh?'Add a brief to start a traceable task':'Edit brief, content draft, feedback and approval status')+'</p></div>'+(fresh?'':'<span class="badge">'+escapeHtml(t.id)+'</span>')+'</div>'+
+'<div class="task-setup-intro"><div class="setup-eyebrow">TASK SETUP</div><p>We’ve separated the product and workflow from your request. Check the details and save when ready.</p></div>'+polarisField('title','Task name',t.title,'e.g. LED Bottle Light Topper · Onepage')+
 '<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div>'+polarisSelect('brand','Brand',brands,t.brand)+'</div><div>'+polarisSelect('workflow','Workflow',types,t.workflow)+'</div></div>'+
-polarisField('url','Tên collection, tên sản phẩm hoặc URL',t.url,'VD: LED Bottle Light Topper hoặc https://...')+
-'<div class="row" style="margin:4px 0 10px">'+button('Tìm trên store','lookup')+'<span class="slim">Nhập tên cũng được. Studio tìm sản phẩm/collection công khai trên store đã chọn.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
-polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...')+
+polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Light Topper or https://...')+
+'<div class="row" style="margin:4px 0 10px">'+button('Verify on store','lookup')+'<span class="slim">Find and confirm a real matching product or collection before production.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
+(fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
-'<div class="actions">'+button(fresh?'Create task':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
+'<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">AI generation is not enabled. Review and materials workflow remain manual until a supported integration is approved.</p>':'')+'</s-section>';}
 function settings(){return '<s-section heading="Workspace settings"><p class="lead">UID Brands Studio operates independently from Shopify admin and the existing UID Brands gateway.</p><s-banner tone="info" heading="AI API is disabled"><s-paragraph>No OpenAI API credentials are configured. Task management, content editing and review work without paid AI execution.</s-paragraph></s-banner><div class="space"><s-section heading="Data and access"><s-paragraph>'+(state.cloud?'Task drafts are stored in Supabase and protected by user ownership and team membership.':'Local task drafts are stored only in this browser.')+'</s-paragraph></s-section></div><div class="space"><s-section heading="Platform"><s-paragraph>UI components: Shopify Polaris Web Components 2.0. Runs as a standalone Render web app and does not use Shopify App Bridge or impersonate Shopify Admin.</s-paragraph></s-section></div></s-section>';}
 function loginScreen(){
