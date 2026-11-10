@@ -15,7 +15,7 @@ const document={
  addEventListener:()=>{},
 };
 const context=vm.createContext({
- document,console,URL,Blob,Date,Promise,clearTimeout,setTimeout,localStorage:{getItem:()=>null,setItem:()=>{}},
+ document,console,URL,Blob,Date,Promise,clearTimeout,setTimeout,window:{tt:null},localStorage:{getItem:()=>null,setItem:()=>{}},
  fetch:async()=>({json:async()=>({aiConfigured:false,cloudConfigured:false})}),
 });
 vm.runInContext(script,context,{timeout:1000});
