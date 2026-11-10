@@ -130,6 +130,8 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .welcome-hero .composer-footer s-button{flex:none}
 .welcome-hero>.composer-help{max-width:720px;margin:9px auto 0;text-align:left;font-size:11px!important;color:#999!important;line-height:1.55!important;font-weight:400!important}
 @media(max-width:710px){.welcome-hero{padding:38px 0}.welcome-hero h2{font-size:30px}.welcome-hero>p{font-size:13px;margin-bottom:20px}.welcome-hero .sidekick-composer{padding:17px 16px}.welcome-hero .composer-footer{align-items:flex-start;flex-direction:column}.welcome-hero .composer-workflow{align-items:flex-start;flex-direction:column;gap:6px}.welcome-hero .quick-workflows{gap:5px}}
+
+.intent-preview{font-size:12px;color:#777;margin:0 0 6px;line-height:1.5}.intent-preview:empty{display:none}.intent-preview strong{color:#262626}.intent-preview .preview-key{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#999}.intent-preview .uncertain{color:#aa752d}.welcome-hero .quick-workflows button.active,.welcome-hero .quick-workflows button[aria-pressed="true"]{background:#292929;border-color:#292929;color:#fff}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -139,14 +141,13 @@ s-text-field,s-text-area,s-select{margin:14px 0}
   <nav class="menu" aria-label="Main navigation">
     <button class="active" data-page="dashboard"><span class="nav-ico" aria-hidden="true">⌂</span> Home</button>
     <button data-page="tasks"><span class="nav-ico" aria-hidden="true">▤</span> Tasks</button>
-    <button data-page="create"><span class="nav-ico" aria-hidden="true">⊕</span> Create task</button>
     <div class="nav-heading">Workspace</div>
     <button data-page="settings"><span class="nav-ico" aria-hidden="true">⚙</span> Settings</button>
   </nav>
   <div class="sidebar-bottom"><div class="workspace-avatar">U</div><div class="workspace-info"><strong>UID Brands Studio</strong><span>Creative workspace</span></div><span class="workspace-dots">•••</span></div>
 </aside>
 <div class="workspace-frame"><main class="main">
-  <header class="top"><div class="heading-block"><div class="eyebrow polaris-kicker">UID Brands <span class="crumb-separator">›</span> <span id="pageCrumb">Home</span></div><h1 id="pageTitle">Creative overview</h1><p id="pageSubtitle" class="page-subtitle">Manage your creative work in one place.</p></div><div class="header-actions"><span id="aiPill" class="pill">Workspace</span><s-button variant="primary" id="newTask">Create task</s-button></div></header>
+  <header class="top"><div class="heading-block"><div class="eyebrow polaris-kicker">UID Brands <span class="crumb-separator">›</span> <span id="pageCrumb">Home</span></div><h1 id="pageTitle">Creative overview</h1><p id="pageSubtitle" class="page-subtitle">Manage your creative work in one place.</p></div><div class="header-actions"><span id="aiPill" class="pill">Workspace</span></div></header>
   <section id="view" class="content"></section>
 </main></div>
 </div><div id="toast" role="status" aria-live="polite"></div>
@@ -157,7 +158,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -192,49 +193,56 @@ function openWorkflow(workflow){
 }
 function startWorkflow(workflow){
  if(!types.includes(workflow))return;
- // Quick workflow choices should not discard a Home composer draft.
- if(state.page==='dashboard'){
-  const typed=String(el('composerBrief')?.value??state.composerDraft??'').trim();
-  if(typed){
-   createFromComposer();
-   state.prefillWorkflow=workflow;
-   // Keep title and source aligned when user explicitly overrides workflow.
-   const parsed=parseTaskRequest(typed);
-   state.prefillTitle=parsed.source?parsed.title.replace(/ · (Onepage|LDP|UGC|Scale Store Brand)$/,' · '+workflow):workflow+' · New task';
-   render();
-   return;
-  }
- }
- state.prefillWorkflow=workflow;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';state.selected=null;state.page='create';render();
+ state.composerWorkflow=workflow;
+ state.page='dashboard';render();
+}
+function intentPreviewMarkup(result){
+ return '<span class="preview-key">Detected</span> <strong>'+escapeHtml(result.workflow)+'</strong> · '+(result.source?'<span>'+escapeHtml(result.source)+'</span>':'<span class="uncertain">Add a product/collection name or URL</span>');
+}
+function updateComposerPreview(){
+ const target=el('intentPreview');if(!target)return;
+ const brief=String(el('composerBrief')?.value??state.composerDraft??'').trim();
+ target.innerHTML=brief?intentPreviewMarkup(parseTaskRequest(brief,state.composerWorkflow)):'';
+}
+function selectComposerWorkflow(workflow){
+ if(!types.includes(workflow))return;
+ state.composerWorkflow=state.composerWorkflow===workflow?null:workflow;
+ const wrap=el('composerWorkflows');
+ wrap?.querySelectorAll?.('[data-create-workflow]').forEach(b=>{
+  const active=b.dataset.createWorkflow===state.composerWorkflow;
+  b.classList.toggle('active',active);
+  b.setAttribute('aria-pressed',String(active));
+ });
+ updateComposerPreview();
 }
 
-function parseTaskRequest(raw){
+function parseTaskRequest(raw,selectedWorkflow=null){
  const input=String(raw||'').replace(/\s+/g,' ').trim();
- const lower=input.toLowerCase();
- const workflow=/scale\s*(store\s*)?brand|brand\s*ui|creative\s*dna/i.test(input)?'Scale Store Brand':/\bugc\b|user.generated.content/i.test(input)?'UGC':/\bldp\b|landing\s*pages?|landingpage/i.test(input)?'LDP':'Onepage';
+ const workflow=selectedWorkflow&&types.includes(selectedWorkflow)?selectedWorkflow:
+  /scale\s*(store\s*)?brand|brand\s*ui|creative\s*dna/i.test(input)?'Scale Store Brand':
+  /\bugc\b|user.generated.content/i.test(input)?'UGC':
+  /\bldp\b|landing\s*pages?|landingpage/i.test(input)?'LDP':'Onepage';
  const brand=/\bgift\s*soul\b/i.test(input)?'GiftSoul':/\bsoul\s*prise\b/i.test(input)?'SoulPrise':'PawfectHouse';
- const explicit=/\b(?:Onepage|Landing\s*pages?|Landingpage|LDP|UGC(?:\s*materials?)?|Scale\s*Store\s*Brand)\s+(?:cho|for|of|về|sản phẩm|collection)\s*[-–—:]?\s*(.+)$/i.exec(input);
- const afterFor=/\b(?:cho|for)\s*[-–—:]\s*(.+)$/i.exec(input);
  const urlMatch=input.match(/https:\/\/[^\s<>"']+/i);
- let source=(explicit?.[1]||afterFor?.[1]||urlMatch?.[0]||'').trim().replace(/[.!?]+$/,'');
- if(source.length>160)source=source.slice(0,160);
+ const direct=/\b(?:onepage|landing\s*pages?|landingpage|ldp|ugc(?:\s*materials?)?|scale\s*store\s*brand)\s+(?:cho|for|of|về|sản phẩm|collection)\s*[-–—:]?\s*(.+)$/i.exec(input);
+ const afterFor=/\b(?:cho|for|of)\s*[-–—:]\s*(.+)$/i.exec(input);
+ const named=/\b(?:product|collection|sản phẩm)\s*[:：]\s*(.+)$/i.exec(input);
+ let source=(urlMatch?.[0]||direct?.[1]||afterFor?.[1]||named?.[1]||'').trim().replace(/[.!?]+$/,'');
+ if(source.length>180)source='';
  const hasSource=Boolean(source)&&!/(^onepage$|^ldp$|^ugc$)/i.test(source);
  let productName=source;
  if(/^https:\/\//i.test(source)){
   try{const url=new URL(source);const part=url.pathname.split('/').filter(Boolean).at(-1)||url.hostname;productName=decodeURIComponent(part).replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}catch{productName='Linked product or collection';}
  }
  productName=productName.replace(/\s+/g,' ').trim();
- const taskTitle=hasSource?productName.slice(0,120)+' · '+workflow:workflow+' · New task';
- // Original request remains the editable brief; product and workflow are stored separately.
- return {workflow,brand,source:hasSource?source:'',title:taskTitle,brief:input};
+ return {workflow,brand,source:hasSource?source:'',title:hasSource?productName.slice(0,120)+' · '+workflow:workflow+' · New task',brief:input};
 }
-
 function createFromComposer(){
  const input=el('composerBrief');
  const brief=String(input?input.value:state.composerDraft||'').trim();
  if(!brief){input?.focus();toast('Anh nhập brief hoặc PDP/collection link trước khi tạo task.');return;}
  state.composerDraft=brief;
- const intent=parseTaskRequest(brief);
+ const intent=parseTaskRequest(brief,state.composerWorkflow);
  state.prefillBrief=intent.brief;
  state.prefillTitle=intent.title;
  state.prefillWorkflow=intent.workflow;
@@ -250,14 +258,14 @@ function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
  const signed=state.cloud?'<div class="dashboard-user"><span class="workspace-chip">Signed in · '+escapeHtml(state.user?.email||'')+'</span>'+button('Sign out','logout')+'</div>':'';
  return '<div class="home-metrics">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([label,count])=>'<div class="home-metric"><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
- '<section class="welcome-hero"><h2>What will we create today?</h2><p>Start with a product, an idea, or a link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Create a Onepage for LED Bottle Light Topper…">'+escapeHtml(state.composerDraft)+'</textarea><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div class="quick-workflows">'+types.map(type=>'<button type="button" data-create-workflow="'+escapeHtml(type)+'" title="Create '+escapeHtml(type)+' task">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft task for review. AI generation is not connected.</p></section>'+
+ '<section class="welcome-hero"><h2>What will we create today?</h2><p>Start with a product, an idea, or a link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
 function taskList(){
  const workflow=state.workflowFilter;
  const filtered=tasks.filter(t=>(state.filter==='All'||t.status===state.filter)&&(!workflow||t.workflow===workflow)&&(!state.search||[t.title,t.brand,t.workflow,t.brief,t.url].some(v=>String(v||'').toLowerCase().includes(state.search))));
- const context=workflow?'<section class="workflow-context"><h2>'+escapeHtml(workflow==='LDP'?'Landing pages':workflow==='UGC'?'UGC materials':workflow)+'</h2><p>'+escapeHtml(({Onepage:'Create and manage a product-specific Onepage brief, content review and material QA.',LDP:'Organize a landing page brief around niche, recipient, occasion, collections and featured items.',UGC:'Prepare UGC concepts, image requirements, creative feedback and exportable briefs.','Scale Store Brand':'Record brand-specific UI guidance, research references and implementation tasks.'})[workflow])+'</p><div class="actions">'+button('＋ Create '+escapeHtml(workflow)+' task','createFiltered','')+button('View all tasks','clearWorkflow')+'</div><p class="composer-help">Task planning and review are active. AI execution, rendering and automatic publishing are not available.</p></section>':'';
- return context+'<s-section heading="'+(workflow?escapeHtml(workflow)+' tasks':'All tasks')+'"><div class="panelhead"><div><p class="slim">Select a task to edit or review it</p></div>'+button('＋ New task',workflow?'createFiltered':'create','')+'</div><div class="filters">'+['All',...statuses].map(s=>'<button class="'+(state.filter===s?'active':'')+'" data-filter="'+s+'">'+s+'</button>').join('')+'</div>'+(filtered.length?taskTable(filtered.sort((a,b)=>b.updatedAt-a.updatedAt)) :'<div class="empty">'+(workflow?'No '+escapeHtml(workflow)+' tasks yet. Use Create to start a brief.':'No tasks in this category.')+'</div>')+'</s-section>';
+ const context=workflow?'<section class="workflow-context"><h2>'+escapeHtml(workflow==='LDP'?'Landing pages':workflow==='UGC'?'UGC materials':workflow)+'</h2><p>'+escapeHtml(({Onepage:'Create and manage a product-specific Onepage brief, content review and material QA.',LDP:'Organize a landing page brief around niche, recipient, occasion, collections and featured items.',UGC:'Prepare UGC concepts, image requirements, creative feedback and exportable briefs.','Scale Store Brand':'Record brand-specific UI guidance, research references and implementation tasks.'})[workflow])+'</p><div class="actions">'+button('View all tasks','clearWorkflow')+'</div><p class="composer-help">Task planning and review are active. AI execution, rendering and automatic publishing are not available.</p></section>':'';
+ return context+'<s-section heading="'+(workflow?escapeHtml(workflow)+' tasks':'All tasks')+'"><div class="panelhead"><div><p class="slim">Select a task to edit or review it</p></div>'</div><div class="filters">'+['All',...statuses].map(s=>'<button class="'+(state.filter===s?'active':'')+'" data-filter="'+s+'">'+s+'</button>').join('')+'</div>'+(filtered.length?taskTable(filtered.sort((a,b)=>b.updatedAt-a.updatedAt)) :'<div class="empty">'+(workflow?'No '+escapeHtml(workflow)+' tasks yet. Use Create to start a brief.':'No tasks in this category.')+'</div>')+'</s-section>';
 }
 function taskEditor(t){const fresh=!t; t=t||{id:'',title:state.prefillTitle||'',brand:state.prefillBrand||'PawfectHouse',workflow:state.prefillWorkflow||'Onepage',url:state.prefillSource||'',brief:state.prefillBrief||'',content:'',feedback:'',status:'Draft'};return '<s-section heading="'+(fresh?'Create creative task':'Task workspace')+'"><div class="panelhead"><div><p class="slim">'+(fresh?'Add a brief to start a traceable task':'Edit brief, content draft, feedback and approval status')+'</p></div>'+(fresh?'':'<span class="badge">'+escapeHtml(t.id)+'</span>')+'</div>'+
 '<div class="task-setup-intro"><div class="setup-eyebrow">TASK SETUP</div><p>We’ve separated the product and workflow from your request. Check the details and save when ready.</p></div>'+polarisField('title','Task name',t.title,'e.g. LED Bottle Light Topper · Onepage')+
@@ -306,7 +314,7 @@ async function login(){
 }
 function signOut(){state.auth=null;state.user=null;tasks=[];state.selected=null;render();toast('Signed out.');}
 function record(v){return {...v,source_url:v.url};}
-function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];el('newTask').style.display=state.page==='create'?'none':'block';const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();el('newTask').style.display='none';return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):'<div class="grid"><div>'+taskList()+'</div><div>'+(selected?taskEditor(selected):'<div class="panel"><h2>Task details</h2><p class="lead">Select a task from the list to edit, review, generate content or export.</p></div>')+'</div></div>';}
+function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):'<div class="grid"><div>'+taskList()+'</div><div>'+(selected?taskEditor(selected):'<div class="panel"><h2>Task details</h2><p class="lead">Select a task from the list to edit, review, generate content or export.</p></div>')+'</div></div>';}
 function values(){return {title:el('title').value.trim(),brand:el('brand').value,workflow:el('workflow').value,url:el('url').value.trim(),brief:el('brief').value.trim(),content:el('content')?.value||'',feedback:el('feedback')?.value||'',status:el('status')?.value||'Draft'};}
 function valid(v){if(!v.title||!v.brief){toast('Cần có task name và brief.');return false;}if(v.url.length>2000){toast('Tên hoặc URL quá dài.');return false;}if(v.url.includes('://')&&!/^https:\/\//i.test(v.url)){toast('Link phải bắt đầu bằng https://');return false;}return true;}
 const normalizeName=s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -362,9 +370,9 @@ function exportTask(t){const blob=new Blob([JSON.stringify(t,null,2)],{type:'app
 async function generate(){const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(!state.ai){toast('AI chưa cấu hình. Xem Settings.');return;}if(!state.token){navigate('settings');toast('Nhập Studio access token trước.');return;}const v=values();if(!valid(v))return;const btn=document.querySelector('[data-action="generate"]');btn.disabled=true;btn.textContent='Generating…';try{const response=await fetch('/api/ai/content',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},body:JSON.stringify({brand:v.brand,workflow:v.workflow,brief:'Title: '+v.title+'\nSource URL: '+v.url+'\n'+v.brief})});const data=await response.json();if(!response.ok)throw new Error(data.error||'AI request failed');if(!data.output)throw new Error('Empty output');v.content=data.output;v.status='In review';Object.assign(t,v,{updatedAt:Date.now()});save();render();toast('AI draft ready for review.');}catch(e){toast(String(e.message));if(btn){btn.disabled=false;btn.textContent='Generate content with AI';}}}
 document.addEventListener('focusout',e=>{if(e.target?.id==='url'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
-document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
+document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);if(e.target.closest('#newTask'))return navigate('create');const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){startWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('create');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='lookup')return lookupStore();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='lookup')return lookupStore();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.aiConfigured;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
 </script></body></html>
