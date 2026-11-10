@@ -30,6 +30,8 @@ test("rejects path traversal and undeclared files", async () => {
 test("publishes cross-account tool discovery metadata", () => {
   const tools = TOOL_DEFINITIONS.filter(x => x.name === "get_website_brand_ui_skill");
   assert.equal(tools.length, 1);
-  assert.equal(tools[0].annotations.readOnlyHint, true);
-  assert.ok(tools[0].inputSchema);
+  const tool = tools[0];
+  if (!tool) throw new Error("Missing website-brand-ui tool");
+  assert.equal(tool.annotations.readOnlyHint, true);
+  assert.ok(tool.inputSchema);
 });
