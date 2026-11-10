@@ -7,6 +7,15 @@ assert.match(html, /UID Brands Studio/);
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'inline application script exists');
 new vm.Script(script,{filename:'studio-inline.js'});
+assert.match(html, /class="sidebar"/);
+assert.match(html, /class="workspace-frame"/);
+assert.match(html, /class="welcome-hero"/);
+assert.match(html, /data-workflow="Onepage"/);
+assert.match(html, /id="taskSearch"/);
+assert.match(html, /data-create-workflow/);
+assert.match(html, /polaris-2\.0\.js/);
+assert.doesNotMatch(html, /9,999\+|\$4\.94M|2\.18M/, 'Do not render invented Shopify analytics');
+
 const port=11890;
 const child=spawn(process.execPath,[new URL('../server.mjs',import.meta.url).pathname],{env:{...process.env, PORT:String(port), OPENAI_API_KEY:'', STUDIO_ACCESS_TOKEN:''},stdio:['ignore','pipe','pipe']});
 try{
