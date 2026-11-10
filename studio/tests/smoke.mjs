@@ -10,7 +10,7 @@ new vm.Script(script,{filename:'studio-inline.js'});
 assert.match(html, /class="sidebar"/);
 assert.match(html, /class="workspace-frame"/);
 assert.match(html, /class="welcome-hero"/);
-assert.match(html, /data-workflow="Onepage"/);
+assert.doesNotMatch(html, /<button data-workflow="Onepage"/, "Workflows are not duplicated in sidebar");
 assert.match(html, /id="taskSearch"/);
 assert.match(html, /data-create-workflow/);
 assert.match(html, /polaris-2\.0\.js/);
