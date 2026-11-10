@@ -93,6 +93,11 @@ createServer(async(req,res)=>{
         const version=await sb('/rest/v1/studio_task_versions',{method:'POST',token,body:{task_id:id,owner_id:team.id,revision:1,snapshot:item},prefer:'return=minimal'});
         return json(res,201,{task:item,versionSaved:version.ok});
       }
+      const versionMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/versions$/);
+      if(versionMatch&&req.method==='GET'){
+        const records=await sb('/rest/v1/studio_task_versions?task_id=eq.'+versionMatch[1]+'&select=revision,snapshot,created_at&order=revision.desc&limit=40',{token});
+        return json(res,records.ok?200:502,records.ok?{versions:records.data}:{error:'Could not read version history'});
+      }
       const match=path.match(/^\/api\/tasks\/([0-9a-f-]{36})$/);
       if(match){
         const id=match[1];
