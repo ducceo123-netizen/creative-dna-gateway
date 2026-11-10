@@ -10,7 +10,7 @@ const webApp = await readFile(join(here, 'index.html'));
 function json(res, status, value) { res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value)); }
 function readBody(req) { return new Promise((resolve,reject)=>{let text='';req.on('data',c=>{text+=c;if(text.length>maxBody){reject(new Error('body_too_large'));req.destroy();}});req.on('end',()=>{try{resolve(JSON.parse(text));}catch{reject(new Error('invalid_json'));}});req.on('error',reject);}); }
 const aiEnabled = Boolean(process.env.OPENAI_API_KEY && process.env.STUDIO_ACCESS_TOKEN);
-const supabaseUrl=(process.env.SUPABASE_URL||'').replace(/\\/$/,'');
+const supabaseUrl=(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY||'';
 const cloudEnabled=Boolean(supabaseUrl&&supabaseKey);
 async function sb(path,{method='GET',token,body,prefer}={}){
@@ -30,7 +30,7 @@ async function member(token){
   if(!role.ok||!Array.isArray(role.data)||!role.data.length)return null;
   return {id:user.data.id,email:user.data.email,role:role.data[0].role};
 }
-function authorized(req){const header=req.headers.authorization||'';return /^Bearer [^\\s]+$/.test(header)?header.slice(7):null;}
+function authorized(req){const header=req.headers.authorization||'';return /^Bearer [^\s]+$/.test(header)?header.slice(7):null;}
 function failure(res,error){return json(res,error==='body_too_large'?413:400,{error:String(error).slice(0,180)});}
 const taskFields=['title','brand','workflow','source_url','brief','content','feedback','status'];
 function cleanTask(input){
@@ -93,7 +93,7 @@ createServer(async(req,res)=>{
         const version=await sb('/rest/v1/studio_task_versions',{method:'POST',token,body:{task_id:id,owner_id:team.id,revision:1,snapshot:item},prefer:'return=minimal'});
         return json(res,201,{task:item,versionSaved:version.ok});
       }
-      const match=path.match(/^\\/api\\/tasks\\/([0-9a-f-]{36})$/);
+      const match=path.match(/^\/api\/tasks\/([0-9a-f-]{36})$/);
       if(match){
         const id=match[1];
         if(req.method==='DELETE'){
