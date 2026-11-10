@@ -16,13 +16,13 @@ test("supports evidence workflow and brand-fidelity references", async () => {
   for (const name of ["references/workflow.md", "references/brand-fidelity.md"] as const) {
     const result = await getWebsiteBrandUiSkill(name);
     assert.ok(result.content.length > 100);
-    expect(result.section).toBe(name);
+    assert.equal(result.section, name);
   }
 });
 
 test("rejects path traversal and undeclared files", async () => {
-  expect(isWebsiteBrandUiSection("../server.ts")).toBe(false);
-  expect(isWebsiteBrandUiSection("scripts/capture.cjs")).toBe(false);
+  assert.equal(isWebsiteBrandUiSection("../server.ts"), false);
+  assert.equal(isWebsiteBrandUiSection("scripts/capture.cjs"), false);
   assert.ok(WEBSITE_BRAND_UI_SECTIONS.length > 10);
   await assert.rejects(getWebsiteBrandUiSkill("../server.ts" as any));
 });
@@ -30,6 +30,6 @@ test("rejects path traversal and undeclared files", async () => {
 test("publishes cross-account tool discovery metadata", () => {
   const tools = TOOL_DEFINITIONS.filter(x => x.name === "get_website_brand_ui_skill");
   assert.equal(tools.length, 1);
-  expect(tools[0].annotations.readOnlyHint).toBe(true);
+  assert.equal(tools[0].annotations.readOnlyHint, true);
   assert.equal(tools[0].inputSchema.properties.section.type, "string");
 });
