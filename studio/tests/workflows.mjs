@@ -50,4 +50,18 @@ element('composerBrief').value='New UGC photo concepts for personalized ornament
 run("createFromComposer()");
 assert.equal(run("state.page"),'create');
 assert.match(element('view').innerHTML,/New UGC photo concepts/);
+
+run("navigate('dashboard')");
+element('composerBrief').value='Anh cần làm Onepage cho - LED Bottle Light Topper';
+run("navigate('create')");
+assert.equal(run("state.prefillSource"),'LED Bottle Light Topper','Header/sidebar create must extract source from Home prompt');
+assert.equal(run("state.prefillTitle"),'LED Bottle Light Topper · Onepage');
+assert.equal(run("state.prefillBrief"),'Anh cần làm Onepage cho - LED Bottle Light Topper');
+run("navigate('dashboard')");
+element('composerBrief').value='Anh cần làm Landing page cho - Gifts for Kids & Babies';
+run("startWorkflow('LDP')");
+assert.equal(run("state.prefillWorkflow"),'LDP');
+assert.equal(run("state.prefillSource"),'Gifts for Kids & Babies');
+assert.equal(run("state.prefillTitle"),'Gifts for Kids & Babies · LDP');
+
 console.log('Interactive workflow routing and draft prefill checks passed');
