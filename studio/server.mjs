@@ -32,14 +32,52 @@ async function member(token){
 }
 function authorized(req){const header=req.headers.authorization||'';return /^Bearer [^\s]+$/.test(header)?header.slice(7):null;}
 function failure(res,error){return json(res,error==='body_too_large'?413:400,{error:String(error).slice(0,180)});}
+const STORES=Object.freeze({PawfectHouse:'https://pawfecthouse.com',GiftSoul:'https://giftsoul.co',SoulPrise:'https://soulprise.co'});
 const taskFields=['title','brand','workflow','source_url','brief','content','feedback','status'];
+const searchCache=new Map();
+async function searchCatalog(brand,query){
+ const domain=STORES[brand]; if(!domain)throw Error('Unsupported brand');
+ const clean=String(query||'').trim();
+ if(clean.length<2||clean.length>150)throw Error('Search name must be 2–150 characters');
+ const cacheKey=brand+'|'+clean.toLowerCase();
+ const cached=searchCache.get(cacheKey);if(cached&&cached.expires>Date.now())return cached.results;
+ const url=new URL('/search/suggest.json',domain);
+ url.searchParams.set('q',clean);
+ url.searchParams.set('resources[type]','product,collection');
+ url.searchParams.set('resources[limit]','10');
+ url.searchParams.set('resources[limit_scope]','each');
+ const response=await fetch(url,{redirect:'error',headers:{'Accept':'application/json','User-Agent':'UIDBrandsStudio/1.0'},signal:AbortSignal.timeout(8000)});
+ if(!response.ok)throw Error('Store search unavailable ('+response.status+')');
+ if(Number(response.headers.get('content-length')||0)>300000)throw Error('Store response too large');
+ const body=await response.text();if(body.length>300000)throw Error('Store response too large');
+ const jsonData=JSON.parse(body);
+ const found=jsonData?.resources?.results||{};
+ const results=[];
+ for(const [key,type] of [['collections','collection'],['products','product']]){
+  for(const item of (Array.isArray(found[key])?found[key]:[]).slice(0,10)){
+   if(typeof item.title!=='string'||typeof item.url!=='string')continue;
+   const resultUrl=new URL(item.url,domain);
+   if(resultUrl.origin!==domain||!['/collections/','/products/'].some(prefix=>resultUrl.pathname.startsWith(prefix)))continue;
+   if((type==='collection'&&!resultUrl.pathname.startsWith('/collections/'))||(type==='product'&&!resultUrl.pathname.startsWith('/products/')))continue;
+   results.push({type,title:item.title.slice(0,180),url:resultUrl.origin+resultUrl.pathname});
+  }
+ }
+ const dedup=[...new Map(results.map(x=>[x.url,x])).values()];
+ if(searchCache.size>100)searchCache.delete(searchCache.keys().next().value);
+ searchCache.set(cacheKey,{expires:Date.now()+180000,results:dedup});
+ return dedup;
+}
 function cleanTask(input){
  if(!input||typeof input!=='object')throw Error('Task payload required');
  const v={};
  for(const f of taskFields)v[f]=typeof input[f]==='string'?input[f].trim():'';
  if(!v.title||v.title.length>180||v.brief.length>12000||v.content.length>50000||v.feedback.length>20000||v.source_url.length>2000)throw Error('Invalid task text length');
  if(!['PawfectHouse','GiftSoul','SoulPrise'].includes(v.brand)||!['Onepage','LDP','Scale Store Brand','UGC'].includes(v.workflow)||!['Draft','In progress','In review','Approved'].includes(v.status))throw Error('Invalid workflow, brand or status');
- if(v.source_url&&!/^https:\/\//i.test(v.source_url))throw Error('Only public HTTPS source URLs are accepted');
+ if(v.source_url.length>2000)throw Error('Source is too long');
+ if(v.source_url.includes('://')){
+  let parsed;try{parsed=new URL(v.source_url);}catch{throw Error('Invalid source URL');}
+  if(parsed.protocol!=='https:'||parsed.username||parsed.password)throw Error('Source URL must be HTTPS without credentials');
+ }
  return v;
 }
 createServer(async(req,res)=>{
@@ -51,7 +89,7 @@ createServer(async(req,res)=>{
     res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
   }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.2',aiConfigured:aiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
-  if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')){
+  if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud auth is not configured'});
     try {
       if(path==='/api/auth/login'&&req.method==='POST'){
@@ -78,6 +116,12 @@ createServer(async(req,res)=>{
       if(!team)return json(res,403,{error:'Team access denied'});
       if(path==='/api/auth/me'&&req.method==='GET')return json(res,200,{user:team});
       const writable=team.role==='admin'||team.role==='contributor';
+      if(path==='/api/catalog/search'&&req.method==='GET'){
+        const params=new URL(req.url,'http://localhost').searchParams;
+        const brand=params.get('brand'), query=params.get('q');
+        try {const results=await searchCatalog(brand,query);return json(res,200,{brand,query,results,method:'Shopify storefront predictive search',automatedAi:false});}
+        catch(error){return json(res,502,{error:'Cannot search this storefront at the moment',detail:String(error.message).slice(0,150)});}
+      }
       if(path==='/api/tasks'&&req.method==='GET'){
         const list=await sb('/rest/v1/studio_tasks?select=*&order=updated_at.desc&limit=200',{token});
         return json(res,list.ok?200:502,list.ok?{tasks:list.data}:{error:'Could not read tasks'});
