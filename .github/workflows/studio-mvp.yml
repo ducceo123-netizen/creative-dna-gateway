@@ -34,3 +34,5 @@ jobs:
       - run: node studio/tests/orchestrator.mjs
 
       - run: node studio/tests/pipeline-integration.mjs
+
+      - run: node studio/tests/review-editor.mjs
