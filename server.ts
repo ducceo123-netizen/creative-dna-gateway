@@ -1,3 +1,4 @@
+import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
 import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
 import {registerHostedReviews} from './uid-hosted-review.ts';
 import { attachHomeIconContract } from "./supabase/functions/_shared/home-icon.ts";
@@ -520,6 +521,10 @@ export const TOOL_DEFINITIONS = [
     inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] }, bindings: ONEPAGE_BINDINGS_SCHEMA } },
   },
   {
+    name: "evaluate_onepage_banner_qc", title: "Evaluate Onepage Banner QC", description: ONEPAGE_BANNER_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: ONEPAGE_BANNER_QC_INPUT_SCHEMA,
+  },
+  {
     name: "resolve_creative_dna",
     title: "Resolve Creative DNA",
     description: RESOLVE_CREATIVE_DNA_DESC,
@@ -686,6 +691,31 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     } catch {
       return withUidProgress({ content: [{ type: "text", text: JSON.stringify({ error: "Invalid Onepage template version, format or bindings" }) }], isError: true }, "template");
     }
+  });
+
+  server.registerTool("evaluate_onepage_banner_qc", uidProgressTool("evaluate_onepage_banner_qc", {
+    title: "Evaluate Onepage Banner QC",
+    description: ONEPAGE_BANNER_QC_DESCRIPTION,
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: {
+      task_id: z.string().trim().min(1).max(160),
+      content_version: z.string().trim().min(1).max(160),
+      inspections: z.array(z.object({
+        viewport: z.enum(["desktop", "mobile"]),
+        asset_id: z.string().trim().min(1).max(160),
+        sha256: z.string().regex(/^sha256:[0-9a-f]{64}$/),
+        method: z.literal("full_resolution_image_view"),
+        evidence_note: z.string().trim().min(40).max(2000),
+        findings: z.object(Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k => [k, z.boolean()])) as Record<typeof ONEPAGE_BANNER_QC_FLAGS[number], z.ZodBoolean>).strict(),
+      }).strict()).length(2),
+    },
+  }), async (input) => {
+    const gate = evaluateOnepageBannerQc(input);
+    return withUidProgress({
+      content: [{ type: "text", text: JSON.stringify(gate) }],
+      structuredContent: gate,
+      isError: gate.status === "BLOCKED",
+    }, "template");
   });
 
   // Tool 1: resolve_creative_dna
@@ -934,6 +964,12 @@ export function createApp(): express.Application {
       res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; font-src data:; img-src https: data:; base-uri 'none'; frame-ancestors 'none'");
     }
     return res.type(file.type).send(file.body);
+  });
+  app.post("/api/tools/evaluate_onepage_banner_qc", (req: Request, res: Response) => {
+    const input = req.body?.arguments || req.body || {};
+    const gate = evaluateOnepageBannerQc(input);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(gate.status === "BLOCKED" ? 422 : 200).json(gate);
   });
   app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
