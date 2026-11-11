@@ -389,6 +389,36 @@ createServer(async(req,res)=>{
         return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
       }
 
+      const sectionFeedbackMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/section-feedback(?:\/([0-9a-f-]{36}))?$/);
+      if(sectionFeedbackMatch){
+        const taskId=sectionFeedbackMatch[1],feedbackId=sectionFeedbackMatch[2];
+        const check=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id&limit=1',{token});
+        if(!check.ok)return json(res,502,{error:'Cannot verify task'});
+        if(check.data?.[0]?.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        const endpoint='/rest/v1/studio_section_feedback';
+        if(req.method==='GET'&&!feedbackId){
+          const data=await sb(endpoint+'?task_id=eq.'+taskId+'&select=id,section_id,group_name,note,status,created_at&order=created_at.asc&limit=150',{token});
+          return json(res,data.ok?200:502,data.ok?{feedback:data.data}:{error:'Feedback unavailable'});
+        }
+        if(req.method==='POST'&&!feedbackId){
+          if(!writable)return json(res,403,{error:'Read-only member'});
+          const input=await readBody(req);
+          const section_id=String(input.section_id||''),group_name=String(input.group_name||'General').trim(),note=String(input.note||'').trim();
+          if(!/^[a-z0-9_-]{2,40}$/.test(section_id)||group_name.length<1||group_name.length>80||note.length<1||note.length>2000)return json(res,422,{error:'Invalid feedback section, group or text'});
+          const result=await sb(endpoint,{method:'POST',token,prefer:'return=representation',body:{task_id:taskId,owner_id:team.id,section_id,group_name,note,status:'open'}});
+          return json(res,result.ok?201:502,result.ok?{feedback:result.data[0]}:{error:'Feedback could not be saved'});
+        }
+        if(req.method==='PATCH'&&feedbackId){
+          if(!writable)return json(res,403,{error:'Read-only member'});
+          const input=await readBody(req);
+          if(!['open','resolved'].includes(input.status))return json(res,422,{error:'Invalid review status'});
+          const response=await sb(endpoint+'?id=eq.'+feedbackId+'&task_id=eq.'+taskId,{method:'PATCH',token,prefer:'return=representation',body:{status:input.status}});
+          if(!response.ok)return json(res,502,{error:'Feedback could not be updated'});
+          if(!response.data?.length)return json(res,404,{error:'Feedback not found'});
+          return json(res,200,{feedback:response.data[0]});
+        }
+        return json(res,405,{error:'Unsupported section feedback operation'});
+      }
       const pipelineMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/pipeline(?:\/(start|next|export|history|preview))?$/);
       if(pipelineMatch){
         const taskId=pipelineMatch[1],action=pipelineMatch[2]||'current';
