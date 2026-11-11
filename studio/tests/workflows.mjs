@@ -94,5 +94,5 @@ assert.match(handoff,/cdn.shopify.com\/stocking.jpg/);
 assert.match(handoff,/Not verified: external reviews/);
 const savedTaskPanel=run("taskEditor({id:'UID-TEST',title:'Christmas Bone Stockings · Onepage',brand:'PawfectHouse',workflow:'Onepage',url:'https://pawfecthouse.com/collections/christmas-bone-stockings',brief:'Test',content:'',feedback:'',status:'Draft'})");
 assert.match(savedTaskPanel,/Scan product data/);
-assert.match(savedTaskPanel,/Copy ChatGPT handoff/);
+assert.match(savedTaskPanel,/Copy handoff \+ sync token/);
 console.log('Interactive task intake and prompt extraction checks passed');
