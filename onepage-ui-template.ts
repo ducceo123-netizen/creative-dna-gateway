@@ -4,7 +4,7 @@ import {RULE_COMPILER,RULE_REVIEW_SCOPE} from './supabase/functions/_shared/agen
 import {ruleSupplementValid} from './supabase/functions/_shared/agent-rule-quality.ts';
 import { createHash } from 'node:crypto';
 import { QUALITY_COMPILER, OWNER_SUPPLEMENTAL_PRECEDENCE, MAX_OWNER_SUPPLEMENTS, ownerSupplementalShapeValid, agentReviewedSupplementalShapeValid, AGENT_REVIEW_SCOPE, stableJson } from './supabase/functions/_shared/creative-quality.ts';
-import { ONEPAGE_FAQ_TEMPLATE_VERSION, replacePostStorySection } from './onepage-faq-template.ts';
+import { ONEPAGE_FAQ_TEMPLATE_VERSION, ONEPAGE_FAQ_LEGACY_VERSION, replacePostStorySection, checkboxFreeFaqSection, CHECKBOX_FREE_FAQ_CSS } from './onepage-faq-template.ts';
 import faqSection from './templates/onepage-faq-section-v1.json' with { type: 'json' };
 import originalTemplate from './templates/onepage-ui-v1.json' with { type: 'json' };
 import { ONEPAGE_UI_CONTENT_CONTRACT, validateOnepageUiCopy } from './supabase/functions/_shared/onepage-ui-content.ts';
@@ -28,10 +28,22 @@ const paddedTemplate = {
 // Metadata-only revision: exact same approved HTML/CSS bytes, current delivery instructions.
 const qualityAlignedTemplate = { ...paddedTemplate, version: '2026-10-11.v3' };
 const faqHtml = replacePostStorySection(paddedHtml, faqSection.html);
+const legacyFaqTemplate = {
+  ...qualityAlignedTemplate, version: ONEPAGE_FAQ_LEGACY_VERSION,
+  reference_url: faqSection.reference_url, captured_at: faqSection.captured_at,
+  html: faqHtml, html_sha256: createHash('sha256').update(faqHtml).digest('hex'),
+  asset_slots: originalTemplate.asset_slots.filter(slot => !slot.startsWith('gtk_')),
+  text_slots: [...originalTemplate.text_slots.filter(slot => !/^(title|description)_(11|12|13)$/.test(slot)), ...faqSection.text_slots],
+  verification: { source_capture: faqSection.verification.source_capture, pixel_parity: faqSection.verification.pixel_parity },
+};
+const checkboxFreeFaqHtml = replacePostStorySection(paddedHtml, checkboxFreeFaqSection(faqSection.html));
+const checkboxFreeFaqCss = paddedCss + CHECKBOX_FREE_FAQ_CSS;
 const faqTemplate = {
   ...qualityAlignedTemplate, version: ONEPAGE_FAQ_TEMPLATE_VERSION,
   reference_url: faqSection.reference_url, captured_at: faqSection.captured_at,
-  html: faqHtml, html_sha256: createHash('sha256').update(faqHtml).digest('hex'),
+  html: checkboxFreeFaqHtml, css: checkboxFreeFaqCss,
+  html_sha256: createHash('sha256').update(checkboxFreeFaqHtml).digest('hex'),
+  css_sha256: createHash('sha256').update(checkboxFreeFaqCss).digest('hex'),
   asset_slots: originalTemplate.asset_slots.filter(slot => !slot.startsWith('gtk_')),
   text_slots: [...originalTemplate.text_slots.filter(slot => !/^(title|description)_(11|12|13)$/.test(slot)), ...faqSection.text_slots],
   verification: { source_capture: faqSection.verification.source_capture, pixel_parity: faqSection.verification.pixel_parity },
@@ -40,6 +52,7 @@ const templates: Record<string, typeof originalTemplate> = {
   [originalTemplate.version]: originalTemplate,
   [paddedTemplate.version]: paddedTemplate,
   [qualityAlignedTemplate.version]: qualityAlignedTemplate,
+  [legacyFaqTemplate.version]: legacyFaqTemplate,
   [faqTemplate.version]: faqTemplate,
 };
 export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
@@ -52,13 +65,21 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) throw new Error('Unknown Onepage UI template version');
   if (format !== 'manifest' && format !== 'source') throw new Error('Invalid template format');
-  const base = `${[qualityAlignedTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
+  const base = `${[qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
     live_html_feedback: getOnepageReviewContract(),
-    post_story_section: version === faqTemplate.version ? 'faq' : 'gtk',
+    post_story_section: [faqTemplate.version, legacyFaqTemplate.version].includes(version) ? 'faq' : 'gtk',
     variants: { gtk: qualityAlignedTemplate.version, faq: faqTemplate.version },
-    ...(version === faqTemplate.version ? { faq_binding: faqSection.binding, faq_css_reference: { url: faqSection.css_reference_url, sha256: faqSection.css_source_sha256 } } : {}),
+    ...([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? {
+      faq_binding: version === faqTemplate.version ? {
+        ...faqSection.binding,
+        count: 'Clone the native details/summary row using data-faq-item and data-text-slot suffixes. Never use input, checkbox, label[for] or checked attributes.',
+        review_state: 'Every native details element remains open during screenshot/export. No checkbox inputs exist in FAQ v2.',
+        accessibility: 'Use details/summary with keyboard interaction and focus-visible styling, not checkbox/label.',
+      } : faqSection.binding,
+      faq_css_reference: { url: faqSection.css_reference_url, sha256: faqSection.css_source_sha256 },
+    } : {}),
     reference_url: template.reference_url, captured_at: template.captured_at,
     urls: { html: `${base}/template.html`, css: `${base}/styles.css`, bundle: `${base}/bundle.json`, manifest: `${base}/manifest.json` },
     sha256: { html: template.html_sha256, css: template.css_sha256, original_app_css: template.app_css_sha256 },
@@ -66,13 +87,13 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
     ui_content_contract: ONEPAGE_UI_CONTENT_CONTRACT,
     production_qc_contract: ONEPAGE_PRODUCTION_QC,
     technical_quality_gate: { command: 'node --import tsx scripts/preflight-creative-package.ts manifest.json', schema: 'uid.creative-package-input.v1', purpose: 'Decode and hash actual local asset bytes before deterministic binding. Use onepage.bindings with assets matching the decoded manifest exactly.', browser_qa: 'scripts/quality/fixed_ui.py compares the approved source and candidate at equal viewport/state; inspect actual desktop/mobile images separately.', limitations: 'Host execution required; this API does not fetch/decode assets, certify provider interaction or perform visual QC.' },
-    deterministic_binding: { tool: 'get_onepage_ui_template', input: { version, bindings: { text: 'Exact complete data-text-slot map; no section heading aliases', assets: 'Exact complete data-asset-slot map; HTTPS or relative file references', ...(version === faqTemplate.version ? { faq_count: 'Number of approved FAQ answers, 1–100' } : {}) } }, required_before: 'RENDER_UI_MAPPING', output: 'Use returned bound html and unchanged css, not a manually reconstructed page', limitations: 'Cannot prevent an external host from ignoring or later editing the bound output. Does not certify product truth or visual QC.' },
+    deterministic_binding: { tool: 'get_onepage_ui_template', input: { version, bindings: { text: 'Exact complete data-text-slot map; no section heading aliases', assets: 'Exact complete data-asset-slot map; HTTPS or relative file references', ...([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? { faq_count: 'Number of approved FAQ answers, 1–100' } : {}) } }, required_before: 'RENDER_UI_MAPPING', output: 'Use returned bound html and unchanged css, not a manually reconstructed page', limitations: 'Cannot prevent an external host from ignoring or later editing the bound output. Does not certify product truth or visual QC.' },
     verification: template.verification,
     canvas_gutter: version !== originalTemplate.version ? { desktop_px: 32, mobile_px: 16, mobile_max_width_px: 798 } : null,
     layout_lock: 'HARD: preserve captured DOM/classes/section order, widths, columns, gaps, padding, typography, borders, backgrounds, masks, object-fit, object-position and responsive CSS. Preserve the approved outer canvas gutters in this version. Substitute approved images and exact copy only. Render mapping from this template; never use imagegen to redraw the page.',
     loading: 'Download html + css into the same folder (styles.css is relative to template.html), or use bundle.json. Fonts and fixed UI checkmarks are embedded. This backend-owned template supersedes libfile/ZIP references and split feedback payloads as the executable UI source. Do not fetch the live PDP to rebuild layout. If unavailable, report template retrieval failure without guessing.',
     binding: 'Use a DOM parser. Set img[src] and source[srcset] using data-asset-slot; delete stale img[srcset]. Set textContent of data-text-slot elements using exact approved copy. ui_checkmark is a fixed embedded GTK-only UI dependency. FAQ row repetition follows faq_binding. Resolve supplied asset paths relative to output HTML. Do not alter other DOM/style properties.',
-    qa: 'Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, full badge readability and final-package assets. ' + (version === faqTemplate.version ? 'Check every FAQ answer expanded, long question wrapping, unique input/label IDs and no GTK placeholders. ' : 'Check rounded Good To Know masks. ') + 'Downloadability/source hashes do not certify pixel parity. ' + ([qualityAlignedTemplate.version, faqTemplate.version].includes(version) ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
+    qa: 'Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, full badge readability and final-package assets. ' + ([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? (version === faqTemplate.version ? 'Check native details/summary rows open during mapping and zero checkbox inputs/label toggles on desktop and mobile; retain long-question wrapping and no GTK placeholders. ' : 'Check every FAQ answer expanded, long question wrapping, unique input/label IDs and no GTK placeholders. ') : 'Check rounded Good To Know masks. ') + 'Downloadability/source hashes do not certify pixel parity. ' + ([qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
   };
   return format === 'source' ? { ...manifest, html: template.html, css: template.css } : manifest;
 }
@@ -121,6 +142,9 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
       return row.replace(/faq_question_01/g, `faq_question_${n}`).replace(/faq_answer_01/g, `faq_answer_${n}`).replace(/uid-faq-01/g, `uid-faq-${n}`).replace('data-faq-item="01"', `data-faq-item="${n}"`);
     }).join('');
     html = html.slice(0, start) + repeated + html.slice(end);
+    if (source.version === ONEPAGE_FAQ_TEMPLATE_VERSION && /<input\b|type\s*=\s*["']checkbox["']|<label\b/i.test(html.slice(html.indexOf('class="uid-product-content-faqs"'), html.indexOf('class="uid-product-content-faqs"') + 4000 + bindings.faq_count! * 800))) {
+      throw new Error('CHECKBOX_FORBIDDEN_IN_FAQ_MAPPING');
+    }
   }
   const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const values = { ...assets, ...bindings.text };
