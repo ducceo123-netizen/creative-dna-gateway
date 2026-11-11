@@ -228,6 +228,44 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .executor-mode-status.awaiting_approval{color:#8b8b8b}
 .executor-hint{font-size:11px;color:#737373;margin:12px 0 0;line-height:1.55}
 @media(max-width:760px){.executor-mode-grid{grid-template-columns:1fr}.executor-mode{min-height:0}.executor-switcher{padding:12px}.executor-switcher-header h3{font-size:14px}}
+
+.pipeline-panel{border:1px solid #dcdcdc;border-radius:14px;background:#fff;padding:17px;margin:18px 0}
+.pipeline-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:0 0 15px;flex-wrap:wrap}
+.pipeline-heading h3{font-size:15px;color:#303030;font-weight:700;letter-spacing:-.025em;margin:5px 0}
+.pipeline-heading p{font-size:11px;color:#7b7b7b;line-height:1.6;max-width:600px}
+.pipeline-status{font-size:10px;border:1px solid #e5e5e5;padding:7px 10px;border-radius:99px;background:#fafafa;color:#777}
+.pipeline-status.blocked{color:#9e542b;background:#fff6ed}
+.pipeline-status.needs_review{color:#8b7324;background:#fffaf0}
+.pipeline-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:15px 0}
+.pipeline-step{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:8px 2px;border-radius:8px;font-size:10px;color:#888;background:#f6f6f6}
+.pipeline-step>span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#eee;color:#555;font-weight:730}
+.pipeline-step.active{background:#f1f4f1;color:#1d4c31;font-weight:700}
+.pipeline-step.active>span{background:#2c673e;color:#fff}
+.pipeline-step.done{color:#43754f;background:#f3f8f4}.pipeline-step.done>span{color:#3b7e51;background:#e3eee6}
+.pipeline-setup{padding:13px 0;border-top:1px solid #eee}
+.pipeline-setup strong{font-size:12px}
+.pipeline-slot-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 15px;margin:12px 0}
+.pipeline-slot-options label{font-size:11px;color:#555;display:flex;gap:7px;align-items:center;cursor:pointer}
+.pipeline-slot-options input{accent-color:#2b6f48}
+.pipeline-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.pipeline-notice{font-size:11px;color:#777;line-height:1.6;margin:10px 0}
+.pipeline-progress{font-size:11px;color:#4d7356;min-height:15px}
+.pipeline-detail{display:flex;gap:10px 16px;flex-wrap:wrap;font-size:10px;color:#777;margin:11px 0;border-top:1px solid #eee;padding-top:10px}
+.pipeline-warning,.pipeline-events{font-size:11px;color:#81613b;margin-top:12px}
+.pipeline-warning p{margin:7px 0;overflow-wrap:anywhere}
+.pipeline-events>div{border-bottom:1px solid #eee;padding:8px 0}
+.pipeline-events>div span{font-size:11px;color:#333}
+.pipeline-events>div small{float:right;font-size:10px;color:#888}
+.pipeline-events>div p{font-size:10px;color:#888;line-height:1.5}
+.pipeline-review{border:1px solid #e9e1d2;border-radius:10px;padding:14px;margin:13px 0;background:#fffdfa}
+.pipeline-review strong{font-size:12px}
+.pipeline-review p{font-size:11px;color:#715f50;line-height:1.55;margin:7px 0}
+.pipeline-finding strong{text-transform:uppercase;font-size:10px}
+.pipeline-history{margin-top:10px}
+.pipeline-history h4{font-size:12px;font-weight:700}
+.pipeline-history-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:8px 0;font-size:11px}
+.pipeline-history-row small{color:#888;font-size:10px}
+@media(max-width:720px){.pipeline-panel{padding:12px}.pipeline-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.pipeline-slot-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -254,7 +292,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},pipelineRuns:{},pipelineBusy:false,pipelineProgress:'',pipelineSelectedSlots:['banner_desktop','banner_mobile','pd_main','wyl1','occasion1','ugc1'],hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -270,7 +308,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);}
+function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -500,6 +538,132 @@ function overallPreview(id){
  '<h4>Occasions</h4><div class="overall-two">'+tile('occasion1')+tile('occasion2')+'</div>'+
  '<h4>Customer moments</h4><div class="overall-two">'+tile('ugc1')+tile('ugc2')+'</div>'+tile('icons')+'</div>';
 }
+
+const PIPELINE_STAGES=['research','creative_dna','content','materials','vision_qa','export'];
+const PIPELINE_SLOT_INFO=[
+ ['banner_desktop','Hero desktop'],['banner_mobile','Hero mobile'],['pd_main','Product main'],
+ ['pd_closeup','Product close-up'],['wyl1','Feature 1'],['wyl2','Feature 2'],['occasion1','Occasion 1'],
+ ['occasion2','Occasion 2'],['ugc1','UGC 1'],['ugc2','UGC 2'],['icons','EO icons']
+];
+function pipelineBadge(stage,status){
+ return '<span class="pipeline-status '+escapeHtml(status||'ready')+'">'+escapeHtml(stage==='complete'?'Review required':status==='blocked'?'Blocked':status==='needs_review'?'Review required':'In progress')+'</span>';
+}
+function pipelineMarkup(id){
+ const r=state.pipelineRuns[id],stage=r?.stage||'research',active=PIPELINE_STAGES.indexOf(stage),slots=r?.state?.selected_slots||state.pipelineSelectedSlots;
+ const events=(r?.state?.events||[]).slice(-10).reverse();
+ const locked=state.executionMode!=='api_auto';
+ const configured=state.ai;
+ return '<section class="pipeline-panel" aria-label="UID Brands AI pipeline">'+
+ '<div class="pipeline-heading"><div><span class="executor-kicker">API AUTO · STAGE ORCHESTRATOR</span><h3>Research → Creative DNA → Content → Materials → Vision QA → Export</h3><p>Each step persists a versioned result. Paid stages require API credentials and your confirmation. Nothing publishes automatically.</p></div>'+pipelineBadge(stage,r?.status||'ready')+'</div>'+
+ '<div class="pipeline-steps">'+PIPELINE_STAGES.map((x,i)=>'<div class="pipeline-step '+(i<active?'done':i===active?'active':'pending')+'"><span>'+(i<active?'✓':(i+1))+'</span>'+escapeHtml(({research:'Research',creative_dna:'Creative DNA',content:'Content',materials:'Materials',vision_qa:'Vision QA',export:'Export'})[x])+'</div>').join('')+'</div>'+
+ (!r||stage==='complete'?'<div class="pipeline-setup"><strong>Choose materials for this run</strong><p class="research-note">Each selected material is one separately billed image-edit request. Up to 8 per run. No image is generated until API Auto is enabled and you confirm processing.</p>'+
+ '<div class="pipeline-slot-options">'+PIPELINE_SLOT_INFO.map(([key,label])=>'<label><input type="checkbox" data-pipeline-slot="'+key+'" '+(slots.includes(key)?'checked':'')+' '+(state.pipelineBusy?'disabled':'')+'> '+escapeHtml(label)+'</label>').join('')+'</div></div>':'')+
+ '<div class="pipeline-actions">'+
+ (r&&stage!=='complete'?button(state.pipelineBusy?'Processing…':'Run next stage','pipelineNext'):button(r?'Start new revision':'Start pipeline','pipelineStart'))+
+ (r&&stage!=='complete'?button(state.pipelineBusy?'Processing…':'Process remaining stages','pipelineAll'):'')+
+ (r?button('Version history','pipelineHistory'):'')+
+ (r?.stage==='complete'?button('Export results JSON','pipelineExport'):'')+
+ '</div>'+
+ (locked?'<p class="pipeline-notice">Select <strong>API Auto</strong> in Execution Mode above before running stages. Hybrid Bridge remains available.</p>':
+ (!configured?'<p class="pipeline-notice">API key/executor not configured. Research and Creative DNA can still be prepared, but paid stages will be blocked safely.</p>':
+ '<p class="pipeline-notice">API enabled. Material requests use real PDP images as references; all generated artwork remains unapproved until human QA.</p>'))+
+ '<div class="pipeline-progress" role="status">'+escapeHtml(state.pipelineProgress||'')+'</div>'+
+ (r?'<div class="pipeline-detail"><span>Run '+escapeHtml(String(r.run_id||'').slice(0,8))+' · Revision '+escapeHtml(r.revision||1)+'</span>'+
+ '<span>Current: '+escapeHtml(stage==='complete'?'Final review':stage.replace(/_/g,' '))+'</span>'+
+ '<span>Materials '+escapeHtml(r.state?.materials?.length||0)+' / '+escapeHtml(slots.length)+'</span>'+
+ '<span>API calls logged '+escapeHtml(r.state?.calls||0)+'</span></div>':'')+
+ (r?.state?.warnings?.length?'<details class="pipeline-warning"><summary>Warnings / blockers ('+r.state.warnings.length+')</summary>'+r.state.warnings.map(x=>'<p>'+escapeHtml(x)+'</p>').join('')+'</details>':'')+
+ (r?.state?.vision?'<div class="pipeline-review"><strong>Vision QA — human review required</strong><p>'+escapeHtml(r.state.vision.summary||'')+'</p>'+
+ (r.state.vision.findings||[]).map(x=>'<p class="pipeline-finding"><strong>'+escapeHtml(x.severity)+' · '+escapeHtml(x.slot)+'</strong> '+escapeHtml(x.issue)+' — '+escapeHtml(x.recommendation)+'</p>').join('')+
+ '<p class="research-note">The model inspected individual stored assets. It did NOT validate an actual live desktop/mobile screenshot.</p></div>':'')+
+ (events.length?'<details class="pipeline-events"><summary>Stage activity ('+events.length+')</summary>'+events.map(e=>'<div><span>'+escapeHtml(e.stage)+' · '+escapeHtml(e.status)+'</span><small>'+escapeHtml(e.at||'')+'</small><p>'+escapeHtml(e.detail||'')+'</p></div>').join('')+'</details>':'')+
+ '<div id="pipelineHistoryBox" class="pipeline-history"></div></section>';
+}
+function pipelineRefresh(id){
+ if(id!==state.selected)return;
+ const target=el('pipelinePanel');
+ if(target)target.innerHTML=pipelineMarkup(id);
+}
+async function pipelineLoad(id){
+ if(!state.cloud||!state.auth||!id)return;
+ try{const r=await cloudRequest('/api/tasks/'+id+'/pipeline');state.pipelineRuns[id]=r.run||null;
+ if(id===state.selected)pipelineRefresh(id);}
+ catch(e){toast('Pipeline status unavailable: '+e.message);}
+}
+function pipelineSelected(){
+ const checkboxes=Array.from(document.querySelectorAll('[data-pipeline-slot]'));
+ const chosen=checkboxes.length?checkboxes.filter(x=>x.checked).map(x=>x.dataset.pipelineSlot):state.pipelineSelectedSlots;
+ if(chosen.length<1||chosen.length>8){toast('Select 1–8 image slots per pipeline run.');return null;}
+ state.pipelineSelectedSlots=chosen;
+ return chosen;
+}
+async function pipelineStart(){
+ const id=state.selected;if(!id||state.pipelineBusy)return;
+ const slots=pipelineSelected();if(!slots)return;
+ const existing=state.pipelineRuns[id];
+ if(existing?.stage!=='complete'&&existing)return toast('Resume the active pipeline rather than creating a duplicate.');
+ if(existing&&!confirm('Start a new revision? Previous stage snapshots remain available; the latest run will be replaced.'))return;
+ state.pipelineBusy=true;state.pipelineProgress='Initializing pipeline…';pipelineRefresh(id);
+ try{
+  const result=await cloudRequest('/api/tasks/'+id+'/pipeline/start','POST',{slots,reset_completed:!!existing});
+  state.pipelineRuns[id]=result.run;state.pipelineProgress='Pipeline created; no paid calls yet. Run Next Stage or Process Remaining Stages.';
+  pipelineRefresh(id);toast('Pipeline ready.');
+ }catch(e){state.pipelineProgress=e.message;pipelineRefresh(id);toast(e.message);}
+ finally{state.pipelineBusy=false;pipelineRefresh(id);}
+}
+async function pipelineNext({loop=false}={}){
+ const id=state.selected;if(!id||state.pipelineBusy||!state.pipelineRuns[id])return;
+ if(state.executionMode!=='api_auto')return toast('Switch to API Auto before processing.');
+ if(!loop&&!confirm('Run next stage? If this is a content, image or Vision step, it uses separately billed OpenAI API credits. Continue?'))return;
+ state.pipelineBusy=true;
+ try{
+  let i=0;
+  do{
+   const before=state.pipelineRuns[id],stage=before?.stage;
+   if(!before||stage==='complete')break;
+   state.pipelineProgress='Running '+stage.replace(/_/g,' ')+'…';
+   pipelineRefresh(id);
+   const result=await cloudRequest('/api/tasks/'+id+'/pipeline/next','POST',{acknowledge_metered_api:true});
+   state.pipelineRuns[id]=result.run;
+   state.pipelineProgress=result.detail||'Stage persisted.';
+   pipelineRefresh(id);
+   if(stage==='materials')await loadTaskAttachments(id);
+   if(stage==='content')await hybridLoad(id);
+   if(++i>16)break; // no unbounded browser loop
+  }while(loop&&state.pipelineRuns[id]?.stage!=='complete'&&state.selected===id);
+  if(state.pipelineRuns[id]?.stage==='complete')toast('Pipeline completed as DRAFT. Review generated images and QA before approval.');
+ }catch(e){
+  state.pipelineProgress='Blocked: '+e.message+' · State preserved; check cost history before retrying.';
+  await pipelineLoad(id);toast(e.message);
+ }finally{state.pipelineBusy=false;pipelineRefresh(id);}
+}
+async function pipelineAll(){
+ const id=state.selected,run=state.pipelineRuns[id];
+ if(!run)return;
+ const count=(run.state?.selected_slots||[]).length,remaining=Math.max(0,count-(run.state?.materials?.length||0));
+ const message='Process remaining stages? Up to '+remaining+' image API calls plus content/Vision where incomplete. These are separately billed API requests, NOT ChatGPT subscription usage. The browser must stay open; each completed stage is saved. Continue?';
+ if(!confirm(message))return;
+ return pipelineNext({loop:true});
+}
+async function pipelineHistory(){
+ const id=state.selected;if(!id)return;
+ try{
+  const result=await cloudRequest('/api/tasks/'+id+'/pipeline/history');
+  const target=el('pipelineHistoryBox');if(!target)return;
+  target.innerHTML='<h4>Immutable stage snapshots</h4>'+((result.history||[]).slice(0,25).map(h=>
+  '<div class="pipeline-history-row"><span>'+escapeHtml(h.snapshot?.stage||'')+' · '+escapeHtml(h.snapshot?.status||'')+'</span><small>Revision '+escapeHtml(h.revision)+' · '+escapeHtml(h.created_at)+'</small></div>').join('')||'<p class="research-note">No history yet.</p>');
+ }catch(e){toast('Could not load version history: '+e.message);}
+}
+async function pipelineExport(){
+ const id=state.selected;if(!id||!state.auth)return;
+ try{
+  const response=await fileRequest('/api/tasks/'+id+'/pipeline/export');
+  const blob=await response.blob(),url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='uid-studio-'+id+'-pipeline.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch(e){toast(e.message);}
+}
+
 function hybridMarkup(id){
  const d=hybridValue(id),files=state.savedAttachments[id]||[],slots=Object.fromEntries((d.materials||[]).map(v=>[v.slot,v.file_id]));
  const evidence=(d.evidence||[]).map(e=>'<div class="hybrid-evidence"><a target="_blank" rel="noopener noreferrer" href="'+escapeHtml(e.url)+'">'+escapeHtml(e.title||e.url)+'</a><small>'+escapeHtml(e.status==='metadata_only'?'Metadata only — verify claims separately':'Unavailable / blocked')+'</small><p>'+escapeHtml(e.description||e.limitations||'')+'</p></div>').join('');
@@ -642,7 +806,7 @@ polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Lig
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 attachmentsPanel(fresh?null:t.id)+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
-(!fresh?executionSwitcher('task')+'<div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
+(!fresh?executionSwitcher('task')+'<div id="pipelinePanel">'+pipelineMarkup(t.id)+'</div><div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
 (!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy handoff + sync token','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">Hybrid Bridge supports ChatGPT handoff; API Auto requires server configuration and per-call approval. Image generation and automatic publishing are not enabled.</p>':'')+'</s-section>';}
@@ -840,7 +1004,7 @@ async function persist(){
    const route=existing?'/api/tasks/'+existing.id:'/api/tasks';
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
-   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);
+   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);pipelineLoad(item.id);
    const attachmentResult=await uploadPendingAttachments(item.id);
    if(attachmentResult.failed)toast(attachmentResult.uploaded+' saved, '+attachmentResult.failed+' upload(s) failed. Retry attach from task.');
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
@@ -883,7 +1047,7 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
