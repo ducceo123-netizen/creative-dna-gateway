@@ -208,6 +208,28 @@ createServer(async(req,res)=>{
       return json(res,200,{source:'uid-brands-gateway-preview',version:qc.schema_version,contract:qc});
     }catch{return json(res,502,{error:'Shared Onepage policy currently unavailable'});}
   }
+
+  if(req.method==='GET'&&path==='/api/onepage/template-source'){
+    // Exact versioned, publicly published UID Brands HTML/CSS; do not reconstruct or let callers supply templates.
+    const origin='https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/';
+    const items=[['manifest.json',500000],['template.html',2500000],['styles.css',1600000]];
+    try{
+      const values=await Promise.all(items.map(async([name,limit])=>{
+        const response=await fetch(origin+name,{redirect:'error',headers:{Accept:name.endsWith('json')?'application/json':'text/plain'},signal:AbortSignal.timeout(14000)});
+        if(!response.ok)throw Error('Canonical '+name+' unavailable ('+response.status+')');
+        if(Number(response.headers.get('content-length')||0)>limit)throw Error('Canonical '+name+' exceeds approved limit');
+        const body=await response.text();
+        if(body.length>limit)throw Error('Canonical '+name+' exceeds limit');
+        return body;
+      }));
+      const manifest=JSON.parse(values[0]),html=values[1],css=values[2];
+      if(!Array.isArray(manifest.asset_slots)||!Array.isArray(manifest.text_slots)||!html.includes('{{')||manifest.version!=='2026-10-11.v3')throw Error('Canonical template contract incompatible');
+      if(createHash('sha256').update(html).digest('hex')!==manifest.sha256?.html||
+        createHash('sha256').update(css).digest('hex')!==manifest.sha256?.css)throw Error('Canonical Onepage template hash mismatch');
+      return json(res,200,{version:manifest.version,html,css,asset_slots:manifest.asset_slots,text_slots:manifest.text_slots,
+        sha256:manifest.sha256,source:'UID Brands Gateway immutable template'});
+    }catch(e){return json(res,502,{error:'Canonical Onepage template unavailable: '+String(e.message).slice(0,170)});}
+  }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.3',aiConfigured:aiEnabled,taskAiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
 
   if(path==='/api/hybrid-sync'&&req.method==='POST'){
