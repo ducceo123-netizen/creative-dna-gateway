@@ -2,13 +2,17 @@
  * This evaluator checks a host-supplied, version-bound visual inspection report.
  * It does NOT view image pixels or authenticate the reviewer.
  */
-export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-11.v1";
+export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-11.v2";
 export const ONEPAGE_BANNER_QC_FLAGS = [
   "visible_solid_text_slab",
   "hard_rectangular_headline_background",
   "abrupt_horizontal_scene_split",
   "opaque_or_patchy_text_overlay",
   "unreadable_typography",
+  "artificially_flattened_copy_space",
+  "uniform_tonal_wash_behind_headline",
+  "texture_or_light_discontinuity",
+  "staged_empty_wall_for_typography",
 ] as const;
 type Flag = typeof ONEPAGE_BANNER_QC_FLAGS[number];
 export type BannerInspection = {
@@ -18,6 +22,11 @@ export type BannerInspection = {
   method: "full_resolution_image_view";
   evidence_note: string;
   findings: Record<Flag, boolean>;
+  scene_asset_id: string;
+  scene_sha256: string;
+  scene_method: "scene_first_no_typography";
+  scene_evidence_note: string;
+  final_composition_method: "independent_typography_layer";
 };
 export type BannerQcInput = {
   task_id: string;
@@ -27,7 +36,7 @@ export type BannerQcInput = {
 const id = (v: unknown) => typeof v === "string" && v.trim().length >= 1 && v.length <= 160;
 const hash = (v: unknown) => typeof v === "string" && /^sha256:[0-9a-f]{64}$/.test(v);
 const safeObj = (v: unknown): v is Record<string, any> => !!v && typeof v === "object" && !Array.isArray(v);
-export const ONEPAGE_BANNER_QC_DESCRIPTION = "Onepage banner typography background gate (desktop AND mobile). Supply genuine full-resolution inspection notes for each exact version-bound banner and explicit boolean findings for solid text slabs, rectangular headline backgrounds, abrupt horizontal splits, patchy overlays and poor contrast. A flagged or missing/invalid finding BLOCKS the asset-review/overall/packaging stage. The tool does not inspect pixels and cannot certify absence of an issue: a clean report requires independent host visual QA, which must not be claimed without inspection. Correct the source image and rerun on new asset hashes before delivery.";
+export const ONEPAGE_BANNER_QC_DESCRIPTION = "Onepage scene-first / typography-second banner gate (desktop AND mobile). For each viewport provide actual separate text-free scene asset/hash, scene evidence, final composition asset/hash and genuine full-resolution inspection of both. Typography must be a separate graphic layer, never rendered by image generation into the background. Explicitly check solid slabs, rectangular backdrops, abrupt scene splits, patchy overlays, unreadable text, falsely flattened negative space, tonal washes, texture/light discontinuities and staged walls. Missing stage evidence or any flagged issue BLOCKS banner, overall and packaging. This evaluator does NOT read image pixels; a clear report still requires independent host visual QA and may never claim automatic image verification.";
 export const ONEPAGE_BANNER_QC_INPUT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -37,11 +46,16 @@ export const ONEPAGE_BANNER_QC_INPUT_SCHEMA = {
     content_version: { type: "string", minLength: 1, maxLength: 160 },
     inspections: { type: "array", minItems: 2, maxItems: 2, items: {
       type: "object", additionalProperties: false,
-      required: ["viewport", "asset_id", "sha256", "method", "evidence_note", "findings"],
+      required: ["viewport", "asset_id", "sha256", "scene_asset_id", "scene_sha256", "scene_method", "scene_evidence_note", "final_composition_method", "method", "evidence_note", "findings"],
       properties: {
         viewport: { type: "string", enum: ["desktop", "mobile"] },
         asset_id: { type: "string", minLength: 1, maxLength: 160 },
         sha256: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" },
+        scene_asset_id: { type: "string", minLength: 1, maxLength: 160 },
+        scene_sha256: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" },
+        scene_method: { type: "string", enum: ["scene_first_no_typography"] },
+        scene_evidence_note: { type: "string", minLength: 40, maxLength: 2000 },
+        final_composition_method: { type: "string", enum: ["independent_typography_layer"] },
         method: { type: "string", enum: ["full_resolution_image_view"] },
         evidence_note: { type: "string", minLength: 40, maxLength: 2000 },
         findings: { type: "object", additionalProperties: false, required: [...ONEPAGE_BANNER_QC_FLAGS],
@@ -56,7 +70,7 @@ export function evaluateOnepageBannerQc(input: unknown) {
     schema_version: ONEPAGE_BANNER_QC_VERSION, status: "BLOCKED" as const,
     reasons: [...new Set(reasons)], can_release: false, pixel_inspected_by_server: false,
     applies_to: ["banner_asset_review", "overall_desktop_mobile", "packaging"],
-    next_action: "Inspect real source banners, correct defects, and submit a new exact task/version-bound report. Do not claim visual QC or deliver blocked banners.",
+    next_action: "Create a scene without baked-in typography, compose text as an independent layer, inspect both assets and both viewport composites, correct defects, then submit a new task/version-bound report. Do not claim visual QC or deliver blocked banners.",
   });
   if (!safeObj(input) || !id(input.task_id) || !id(input.content_version) || !Array.isArray(input.inspections) || input.inspections.length !== 2)
     return blocked(["MISSING_OR_INVALID_VERSION_BOUND_INSPECTIONS"]);
@@ -68,6 +82,12 @@ export function evaluateOnepageBannerQc(input: unknown) {
     if (!id(v.asset_id) || !hash(v.sha256) || v.method !== "full_resolution_image_view" ||
       typeof v.evidence_note !== "string" || v.evidence_note.trim().length < 40 || v.evidence_note.length > 2000)
       issues.push(`INSUFFICIENT_VISUAL_EVIDENCE:${v.viewport}`);
+    if (!id(v.scene_asset_id) || !hash(v.scene_sha256) || v.scene_method !== "scene_first_no_typography" ||
+      v.final_composition_method !== "independent_typography_layer" ||
+      typeof v.scene_evidence_note !== "string" || v.scene_evidence_note.trim().length < 40 || v.scene_evidence_note.length > 2000)
+      issues.push(`MISSING_SCENE_FIRST_EVIDENCE:${v.viewport}`);
+    if (v.scene_asset_id === v.asset_id || v.scene_sha256 === v.sha256)
+      issues.push(`SCENE_AND_COMPOSITE_MUST_BE_DISTINCT:${v.viewport}`);
     if (!safeObj(v.findings) || Object.keys(v.findings).length !== ONEPAGE_BANNER_QC_FLAGS.length ||
       ONEPAGE_BANNER_QC_FLAGS.some(k => typeof v.findings[k] !== "boolean"))
       issues.push(`INCOMPLETE_FINDINGS:${v.viewport}`);
@@ -82,7 +102,7 @@ export function evaluateOnepageBannerQc(input: unknown) {
     pixel_inspected_by_server: false,
     task_id: input.task_id,
     content_version: input.content_version,
-    reviewed_assets: input.inspections.map((v: BannerInspection) => ({ viewport: v.viewport, asset_id: v.asset_id, sha256: v.sha256 })),
+    reviewed_assets: input.inspections.map((v: BannerInspection) => ({ viewport: v.viewport, asset_id: v.asset_id, sha256: v.sha256, scene_asset_id: v.scene_asset_id, scene_sha256: v.scene_sha256 })),
     applies_to: ["banner_asset_review", "overall_desktop_mobile", "packaging"],
     next_action: "Host must independently verify actual image pixels and desktop/mobile overall before release. Do not claim automatic QC PASS from this report.",
   };
