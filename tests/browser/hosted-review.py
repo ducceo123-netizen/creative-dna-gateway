@@ -27,7 +27,11 @@ try:
             else:
                 page.locator('[data-review-id]').first.click(force=True)
             page.locator(prefix+'#feedback').fill('Desktop test feedback')
-            page.locator(prefix+'#add').click()
+            quick=page.locator(prefix+'#quick-add')
+    if quick.is_visible():
+        quick.click()
+    else:
+        page.locator(prefix+'#add').click()
             page.set_viewport_size({'width':390,'height':844})
             if kind!='ldp':page.locator(prefix+'#inventory').select_option('image:banner_mobile')
             else:page.locator('[data-review-id]').first.click(force=True)
