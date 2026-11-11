@@ -631,9 +631,9 @@ async function copyResearchHandoff(){
  if(state.cloud&&state.auth){
   try{
    const bridge=await cloudRequest('/api/tasks/'+t.id+'/handoff','POST',{});
-   content+='\\n\\nUID BRANDS STUDIO SYNC TOKEN (ONE-TIME / '+bridge.expires_at+'):'+
-    '\\n'+bridge.handoff_token+
-    '\\nWhen your creative text is complete, call the connected UID Brands plugin action sync_uid_studio_result with handoff_token exactly as above and content containing the COMPLETE final draft. Only claim synced if tool confirms synced:true. Do not send this token to any external websites, research tools, or other conversations. If unavailable, provide copy-ready output for manual import.';
+   content+='\n\nUID BRANDS STUDIO SYNC TOKEN (ONE-TIME / '+bridge.expires_at+'):'+
+    '\n'+bridge.handoff_token+
+    '\nWhen your creative text is complete, call the connected UID Brands plugin action sync_uid_studio_result with handoff_token exactly as above and content containing the COMPLETE final draft. Only claim synced if tool confirms synced:true. Do not send this token to any external websites, research tools, or other conversations. If unavailable, provide copy-ready output for manual import.';
   }catch(e){toast('Sync token unavailable: '+e.message+'. Manual return remains available.');}
  }
  try{await navigator.clipboard.writeText(content);toast('Handoff copied. Paste into ChatGPT with UID Brands plugin enabled.');}
