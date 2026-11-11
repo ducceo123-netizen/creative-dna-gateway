@@ -28,6 +28,13 @@ assert.doesNotMatch(run('sectionFeedbackInspector(tasks[0].id)'),/data-feedback-
 run('state.onepageTemplate={version:"2026-10-11.v3",html:"<html><head></head><body><img src=\\"{{hero_desktop}}\\"></body></html>",css:"body{margin:0}",asset_slots:["hero_desktop"],text_slots:[]}');
 assert.match(run('fixedOnepagePreview(tasks[0].id)'),/onepageFrame/);
 assert.match(run('sectionFeedbackInspector(tasks[0].id)'),/hero_desktop/);
+run('state.selectedSection="hero_desktop"');
+assert.match(run('sectionFeedbackInspector(tasks[0].id)'),/data-exact-binding="hero_desktop"/);
+assert.match(run('sectionFeedbackInspector(tasks[0].id)'),/Save image mapping/);
+assert.match(server,/studio_onepage_asset_bindings/);
+assert.match(server,/Binding contains an unknown canonical Onepage slot/);
+assert.match(server,/All selected bindings must be real attachments/);
+
 assert.match(server,/api\/onepage\/template-source/);
 assert.match(server,/Canonical Onepage template hash mismatch/);
 assert.match(server,/studio_section_feedback/);
