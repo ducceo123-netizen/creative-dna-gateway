@@ -368,7 +368,7 @@ createServer(async(req,res)=>{
         return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
       }
 
-      const pipelineMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/pipeline(?:\/(start|next|export|history))?$/);
+      const pipelineMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/pipeline(?:\/(start|next|export|history|preview))?$/);
       if(pipelineMatch){
         const taskId=pipelineMatch[1],action=pipelineMatch[2]||'current';
         const ownerResult=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id,brand,workflow,source_url,title,brief,revision&limit=1',{token});
@@ -415,6 +415,29 @@ createServer(async(req,res)=>{
             'Content-Disposition':'attachment; filename="uid-studio-'+taskId+'-pipeline.json"',
             'Content-Length':data.length,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
           return res.end(data);
+        }
+
+        if(action==='preview'&&req.method==='POST'){
+          if(!writable)return json(res,403,{error:'Read-only member'});
+          if(stageLocks.has(taskId))return json(res,409,{error:'Cannot upload preview while a stage is executing'});
+          const run=await getPipeline();
+          if(!run||run.stage!=='vision_qa')return json(res,409,{error:'Preview capture is only available at Vision QA stage'});
+          const view=new URL(req.url,'http://localhost').searchParams.get('view');
+          if(!['desktop','mobile'].includes(view))return json(res,422,{error:'Expected desktop or mobile preview'});
+          if(req.headers['content-type']?.split(';')[0]!=='image/jpeg')return json(res,415,{error:'JPEG preview required'});
+          const bytes=await readAttachment(req);
+          if(!bytes||bytes.length<1000||!fileSignatureOK(bytes,'jpg'))return json(res,422,{error:'Invalid or oversized JPEG preview'});
+          stageLocks.add(taskId);
+          try{
+            const id=randomUUID()+'--overall-'+view+'.jpg';
+            const path=attachmentFolder(team.id,taskId)+id;
+            const result=await storageCall('object/'+ATTACH_BUCKET+'/'+path,{method:'POST',token,body:bytes,mime:'image/jpeg'});
+            if(!result.ok)throw Error('Could not persist structural screenshot');
+            const state={...run.state,overalls:{...(run.state?.overalls||{}),[view]:id}};
+            const updated=recordStage(run,{stage:run.stage,state,detail:'Structural '+view+' composite screenshot saved for Vision QA'});
+            const saved=await savePipeline(updated,run);
+            return json(res,201,{...saved,view,note:'A composited layout preview, NOT a rendered live storefront'});
+          }finally{stageLocks.delete(taskId);}
         }
         if(action==='start'&&req.method==='POST'){
           if(!writable)return json(res,403,{error:'Read-only user'});
@@ -511,9 +534,18 @@ createServer(async(req,res)=>{
               }
             }else if(prior.stage==='vision_qa'){
               if(!taskAiEnabled)throw Error('API executor not configured. No paid call attempted');
-              const visual=state.materials?.slice(0,4)||[];
+              const visual=state.materials?.slice(0,2)||[];
               if(!visual.length)throw Error('No generated image assets for Vision QA');
+              if(!state.overalls?.desktop||!state.overalls?.mobile)throw Error('Both structural desktop and mobile screenshots must be captured before Vision QA');
               const images=[];
+              for(const view of ['desktop','mobile']){
+                const id=state.overalls[view];
+                const response=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(id),{method:'GET',token});
+                if(!response.ok)throw Error('Cannot access '+view+' overall preview');
+                const bytes=Buffer.from(await response.arrayBuffer());
+                if(bytes.length>6*1024*1024)throw Error(view+' preview exceeds 6MB');
+                images.push({slot:'overall_'+view,mime:'image/jpeg',bytes});
+              }
               for(const item of visual){
                 const response=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(item.file_id),{method:'GET',token});
                 if(!response.ok)throw Error('Cannot access generated material for QA');
@@ -526,7 +558,7 @@ createServer(async(req,res)=>{
               state.usage=[...(state.usage||[]),{stage:'vision_qa',model:report.model,usage:report.usage}].slice(-20);
               // Never automatically mark human QC gates complete.
               next=nextPipelineStage(prior.stage);
-              detail='AI inspected '+images.length+' individual images, with unverified overall checks requiring human review';
+              detail='AI inspected structural desktop/mobile composites and '+visual.length+' source images; live storefront and product fidelity still require human review';
             }else if(prior.stage==='export'){
               state.export={ready:true,generated_at:new Date().toISOString(),
                 type:'application/json',note:'Export draft includes creative content and private asset IDs; it is NOT a public image ZIP or approved storefront render'};
