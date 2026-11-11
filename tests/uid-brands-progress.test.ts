@@ -42,7 +42,7 @@ test("all discovered and registered tools share supported bounded labels and pre
     assert.match(initialized.instructions.slice(0, 512), /Research-before-output gates creative deliverables, not progress updates/);
     assert.equal(initialized.instructions.split(RESEARCH_GUIDANCE).length - 1, 1, "canonical research guidance appears exactly once");
     const { tools } = await rpc("tools/list", {});
-    assert.equal(tools.length, 11);
+    assert.equal(tools.length, 12, 'additive Studio sync tool is registered');
     assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).sort());
     for (const tool of tools) {
       const discovery = TOOL_DEFINITIONS.find(t => t.name === tool.name)!;
