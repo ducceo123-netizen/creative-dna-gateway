@@ -104,7 +104,8 @@ begin
  loop
   select * into q from uid_rule_v3_private.requests where owner_user_id=p_owner and not(id=any(seen))
    and (status in ('queued','blocked') or(status='leased' and lease_expires_at<=clock_timestamp()))
-   order by created_at,id limit 1 for update skip locked;
+   -- Fresh queued work precedes retries, including blocked work with snapshot drift.
+   order by case when status='queued' then 0 else 1 end,created_at,id limit 1 for update skip locked;
   exit when not found;
   seen:=array_append(seen,q.id);
   if q.expires_at<=clock_timestamp() then
