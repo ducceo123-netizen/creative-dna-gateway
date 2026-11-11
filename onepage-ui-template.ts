@@ -1,5 +1,5 @@
 import {getOnepageReviewContract} from './uid-onepage-html-preview.ts';
-import { ONEPAGE_PRODUCTION_QC } from './supabase/functions/_shared/onepage-production-qc.ts';
+import { ONEPAGE_PRODUCTION_QC, ONEPAGE_PRODUCTION_QC_GUIDANCE } from './supabase/functions/_shared/onepage-production-qc.ts';
 import {RULE_COMPILER,RULE_REVIEW_SCOPE} from './supabase/functions/_shared/agent-rule-policy.ts';
 import {ruleSupplementValid} from './supabase/functions/_shared/agent-rule-quality.ts';
 import { createHash } from 'node:crypto';
@@ -46,7 +46,7 @@ export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://uid-brands-gateway-preview.onrender.com';
 const LEGACY_TEMPLATE_ORIGIN = 'https://creative-dna-gateway.vercel.app';
 export const ONEPAGE_BINDINGS_SCHEMA = { type: 'object', additionalProperties: false, required: ['text', 'assets'], properties: { text: { type: 'object', additionalProperties: { type: 'string' } }, assets: { type: 'object', additionalProperties: { type: 'string' } }, faq_count: { type: 'integer', minimum: 1, maximum: 100 } } };
-export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.';
+export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.' + ' ' + ONEPAGE_PRODUCTION_QC_GUIDANCE;
 
 export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format: 'manifest' | 'source' = 'manifest') {
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
