@@ -22,3 +22,5 @@ jobs:
       - run: node studio/tests/workflows.mjs
 
       - run: node studio/tests/research.mjs
+
+      - run: node studio/tests/attachments.mjs
