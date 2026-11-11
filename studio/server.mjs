@@ -23,12 +23,21 @@ async function sb(path,{method='GET',token,body,prefer}={}){
   const result=await upstream.json().catch(()=>null);
   return {status:upstream.status,ok:upstream.ok,data:result};
 }
+const companyEmail = email=>typeof email==='string' && /^[a-z0-9._%+-]+@happyuid[.]com$/i.test(email.trim());
+async function companySignupSettings(){
+ const response=await fetch(supabaseUrl+'/auth/v1/settings',{headers:{apikey:supabaseKey,'Accept':'application/json'},signal:AbortSignal.timeout(8500),redirect:'error'});
+ if(!response.ok)throw Error('Auth configuration unavailable');
+ const settings=await response.json();
+ // Fail closed unless email ownership is verified by Supabase prior to role grant.
+ return settings?.mailer_autoconfirm===false && settings?.disable_signup===false && settings?.external?.email===true;
+}
 async function member(token){
   const user=await sb('/auth/v1/user',{token});
   if(!user.ok||!user.data?.id)return null;
-  const query='?select=role,is_active&user_id=eq.'+encodeURIComponent(user.data.id)+'&is_active=eq.true&limit=1';
+  const query='?select=role,is_active,auto_provisioned&user_id=eq.'+encodeURIComponent(user.data.id)+'&is_active=eq.true&limit=1';
   const role=await sb('/rest/v1/creative_dna_team_members'+query,{token});
   if(!role.ok||!Array.isArray(role.data)||!role.data.length)return null;
+  if(role.data[0].auto_provisioned && (!companyEmail(user.data.email)||!user.data.email_confirmed_at))return null;
   return {id:user.data.id,email:user.data.email,role:role.data[0].role};
 }
 function authorized(req){const header=req.headers.authorization||'';return /^Bearer [^\s]+$/.test(header)?header.slice(7):null;}
@@ -161,6 +170,21 @@ createServer(async(req,res)=>{
   if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud auth is not configured'});
     try {
+      if(path==='/api/auth/signup'&&req.method==='POST'){
+        const data=await readBody(req);
+        if(!companyEmail(data?.email)||typeof data?.password!=='string'||data.password.length<12||data.password.length>200)
+          return json(res,422,{error:'Use a @happyuid.com email and a password of at least 12 characters'});
+        let enabled=false;
+        try{enabled=await companySignupSettings();}catch{}
+        if(!enabled)return json(res,503,{error:'Company signup is unavailable until Supabase email confirmation is enabled and verified'});
+        const signup=await sb('/auth/v1/signup',{method:'POST',body:{email:data.email.trim().toLowerCase(),password:data.password}});
+        if(!signup.ok){
+          // No account enumeration. Keep signup/confirm messaging generic.
+          if(signup.status===429)return json(res,429,{error:'Too many requests. Try again later.'});
+          return json(res,422,{error:'Signup could not be completed. Check password policy or contact your administrator.'});
+        }
+        return json(res,202,{message:'If registration is available, please check your @happyuid.com inbox for a confirmation email, then sign in.',requiresConfirmation:true});
+      }
       if(path==='/api/auth/login'&&req.method==='POST'){
         const data=await readBody(req);
         if(typeof data?.email!=='string'||typeof data?.password!=='string'||data.email.length>254||data.password.length>200)return json(res,400,{error:'Valid email and password required'});
