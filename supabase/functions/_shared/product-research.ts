@@ -1,5 +1,5 @@
 import { ONEPAGE_CONTENT_PLAN_CONTRACT, evaluateOnepageContentPlan } from './onepage-content-plan.ts';
-import { ONEPAGE_PRODUCTION_QC, ONEPAGE_PRODUCTION_QC_GUIDANCE } from './onepage-production-qc.ts';
+import { ONEPAGE_PRODUCTION_QC_GUIDANCE } from './onepage-production-qc.ts';
 import { AUDIO_SCOPE_CONTRACT, evaluateAudioScope, isPinnedAudioPresent, audioScopeContract } from './onepage-audio-scope.ts';
 import { INSIGHT_VALUE_CONTRACT, evaluateInsightValue } from './onepage-insight-value.ts';
 import { REDDIT_CONTRACT, REDDIT_GUIDANCE, evaluateRedditResearch } from './reddit-research.ts';
