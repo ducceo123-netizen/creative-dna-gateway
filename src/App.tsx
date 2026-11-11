@@ -1,5 +1,5 @@
 import { boundedFetch } from "./request-recovery";
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Copy,
@@ -128,6 +128,8 @@ const TASK_PROMPT_FIELDS: Record<string,PromptField[]> = {
     { label:"Angle mix", required:false, placeholder:"POV / human with product / product-only..." },
   ],
 };
+
+const PolarisBadge: any = "s-badge";
 
 type ActivePage = "home" | "privacy" | "terms" | "support" | "admin-feedback" | "feedback-upload";
 
@@ -337,7 +339,7 @@ export default function App() {
             <p>Shared Brand DNA, materials and governance</p>
           </div>
           <div className="uid-gateway-topbar-actions">
-            {createElement("s-badge", {tone:"info"}, "Canonical source")}
+            <PolarisBadge tone="info">Canonical source</PolarisBadge>
             <a className="uid-gateway-topbar-link" href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer">Studio <ArrowUpRight size={15}/></a>
           </div>
         </header>
