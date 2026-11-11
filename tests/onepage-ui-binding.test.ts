@@ -54,11 +54,13 @@ test('unmapped copy, missing slots, HTML/CSS input, fixed UI and bad asset refer
   const f=fixture(); f.bindings.text=JSON.parse('{"__proto__":"malicious"}'); assert.throws(()=>bindOnepageUiTemplate(f.version,f.bindings));
 });
 
-test('FAQ repeats only source rows with unique IDs and all answers expanded; other sections remain byte exact', () => {
+test('FAQ repeats native details rows without any checkbox and keeps all answers expanded; other sections remain byte exact', () => {
   const f=fixture(3); const r=bindOnepageUiTemplate(f.version,f.bindings);
   assert.equal((r.html.match(/data-faq-item=/g)||[]).length,3);
-  assert.equal((r.html.match(/checked aria-label="Toggle FAQ answer"/g)||[]).length,3);
-  for(const n of ['01','02','03']) {assert.ok(r.html.includes(`id="uid-faq-${n}"`));assert.ok(r.html.includes(`for="uid-faq-${n}"`));assert.ok(r.html.includes(`data-text-slot="faq_answer_${n}"`));}
+  assert.equal((r.html.match(/<details class="uid-faq-entry" open>/g)||[]).length,3);
+  assert.equal((r.html.match(/<summary class="uid-faqs-question">/g)||[]).length,3);
+  assert.doesNotMatch(r.html, /<input\\b|type="checkbox"|<label\\b/i);
+  for(const n of ['01','02','03']) {assert.ok(r.html.includes(`data-text-slot="faq_question_${n}"`));assert.ok(r.html.includes(`data-text-slot="faq_answer_${n}"`));}
   assert.doesNotMatch(r.html,/data-asset-slot="gtk_|uid-product-good-to-know|\{\{/);
   const marker='<div class="uid-product-content-faqs"';
   const values={...f.bindings.assets,...f.bindings.text};
