@@ -6,7 +6,7 @@ function sourceFor(brand,raw){
  if(!host)throw Error('Unsupported brand');
  const input=String(raw||'').trim();
  let url;
- if(/^https:\/\//i.test(input)){url=new URL(input);}
+ if(/^https:\/\//i.test(input)){if(/(?:\/|%2f)(?:\.{1,2}|%2e(?:%2e)?)(?:\/|%2f)/i.test(input))throw Error('Path traversal is not permitted');url=new URL(input);}
  else if(input.includes('://'))throw Error('HTTPS source required');
  else if(input.length>=2&&input.length<150&&/^[\p{L}\p{N}\s-]+$/u.test(input)){
   const slug=input.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
