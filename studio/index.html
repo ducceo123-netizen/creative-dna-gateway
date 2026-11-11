@@ -348,6 +348,7 @@ function refreshAttachmentTray(){
  tray.innerHTML=pendingAttachmentMarkup()+(taskId?savedAttachmentMarkup(taskId):'');
 }
 function addAttachments(files){
+ if(!state.cloud||!state.auth){toast('Attachments require UID Brands cloud sign-in.');return;}
  const existing=state.pendingFiles.length+(state.selected?(state.savedAttachments[state.selected]||[]).length:0);
  const candidates=Array.from(files||[]);
  let added=0,refused=[];
@@ -647,10 +648,10 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('paste',e=>{
  const target=e.target;
- if(target?.id!=='composerBrief'&&target?.id!=='brief')return;
+ if(target?.id!=='composerBrief'&&target?.id!=='brief'&&!target?.closest?.('[data-attach-dropzone]'))return;
  const items=Array.from(e.clipboardData?.items||[]);
  const images=items.filter(x=>x.kind==='file'&&String(x.type).startsWith('image/')).map(x=>x.getAsFile()).filter(Boolean);
- if(images.length){e.preventDefault();addAttachments(images.map((f,i)=>new File([f],f.name&&f.name!=='image.png'?f.name:'clipboard-'+Date.now()+'-'+i+'.png',{type:f.type}))); }
+ if(images.length){e.preventDefault();addAttachments(images.map((f,i)=>new File([f],f.name&&f.name!=='image.png'?f.name:'clipboard-'+Date.now()+'-'+i+'.'+({ 'image/webp':'webp','image/jpeg':'jpg','image/gif':'gif' }[f.type]||'png'),{type:f.type}))); }
 });
 document.addEventListener('dragover',e=>{const zone=e.target.closest?.('[data-attach-dropzone]');if(zone){e.preventDefault();zone.classList.add('is-dragging');}});
 document.addEventListener('dragleave',e=>{const zone=e.target.closest?.('[data-attach-dropzone]');if(zone)zone.classList.remove('is-dragging');});
