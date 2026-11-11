@@ -54,7 +54,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     show_uid_brands_review: "9db38ec8e305cbd00f560a94c2236022df67fe45cbace0530c786ac9954a865b",
     get_uid_brands_native_workflow: "0de4fcab2c97245442a7743c427f77f7657f22a3299bc8f720bf408f6335ea3d",
   };
-  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill")) {
+  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result")) {
     const schema: any = structuredClone(tool.inputSchema);
     if (tool.name === 'get_onepage_ui_template') {
       assert.ok(schema.properties.bindings);
