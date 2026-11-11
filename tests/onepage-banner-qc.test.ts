@@ -9,6 +9,10 @@ import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 const checksum = "sha256:" + "a".repeat(64);
 const review = (viewport: "desktop" | "mobile") => ({
   viewport, asset_id: "banner-" + viewport, sha256: checksum,
+  scene_asset_id: "scene-" + viewport, scene_sha256: "sha256:" + "b".repeat(64),
+  scene_method: "scene_first_no_typography" as const,
+  scene_evidence_note: "Inspected actual text-free scene: authentic wall texture and natural window light falloff continue through the copy-space, without fake darkness.",
+  final_composition_method: "independent_typography_layer" as const,
   method: "full_resolution_image_view" as const,
   evidence_note: "Full-resolution banner was viewed including headline edge, tree/scene transition and side windows; no seams observed.",
   findings: Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k=>[k,false])),
@@ -63,5 +67,20 @@ test("public gateway banner QC endpoint blocks flagged viewport and clean report
     assert.equal(clear.pixel_inspected_by_server,false);
   } finally {
     await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));
+  }
+});
+
+test("one-step type-baked banners fail without separate source scene", () => {
+  const v:any=input(); delete v.inspections[0].scene_asset_id;
+  assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
+  const reused:any=input();reused.inspections[1].scene_sha256=reused.inspections[1].sha256;
+  assert.ok(evaluateOnepageBannerQc(reused).reasons.some(x=>x.includes("SCENE_AND_COMPOSITE_MUST_BE_DISTINCT")));
+  const onepass:any=input();onepass.inspections[0].final_composition_method="rendered_into_generated_image";
+  assert.ok(evaluateOnepageBannerQc(onepass).reasons.some(x=>x.includes("MISSING_SCENE_FIRST_EVIDENCE")));
+});
+test("copy-space flattening and fake wall texture are blocked even without a literal solid slab", () => {
+  for(const flag of ["artificially_flattened_copy_space","uniform_tonal_wash_behind_headline","texture_or_light_discontinuity","staged_empty_wall_for_typography"] as const) {
+    const v=input();v.inspections[0].findings[flag]=true;
+    assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   }
 });
