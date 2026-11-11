@@ -74,9 +74,13 @@ test("one-step type-baked banners fail without separate source scene", () => {
   const v:any=input(); delete v.inspections[0].scene_asset_id;
   assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   const reused:any=input();reused.inspections[1].scene_sha256=reused.inspections[1].sha256;
-  assert.ok(evaluateOnepageBannerQc(reused).reasons.some(x=>x.includes("SCENE_AND_COMPOSITE_MUST_BE_DISTINCT")));
+  const reusedResult=evaluateOnepageBannerQc(reused);
+  assert.equal(reusedResult.status,"BLOCKED");
+  if(reusedResult.status==="BLOCKED") assert.ok(reusedResult.reasons.some((x:string)=>x.includes("SCENE_AND_COMPOSITE_MUST_BE_DISTINCT")));
   const onepass:any=input();onepass.inspections[0].final_composition_method="rendered_into_generated_image";
-  assert.ok(evaluateOnepageBannerQc(onepass).reasons.some(x=>x.includes("MISSING_SCENE_FIRST_EVIDENCE")));
+  const onepassResult=evaluateOnepageBannerQc(onepass);
+  assert.equal(onepassResult.status,"BLOCKED");
+  if(onepassResult.status==="BLOCKED") assert.ok(onepassResult.reasons.some((x:string)=>x.includes("MISSING_SCENE_FIRST_EVIDENCE")));
 });
 test("copy-space flattening and fake wall texture are blocked even without a literal solid slab", () => {
   for(const flag of ["artificially_flattened_copy_space","uniform_tonal_wash_behind_headline","texture_or_light_discontinuity","staged_empty_wall_for_typography"] as const) {
