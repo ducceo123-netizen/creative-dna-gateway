@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { scanPublicSource } from './research.mjs';
 import {inspectPublicEvidence,cleanDeliverable,qaSummary} from './hybrid.mjs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -13,6 +13,13 @@ function json(res, status, value) { res.writeHead(status, {'Content-Type':'appli
 function readBody(req) { return new Promise((resolve,reject)=>{let text='';req.on('data',c=>{text+=c;if(text.length>maxBody){reject(new Error('body_too_large'));req.destroy();}});req.on('end',()=>{try{resolve(JSON.parse(text));}catch{reject(new Error('invalid_json'));}});req.on('error',reject);}); }
 const aiEnabled = Boolean(process.env.OPENAI_API_KEY && process.env.STUDIO_ACCESS_TOKEN);
 const taskAiEnabled = process.env.STUDIO_AI_EXECUTOR_ENABLED==='true' && Boolean(process.env.OPENAI_API_KEY);
+const handoffTokens=new Map(); // ephemeral one-time capability: only a task owner can issue it
+const handoffHash=token=>createHash('sha256').update(token).digest('hex');
+function clearExpiredHandoffs(){
+ const now=Date.now();
+ for(const [key,item] of handoffTokens)if(item.expires<now)handoffTokens.delete(key);
+}
+
 const supabaseUrl=(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY||'';
 const cloudEnabled=Boolean(supabaseUrl&&supabaseKey);
@@ -169,6 +176,37 @@ createServer(async(req,res)=>{
     }catch{return json(res,502,{error:'Shared Onepage policy currently unavailable'});}
   }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.3',aiConfigured:aiEnabled,taskAiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
+
+  if(path==='/api/hybrid-sync'&&req.method==='POST'){
+    if(!cloudEnabled)return json(res,503,{error:'Cloud sync unavailable'});
+    try{
+      const input=await readBody(req);
+      const handoff=String(input?.handoff_token||'');
+      const content=String(input?.content||'').trim();
+      if(!/^[A-Za-z0-9_-]{43}$/.test(handoff)||content.length<12||content.length>50000)return json(res,422,{error:'Valid handoff token and bounded content required'});
+      clearExpiredHandoffs();
+      const key=handoffHash(handoff),cap=handoffTokens.get(key);
+      if(!cap||cap.busy||cap.expires<Date.now())return json(res,403,{error:'Handoff expired, already used, or invalid. Generate a fresh handoff in Studio.'});
+      cap.busy=true;
+      try{
+        const owner=await member(cap.token);
+        if(!owner||owner.id!==cap.owner||!['admin','contributor'].includes(owner.role))throw Error('Owner session no longer authorized');
+        const tr=await sb('/rest/v1/studio_tasks?id=eq.'+cap.task+'&select=id,owner_id&limit=1',{token:cap.token});
+        if(!tr.ok||tr.data?.[0]?.owner_id!==cap.owner)throw Error('Task is unavailable');
+        const prior=await sb('/rest/v1/studio_deliverables?task_id=eq.'+cap.task+'&select=materials,evidence&limit=1',{token:cap.token});
+        if(!prior.ok)throw Error('Could not retrieve existing work');
+        const previous=prior.data?.[0]||{};
+        const result=await sb('/rest/v1/studio_deliverables?on_conflict=task_id',{
+          method:'POST',token:cap.token,prefer:'resolution=merge-duplicates,return=representation',
+          body:{task_id:cap.task,owner_id:cap.owner,source:'manual_chatgpt',content,
+            materials:previous.materials||[],evidence:previous.evidence||[],qa:{},updated_at:new Date().toISOString()}
+        });
+        if(!result.ok)throw Error('Sync database operation failed');
+        handoffTokens.delete(key);
+        return json(res,200,{synced:true,task_id:cap.task,updated_at:result.data?.[0]?.updated_at||new Date().toISOString(),status:'review_required',note:'Text received; verify materials and QA in Studio. No publishing.'});
+      }catch(e){cap.busy=false;return json(res,409,{error:String(e.message||'Sync could not be confirmed').slice(0,180)});}
+    }catch(e){return failure(res,e?.message||'Invalid handoff');}
+  }
   if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud auth is not configured'});
     try {
@@ -275,6 +313,23 @@ createServer(async(req,res)=>{
         return json(res,405,{error:'Unsupported attachment operation'});
       }
 
+
+      const handoffMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/handoff$/);
+      if(handoffMatch&&req.method==='POST'){
+        if(!writable)return json(res,403,{error:'Read-only member'});
+        const taskId=handoffMatch[1];
+        const tr=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id&limit=1',{token});
+        if(!tr.ok)return json(res,502,{error:'Could not verify task'});
+        if(tr.data?.[0]?.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        clearExpiredHandoffs();
+        if(handoffTokens.size>=150)return json(res,429,{error:'Handoff capacity reached; retry later'});
+        let existing=0;for(const cap of handoffTokens.values())if(cap.owner===team.id)existing++;
+        if(existing>=8)return json(res,429,{error:'Too many active handoffs. Let existing links expire.'});
+        const handoff_token=randomBytes(32).toString('base64url');
+        const expires=Date.now()+45*60*1000;
+        handoffTokens.set(handoffHash(handoff_token),{task:taskId,owner:team.id,token,expires,busy:false});
+        return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
+      }
       const hybridMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/(deliverable|external-evidence|execute)$/);
       if(hybridMatch){
         const taskId=hybridMatch[1],action=hybridMatch[2];
