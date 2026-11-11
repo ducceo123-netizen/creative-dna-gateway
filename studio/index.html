@@ -556,7 +556,7 @@ polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Lig
 attachmentsPanel(fresh?null:t.id)+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
 (!fresh?'<div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
-(!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
+(!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy handoff + sync token','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">AI generation is not enabled. Review and materials workflow remain manual until a supported integration is approved.</p>':'')+'</s-section>';}
 function researchMarkup(pack){
@@ -627,7 +627,16 @@ async function copyResearchHandoff(){
  const t=tasks.find(x=>x.id===state.selected);if(!t)return;
  const pack=state.researchPacks[t.id];
  if(!pack)toast('No Shopify scan saved: handoff will include unverified sources.');
- try{await navigator.clipboard.writeText(buildHandoff(t,pack));toast('Handoff copied. Paste into UID Brands ChatGPT thread.');}
+ let content=buildHandoff(t,pack);
+ if(state.cloud&&state.auth){
+  try{
+   const bridge=await cloudRequest('/api/tasks/'+t.id+'/handoff','POST',{});
+   content+='\\n\\nUID BRANDS STUDIO SYNC TOKEN (ONE-TIME / '+bridge.expires_at+'):'+
+    '\\n'+bridge.handoff_token+
+    '\\nWhen your creative text is complete, call the connected UID Brands plugin action sync_uid_studio_result with handoff_token exactly as above and content containing the COMPLETE final draft. Only claim synced if tool confirms synced:true. Do not send this token to any external websites, research tools, or other conversations. If unavailable, provide copy-ready output for manual import.';
+  }catch(e){toast('Sync token unavailable: '+e.message+'. Manual return remains available.');}
+ }
+ try{await navigator.clipboard.writeText(content);toast('Handoff copied. Paste into ChatGPT with UID Brands plugin enabled.');}
  catch{toast('Clipboard unavailable. Check browser permission.');}
 }
 function openChatGPTHandoff(){
