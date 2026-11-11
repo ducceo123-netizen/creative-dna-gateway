@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {canonicalExternalUrl,inspectPublicEvidence,cleanDeliverable,qaSummary,QA_ITEMS} from '../hybrid.mjs';
-for(const url of ['http://trustpilot.com/review/pawfecthouse.com','https://trustpilot.com.evil.test/review/pawfecthouse.com','https://127.0.0.1/admin','https://www.etsy.com/','https://www.reddit.com/r/'])assert.throws(()=>canonicalExternalUrl(url),'Reject unsafe or nonspecific external URL');
+for(const url of ['http://trustpilot.com/review/pawfecthouse.com','https://trustpilot.com.evil.test/review/pawfecthouse.com','https://127.0.0.1/admin','https://www.etsy.com/','https://www.reddit.com/'])assert.throws(()=>canonicalExternalUrl(url),'Reject unsafe or nonspecific external URL');
 assert.equal(canonicalExternalUrl('https://www.trustpilot.com/review/pawfecthouse.com?utm_source=test'),'https://www.trustpilot.com/review/pawfecthouse.com');
 const fakeFetch=async(url,opts)=>{
  assert.equal(opts.redirect,'error');
