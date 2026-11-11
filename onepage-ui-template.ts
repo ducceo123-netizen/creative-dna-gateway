@@ -56,21 +56,30 @@ const templates: Record<string, typeof originalTemplate> = {
   [faqTemplate.version]: faqTemplate,
 };
 export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
+/** Only archival source records retain the FAQ v1 checkbox prototype; never serve it as a mapping. */
+export const ONEPAGE_NO_CHECKBOX_POLICY = 'CURRENT_MAPPING_ZERO_CHECKBOX_INPUTS';
+export function assertNoCheckboxMapping(html: string) {
+  if (/<input\b[^>]*\btype\s*=\s*(?:["']checkbox["']|checkbox\b)|<input\b[^>]*\bclass\s*=\s*["'][^"']*product-tabs__radio|<label\b[^>]*\bfor\s*=\s*["']uid-faq-/i.test(html))
+    throw new Error('CHECKBOX_FORBIDDEN_IN_ONEPAGE_MAPPING');
+}
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://uid-brands-gateway-preview.onrender.com';
 const LEGACY_TEMPLATE_ORIGIN = 'https://creative-dna-gateway.vercel.app';
 export const ONEPAGE_BINDINGS_SCHEMA = { type: 'object', additionalProperties: false, required: ['text', 'assets'], properties: { text: { type: 'object', additionalProperties: { type: 'string' } }, assets: { type: 'object', additionalProperties: { type: 'string' } }, faq_count: { type: 'integer', minimum: 1, maximum: 100 } } };
 export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.' + ' ' + ONEPAGE_PRODUCTION_QC_GUIDANCE;
 
 export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format: 'manifest' | 'source' = 'manifest') {
+  if (version === ONEPAGE_FAQ_LEGACY_VERSION) throw new Error('RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2');
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) throw new Error('Unknown Onepage UI template version');
   if (format !== 'manifest' && format !== 'source') throw new Error('Invalid template format');
+  assertNoCheckboxMapping(template.html);
   const base = `${[qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
     live_html_feedback: getOnepageReviewContract(),
     post_story_section: [faqTemplate.version, legacyFaqTemplate.version].includes(version) ? 'faq' : 'gtk',
     variants: { gtk: qualityAlignedTemplate.version, faq: faqTemplate.version },
+    ui_mapping_policy: { checkboxes: 'FORBIDDEN_ALL_SECTIONS', retired_template: ONEPAGE_FAQ_LEGACY_VERSION, active_faq: faqTemplate.version, faq_control: 'native details/summary', gtk_control: 'static content', compliance: ONEPAGE_NO_CHECKBOX_POLICY },
     ...([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? {
       faq_binding: version === faqTemplate.version ? {
         ...faqSection.binding,
@@ -99,6 +108,7 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
 }
 
 export function getTemplateFile(version: string, file: string) {
+  if (version === ONEPAGE_FAQ_LEGACY_VERSION) return null; // Archived checkbox template is not served as production UI.
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) return null;
   if (file === 'template.html') return { type: 'text/html', body: template.html, hash: template.html_sha256 };
@@ -114,6 +124,7 @@ export type OnepageBindings = { text: Record<string, string>; assets: Record<str
  * The only repeated structure is the existing FAQ row prototype.
  */
 export function bindOnepageUiTemplate(version: string | undefined, bindings: OnepageBindings) {
+  if (version === ONEPAGE_FAQ_LEGACY_VERSION) throw new Error('RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2');
   const source = getOnepageUiTemplate(version, 'source') as ReturnType<typeof getOnepageUiTemplate> & { html: string; css: string };
   if (!bindings || typeof bindings !== 'object' || Array.isArray(bindings) || Object.keys(bindings).some(key => !['text', 'assets', 'faq_count'].includes(key))) throw new Error('INVALID_TEMPLATE_BINDINGS');
   const mode = source.post_story_section;
@@ -146,12 +157,14 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
       throw new Error('CHECKBOX_FORBIDDEN_IN_FAQ_MAPPING');
     }
   }
+  assertNoCheckboxMapping(html);
   const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const values = { ...assets, ...bindings.text };
   html = html.replace(/\{\{([a-z0-9_]+)\}\}/g, (_, slot) => {
     if (!Object.hasOwn(values, slot)) throw new Error('UNBOUND_TEMPLATE_SLOT');
     return escape(values[slot]);
   });
+  assertNoCheckboxMapping(html);
   return {
     status: 'BOUND_REQUIRES_VISUAL_QA', template_version: source.version,
     template_sha256: source.sha256, html, css: source.css,
