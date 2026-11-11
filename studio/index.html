@@ -161,6 +161,28 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .research-warning{font-size:11px;color:#8a6b43;margin-top:12px}
 .research-warning p{margin:6px 0}
 @media(max-width:700px){.research-products>div,.research-status{flex-direction:column}}
+
+.attachment-panel{margin:6px 0 0;padding:0;border-radius:12px;min-width:0}
+.attachment-panel.is-dragging{background:#f5faf6;outline:2px dashed #86ba9a;outline-offset:6px}
+.attachment-picker{display:none}
+.attachment-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 0 2px}
+.attach-button{border:1px solid #e4e4e4;background:#fafafa;color:#414141;font-size:11px;font-weight:640;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:7px}
+.attach-button:hover{background:#f0f0f0}
+.attach-button span{font-size:16px;line-height:1}
+.attach-hint{font-size:10px;color:#969696;line-height:1.5}
+.attachment-tray{display:flex;align-items:flex-start;flex-wrap:wrap;gap:8px}
+.attachment-tray:empty{display:none}
+.attachment-item{display:flex;align-items:center;min-width:0;max-width:260px;width:100%;padding:7px 8px;gap:8px;border:1px solid #e8e8e8;border-radius:10px;background:#fafafa}
+.attachment-item img{width:36px;height:36px;border-radius:6px;object-fit:cover;flex:none}
+.attachment-file-icon{width:36px;height:36px;border-radius:6px;background:#eaeaea;color:#777;display:grid;place-items:center;font-size:20px;flex:none}
+.attachment-info{display:flex;flex-direction:column;min-width:0;flex:1;gap:3px;text-align:left}
+.attachment-info strong{font-size:11px;font-weight:650;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.attachment-info small{font-size:10px;color:#888;white-space:nowrap}
+.attachment-remove,.attachment-download{display:grid;place-items:center;flex:none;width:23px;height:23px;border:0;border-radius:6px;background:transparent;color:#777;font-size:17px;line-height:1}
+.attachment-remove:hover,.attachment-download:hover{background:#eaeaea;color:#222}
+.welcome-hero .attachment-panel{margin:6px 0 0}
+.welcome-hero .attachment-toolbar{padding:4px 0 0}
+.welcome-hero .attachment-tray{padding-bottom:5px}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -187,7 +209,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',researchPacks:{},onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],savedAttachments:{},attachmentPreviews:{},researchPacks:{},onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -203,7 +225,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selected=id;state.page='tasks';render();loadTaskResearch(id);}
+function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];render();loadTaskResearch(id);loadTaskAttachments(id);}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -275,8 +297,9 @@ function parseTaskRequest(raw,selectedWorkflow=null){
 }
 function createFromComposer(){
  const input=el('composerBrief');
- const brief=String(input?input.value:state.composerDraft||'').trim();
- if(!brief){input?.focus();toast('Anh nhập brief hoặc PDP/collection link trước khi tạo task.');return;}
+ const textBrief=String(input?input.value:state.composerDraft||'').trim();
+ const brief=textBrief||(state.pendingFiles.length?'Reference files: '+state.pendingFiles.map(x=>x.file.name).join(', ').slice(0,900):'');
+ if(!brief){input?.focus();toast('Anh nhập brief hoặc attach file trước khi tạo task.');return;}
  state.composerDraft=brief;
  const intent=parseTaskRequest(brief,state.composerWorkflow);
  state.prefillBrief=intent.brief;
@@ -291,11 +314,136 @@ function createFromComposer(){
 function taskRow(t){return '<s-table-row data-select="'+escapeHtml(t.id)+'"><s-table-cell><strong>'+escapeHtml(t.title)+'</strong></s-table-cell><s-table-cell>'+escapeHtml(t.brand)+'</s-table-cell><s-table-cell>'+escapeHtml(t.workflow)+'</s-table-cell><s-table-cell>'+statusBadge(t.status)+'</s-table-cell><s-table-cell>'+new Date(t.updatedAt).toLocaleDateString('vi-VN')+'</s-table-cell></s-table-row>';}
 function taskTable(rows){return '<div class="polaris-task-table"><s-table><s-table-header-row><s-table-header listSlot="primary">Task</s-table-header><s-table-header>Brand</s-table-header><s-table-header>Workflow</s-table-header><s-table-header>Status</s-table-header><s-table-header>Updated</s-table-header></s-table-header-row><s-table-body>'+rows.map(taskRow).join('')+'</s-table-body></s-table></div>';}
 function stats(){return '<div class="stats">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([name,value])=>'<s-section class="polaris-stat" heading="'+name+'"><div class="polaris-stat-value">'+value+'</div><div class="polaris-stat-label">'+(state.cloud?'Cloud workspace':'Local workspace')+'</div></s-section>').join('')+'</div>';}
+
+const ATTACH_MIMES={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',pdf:'application/pdf',txt:'text/plain',md:'text/markdown',csv:'text/csv',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
+const ATTACH_LIMIT=8*1024*1024;
+function attachmentName(name){return String(name||'').replace(/[^a-zA-Z0-9._ -]/g,'_').replace(/^[ .]+/,'').slice(0,100);}
+function attachmentType(file){const ext=attachmentName(file.name).split('.').at(-1).toLowerCase();return ATTACH_MIMES[ext]||null;}
+function pendingAttachmentMarkup(){
+ return state.pendingFiles.map((entry,i)=>'<div class="attachment-item pending" data-attachment-item="'+i+'">'+(entry.url?'<img src="'+escapeHtml(entry.url)+'" alt="Attachment preview">':'<span class="attachment-file-icon">▤</span>')+
+ '<span class="attachment-info"><strong title="'+escapeHtml(entry.file.name)+'">'+escapeHtml(entry.file.name)+'</strong><small>'+Math.max(1,Math.ceil(entry.file.size/1024))+' KB · '+(entry.uploading?'Uploading…':'Ready to attach')+'</small></span>'+
+ '<button type="button" class="attachment-remove" data-remove-pending="'+i+'" aria-label="Remove '+escapeHtml(entry.file.name)+'">×</button></div>').join('');
+}
+function savedAttachmentMarkup(taskId){
+ const files=state.savedAttachments[taskId]||[];
+ return files.map(file=>{
+  const preview=state.attachmentPreviews[taskId+'|'+file.id];
+  return '<div class="attachment-item saved">'+(preview?'<img src="'+escapeHtml(preview)+'" alt="Saved attachment preview">':'<span class="attachment-file-icon">▤</span>')+
+  '<span class="attachment-info"><strong title="'+escapeHtml(file.name)+'">'+escapeHtml(file.name)+'</strong><small>'+Math.max(1,Math.ceil((file.size||0)/1024))+' KB · Saved to task</small></span>'+
+  '<button type="button" class="attachment-download" data-download-attachment="'+escapeHtml(file.id)+'" title="Download '+escapeHtml(file.name)+'">↓</button>'+
+  '<button type="button" class="attachment-remove" data-delete-attachment="'+escapeHtml(file.id)+'" title="Delete '+escapeHtml(file.name)+'">×</button></div>';
+ }).join('');
+}
+function attachmentsPanel(taskId=null){
+ const saved=taskId?savedAttachmentMarkup(taskId):'';
+ return '<div class="attachment-panel" data-attach-dropzone="true"><div id="attachmentTray" class="attachment-tray">'+pendingAttachmentMarkup()+saved+'</div>'+
+ '<div class="attachment-toolbar"><button type="button" class="attach-button" data-action="chooseAttachments"><span aria-hidden="true">＋</span> Attach image / file</button>'+
+ '<span class="attach-hint">Paste screenshot (⌘V / Ctrl+V) or drop files here · 8 files max · 8 MB each</span></div>'+
+ '<input type="file" id="attachmentPicker" class="attachment-picker" multiple accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md,.csv,.docx,.xlsx" aria-label="Attach images and files"></div>';
+}
+function refreshAttachmentTray(){
+ const tray=el('attachmentTray');
+ if(!tray)return;
+ const taskId=state.page==='tasks'?state.selected:null;
+ tray.innerHTML=pendingAttachmentMarkup()+(taskId?savedAttachmentMarkup(taskId):'');
+}
+function addAttachments(files){
+ const existing=state.pendingFiles.length+(state.selected?(state.savedAttachments[state.selected]||[]).length:0);
+ const candidates=Array.from(files||[]);
+ let added=0,refused=[];
+ for(const file of candidates){
+  if(existing+added>=8){refused.push('8-file limit');break;}
+  const type=attachmentType(file);
+  if(!type){refused.push(file.name+': unsupported type');continue;}
+  if(file.size>ATTACH_LIMIT||file.size<1){refused.push(file.name+': max 8 MB');continue;}
+  if(state.pendingFiles.some(x=>x.file.name===file.name&&x.file.size===file.size)){continue;}
+  // Use browser-provided File only; never store base64 in localStorage or task JSON.
+  state.pendingFiles.push({file,url:type.startsWith('image/')?URL.createObjectURL(file):null});
+  added++;
+ }
+ refreshAttachmentTray();
+ if(added)toast(added+' attachment(s) ready.');
+ if(refused.length)toast(refused.slice(0,2).join('; '));
+ if(state.page==='dashboard'&&!el('composerBrief')?.value.trim()&&state.pendingFiles.length)updateComposerPreview();
+}
+function removePendingAttachment(index){
+ const item=state.pendingFiles[index];if(!item)return;
+ if(item.url)URL.revokeObjectURL(item.url);
+ state.pendingFiles.splice(index,1);refreshAttachmentTray();
+}
+async function fileRequest(path,method='GET',file=null){
+ let headers=state.auth?{'Authorization':'Bearer '+state.auth.access_token}:{};
+ if(file)headers['Content-Type']=attachmentType(file);
+ let response=await fetch(path,{method,headers,body:file||undefined});
+ if(response.status===401&&state.auth?.refresh_token){
+  await cloudRequest('/api/auth/me');
+  headers.Authorization='Bearer '+state.auth.access_token;
+  response=await fetch(path,{method,headers,body:file||undefined});
+ }
+ if(!response.ok){
+  const result=await response.json().catch(()=>({}));
+  throw Error(result.error||'Attachment operation failed');
+ }
+ return response;
+}
+async function loadTaskAttachments(taskId){
+ if(!taskId||!state.cloud||!state.auth)return;
+ try{
+  const result=await cloudRequest('/api/tasks/'+taskId+'/attachments');
+  state.savedAttachments[taskId]=result.attachments||[];
+  if(state.selected===taskId)refreshAttachmentTray();
+  for(const file of state.savedAttachments[taskId].filter(x=>String(x.mime||'').startsWith('image/')).slice(0,8)){
+   const key=taskId+'|'+file.id;
+   if(state.attachmentPreviews[key])continue;
+   try {
+    const response=await fileRequest('/api/tasks/'+taskId+'/attachments/'+encodeURIComponent(file.id));
+    const data=await response.blob();
+    if(state.attachmentPreviews[key])URL.revokeObjectURL(state.attachmentPreviews[key]);
+    state.attachmentPreviews[key]=URL.createObjectURL(data);
+    if(state.selected===taskId)refreshAttachmentTray();
+   }catch{}
+  }
+ }catch(e){if(state.selected===taskId)toast('Could not load attachments: '+e.message);}
+}
+async function uploadPendingAttachments(taskId){
+ if(!state.pendingFiles.length)return {uploaded:0,failed:0};
+ let uploaded=0,failed=0;
+ for(const item of [...state.pendingFiles]){
+  try{
+   item.uploading=true;refreshAttachmentTray();
+   await fileRequest('/api/tasks/'+taskId+'/attachments?name='+encodeURIComponent(attachmentName(item.file.name)),'POST',item.file);
+   if(item.url)URL.revokeObjectURL(item.url);
+   state.pendingFiles.splice(state.pendingFiles.indexOf(item),1);
+   uploaded++;
+  }catch(e){failed++;item.uploading=false;toast(item.file.name+': '+e.message);}
+ }
+ await loadTaskAttachments(taskId);
+ return {uploaded,failed};
+}
+async function downloadAttachment(id){
+ const taskId=state.selected;if(!taskId)return;
+ const file=(state.savedAttachments[taskId]||[]).find(x=>x.id===id);if(!file)return;
+ try{
+  const response=await fileRequest('/api/tasks/'+taskId+'/attachments/'+encodeURIComponent(id));
+  const blob=await response.blob(),url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=file.name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch(e){toast(e.message);}
+}
+async function deleteAttachment(id){
+ const taskId=state.selected;if(!taskId||!confirm('Delete this attachment from the task?'))return;
+ try{
+  await fileRequest('/api/tasks/'+taskId+'/attachments/'+encodeURIComponent(id),'DELETE');
+  const key=taskId+'|'+id;if(state.attachmentPreviews[key])URL.revokeObjectURL(state.attachmentPreviews[key]);
+  delete state.attachmentPreviews[key];await loadTaskAttachments(taskId);toast('Attachment deleted.');
+ }catch(e){toast(e.message);}
+}
+
 function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
  const signed='';
  return '<div class="home-metrics">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([label,count])=>'<div class="home-metric"><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
- '<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
+ '<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div>'+attachmentsPanel()+'<div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
 function taskList(){
@@ -311,6 +459,7 @@ function taskEditor(t){const fresh=!t; t=t||{id:'',title:state.prefillTitle||'',
 polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Light Topper or https://...')+
 '<div class="row verify-row">'+button('Verify on store','lookup')+'<span class="slim">Optional · Only matching collections/products will be shown.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
+attachmentsPanel(fresh?null:t.id)+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
 (!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
@@ -473,10 +622,12 @@ async function persist(){
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
    state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);
+   const attachmentResult=await uploadPendingAttachments(item.id);
+   if(attachmentResult.failed)toast(attachmentResult.uploaded+' saved, '+attachmentResult.failed+' upload(s) failed. Retry attach from task.');
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
   }catch(e){toast(e.message);}finally{state.busy=false;}return;
  }
- let t=tasks.find(x=>x.id===state.selected);if(t)Object.assign(t,v,{updatedAt:Date.now()});else{t={...v,id:'UID-'+Date.now().toString(36).toUpperCase(),createdAt:Date.now(),updatedAt:Date.now()};tasks.unshift(t);}save();state.selected=t.id;state.page='tasks';render();toast('Task saved in this browser.');
+ let t=tasks.find(x=>x.id===state.selected);if(t)Object.assign(t,v,{updatedAt:Date.now()});else{t={...v,id:'UID-'+Date.now().toString(36).toUpperCase(),createdAt:Date.now(),updatedAt:Date.now()};tasks.unshift(t);}save();state.selected=t.id;state.page='tasks';render();toast(state.pendingFiles.length?'Task saved locally, but attachments require cloud sign-in.':'Task saved in this browser.');
 }
 async function showHistory(){
   const t=tasks.find(x=>x.id===state.selected),target=el('versions');
@@ -490,11 +641,29 @@ async function showHistory(){
 }
 function exportTask(t){const blob=new Blob([JSON.stringify(t,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=t.id+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function generate(){const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(!state.ai){toast('AI chưa cấu hình. Xem Settings.');return;}if(!state.token){navigate('settings');toast('Nhập Studio access token trước.');return;}const v=values();if(!valid(v))return;const btn=document.querySelector('[data-action="generate"]');btn.disabled=true;btn.textContent='Generating…';try{const response=await fetch('/api/ai/content',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},body:JSON.stringify({brand:v.brand,workflow:v.workflow,brief:'Title: '+v.title+'\nSource URL: '+v.url+'\n'+v.brief})});const data=await response.json();if(!response.ok)throw new Error(data.error||'AI request failed');if(!data.output)throw new Error('Empty output');v.content=data.output;v.status='In review';Object.assign(t,v,{updatedAt:Date.now()});save();render();toast('AI draft ready for review.');}catch(e){toast(String(e.message));if(btn){btn.disabled=false;btn.textContent='Generate content with AI';}}}
+
+document.addEventListener('change',e=>{
+ if(e.target?.id==='attachmentPicker'){addAttachments(e.target.files);e.target.value='';}
+});
+document.addEventListener('paste',e=>{
+ const target=e.target;
+ if(target?.id!=='composerBrief'&&target?.id!=='brief')return;
+ const items=Array.from(e.clipboardData?.items||[]);
+ const images=items.filter(x=>x.kind==='file'&&String(x.type).startsWith('image/')).map(x=>x.getAsFile()).filter(Boolean);
+ if(images.length){e.preventDefault();addAttachments(images.map((f,i)=>new File([f],f.name&&f.name!=='image.png'?f.name:'clipboard-'+Date.now()+'-'+i+'.png',{type:f.type}))); }
+});
+document.addEventListener('dragover',e=>{const zone=e.target.closest?.('[data-attach-dropzone]');if(zone){e.preventDefault();zone.classList.add('is-dragging');}});
+document.addEventListener('dragleave',e=>{const zone=e.target.closest?.('[data-attach-dropzone]');if(zone)zone.classList.remove('is-dragging');});
+document.addEventListener('drop',e=>{const zone=e.target.closest?.('[data-attach-dropzone]');if(zone){e.preventDefault();zone.classList.remove('is-dragging');addAttachments(e.dataTransfer?.files);}});
+
 document.addEventListener('focusout',e=>{if(e.target?.id==='url'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='lookup')return lookupStore();if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
+ const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
+ const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.aiConfigured;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
