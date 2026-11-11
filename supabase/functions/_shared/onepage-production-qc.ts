@@ -2,7 +2,8 @@
  * Descriptive contract only: the host must actually inspect images and supply evidence.
  * This file does not claim that a model generated, rendered, or reviewed an asset.
  */
-export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-11.v1";
+import { ONEPAGE_BANNER_QC_VERSION, ONEPAGE_BANNER_QC_FLAGS } from "./onepage-banner-qc.ts";
+export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-11.v2";
 export const ONEPAGE_PRODUCTION_QC = {
   schema_version: ONEPAGE_PRODUCTION_QC_VERSION,
   scope: "onepage-system",
@@ -17,7 +18,8 @@ export const ONEPAGE_PRODUCTION_QC = {
   image_gates: {
     product_truth: "Inspect full-resolution ordered PDP media, variant differences, dimensions, mechanisms and use limitations. Show exact product and exact artwork; unsupported parts/features are blocked.",
     icon_quality: "Inspect first-pass icons for canonical EO style, coherent strokes, clean silhouettes, anatomy, consistent optical weight and no stray/fragmented marks. Regenerate before presenting failed icons.",
-    banner_contrast: "Compose lighting, crop and negative space before using an overlay. Avoid conspicuous opaque/solid blocks behind headline, especially mobile. Use restrained, gradual treatment only when necessary and review both viewports.",
+    banner_contrast: "HARD REJECT: no visible solid/opaque text slab, rectangular headline panel, abrupt horizontal transition across room/tree/subject, patchy gradient used as a disguised slab, or low-contrast typography. Fix scene lighting/crop/negative space and reinspect desktop AND mobile before any asset/overall/packaging output.",
+    banner_typography_gate: { evaluator: "evaluate_onepage_banner_qc", version: ONEPAGE_BANNER_QC_VERSION, defect_flags: ONEPAGE_BANNER_QC_FLAGS, required_viewports: ["desktop", "mobile"], fail_closed: true, required_stages: ["asset_review", "overall", "packaging"], pixel_review: "HOST_REQUIRED_NOT_SERVER_PERFORMED" },
     physical_plausibility: "Reject twisted hands, impossible grip, missing hinges, gravity errors and unnatural product interaction. Do not force a hero angle to reveal all artwork; use a separate verified closeup.",
     casting: "Follow the approved market-specific casting brief and use natural everyday people and contexts; do not infer nationality from visual appearance. Product truth, anatomy and authenticity take priority.",
     detail_export: "Export square Product Detail source images with square corners and no baked-in rounded mask. Apply border-radius once via the UI container, not in the image pixels.",
@@ -37,7 +39,7 @@ export const ONEPAGE_PRODUCTION_QC_GUIDANCE =
   "Before output inspect the exact product and every relevant full-resolution PDP/variant asset, its mechanisms and actual use. " +
   "Choose Good To Know versus FAQs only after evidence-backed comparison of buyer questions and page-wide content overlap; neither is default. " +
   "First-pass EO icons must have clean coherent strokes, consistent proportions and no stray/fragmented marks; redo failed icons before presentation. " +
-  "Make banner typography legible primarily through composition and lighting, never a heavy conspicuous solid mobile text slab. " +
+  "HARD STOP on a solid/opaque text slab, rectangular headline background, abrupt horizontal transition or patchy faux gradient behind typography, on desktop OR mobile. Do not mark banner, overall or packaging as ready when any defect is found. Call evaluate_onepage_banner_qc on version-bound, genuinely inspected full-resolution desktop and mobile banners, then fix and repeat when BLOCKED; a reported-clear result is not proof the server saw pixels. Composition and lighting must create natural contrast, not a masked background slab. " +
   "Do not force a product-facing camera angle at the expense of gravity, anatomy, grip, hinges or real use; prefer a separate closeup. " +
   "Respect the brief's casting/market preference while prioritizing natural, anatomically plausible scenes; never infer nationality solely from appearance. " +
   "Product Detail 1:1 source images must retain square corners; apply rounding only through the UI at mapping time. " +
