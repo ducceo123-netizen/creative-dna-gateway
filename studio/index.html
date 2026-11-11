@@ -953,7 +953,7 @@ function sectionFeedbackInspector(id){
  '<label class="review-label" for="reviewSection">Section</label><select id="reviewSection">'+sectionChoices(id,selected)+'</select>'+
  '<label class="review-label" for="reviewGroup">Feedback group</label><input id="reviewGroup" maxlength="80" placeholder="e.g. Banner typography / Product fidelity" value="General">'+
  '<label class="review-label" for="reviewNote">Feedback</label><textarea id="reviewNote" maxlength="2000" rows="4" placeholder="What needs changing and why?"></textarea>'+
- '<div class="review-feedback-actions">'+button('Add feedback','addSectionFeedback')+'</div>'+
+ '<div class="review-feedback-actions">'+button('Add feedback','addSectionFeedback')+button('Copy grouped feedback','copySectionFeedback')+button('ChatGPT handoff','copyHandoff')+'</div>'+
  '<div class="review-grouped-feedback">'+Object.entries(grouped).map(([group,notes])=>'<section class="review-feedback-group"><strong>'+escapeHtml(group)+'</strong>'+notes.map(x=>'<div class="review-feedback-note '+(x.status==='resolved'?'resolved':'')+'"><small>'+escapeHtml(x.section_id.replace(/[_-]/g,' '))+' · '+escapeHtml(x.status)+'</small><p>'+escapeHtml(x.note)+'</p>'+(x.status==='open'?'<button data-feedback-resolve="'+escapeHtml(x.id)+'" type="button">Mark resolved</button>':'')+'</div>').join('')+'</section>').join('')+'</div></div>';
 }
 function sectionChoices(id,selected){
@@ -1070,6 +1070,18 @@ async function resolveSectionFeedback(feedbackId){
   await loadSectionFeedback(id);toast('Feedback marked resolved.');
  }catch(e){toast('Could not update feedback: '+e.message);}
 }
+
+async function copyGroupedFeedback(){
+ const id=state.selected,t=tasks.find(x=>x.id===id),all=state.sectionFeedback[id]||[];
+ const pending=all.filter(x=>x.status==='open');
+ if(!pending.length)return toast('No open feedback to send.');
+ const groups=pending.reduce((acc,x)=>{(acc[x.group_name]??=[]).push(x);return acc;},{});
+ const text=['UID BRANDS — GROUPED CREATIVE FEEDBACK','Task: '+String(t?.title||''),'Task ID: '+id,'Workflow: '+String(t?.workflow||''),'Scope: review only; preserve approved content/layout/other materials.',''].concat(
+ Object.entries(groups).flatMap(([group,items])=>['GROUP: '+group,...items.map(x=>'- ['+x.section_id+'] '+x.note),''])
+ ).join('\n');
+ try{await navigator.clipboard.writeText(text);toast('Grouped feedback copied. Paste into UID Brands ChatGPT.');}
+ catch{toast('Clipboard unavailable. Check browser permission.');}
+}
 function switchReviewView(mode){
  if(!['desktop','mobile'].includes(mode))return;
  state.onepageFrameMode=mode;
@@ -1152,6 +1164,13 @@ function buildHandoff(t,pack){
  }
  const result=hybridValue(t.id);
  for(const e of (result.evidence||[]).slice(0,10))parts.push('External evidence — '+e.url+' | '+(e.title||'No title')+' | '+e.status+' | '+(e.description||e.limitations||'').slice(0,260));
+ const openFeedback=(state.sectionFeedback[t.id]||[]).filter(x=>x.status==='open');
+ if(openFeedback.length){
+  parts.push('GROUPED REVIEW FEEDBACK — preserve other approved sections:');
+  const feedbackGroups=openFeedback.reduce((m,x)=>((m[x.group_name]??=[]).push(x),m),{});
+  for(const [group,items] of Object.entries(feedbackGroups))
+   parts.push('Group '+group+': '+items.map(x=>'['+x.section_id+'] '+x.note).join(' | ').slice(0,2600));
+ }
  const fileNames=(state.savedAttachments[t.id]||[]).map(f=>f.name).slice(0,8);
  parts.push('Task attachment filenames (must be attached in ChatGPT separately for visual inspection): '+(fileNames.join(' / ')||'none'));
  if(state.onepagePolicy?.schema_version)parts.push('Shared Onepage QC contract version: '+state.onepagePolicy.schema_version);
@@ -1290,7 +1309,7 @@ async function persist(){
    const route=existing?'/api/tasks/'+existing.id:'/api/tasks';
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
-   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);pipelineLoad(item.id);
+   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);pipelineLoad(item.id);loadSectionFeedback(item.id);if(item.workflow==='Onepage')loadOnepageTemplate();
    const attachmentResult=await uploadPendingAttachments(item.id);
    if(attachmentResult.failed)toast(attachmentResult.uploaded+' saved, '+attachmentResult.failed+' upload(s) failed. Retry attach from task.');
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
@@ -1336,7 +1355,7 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
