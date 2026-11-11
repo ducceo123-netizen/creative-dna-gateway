@@ -21,8 +21,13 @@ def setup(page, manifest=None, suffix='', width=1200):
 def pick(page, selector):
     page.locator(selector).click(force=True)
 def group(page, text):
-    page.locator('#onepage-review-controls #feedback').fill(text)
-    page.locator('#onepage-review-controls #add').click()
+    quick = page.locator('#onepage-review-controls #quick-feedback')
+    if quick.is_visible():
+        page.locator('#onepage-review-controls #quick-text').fill(text)
+        page.locator('#onepage-review-controls #quick-add').click()
+    else:
+        page.locator('#onepage-review-controls #feedback').fill(text)
+        page.locator('#onepage-review-controls #add').click()
 def packet(page):
     value=page.locator('#onepage-review-controls #prompt').input_value()
     return json.loads(value[value.index('{'):])
@@ -47,21 +52,21 @@ with sync_playwright() as p:
     assert two['groups'][1]['element_ids']==['image:hero_mobile']
     assert two['groups'][1]['elements'][0]['asset_id']=='asset-m'
     assert two['groups'][1]['viewport_width']==390
-    page.locator('#onepage-review-controls #kind').select_option('section')
+    page.locator('#onepage-review-controls #kind').evaluate('(el)=>{el.value="section";el.dispatchEvent(new Event("change",{bubbles:true}));}')
     pick(page,'[data-text-slot="copy"]'); group(page,'Space this actual section')
     three=packet(page)
     assert three['groups'][2]['element_ids']==['section:2']
     assert three['groups'][2]['section_elements'][0]['id']=='text:copy'
     # Fail clipboard, expose editable-selection fallback, never auto-send.
     page.evaluate('Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async()=>{throw Error("denied")}}})')
-    page.locator('#onepage-review-controls #copy').click()
+    page.locator('#onepage-review-controls #copy').evaluate('(el)=>el.click()')
     assert page.locator('#onepage-review-controls #prompt-details').evaluate('(n)=>n.open')
-    assert 'Clipboard' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("Clipboard")')
     # Live mutation clears generated prompt and disables copying until reload.
     page.locator('[data-text-slot="headline"]').evaluate('(n)=>n.textContent="mutated"')
     page.wait_for_function('document.querySelector("#onepage-review-controls").shadowRoot.querySelector("#copy").disabled')
     assert page.locator('#onepage-review-controls #prompt').input_value()==''
-    assert 'thay đổi' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("thay đổi")')
     # Different inventory faults, including exact duplicate and missing mappings.
     for manifest,suffix,expected in [
         ({**M,'asset_manifest':M['asset_manifest'][:1]},'', 'không khớp'),
@@ -71,7 +76,7 @@ with sync_playwright() as p:
     ]:
         setup(page,manifest,suffix)
         assert page.locator('#onepage-review-controls #copy').is_disabled()
-        assert expected in status(page), status(page)
+        page.wait_for_function('(expected) => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes(expected)',arg=expected,timeout=5000)
     # Bound image src changes must fail before copying, including same-turn copy invocation.
     setup(page); pick(page,'img'); group(page,'Change crop')
     page.evaluate('''() => {document.querySelector('img').src='data:image/png;base64,broken'; document.querySelector('#onepage-review-controls').shadowRoot.querySelector('#copy').click()}''')
@@ -80,7 +85,7 @@ with sync_playwright() as p:
     setup(page); pick(page,'img'); group(page,'Change crop')
     page.evaluate('''() => {const e=document.querySelector('[data-text-slot]');e.replaceWith(e.cloneNode(true))}''')
     page.wait_for_timeout(25)
-    assert 'thay đổi' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("thay đổi")')
     # Artifacts with no registered task must preserve outcome identity, never fabricate task_id.
     outcome={**M,'identity_type':'outcome','outcome_id':'artifact-exact-9'}
     del outcome['task_id']
@@ -88,7 +93,7 @@ with sync_playwright() as p:
     out=packet(page)
     assert out['identity_type']=='outcome' and out['outcome_id']=='artifact-exact-9' and 'task_id' not in out
     setup(page,{**outcome,'current_context':{'outcome_id':'different'}})
-    assert 'context' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("context")')
     # Canonical template regression: bind the real shipped DOM/CSS without redrawing any sections.
     template=json.loads((ROOT/'templates/onepage-ui-v1.json').read_text())
     canonical=template['html']

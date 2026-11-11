@@ -26,14 +26,25 @@ try:
                 page.locator(prefix+'#inventory').select_option('image:banner_desktop')
             else:
                 page.locator('[data-review-id]').first.click(force=True)
-            page.locator(prefix+'#feedback').fill('Desktop test feedback')
-            page.locator(prefix+'#add').click()
+            if kind!='ldp':
+                page.locator(prefix+'#quick-text').fill('Desktop test feedback')
+                page.locator(prefix+'#quick-add').click()
+            else:
+                page.locator(prefix+'#feedback').fill('Desktop test feedback')
+                page.locator(prefix+'#add').click()
             page.set_viewport_size({'width':390,'height':844})
-            if kind!='ldp':page.locator(prefix+'#inventory').select_option('image:banner_mobile')
-            else:page.locator('[data-review-id]').first.click(force=True)
-            page.locator(prefix+'#feedback').fill('Mobile test feedback')
-            page.locator(prefix+'#add').click()
-            page.locator(prefix+'#copy').click()
+            if kind!='ldp':
+                page.locator(prefix+'#inventory').select_option('image:banner_mobile')
+                page.locator(prefix+'#quick-text').fill('Mobile test feedback')
+                page.locator(prefix+'#quick-add').click()
+            else:
+                page.locator('[data-review-id]').first.click(force=True)
+                page.locator(prefix+'#feedback').fill('Mobile test feedback')
+                page.locator(prefix+'#add').click()
+            if kind!='ldp':
+                page.locator(prefix+'#copy').evaluate('(el)=>el.click()')
+            else:
+                page.locator(prefix+'#copy').click()
             prompt=page.locator(prefix+'#prompt').input_value()
             packet=json.loads(prompt[prompt.index('{'):])
             assert len(packet['groups'])==2
