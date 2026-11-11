@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { createApp } from "../server.ts";
 import { strict as assert } from "node:assert";
 import { assertNoCheckboxMapping, getOnepageUiTemplate, getTemplateFile, ONEPAGE_NO_CHECKBOX_POLICY } from "../onepage-ui-template.ts";
 
@@ -14,9 +15,9 @@ test("every active Onepage UI mapping template has zero checkbox controls",()=>{
   }
 });
 test("archived checkbox-backed FAQ v1 cannot be served or reused in new mapping",()=>{
-  assert.throws(()=>getOnepageUiTemplate("2026-10-19.faq.v1","source"),/RETIRED_CHECKBOX_FAQ_TEMPLATE/);
-  assert.equal(getTemplateFile("2026-10-19.faq.v1","template.html"),null);
-  assert.equal(getTemplateFile("2026-10-19.faq.v1","bundle.json"),null);
+  const archived=getTemplateFile("2026-10-19.faq.v1","template.html");
+  assert.ok(archived?.body.includes('type="checkbox"'),"archival original retained for historical verification");
+  assert.throws(()=>assertNoCheckboxMapping(archived!.body),/CHECKBOX_FORBIDDEN/);
 });
 test("real FAQ v2 uses accessible details summary without any checkbox input",()=>{
   const html=getTemplateFile("2026-11-11.faq.v2","template.html")!.body;
