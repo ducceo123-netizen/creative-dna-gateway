@@ -1,5 +1,5 @@
 import { boundedFetch } from "./request-recovery";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Copy,
@@ -9,6 +9,11 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  House,
+  MessageSquareText,
+  LifeBuoy,
+  ArrowUpRight,
+  BookOpen,
 } from "lucide-react";
 import { JsonViewer } from "./components/JsonViewer";
 import { PrivacyPolicy } from "./components/PrivacyPolicy";
@@ -297,59 +302,58 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-100">
-      <header className="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-0.5 border border-slate-200 overflow-hidden shadow-sm">
-              <img src="/uid-brands-logo.svg?v=2" alt="UID Brands" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-extrabold tracking-tight text-slate-900">UID Brands</span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Live
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 hidden sm:block">Creative operations · Brand systems · Governance</p>
-            </div>
-          </div>
-
-          <nav className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => navigateTo("admin-feedback")}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg"
-            >
-              Feedback Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateTo("support")}
-              className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 rounded-lg"
-            >
-              Support
-            </button>
-          </nav>
+    <div className="uid-gateway-shell min-h-screen text-slate-800 font-sans antialiased">
+      <aside className="uid-gateway-sidebar" aria-label="Gateway navigation">
+        <div className="uid-gateway-brand">
+          <span className="uid-gateway-logo"><img src="/uid-brands-logo.svg?v=2" alt="" /></span>
+          <span><strong>UID Brands</strong><small>Creative ecosystem</small></span>
         </div>
-      </header>
-
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-7">
-        <section className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700">
-            <Sparkles className="w-3.5 h-3.5" />
-            Creative DNA Gateway
+        <div className="uid-gateway-nav-label">WORKSPACE</div>
+        <nav className="uid-gateway-nav" aria-label="Primary">
+          <button type="button" className="is-current" aria-current="page" onClick={() => navigateTo("home")}><House size={17} /> Overview</button>
+          <a href="#branch-preview"><Layers size={17} /> Creative DNA</a>
+          <a href="#setup-guide"><Plug size={17} /> ChatGPT Connection</a>
+        </nav>
+        <div className="uid-gateway-nav-label">MANAGEMENT</div>
+        <nav className="uid-gateway-nav" aria-label="Management">
+          <button type="button" onClick={() => navigateTo("admin-feedback")}><MessageSquareText size={17} /> Feedback Admin</button>
+          <button type="button" onClick={() => navigateTo("support")}><LifeBuoy size={17} /> Support</button>
+        </nav>
+        <div className="uid-gateway-sidebar-bottom">
+          <div className="uid-gateway-related">
+            <span className="uid-gateway-related-kicker">CONNECTED WORKSPACE</span>
+            <strong>UID Brands Studio</strong>
+            <span>Tasks · Research · Materials</span>
+            <a href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer">Open Studio <ArrowUpRight size={15}/></a>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-            Workspace cho Brand & Creative Materials
-          </h1>
-          <p className="text-sm text-slate-500 max-w-2xl">
-            Chọn Brand và Material để tra cứu quy tắc sáng tạo; quản lý feedback, evidence và quality review tại một nơi.
-          </p>
+          <span className="uid-gateway-sidebar-caption">Creative DNA remains the canonical source of truth.</span>
+        </div>
+      </aside>
+      <div className="uid-gateway-workspace">
+        <header className="uid-gateway-topbar">
+          <div className="uid-gateway-topbar-heading">
+            <span className="uid-gateway-breadcrumb">UID Brands <span>›</span> Gateway</span>
+            <h1>Creative Intelligence Gateway</h1>
+            <p>Shared Brand DNA, materials and governance</p>
+          </div>
+          <div className="uid-gateway-topbar-actions">
+            {createElement("s-badge", {tone:"info"}, "Canonical source")}
+            <a className="uid-gateway-topbar-link" href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer">Studio <ArrowUpRight size={15}/></a>
+          </div>
+        </header>
+      <main className="uid-gateway-main space-y-7">
+        <section className="uid-gateway-intro">
+          <span className="uid-gateway-eyebrow"><Sparkles size={14} /> CREATIVE DNA SYSTEM</span>
+          <h2>Brand &amp; Creative Materials</h2>
+          <p>Chọn brand và material để làm việc với Creative DNA. Cùng một hệ thống quy tắc và quality gate với UID Brands Studio.</p>
+          <div className="uid-gateway-summary">
+            <div><span>BRANDS</span><strong>{supportedBrands.length}</strong><small>Brand systems</small></div>
+            <div><span>MATERIAL ROUTES</span><strong>{supportedBrands.reduce((total, item) => total + item.branches.length, 0)}</strong><small>Available branches</small></div>
+            <div><span>WORKFLOW</span><strong className="uid-gateway-summary-shared">Shared</strong><small>Creative DNA source</small></div>
+          </div>
         </section>
 
-        <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-7 xl:gap-9 items-start">
+        <div className="uid-gateway-operations grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 xl:gap-6 items-start">
           <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -632,8 +636,8 @@ First call get_website_brand_ui_skill (SKILL.md and references/workflow.md), the
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white mt-10 py-6">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+      <footer className="uid-gateway-footer border-t border-slate-200 bg-white mt-10 py-6">
+        <div className="px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <span>Creative DNA · ChatGPT creative knowledge gateway</span>
           <div className="flex items-center gap-4">
             <button type="button" onClick={() => navigateTo("privacy")} className="hover:text-slate-700">Privacy</button>
@@ -641,6 +645,7 @@ First call get_website_brand_ui_skill (SKILL.md and references/workflow.md), the
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
