@@ -85,7 +85,7 @@ with sync_playwright() as p:
     setup(page); pick(page,'img'); group(page,'Change crop')
     page.evaluate('''() => {const e=document.querySelector('[data-text-slot]');e.replaceWith(e.cloneNode(true))}''')
     page.wait_for_timeout(25)
-    assert 'thay đổi' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("thay đổi")')
     # Artifacts with no registered task must preserve outcome identity, never fabricate task_id.
     outcome={**M,'identity_type':'outcome','outcome_id':'artifact-exact-9'}
     del outcome['task_id']
@@ -93,7 +93,7 @@ with sync_playwright() as p:
     out=packet(page)
     assert out['identity_type']=='outcome' and out['outcome_id']=='artifact-exact-9' and 'task_id' not in out
     setup(page,{**outcome,'current_context':{'outcome_id':'different'}})
-    assert 'context' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("context")')
     # Canonical template regression: bind the real shipped DOM/CSS without redrawing any sections.
     template=json.loads((ROOT/'templates/onepage-ui-v1.json').read_text())
     canonical=template['html']
