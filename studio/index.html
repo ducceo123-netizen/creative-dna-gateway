@@ -146,6 +146,21 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .catalog-match .muted{font-size:10px;text-transform:capitalize}
 @media(max-width:700px){.catalog-match{align-items:flex-start;flex-direction:column}.welcome-hero{padding-top:26px!important}}
 .settings-account{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:15px;border-top:1px solid #ececec;padding-top:14px;font-size:12px;color:#6d6d6d}
+
+.research-workspace{border:1px solid #dedede;border-radius:14px;padding:17px 18px;margin:22px 0 14px;background:#fcfcfc}
+.research-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.research-heading h3{font-size:16px;letter-spacing:-.01em;margin:0 0 4px}
+.research-heading p,.research-note{font-size:12px;color:#777;line-height:1.5;margin:0}
+.research-tag{font-size:10px;background:#eee;color:#555;border-radius:8px;padding:6px 8px;white-space:nowrap}
+.research-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:14px 0}
+.research-status{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:10px 0;border-top:1px solid #eee}
+.research-status span{font-size:11px;color:#888}
+.research-products{margin-top:10px;border-top:1px solid #eee}
+.research-products>div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #eee;font-size:12px}
+.research-products span{color:#777;font-size:11px}
+.research-warning{font-size:11px;color:#8a6b43;margin-top:12px}
+.research-warning p{margin:6px 0}
+@media(max-width:700px){.research-products>div,.research-status{flex-direction:column}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -172,7 +187,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',researchPacks:{},onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -188,7 +203,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selected=id;state.page='tasks';render();}
+function selectTask(id){state.selected=id;state.page='tasks';render();loadTaskResearch(id);}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -297,8 +312,76 @@ polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Lig
 '<div class="row verify-row">'+button('Verify on store','lookup')+'<span class="slim">Optional · Only matching collections/products will be shown.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
+(!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">AI generation is not enabled. Review and materials workflow remain manual until a supported integration is approved.</p>':'')+'</s-section>';}
+function researchMarkup(pack){
+ if(!pack)return '<p class="research-note">Chưa có research pack. Bấm Scan product data để đọc storefront công khai của source URL đang lưu.</p>';
+ const p=pack.snapshot||pack;
+ const items=Array.isArray(p.products)?p.products:[];
+ const warnings=Array.isArray(p.warnings)?p.warnings:[];
+ return '<div class="research-status"><strong>'+escapeHtml(p.status==='partial'?'Public scan completed · AI review pending':'Scan blocked / no product data')+'</strong><span>'+escapeHtml(String(p.scanned_at||''))+'</span></div>'+
+ '<p class="research-note">'+escapeHtml(String(p.product_count||0))+' product(s) captured · '+escapeHtml(p.type||'unknown')+' · source: '+escapeHtml(p.task_source||'')+'</p>'+
+ (items.length?'<div class="research-products">'+items.slice(0,8).map(x=>'<div><strong>'+escapeHtml(x.title)+'</strong><span>'+escapeHtml(String(x.variantCount||0))+' variants · '+escapeHtml(String(x.images?.length||0))+' gallery image URLs</span></div>').join('')+'</div>':'')+
+ '<details class="research-warning"><summary>Scope and evidence limitations ('+warnings.length+')</summary>'+warnings.map(w=>'<p>'+escapeHtml(w)+'</p>').join('')+'</details>';
+}
+async function loadTaskResearch(id){
+ if(!id||!state.cloud||!state.auth)return;
+ try{
+  const result=await cloudRequest('/api/tasks/'+id+'/research');
+  if(state.selected!==id)return;
+  state.researchPacks[id]=result.research;
+  const target=el('researchResult');if(target)target.innerHTML=researchMarkup(result.research);
+ }catch(e){const target=el('researchResult');if(target)target.textContent='Research snapshot unavailable: '+e.message;}
+}
+async function scanTaskResearch(){
+ const task=tasks.find(x=>x.id===state.selected);
+ if(!task)return;
+ if(!state.cloud||!state.auth)return toast('Research sync requires team sign-in.');
+ if(state.busy)return;
+ // Require saved source; do not accidentally scan an unsaved URL from the editor.
+ if(el('url')?.value.trim()!==task.url)return toast('Save changes to source URL before scanning.');
+ state.busy=true;
+ const target=el('researchResult');if(target)target.textContent='Scanning public storefront data…';
+ try {
+  const result=await cloudRequest('/api/tasks/'+task.id+'/research','POST');
+  state.researchPacks[task.id]=result.research;
+  if(target)target.innerHTML=researchMarkup(result.research);
+  toast('Storefront research snapshot saved. Review before AI handoff.');
+ }catch(e){if(target)target.textContent='Scan failed: '+e.message;toast(e.message);}
+ finally{state.busy=false;}
+}
+function buildHandoff(t,pack){
+ const p=pack?.snapshot||pack;
+ const products=Array.isArray(p?.products)?p.products:[];
+ const parts=[
+ 'UID BRANDS — HYBRID TASK HANDOFF (manual ChatGPT processing)',
+ 'Task ID: '+t.id,'Brand: '+t.brand,'Workflow: '+t.workflow,
+ 'Task: '+t.title,'Source URL: '+t.url,'Original brief: '+t.brief,
+ 'Research status: '+(p?.status||'not scanned'),
+ 'Research collected at: '+(p?.scanned_at||'none'),
+ 'Evidence URL: '+(p?.task_source||t.url),
+ 'Products collected ('+products.length+' shown):'
+ ];
+ for(const x of products.slice(0,12)){
+  parts.push('- '+x.title+' | '+x.url+' | variants: '+x.variantCount+' | gallery: '+x.images.length+' image links');
+  if(x.description)parts.push('  Description: '+x.description.slice(0,300));
+ }
+ parts.push('Not verified: external reviews, buyer pain points, competitive research, physical/product fidelity, Creative DNA visual gates.');
+ parts.push('INSTRUCTION: Continue this UID Brands task with canonical Creative DNA and research gate. Verify missing external evidence before conclusions; choose Good To Know or FAQs only from supported insights. Do not invent products, variants, claims, layouts or generated assets. Return content plus QA findings, and preserve task ID/version. Do not publish.');
+ return parts.join('\n').slice(0,11000);
+}
+async function copyResearchHandoff(){
+ const t=tasks.find(x=>x.id===state.selected);if(!t)return;
+ const pack=state.researchPacks[t.id];
+ if(!pack)return toast('Scan product data first. No research snapshot is available.');
+ try{await navigator.clipboard.writeText(buildHandoff(t,pack));toast('Handoff copied. Paste into UID Brands ChatGPT thread.');}
+ catch{toast('Clipboard unavailable. Check browser permission.');}
+}
+function openChatGPTHandoff(){
+ window.open('https://chatgpt.com/','_blank','noopener,noreferrer');
+}
+
 function settings(){return '<s-section heading="Workspace settings"><p class="lead">UID Brands Studio operates independently from Shopify admin and the existing UID Brands gateway.</p><s-banner tone="info" heading="AI API is disabled"><s-paragraph>No OpenAI API credentials are configured. Task management, content editing and review work without paid AI execution.</s-paragraph></s-banner><div class="space"><s-section heading="Data and access"><s-paragraph>'+(state.cloud?'Task drafts are stored in Supabase and protected by user ownership and team membership.':'Local task drafts are stored only in this browser.')+'</s-paragraph>'+(state.cloud&&state.user?'<div class="settings-account"><span>Signed in as '+escapeHtml(state.user.email||'team member')+'</span>'+button('Sign out','logout')+'</div>':'')+'</s-section></div><div class="space"><s-section heading="Platform"><s-paragraph>UI components: Shopify Polaris Web Components 2.0. Runs as a standalone Render web app and does not use Shopify App Bridge or impersonate Shopify Admin.</s-paragraph></s-section></div></s-section>';}
 function loginScreen(){
  return '<div class="panel" style="max-width:480px;margin:38px auto"><div class="eyebrow">PRIVATE TEAM WORKSPACE</div><h2 style="font-size:26px;margin-top:10px">Sign in to UID Brands</h2><p class="lead">Sign in using an existing Supabase Auth account added to the Creative DNA team. Contact the UID Brands administrator to provision access.</p>'+label('Email','loginEmail')+field('loginEmail','','you@company.com','email')+label('Password','loginPassword')+field('loginPassword','','Your password','password')+'<div class="actions">'+button('Sign in','login','')+'</div><p class="notice">Studio does not create user accounts automatically. Access is protected by team membership and Supabase Row Level Security. Credentials are not stored in this browser.</p></div>';
@@ -386,7 +469,7 @@ async function persist(){
    const route=existing?'/api/tasks/'+existing.id:'/api/tasks';
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
-   state.selected=item.id;state.page='tasks';render();
+   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
   }catch(e){toast(e.message);}finally{state.busy=false;}return;
  }
@@ -408,7 +491,7 @@ document.addEventListener('focusout',e=>{if(e.target?.id==='url'&&state.cloud&&s
 document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='lookup')return lookupStore();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='login')return login();if(action==='logout')return signOut();if(action==='lookup')return lookupStore();if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.aiConfigured;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
