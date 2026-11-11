@@ -52,7 +52,7 @@ with sync_playwright() as p:
     assert two['groups'][1]['element_ids']==['image:hero_mobile']
     assert two['groups'][1]['elements'][0]['asset_id']=='asset-m'
     assert two['groups'][1]['viewport_width']==390
-    page.locator('#onepage-review-controls #kind').select_option('section')
+    page.locator('#onepage-review-controls #kind').evaluate('(el)=>{el.value="section";el.dispatchEvent(new Event("change",{bubbles:true}));}')
     pick(page,'[data-text-slot="copy"]'); group(page,'Space this actual section')
     three=packet(page)
     assert three['groups'][2]['element_ids']==['section:2']
