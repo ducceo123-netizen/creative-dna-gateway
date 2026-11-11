@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { scanPublicSource } from './research.mjs';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -154,6 +155,30 @@ createServer(async(req,res)=>{
         const item=created.data?.[0];
         const version=await sb('/rest/v1/studio_task_versions',{method:'POST',token,body:{task_id:id,owner_id:team.id,revision:1,snapshot:item},prefer:'return=minimal'});
         return json(res,201,{task:item,versionSaved:version.ok});
+      }
+      const researchMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/research$/);
+      if(researchMatch&&(req.method==='GET'||req.method==='POST')){
+        const taskId=researchMatch[1];
+        const tasksResponse=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id,brand,workflow,source_url,title,brief&limit=1',{token});
+        if(!tasksResponse.ok)return json(res,502,{error:'Unable to verify task ownership'});
+        const task=tasksResponse.data?.[0];
+        if(!task||task.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        if(req.method==='GET'){
+          const saved=await sb('/rest/v1/studio_research_packs?task_id=eq.'+taskId+'&select=task_id,snapshot,updated_at&limit=1',{token});
+          return json(res,saved.ok?200:502,saved.ok?{research:saved.data?.[0]||null}:{error:'Cannot read research snapshot'});
+        }
+        if(!writable)return json(res,403,{error:'Read-only member'});
+        if(!String(task.source_url||'').trim())return json(res,422,{error:'Task needs a direct product or collection URL before scanning'});
+        try{
+          const snapshot=await scanPublicSource(task.brand,task.source_url);
+          const saved=await sb('/rest/v1/studio_research_packs?on_conflict=task_id',{method:'POST',token,
+           body:{task_id:taskId,owner_id:team.id,source_url:snapshot.task_source,snapshot,updated_at:new Date().toISOString()},
+           prefer:'resolution=merge-duplicates,return=representation'});
+          if(!saved.ok)return json(res,502,{error:'Research collected but could not be saved securely'});
+          return json(res,200,{research:saved.data?.[0]||{task_id:taskId,snapshot},autoAi:false});
+        }catch(error){
+          return json(res,422,{error:'Storefront research unavailable',detail:String(error.message||'Scan failed').slice(0,180)});
+        }
       }
       const versionMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/versions$/);
       if(versionMatch&&req.method==='GET'){
