@@ -13,6 +13,15 @@ function json(res, status, value) { res.writeHead(status, {'Content-Type':'appli
 function readBody(req) { return new Promise((resolve,reject)=>{let text='';req.on('data',c=>{text+=c;if(text.length>maxBody){reject(new Error('body_too_large'));req.destroy();}});req.on('end',()=>{try{resolve(JSON.parse(text));}catch{reject(new Error('invalid_json'));}});req.on('error',reject);}); }
 const aiEnabled = Boolean(process.env.OPENAI_API_KEY && process.env.STUDIO_ACCESS_TOKEN);
 const taskAiEnabled = process.env.STUDIO_AI_EXECUTOR_ENABLED==='true' && Boolean(process.env.OPENAI_API_KEY);
+const PLAN_GATEWAY_APPROVED=false; // Explicit release gate: never infer approval from account authentication.
+const EXECUTION_MODES=['hybrid_bridge','api_auto','chatgpt_connect'];
+function executionCatalog(){
+ return [
+  {id:'hybrid_bridge',label:'Hybrid Bridge',status:'available',description:'ChatGPT handoff via UID Brands MCP; no OpenAI API charges.'},
+  {id:'api_auto',label:'API Auto',status:taskAiEnabled?'available':'setup_required',description:'Optional metered API executor; requires owner-controlled server credentials and per-run confirmation.'},
+  {id:'chatgpt_connect',label:'ChatGPT Connect',status:PLAN_GATEWAY_APPROVED?'available':'awaiting_approval',description:'ChatGPT Plan Usage integration; not approved for hosted Studio.'}
+ ];
+}
 const handoffTokens=new Map(); // ephemeral one-time capability: only a task owner can issue it
 const handoffHash=token=>createHash('sha256').update(token).digest('hex');
 function clearExpiredHandoffs(){
@@ -207,7 +216,7 @@ createServer(async(req,res)=>{
       }catch(e){cap.busy=false;return json(res,409,{error:String(e.message||'Sync could not be confirmed').slice(0,180)});}
     }catch(e){return failure(res,e?.message||'Invalid handoff');}
   }
-  if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'){
+  if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'||path==='/api/execution/modes'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud auth is not configured'});
     try {
       if(path==='/api/auth/signup'&&req.method==='POST'){
@@ -249,6 +258,29 @@ createServer(async(req,res)=>{
       if(!team)return json(res,403,{error:'Team access denied'});
       if(path==='/api/auth/me'&&req.method==='GET')return json(res,200,{user:team});
       const writable=team.role==='admin'||team.role==='contributor';
+      if(path==='/api/execution/modes'&&(req.method==='GET'||req.method==='PUT')){
+        const readPreference=async()=>{
+          const p=await sb('/rest/v1/studio_execution_preferences?user_id=eq.'+team.id+'&select=mode,updated_at&limit=1',{token});
+          if(!p.ok)throw Error('Could not load execution mode');
+          return p.data?.[0]?.mode||'hybrid_bridge';
+        };
+        if(req.method==='GET'){
+          const mode=await readPreference();
+          return json(res,200,{selectedMode:mode,modes:executionCatalog(),planGatewayApproved:PLAN_GATEWAY_APPROVED});
+        }
+        const body=await readBody(req);
+        const mode=String(body?.mode||'');
+        if(!EXECUTION_MODES.includes(mode))return json(res,422,{error:'Unsupported execution mode'});
+        if(mode==='chatgpt_connect'&&!PLAN_GATEWAY_APPROVED)
+          return json(res,409,{error:'ChatGPT Connect is awaiting OpenAI approval. Select Hybrid Bridge or API Auto instead.',mode:'chatgpt_connect'});
+        if(!writable)return json(res,403,{error:'Read-only member'});
+        const r=await sb('/rest/v1/studio_execution_preferences?on_conflict=user_id',{
+          method:'POST',token,prefer:'resolution=merge-duplicates,return=representation',
+          body:{user_id:team.id,mode,updated_at:new Date().toISOString()}
+        });
+        if(!r.ok)return json(res,502,{error:'Could not save execution mode'});
+        return json(res,200,{selectedMode:mode,modes:executionCatalog(),persisted:true});
+      }
       if(path==='/api/catalog/search'&&req.method==='GET'){
         const params=new URL(req.url,'http://localhost').searchParams;
         const brand=params.get('brand'), query=params.get('q');
@@ -379,6 +411,9 @@ createServer(async(req,res)=>{
         if(action==='execute'&&req.method==='POST'){
           if(!writable)return json(res,403,{error:'Read-only member'});
           if(!taskAiEnabled)return json(res,503,{error:'Automatic ChatGPT-plan execution is not available. Optional API executor is disabled. Use ChatGPT handoff and import a result instead.',mode:'manual_chatgpt'});
+          const pref=await sb('/rest/v1/studio_execution_preferences?user_id=eq.'+team.id+'&select=mode&limit=1',{token});
+          if(!pref.ok)return json(res,502,{error:'Could not verify selected execution mode'});
+          if(pref.data?.[0]?.mode!=='api_auto')return json(res,409,{error:'Select API Auto in Execution Mode Switcher before using the paid executor'});
           const input=await readBody(req);
           if(input?.acknowledge_metered_api!==true)return json(res,422,{error:'Explicit confirmation of metered OpenAI API usage required'});
           const previous=await readDeliverable();
