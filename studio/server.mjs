@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { scanPublicSource } from './research.mjs';
 import {resolveGatewayDNA} from './creative-dna.mjs';
+import {packZip} from './zip.mjs';
 import {freshPipeline,recordStage,nextPipelineStage,validateSelectedSlots,textStage,generateProductMaterial,visionReview,pipelineExport,PIPELINE_STAGES} from './orchestrator.mjs';
 import {inspectPublicEvidence,cleanDeliverable,qaSummary} from './hybrid.mjs';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
@@ -24,7 +25,27 @@ function executionCatalog(){
   {id:'chatgpt_connect',label:'ChatGPT Connect',status:PLAN_GATEWAY_APPROVED?'available':'awaiting_approval',description:'ChatGPT Plan Usage integration; not approved for hosted Studio.'}
  ];
 }
-const stageLocks=new Set(); // One process; serialized paid stage calls per task on this Render instance.
+const stageLocks=new Set(); // Per-task stage serialization on single-instance Render service.
+const apiUserLocks=new Set(); // Serializes budget reservations for a user on this instance.
+const boundedQuota=(v,defaultValue,max)=>Math.max(1,Math.min(max,Number.isFinite(Number(v))?Number(v):defaultValue));
+const MAX_API_CALLS_PER_DAY=boundedQuota(process.env.STUDIO_DAILY_MAX_API_CALLS,16,100);
+const MAX_IMAGE_CALLS_PER_DAY=boundedQuota(process.env.STUDIO_DAILY_MAX_IMAGE_CALLS,8,32);
+async function reserveApiQuota(uid,token,{image=false}={}){
+ const day=new Date().toISOString().slice(0,10);
+ const path='/rest/v1/studio_ai_usage_daily?user_id=eq.'+uid+'&day=eq.'+day+'&select=attempted_calls,attempted_images&limit=1';
+ const p=await sb(path,{token});if(!p.ok)throw Error('Unable to confirm daily API usage');
+ const previous=p.data?.[0]||{attempted_calls:0,attempted_images:0};
+ if(previous.attempted_calls>=MAX_API_CALLS_PER_DAY||(image&&previous.attempted_images>=MAX_IMAGE_CALLS_PER_DAY))
+  throw Error('Daily API cap reached. No new paid request was started.');
+ const payload={user_id:uid,day,attempted_calls:previous.attempted_calls+1,
+   attempted_images:previous.attempted_images+(image?1:0),updated_at:new Date().toISOString()};
+ const saved=await sb('/rest/v1/studio_ai_usage_daily?on_conflict=user_id,day',{
+   method:'POST',token,body:payload,prefer:'resolution=merge-duplicates,return=representation'});
+ if(!saved.ok)throw Error('Could not reserve a daily API call safely');
+ return {calls_left:Math.max(0,MAX_API_CALLS_PER_DAY-payload.attempted_calls),
+   images_left:Math.max(0,MAX_IMAGE_CALLS_PER_DAY-payload.attempted_images)};
+}
+
 const handoffTokens=new Map(); // ephemeral one-time capability: only a task owner can issue it
 const handoffHash=token=>createHash('sha256').update(token).digest('hex');
 function clearExpiredHandoffs(){
@@ -410,6 +431,29 @@ createServer(async(req,res)=>{
           const run=await getPipeline();
           if(!run?.state?.export||run.stage!=='complete')return json(res,409,{error:'Export stage has not completed'});
           const pack=pipelineExport({task,run});
+          if(new URL(req.url,'http://localhost').searchParams.get('format')==='zip'){
+            const entries=[
+              {name:'manifest.json',bytes:Buffer.from(JSON.stringify(pack,null,2),'utf8')},
+              {name:'content.md',bytes:Buffer.from(String(run.state?.content||''),'utf8')},
+              {name:'vision-qa.json',bytes:Buffer.from(JSON.stringify(run.state?.vision||{status:'not_available'},null,2),'utf8')}
+            ];
+            const files=[...(run.state?.materials||[]).map(x=>({id:x.file_id,name:'materials/'+x.slot+'.jpg'})),
+              ...Object.entries(run.state?.overalls||{}).map(([view,id])=>({id,name:'overall-'+view+'.jpg'}))];
+            for(const file of files){
+              if(!/^[0-9a-f-]{36}--[a-z0-9_.-]+$/.test(file.id))return json(res,409,{error:'Invalid private material reference in pipeline'});
+              const bytes=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(file.id),{method:'GET',token});
+              if(!bytes.ok)return json(res,502,{error:'Could not read asset for export'});
+              if(Number(bytes.headers.get('content-length')||0)>8*1024*1024)return json(res,502,{error:'Asset exceeds export file size limit'});
+              const b=Buffer.from(await bytes.arrayBuffer());
+              if(b.length>8*1024*1024)return json(res,502,{error:'Asset exceeds export file size limit'});
+              entries.push({name:file.name,bytes:b});
+            }
+            let zip;try{zip=packZip(entries);}catch(e){return json(res,422,{error:e.message});}
+            res.writeHead(200,{'Content-Type':'application/zip','Content-Length':zip.length,
+              'Content-Disposition':'attachment; filename="uid-studio-'+taskId+'-draft.zip"',
+              'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
+            return res.end(zip);
+          }
           const data=Buffer.from(JSON.stringify(pack,null,2),'utf8');
           res.writeHead(200,{'Content-Type':'application/json; charset=utf-8',
             'Content-Disposition':'attachment; filename="uid-studio-'+taskId+'-pipeline.json"',
@@ -464,6 +508,14 @@ createServer(async(req,res)=>{
             const prior=await getPipeline();
             if(!prior)return json(res,404,{error:'Start a pipeline first'});
             if(prior.stage==='complete')return json(res,409,{error:'Pipeline already completed'});
+            const chargeable=prior.stage==='content'||prior.stage==='vision_qa'||
+              (prior.stage==='materials'&&(prior.state?.next_material||0)<(prior.state?.selected_slots||[]).length);
+            if(chargeable){
+              if(!taskAiEnabled)throw Error('OpenAI API executor is not enabled. No paid call attempted');
+              if(apiUserLocks.has(team.id))throw Error('A paid task request is already executing for this user');
+              apiUserLocks.add(team.id);
+              await reserveApiQuota(team.id,token,{image:prior.stage==='materials'});
+            }
             let state=structuredClone(prior.state||{}),next=prior.stage,detail='',paid=false;
             const existingResearch=await sb('/rest/v1/studio_research_packs?task_id=eq.'+taskId+'&select=snapshot&limit=1',{token});
             if(!existingResearch.ok)throw Error('Cannot load research');
@@ -578,7 +630,7 @@ createServer(async(req,res)=>{
             }
             return json(res,502,{error:String(error.message||'Pipeline stage failed').slice(0,290),
               status:'blocked',note:'Stage did not advance. Timed-out API calls may still be charged; inspect usage before retrying.'});
-          }finally{stageLocks.delete(taskId);}
+          }finally{stageLocks.delete(taskId);apiUserLocks.delete(team.id);}
         }
         return json(res,405,{error:'Unsupported pipeline method'});
       }
