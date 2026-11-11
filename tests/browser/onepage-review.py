@@ -76,7 +76,7 @@ with sync_playwright() as p:
     ]:
         setup(page,manifest,suffix)
         assert page.locator('#onepage-review-controls #copy').is_disabled()
-        page.wait_for_function('(expected) => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes(expected)',expected,timeout=5000)
+        page.wait_for_function('(expected) => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes(expected)',arg=expected,timeout=5000)
     # Bound image src changes must fail before copying, including same-turn copy invocation.
     setup(page); pick(page,'img'); group(page,'Change crop')
     page.evaluate('''() => {document.querySelector('img').src='data:image/png;base64,broken'; document.querySelector('#onepage-review-controls').shadowRoot.querySelector('#copy').click()}''')
