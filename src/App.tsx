@@ -308,55 +308,55 @@ export default function App() {
       <aside className="uid-gateway-sidebar" aria-label="Gateway navigation">
         <div className="uid-gateway-brand">
           <span className="uid-gateway-logo"><img src="/uid-brands-logo.svg?v=2" alt="" /></span>
-          <span><strong>UID Brands</strong><small>Creative ecosystem</small></span>
+          <span><strong>UID Brands</strong></span><span className="uid-gateway-brand-collapse" aria-hidden="true">▣</span>
         </div>
-        <div className="uid-gateway-nav-label">WORKSPACE</div>
+        <div className="uid-gateway-sidebar-search" role="note"><span aria-hidden="true">⌕</span><span>Creative DNA Gateway</span><kbd>UID</kbd></div>
         <nav className="uid-gateway-nav" aria-label="Primary">
-          <button type="button" className="is-current" aria-current="page" onClick={() => navigateTo("home")}><House size={17} /> Overview</button>
+          <button type="button" className="is-current" aria-current="page" onClick={() => navigateTo("home")}><House size={17} /> Home</button>
           <a href="#branch-preview"><Layers size={17} /> Creative DNA</a>
           <a href="#setup-guide"><Plug size={17} /> ChatGPT Connection</a>
         </nav>
-        <div className="uid-gateway-nav-label">MANAGEMENT</div>
+        <div className="uid-gateway-nav-label">Workspace</div>
         <nav className="uid-gateway-nav" aria-label="Management">
           <button type="button" onClick={() => navigateTo("admin-feedback")}><MessageSquareText size={17} /> Feedback Admin</button>
           <button type="button" onClick={() => navigateTo("support")}><LifeBuoy size={17} /> Support</button>
         </nav>
         <div className="uid-gateway-sidebar-bottom">
-          <div className="uid-gateway-related">
-            <span className="uid-gateway-related-kicker">CONNECTED WORKSPACE</span>
-            <strong>UID Brands Studio</strong>
-            <span>Tasks · Research · Materials</span>
-            <a href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer">Open Studio <ArrowUpRight size={15}/></a>
-          </div>
-          <span className="uid-gateway-sidebar-caption">Creative DNA remains the canonical source of truth.</span>
+          <a className="uid-gateway-related" href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer" aria-label="Open UID Brands Studio">
+            <span className="uid-gateway-workspace-avatar">U</span>
+            <span className="uid-gateway-related-info"><strong>UID Brands Studio</strong><small>Creative workspace</small></span>
+            <ArrowUpRight size={15}/>
+          </a>
         </div>
       </aside>
       <div className="uid-gateway-workspace">
         <header className="uid-gateway-topbar">
           <div className="uid-gateway-topbar-heading">
             <span className="uid-gateway-breadcrumb">UID Brands <span>›</span> Gateway</span>
-            <h1>Creative Intelligence Gateway</h1>
-            <p>Shared Brand DNA, materials and governance</p>
+            <h1>Creative overview</h1>
+            <p>Brand rules, materials and feedback in one workspace.</p>
           </div>
           <div className="uid-gateway-topbar-actions">
-            <PolarisBadge tone="info">Canonical source</PolarisBadge>
+            <span className="uid-gateway-workspace-pill">Gateway · Connected</span>
             <a className="uid-gateway-topbar-link" href="https://uid-brands-studio-webapp.onrender.com/" target="_blank" rel="noopener noreferrer">Studio <ArrowUpRight size={15}/></a>
           </div>
         </header>
       <main className="uid-gateway-main space-y-7">
         <section className="uid-gateway-intro">
-          <span className="uid-gateway-eyebrow"><Sparkles size={14} /> CREATIVE DNA SYSTEM</span>
-          <h2>Brand &amp; Creative Materials</h2>
-          <p>Chọn brand và material để làm việc với Creative DNA. Cùng một hệ thống quy tắc và quality gate với UID Brands Studio.</p>
-          <div className="uid-gateway-summary">
-            <div><span>BRANDS</span><strong>{supportedBrands.length}</strong><small>Brand systems</small></div>
-            <div><span>MATERIAL ROUTES</span><strong>{supportedBrands.reduce((total, item) => total + item.branches.length, 0)}</strong><small>Available branches</small></div>
-            <div><span>WORKFLOW</span><strong className="uid-gateway-summary-shared">Shared</strong><small>Creative DNA source</small></div>
+          <div className="uid-gateway-metrics">
+            <div><span>Brands</span><strong>{supportedBrands.length}</strong></div>
+            <div><span>Material routes</span><strong>{supportedBrands.reduce((total, item) => total + item.branches.length, 0)}</strong></div>
+            <div><span>Creative DNA</span><strong>Shared</strong></div>
+            <div><span>AI executor</span><strong>ChatGPT</strong></div>
+          </div>
+          <div className="uid-gateway-welcome">
+            <h2>What are we creating today?</h2>
+            <p>Select a brand and material to prepare your creative task.</p>
           </div>
         </section>
 
         <div className="uid-gateway-operations grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 xl:gap-6 items-start">
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+          <section className="uid-gateway-material-panel bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-600" />
