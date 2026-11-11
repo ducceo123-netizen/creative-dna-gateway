@@ -411,6 +411,41 @@ createServer(async(req,res)=>{
         return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
       }
 
+      const onepageBindingsMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/onepage-bindings$/);
+      if(onepageBindingsMatch){
+        const taskId=onepageBindingsMatch[1];
+        const tr=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id,workflow&limit=1',{token});
+        if(!tr.ok)return json(res,502,{error:'Could not verify task'});
+        if(tr.data?.[0]?.owner_id!==team.id||tr.data[0].workflow!=='Onepage')return json(res,404,{error:'Onepage task not found'});
+        const endpoint='/rest/v1/studio_onepage_asset_bindings';
+        if(req.method==='GET'){
+          const data=await sb(endpoint+'?task_id=eq.'+taskId+'&select=bindings,updated_at&limit=1',{token});
+          return json(res,data.ok?200:502,data.ok?{bindings:data.data?.[0]?.bindings||{},updated_at:data.data?.[0]?.updated_at||null}:{error:'Could not load Onepage bindings'});
+        }
+        if(req.method==='PUT'){
+          if(!writable)return json(res,403,{error:'Read-only user'});
+          const input=await readBody(req);
+          const bindings=input?.bindings;
+          if(!bindings||typeof bindings!=='object'||Array.isArray(bindings)||Object.keys(bindings).length>80)
+            return json(res,422,{error:'Invalid template asset mapping'});
+          const manifestResponse=await fetch('https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/manifest.json',{
+            redirect:'error',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});
+          if(!manifestResponse.ok)return json(res,502,{error:'Canonical template manifest unavailable'});
+          const manifest=await manifestResponse.json();
+          const allowed=new Set(Array.isArray(manifest?.asset_slots)?manifest.asset_slots:[]);
+          if(!allowed.size||Object.keys(bindings).some(key=>!allowed.has(key)))
+            return json(res,422,{error:'Binding contains an unknown canonical Onepage slot'});
+          const files=await listAttachments(team.id,taskId,token);
+          const verified=new Set(files.map(x=>x.id));
+          if(Object.values(bindings).some(fileId=>typeof fileId!=='string'||(fileId&&!verified.has(fileId))))
+            return json(res,422,{error:'All selected bindings must be real attachments in this task'});
+          const updated=await sb(endpoint+'?on_conflict=task_id',{method:'POST',token,
+            prefer:'resolution=merge-duplicates,return=representation',
+            body:{task_id:taskId,owner_id:team.id,bindings,updated_at:new Date().toISOString()}});
+          return json(res,updated.ok?200:502,updated.ok?{bindings:updated.data?.[0]?.bindings||{}}:{error:'Could not persist Onepage bindings'});
+        }
+        return json(res,405,{error:'Unsupported Onepage binding method'});
+      }
       const sectionFeedbackMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/section-feedback(?:\/([0-9a-f-]{36}))?$/);
       if(sectionFeedbackMatch){
         const taskId=sectionFeedbackMatch[1],feedbackId=sectionFeedbackMatch[2];
