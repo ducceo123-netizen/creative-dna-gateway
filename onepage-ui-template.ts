@@ -75,7 +75,7 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
       faq_binding: version === faqTemplate.version ? {
         ...faqSection.binding,
         count: 'Clone the native details/summary row using data-faq-item and data-text-slot suffixes. Never use input, checkbox, label[for] or checked attributes.',
-        review_state: 'Every native details element remains open during screenshot/export. No checkbox inputs exist in FAQ v2.',
+        review_state: 'Keep every native details element expanded (open) during screenshot/export. No checkbox inputs exist in FAQ v2.',
         accessibility: 'Use details/summary with keyboard interaction and focus-visible styling, not checkbox/label.',
       } : faqSection.binding,
       faq_css_reference: { url: faqSection.css_reference_url, sha256: faqSection.css_source_sha256 },
