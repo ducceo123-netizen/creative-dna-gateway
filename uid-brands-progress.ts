@@ -21,6 +21,7 @@ export const UID_TOOL_INVOCATION_LABELS = {
   launch_creative_dna: ["Loading task launcher…", "Launcher call ended"],
   get_onepage_ui_template: ["Reading Onepage template…", "Template call ended"],
   evaluate_onepage_banner_qc: ["Checking Onepage banner QC report…", "Banner QC call ended"],
+  evaluate_onepage_creative_qc: ["Checking Onepage design and EO icon QA…", "Creative QC call ended"],
   resolve_creative_dna: ["Reading canonical creative rules…", "Creative rules call ended"],
   compile_onepage_job: ["Compiling Onepage task packet…", "Task packet call ended"],
   submit_training_feedback: ["Submitting pending training proposal…", "Training submission call ended"],

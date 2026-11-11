@@ -3,7 +3,8 @@
  * This file does not claim that a model generated, rendered, or reviewed an asset.
  */
 import { ONEPAGE_BANNER_QC_VERSION, ONEPAGE_BANNER_QC_FLAGS } from "./onepage-banner-qc.ts";
-export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-11.v3";
+import { ONEPAGE_CREATIVE_QC_VERSION, EO_ICON_DEFECTS } from "./onepage-creative-qc.ts";
+export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-11.v4";
 export const ONEPAGE_PRODUCTION_QC = {
   schema_version: ONEPAGE_PRODUCTION_QC_VERSION,
   scope: "onepage-system",
@@ -17,7 +18,9 @@ export const ONEPAGE_PRODUCTION_QC = {
   },
   image_gates: {
     product_truth: "Inspect full-resolution ordered PDP media, variant differences, dimensions, mechanisms and use limitations. Show exact product and exact artwork; unsupported parts/features are blocked.",
-    icon_quality: "Inspect first-pass icons for canonical EO style, coherent strokes, clean silhouettes, anatomy, consistent optical weight and no stray/fragmented marks. Regenerate before presenting failed icons.",
+    icon_quality: "EO FIRST-PASS HARD GATE: derive a single brand-approved icon reference, then inspect every unique icon at actual/full-size and small/mobile rendered size BEFORE the first presentation. Block inconsistent stroke/weight, rough fragments, wrong anatomy/perspective, weak silhouette, non-EO style/colors or unnecessary text/background. Redo only failing icon slots; do not pass because a prompt requested EO.",
+    icon_first_pass_gate: { evaluator: "evaluate_onepage_creative_qc", scope: "eo_icons", version: ONEPAGE_CREATIVE_QC_VERSION, defect_flags: EO_ICON_DEFECTS, fail_closed: true, visual_review: "HOST_REQUIRED_NOT_SERVER_PERFORMED" },
+    artwork_diversity: { evaluator: "evaluate_onepage_creative_qc", scope: "design_diversity", version: ONEPAGE_CREATIVE_QC_VERSION, stages: ["research_collection", "allocate_story_assets", "asset_review", "overall", "packaging"], fail_closed: true, strategy: "Enumerate verified actual product-and-artwork IDs across the requested PDP family; choose a balanced page-wide design distribution before image generation. Count distinct artwork/design IDs, not names, crops, angles or rooms. Across story sections do not overload one design or repeat adjacent designs when alternatives exist. A collection with limited verified designs must not invent variety. Product Details are the sole anchor-SKU exception; keep the same product but distinct factual closeup details.", visual_review: "HOST_REQUIRED_NOT_SERVER_PERFORMED" },
     banner_contrast: "HARD REJECT: no visible solid/opaque text slab, rectangular headline panel, abrupt horizontal transition, patchy gradient, artificially flattened copy-space, uniform tonal wash, unnatural texture/light discontinuity, staged empty wall or poor readability. Preserve natural ambient wall texture, window light falloff and camera depth in desktop AND mobile. Never solve readability by preparing a flat background.",
     banner_workflow: {
       version: "scene-first-typography-second/2026-11-11.v1",
@@ -46,7 +49,7 @@ export const ONEPAGE_PRODUCTION_QC_GUIDANCE =
   "SHARED ONEPAGE QUALITY GATES (" + ONEPAGE_PRODUCTION_QC_VERSION + "): " +
   "Before output inspect the exact product and every relevant full-resolution PDP/variant asset, its mechanisms and actual use. " +
   "Choose Good To Know versus FAQs only after evidence-backed comparison of buyer questions and page-wide content overlap; neither is default. " +
-  "First-pass EO icons must have clean coherent strokes, consistent proportions and no stray/fragmented marks; redo failed icons before presentation. " +
+  "Before generating Onepage image assets, enumerate real PDP items and their distinct artwork IDs and assign those designs across banner, occasions, why-you-love-it and UGC slots in a single cross-section plan. Do not claim diversity by changing crop, model, angle, name or room of the same print. Keep one anchor SKU for Product Details but distinct factual closeups. Use evaluate_onepage_creative_qc scope=design_diversity to block weak coverage, dominant repeats and adjacent duplicates before review/overall/packaging; inventory claims require real inspected PDPs. FIRST-PASS EO ICON QC: derive one approved EO icon reference, maintain consistent stroke, thickness, optical weight, silhouette and line simplicity. Inspect every icon at full and mobile display size and call evaluate_onepage_creative_qc scope=eo_icons; redo failed slots before first delivery. The evaluator never sees pixels, so a clean report is not automatic visual proof. " +
   "BANNER WORKFLOW V3: SCENE-FIRST, TYPOGRAPHY-SECOND. Generate actual natural scene photos WITHOUT headline/text/overlay, inspect believable lighting, texture, depth and naturally available negative space, THEN add the approved text as an independent graphic layer. Do NOT flatten/darken/blur a section of wall to create an artificial copy area; no staged empty wall, uniform tonal wash, fake smooth texture or visible gradient. For mobile create and inspect a separate scene-safe composition, not a text-heavy resize; protect the product moment. HARD STOP on solid slab, unnatural copy space, texture/light discontinuity, abrupt split, patchy wash or low text contrast on either viewport. Call evaluate_onepage_banner_qc with independent scene and composite asset IDs/hashes, genuine full-resolution evidence and all flags, then revise if blocked. The server cannot inspect pixels; a reported-clear result is NOT visual approval. Do not mark banner, overall or packaging ready without real visual inspection. " +
   "Do not force a product-facing camera angle at the expense of gravity, anatomy, grip, hinges or real use; prefer a separate closeup. " +
   "Respect the brief's casting/market preference while prioritizing natural, anatomically plausible scenes; never infer nationality solely from appearance. " +
