@@ -137,7 +137,7 @@ createServer(async(req,res)=>{
   res.setHeader('Referrer-Policy','no-referrer');
   res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method==='GET'&&(path==='/'||path==='/index.html')){
-    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
+    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; connect-src 'self'; img-src 'self' data: blob:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
   }
   if(req.method==='GET'&&path==='/api/onepage/policy') {
     // One canonical runtime policy lives at the existing UID Brands gateway.
@@ -282,6 +282,15 @@ createServer(async(req,res)=>{
         const id=match[1];
         if(req.method==='DELETE'){
           if(!writable)return json(res,403,{error:'Read-only member'});
+          const current=await sb('/rest/v1/studio_tasks?id=eq.'+id+'&select=id,owner_id&limit=1',{token});
+          if(!current.ok)return json(res,502,{error:'Could not verify task before deletion'});
+          if(!current.data?.length||current.data[0].owner_id!==team.id)return json(res,404,{error:'Task not found'});
+          // Remove private objects before the task row; RLS requires a valid owning task.
+          const files=await listAttachments(team.id,id,token);
+          for(const file of files){
+            const removed=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,id)+encodeURIComponent(file.id),{method:'DELETE',token});
+            if(!removed.ok)return json(res,502,{error:'Could not clean up task attachment before deletion'});
+          }
           const deleted=await sb('/rest/v1/studio_tasks?id=eq.'+id,{method:'DELETE',token,prefer:'return=representation'});
           return json(res,deleted.ok?200:502,deleted.ok?{deleted:Array.isArray(deleted.data)&&deleted.data.length>0}:{error:'Could not delete task'});
         }
