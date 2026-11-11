@@ -309,6 +309,14 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 @media(max-width:1250px){.task-review-layout{grid-template-columns:155px minmax(0,1fr) 275px;gap:9px}.review-task-rail,.task-review-inspector{padding:10px}.task-review-center{padding:10px}}
 @media(max-width:970px){.task-review-layout{grid-template-columns:minmax(0,1fr) 280px}.review-task-rail{grid-column:1/-1;position:static;max-height:none}.review-task-list{flex-direction:row;overflow-x:auto}.review-task-card{min-width:185px}.task-review-inspector{position:static;max-height:none}}
 @media(max-width:690px){.task-review-layout{grid-template-columns:1fr}.task-review-inspector{grid-row:2}.task-review-center{grid-row:3}.review-frame-stage{max-height:800px}}
+
+.review-asset-mapping{padding:9px 0 13px;border-bottom:1px solid #ededed}
+.review-asset-mapping summary{font-size:11px;color:#4b5b4e;font-weight:650;cursor:pointer;margin:9px 0}
+.review-asset-mapping select{padding:8px;margin:7px 0 9px}
+.review-map-list{max-height:230px;overflow-y:auto;padding:5px 4px;background:#fafafa;border-radius:8px}
+.review-map-list label{display:block;padding:7px;border-bottom:1px solid #eee}
+.review-map-list label span{font-size:10px;color:#666;display:block}
+.review-asset-mapping s-button{margin-top:8px}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -335,7 +343,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},sectionFeedback:{},selectedSection:'hero',onepageTemplate:null,onepageTemplateError:'',onepageFrameMode:'desktop',pipelineRuns:{},pipelineBusy:false,pipelineProgress:'',pipelineSelectedSlots:['banner_desktop','banner_mobile','pd_main','wyl1','occasion1','ugc1'],hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},sectionFeedback:{},onepageBindings:{},selectedSection:'hero',onepageTemplate:null,onepageTemplateError:'',onepageFrameMode:'desktop',pipelineRuns:{},pipelineBusy:false,pipelineProgress:'',pipelineSelectedSlots:['banner_desktop','banner_mobile','pd_main','wyl1','occasion1','ugc1'],hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -351,7 +359,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selectedSection='hero';state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);loadSectionFeedback(id);if(tasks.find(t=>t.id===id)?.workflow==='Onepage')loadOnepageTemplate();}
+function selectTask(id){state.selectedSection='hero';state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);loadSectionFeedback(id);if(tasks.find(t=>t.id===id)?.workflow==='Onepage'){loadOnepageTemplate();loadOnepageBindings(id);}}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -945,13 +953,47 @@ function fixedOnepagePreview(id){
  '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
  '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>';
 }
+
+function onepageBindingControl(id){
+ const slots=state.onepageTemplate?.asset_slots||[];
+ if(!slots.length)return '';
+ const files=state.savedAttachments[id]||[],bindings=state.onepageBindings[id]||{};
+ const select=(slot)=>'<select data-exact-binding="'+escapeHtml(slot)+'"><option value="">Unmapped</option>'+files.map(f=>
+  '<option value="'+escapeHtml(f.id)+'" '+(bindings[slot]===f.id?'selected':'')+'>'+escapeHtml(f.name)+'</option>').join('')+'</select>';
+ const selected=state.selectedSection;
+ const selectedSlot=slots.includes(selected)?'<div class="review-selected-asset"><label class="review-label">Selected image: '+escapeHtml(selected.replace(/_/g,' '))+'</label>'+select(selected)+'</div>':'';
+ return '<div class="review-asset-mapping">'+selectedSlot+
+ '<details><summary>Exact Onepage asset mapping ('+Object.keys(bindings).filter(k=>bindings[k]).length+' / '+slots.length+')</summary>'+
+ '<p class="research-note">Map uploaded images to the canonical UID Brands template slots. Changes show immediately after Save.</p>'+
+ '<div class="review-map-list">'+slots.map(slot=>'<label><span>'+escapeHtml(slot.replace(/_/g,' '))+'</span>'+select(slot)+'</label>').join('')+'</div>'+
+ '</details>'+button('Save image mapping','saveOnepageBindings')+'</div>';
+}
+async function loadOnepageBindings(id){
+ if(!state.cloud||!state.auth||!id)return;
+ try{const r=await cloudRequest('/api/tasks/'+id+'/onepage-bindings');
+  state.onepageBindings[id]=r.bindings||{};
+  if(id===state.selected){refreshCanonicalPreview();const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(id);}
+ }catch(e){toast('Canonical asset mapping unavailable: '+e.message);}
+}
+async function saveOnepageBindings(){
+ const id=state.selected;if(!id||!state.onepageTemplate)return;
+ const fields=Array.from(document.querySelectorAll('[data-exact-binding]'));
+ const mapping={...(state.onepageBindings[id]||{})};
+ // The selected-slot quick control wins over the collapsed full mapping list.
+ for(const field of fields)mapping[field.dataset.exactBinding]=field.value;
+ try{const r=await cloudRequest('/api/tasks/'+id+'/onepage-bindings','PUT',{bindings:mapping});
+  state.onepageBindings[id]=r.bindings||{};
+  refreshCanonicalPreview();const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(id);
+  toast('Exact Onepage image mappings saved.');
+ }catch(e){toast('Could not save image mapping: '+e.message);}
+}
 function sectionFeedbackInspector(id){
  const items=state.sectionFeedback[id]||[],selected=state.selectedSection||'hero';
  const grouped=Object.groupBy?Object.groupBy(items,x=>x.group_name):items.reduce((m,x)=>(m[x.group_name]=(m[x.group_name]||[]).concat(x),m),{});
  return '<div class="review-feedback-panel"><div class="review-feedback-head"><div><span class="executor-kicker">SECTION FEEDBACK</span><h3>'+escapeHtml(selected.replace(/[_-]/g,' '))+'</h3></div><span class="review-feedback-count">'+items.filter(x=>x.status==='open').length+' open</span></div>'+
  '<p class="research-note">Choose an element on the preview, or select a section below. Group related notes for one revision request.</p>'+
  '<label class="review-label" for="reviewSection">Section</label><select id="reviewSection">'+sectionChoices(id,selected)+'</select>'+
- '<label class="review-label" for="reviewGroup">Feedback group</label><input id="reviewGroup" maxlength="80" placeholder="e.g. Banner typography / Product fidelity" value="General">'+
+ onepageBindingControl(id)+'<label class="review-label" for="reviewGroup">Feedback group</label><input id="reviewGroup" maxlength="80" placeholder="e.g. Banner typography / Product fidelity" value="General">'+
  '<label class="review-label" for="reviewNote">Feedback</label><textarea id="reviewNote" maxlength="2000" rows="4" placeholder="What needs changing and why?"></textarea>'+
  '<div class="review-feedback-actions">'+button('Add feedback','addSectionFeedback')+button('Copy grouped feedback','copySectionFeedback')+button('ChatGPT handoff','copyHandoff')+'</div>'+
  '<div class="review-grouped-feedback">'+Object.entries(grouped).map(([group,notes])=>'<section class="review-feedback-group"><strong>'+escapeHtml(group)+'</strong>'+notes.map(x=>'<div class="review-feedback-note '+(x.status==='resolved'?'resolved':'')+'"><small>'+escapeHtml(x.section_id.replace(/[_-]/g,' '))+' · '+escapeHtml(x.status)+'</small><p>'+escapeHtml(x.note)+'</p>'+(x.status==='open'?'<button data-feedback-resolve="'+escapeHtml(x.id)+'" type="button">Mark resolved</button>':'')+'</div>').join('')+'</section>').join('')+'</div></div>';
@@ -987,6 +1029,7 @@ async function loadOnepageTemplate(){
 }
 function templateAssetFromSlot(asset){
  const id=state.selected,d=hybridValue(id),files=state.savedAttachments[id]||[];
+ const override=state.onepageBindings[id]?.[asset];if(override){const found=files.find(f=>f.id===override);return found?state.attachmentPreviews[id+'|'+found.id]:null;}
  const direct=(d.materials||[]).find(x=>x.slot===asset||String(x.notes||'').includes('template_slot:'+asset));
  let mapped=direct;
  if(!mapped){
@@ -1309,7 +1352,7 @@ async function persist(){
    const route=existing?'/api/tasks/'+existing.id:'/api/tasks';
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
-   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);pipelineLoad(item.id);loadSectionFeedback(item.id);if(item.workflow==='Onepage')loadOnepageTemplate();
+   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);pipelineLoad(item.id);loadSectionFeedback(item.id);if(item.workflow==='Onepage'){loadOnepageTemplate();loadOnepageBindings(item.id);}
    const attachmentResult=await uploadPendingAttachments(item.id);
    if(attachmentResult.failed)toast(attachmentResult.uploaded+' saved, '+attachmentResult.failed+' upload(s) failed. Retry attach from task.');
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
@@ -1355,7 +1398,7 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
