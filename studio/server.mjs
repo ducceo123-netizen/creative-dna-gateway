@@ -88,6 +88,24 @@ createServer(async(req,res)=>{
   if(req.method==='GET'&&(path==='/'||path==='/index.html')){
     res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});return res.end(webApp);
   }
+  if(req.method==='GET'&&path==='/api/onepage/policy') {
+    // One canonical runtime policy lives at the existing UID Brands gateway.
+    // This studio endpoint only proxies a bounded public manifest; no secrets or task data forwarded.
+    try {
+      const response=await fetch('https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/manifest.json',{
+        method:'GET',redirect:'error',headers:{'Accept':'application/json'},signal:AbortSignal.timeout(10000)
+      });
+      if(!response.ok)return json(res,502,{error:'Shared Onepage gateway unavailable',upstream_status:response.status});
+      if(Number(response.headers.get('content-length')||0)>250000)return json(res,502,{error:'Shared contract exceeds size limit'});
+      const body=await response.text();
+      if(body.length>250000)return json(res,502,{error:'Shared contract exceeds size limit'});
+      const manifest=JSON.parse(body);
+      const qc=manifest?.production_qc_contract;
+      if(!qc||typeof qc.schema_version!=='string'||qc.scope!=='onepage-system'||!qc.image_gates||!qc.content_choice)
+        return json(res,502,{error:'Shared Onepage contract missing or incompatible'});
+      return json(res,200,{source:'uid-brands-gateway-preview',version:qc.schema_version,contract:qc});
+    }catch{return json(res,502,{error:'Shared Onepage policy currently unavailable'});}
+  }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.2',aiConfigured:aiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
   if(path.startsWith('/api/auth/')||path==='/api/tasks'||path.startsWith('/api/tasks/')||path==='/api/catalog/search'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud auth is not configured'});
