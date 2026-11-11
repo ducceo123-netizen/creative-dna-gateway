@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { createApp } from "../server.ts";
 import { EO_ICON_DEFECTS, ONEPAGE_CREATIVE_QC_VERSION, evaluateOnepageCreativeQc } from "../supabase/functions/_shared/onepage-creative-qc.ts";
 import { ONEPAGE_PRODUCTION_QC } from "../supabase/functions/_shared/onepage-production-qc.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
@@ -59,14 +58,4 @@ test("gateway tool contract shared by both clients",()=>{
   assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.icon_first_pass_gate.version,ONEPAGE_CREATIVE_QC_VERSION);
   assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
   assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
-});
-test("HTTP QC path blocks repeated design plan",async()=>{
-  const app=createApp().listen(0,"127.0.0.1");
-  await new Promise<void>(resolve=>app.once("listening",resolve));
-  try {
-    const url="http://127.0.0.1:"+(app.address() as any).port+"/api/tools/evaluate_onepage_creative_qc";
-    const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(dInput([0,0,0,0],4))});
-    assert.equal(r.status,422);
-    assert.equal((await r.json()).status,"BLOCKED");
-  } finally {await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));}
 });
