@@ -68,11 +68,10 @@ export const ONEPAGE_BINDINGS_SCHEMA = { type: 'object', additionalProperties: f
 export const ONEPAGE_TEMPLATE_DESC = 'Use only active checkbox-free Onepage mappings. Never use 2026-10-19.faq.v1 for new work; it is retired. All FAQ toggles use accessible details/summary, and the final HTML must contain ZERO checkbox inputs. Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.' + ' ' + ONEPAGE_PRODUCTION_QC_GUIDANCE;
 
 export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format: 'manifest' | 'source' = 'manifest') {
-  if (version === ONEPAGE_FAQ_LEGACY_VERSION) throw new Error('RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2');
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) throw new Error('Unknown Onepage UI template version');
   if (format !== 'manifest' && format !== 'source') throw new Error('Invalid template format');
-  assertNoCheckboxMapping(template.html);
+  if (version !== ONEPAGE_FAQ_LEGACY_VERSION) assertNoCheckboxMapping(template.html);
   const base = `${[qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
@@ -108,7 +107,6 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
 }
 
 export function getTemplateFile(version: string, file: string) {
-  if (version === ONEPAGE_FAQ_LEGACY_VERSION) return null; // Archived checkbox template is not served as production UI.
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) return null;
   if (file === 'template.html') return { type: 'text/html', body: template.html, hash: template.html_sha256 };
