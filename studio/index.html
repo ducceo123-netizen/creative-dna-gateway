@@ -806,13 +806,11 @@ async function hybridEvidence(){
  }catch(e){toast(e.message);}finally{state.hybridBusy=false;}
 }
 async function hybridRun(){
- const id=state.selected;if(!id||state.hybridBusy)return;
- if(!state.ai){toast('Paid API disabled. Use ChatGPT handoff and paste the result here.');return;}
- if(!confirm('This uses separately billed OpenAI API credits, NOT your ChatGPT subscription. Continue?'))return;
- state.hybridBusy=true;
- try{const saved=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=saved.deliverable;
-  const r=await cloudRequest('/api/tasks/'+id+'/execute','POST',{acknowledge_metered_api:true});state.deliverables[id]=r.deliverable;el('hybridPanel').innerHTML=hybridMarkup(id);toast('AI draft automatically synced. Manual QA still required.');
- }catch(e){toast(e.message);}finally{state.hybridBusy=false;}
+ const id=state.selected;if(!id)return;
+ if(state.executionMode!=='api_auto')return toast('Switch to API Auto before processing.');
+ const run=state.pipelineRuns[id];
+ if(!run||run.stage==='complete')return pipelineStart();
+ return pipelineAll();
 }
 function hybridMode(mode){state.overallMode=mode;const id=state.selected;if(id&&el('hybridOverall'))el('hybridOverall').innerHTML=overallPreview(id);}
 
