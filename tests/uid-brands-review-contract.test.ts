@@ -42,19 +42,20 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
     list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
   };
-  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result").map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "evaluate_onepage_banner_qc").map(tool => tool.name).sort(), Object.keys(baseline).sort());
   const sync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_result");
   assert.ok(sync, "one-time task-scoped return channel is additive");
   assert.deepEqual(sync!.inputSchema.required, ["handoff_token", "content"]);
   assert.equal(sync!.annotations?.readOnlyHint, false);
   assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "get_website_brand_ui_skill"));
+  assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "evaluate_onepage_banner_qc"), "QC tool is additive");
   const normalize = (value: any): any => Array.isArray(value) ? value.map(normalize) : value && typeof value === "object"
     ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== "description").map(([key, item]) => [key, normalize(item)])) : value;
   const legacyPins: Record<string, string> = {
     show_uid_brands_review: "9db38ec8e305cbd00f560a94c2236022df67fe45cbace0530c786ac9954a865b",
     get_uid_brands_native_workflow: "0de4fcab2c97245442a7743c427f77f7657f22a3299bc8f720bf408f6335ea3d",
   };
-  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result")) {
+  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "evaluate_onepage_banner_qc")) {
     const schema: any = structuredClone(tool.inputSchema);
     if (tool.name === 'get_onepage_ui_template') {
       assert.ok(schema.properties.bindings);
