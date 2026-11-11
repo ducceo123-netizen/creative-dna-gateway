@@ -207,6 +207,27 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .overall-tile{background:#fafafa;border:1px solid #ededed;border-radius:8px;overflow:hidden;margin:7px 0}.overall-tile img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}.overall-preview.mobile .overall-tile img{aspect-ratio:1/1}
 .overall-tile small{display:block;text-align:center;font-size:10px;color:#888;padding:7px}.overall-placeholder{display:grid;place-items:center;text-align:center;font-size:11px;color:#aaa;background:repeating-linear-gradient(45deg,#fafafa,#fafafa 9px,#f5f5f5 9px,#f5f5f5 18px);min-height:90px;padding:9px}
 @media(max-width:700px){.hybrid-workspace{padding:12px}.hybrid-inline{flex-direction:column;align-items:stretch}.hybrid-slots{grid-template-columns:1fr}}
+
+.executor-switcher{border:1px solid #e3e3e3;border-radius:14px;padding:17px;background:#fff;margin:16px 0 24px;box-shadow:0 1px 3px #00000005}
+.executor-switcher-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.executor-switcher-header h3{font-size:15px;font-weight:700;letter-spacing:-.025em;margin:3px 0;color:#313131}
+.executor-kicker{font-size:10px;letter-spacing:.12em;font-weight:720;color:#858585}
+.executor-active-label{border:1px solid #ddd;border-radius:999px;padding:7px 10px;background:#f9f9f9;color:#595959;font-size:11px;white-space:nowrap}
+.executor-mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.executor-mode{border:1px solid #e3e3e3;border-radius:11px;padding:13px;text-align:left;background:#fafafa;display:flex;flex-direction:column;align-items:stretch;gap:8px;cursor:pointer;min-height:137px;transition:border-color .15s,background .15s;min-width:0}
+.executor-mode:hover:not(:disabled){background:#f8faf8;border-color:#a1b5a7}
+.executor-mode.selected{border:2px solid #353535;padding:12px;background:#fff}
+.executor-mode.locked{opacity:.66;cursor:not-allowed;background:#f7f7f7}
+.executor-mode-title{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#303030;font-size:13px}
+.executor-mode-title strong{font-weight:700}
+.executor-mode-indicator{color:#393939;font-size:17px}
+.executor-mode-detail{font-size:11px;line-height:1.5;color:#777;flex:1}
+.executor-mode-status{font-size:10px;color:#666;align-self:flex-start}
+.executor-mode-status.available{color:#33744d}
+.executor-mode-status.setup_required{color:#9a7020}
+.executor-mode-status.awaiting_approval{color:#8b8b8b}
+.executor-hint{font-size:11px;color:#737373;margin:12px 0 0;line-height:1.55}
+@media(max-width:760px){.executor-mode-grid{grid-template-columns:1fr}.executor-mode{min-height:0}.executor-switcher{padding:12px}.executor-switcher-header h3{font-size:14px}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -233,7 +254,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},hybridBusy:false,overallMode:'desktop',onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -486,7 +507,7 @@ function hybridMarkup(id){
  '<div class="hybrid-section"><h4>External evidence</h4><div class="hybrid-inline"><input id="hybridEvidenceUrl" class="input" type="url" maxlength="1400" placeholder="Direct Trustpilot / Etsy / Reddit / Amazon / Pinterest URL">'+button('Capture metadata','hybridEvidence')+'</div>'+(evidence||'<p class="research-note">No external source captured yet. Metadata collection does not verify individual reviews.</p>')+'</div>'+
  '<div class="hybrid-section"><h4>ChatGPT result → Studio</h4><p class="research-note">Copy the task handoff into ChatGPT, then paste its result here and save. Automatic execution is only available when an explicitly enabled, metered API is configured.</p>'+
  '<textarea id="hybridOutput" class="input textarea" rows="7" maxlength="50000" placeholder="Paste verified creative content and materials plan…">'+escapeHtml(d.content||'')+'</textarea>'+
- '<div class="research-actions">'+button('Sync result & QA','hybridSave')+button('Run via paid API (optional)','hybridRun')+'</div></div>'+
+ '<div class="research-actions">'+button('Sync result & QA','hybridSave')+button(state.executionMode==='api_auto'?'Run API Auto':'Copy ChatGPT handoff','executeSelected')+'</div></div>'+
  '<div class="hybrid-section"><h4>Map real materials</h4><p class="research-note">Attach images/files above, then assign them to actual layout slots. Missing files are clearly marked.</p>'+
  '<div class="hybrid-slots">'+MATERIAL_SLOTS.map(slot=>'<label>'+escapeHtml(slot.replace(/_/g,' '))+'<select data-hybrid-slot="'+slot+'"><option value="">Not mapped</option>'+files.map(f=>'<option value="'+escapeHtml(f.id)+'" '+(slots[slot]===f.id?'selected':'')+'>'+escapeHtml(f.name)+'</option>').join('')+'</select></label>').join('')+'</div></div>'+
  '<div class="hybrid-section"><div class="hybrid-toolbar"><h4>Overall layout preview</h4><div class="research-actions">'+button('Desktop','hybridDesktop')+button('Mobile','hybridMobile')+'</div></div><div id="hybridOverall">'+overallPreview(id)+'</div></div>'+
@@ -533,17 +554,77 @@ async function hybridRun(){
 }
 function hybridMode(mode){state.overallMode=mode;const id=state.selected;if(id&&el('hybridOverall'))el('hybridOverall').innerHTML=overallPreview(id);}
 
+
+const EXECUTION_MODE_DEFAULTS=[
+ {id:'hybrid_bridge',label:'Hybrid Bridge',status:'available',description:'Use ChatGPT + UID Brands MCP. No API bill.'},
+ {id:'api_auto',label:'API Auto',status:'setup_required',description:'Automate content drafts through a separately billed API.'},
+ {id:'chatgpt_connect',label:'ChatGPT Connect',status:'awaiting_approval',description:'Plan Usage integration is awaiting OpenAI approval.'}
+];
+function currentExecutionMode(){
+ return (state.executionModes.length?state.executionModes:EXECUTION_MODE_DEFAULTS).find(x=>x.id===state.executionMode)||EXECUTION_MODE_DEFAULTS[0];
+}
+function executionSwitcher(location='home'){
+ const modes=state.executionModes.length?state.executionModes:EXECUTION_MODE_DEFAULTS;
+ const current=currentExecutionMode();
+ return '<section class="executor-switcher" aria-label="AI execution mode"><div class="executor-switcher-header"><div><span class="executor-kicker">EXECUTION MODE</span><h3>Choose how UID Brands runs</h3></div><span class="executor-active-label">'+escapeHtml(current.label)+'</span></div>'+
+ '<div class="executor-mode-grid">'+modes.map(mode=>{
+  const selected=mode.id===state.executionMode,locked=mode.status==='awaiting_approval';
+  return '<button type="button" class="executor-mode '+(selected?'selected ':'')+(locked?'locked':'')+'" data-execution-mode="'+mode.id+'" aria-pressed="'+selected+'" '+(locked?'disabled aria-disabled="true"':'')+'>'+
+  '<span class="executor-mode-title"><strong>'+escapeHtml(mode.label)+'</strong><span class="executor-mode-indicator">'+(selected?'●':'○')+'</span></span>'+
+  '<span class="executor-mode-detail">'+escapeHtml(mode.description)+'</span>'+
+  '<span class="executor-mode-status '+escapeHtml(mode.status)+'">'+escapeHtml(mode.status==='available'?'Available':mode.status==='setup_required'?'Requires API setup':'Awaiting approval')+'</span></button>';
+ }).join('')+'</div>'+
+ '<p class="executor-hint">'+(state.executionMode==='api_auto'?
+  (state.ai?'API Auto selected. Every paid execution requires your confirmation.':'API Auto selected, but server API is not configured. No calls will be made. Add credentials in Render when authorized.'):
+  'Hybrid Bridge is the working fallback. '+(location==='task'?'Use Copy handoff + sync token below to process in ChatGPT.':'ChatGPT Connect will unlock only after official approval.'))+'</p></section>';
+}
+async function changeExecutionMode(mode){
+ if(state.executionBusy)return;
+ if(mode==='chatgpt_connect')return toast('ChatGPT Connect is still awaiting official access. Hybrid Bridge remains usable.');
+ if(!['hybrid_bridge','api_auto'].includes(mode))return;
+ if(!state.cloud||!state.auth)return toast('Sign in to save your execution mode.');
+ if(mode===state.executionMode)return;
+ state.executionBusy=true;
+ try{
+  const result=await cloudRequest('/api/execution/modes','PUT',{mode});
+  state.executionMode=result.selectedMode;
+  state.executionModes=result.modes||EXECUTION_MODE_DEFAULTS;
+  render();
+  toast(mode==='api_auto'?(state.ai?'API Auto selected. Paid calls still require confirmation.':'API Auto selected; setup is required before execution.'):'Hybrid Bridge enabled. ChatGPT handoff ready.');
+ }catch(e){toast('Could not switch execution mode: '+e.message);}
+ finally{state.executionBusy=false;}
+}
+async function loadExecutionModes(){
+ if(!state.cloud||!state.auth)return;
+ try{
+  const result=await cloudRequest('/api/execution/modes');
+  state.executionMode=result.selectedMode==='api_auto'?'api_auto':'hybrid_bridge';
+  state.executionModes=result.modes||EXECUTION_MODE_DEFAULTS;
+ }catch(e){
+  state.executionMode='hybrid_bridge';state.executionModes=EXECUTION_MODE_DEFAULTS;
+  toast('Execution mode could not be loaded: '+e.message);
+ }
+}
+async function executeSelectedMode(){
+ if(state.executionMode==='hybrid_bridge'){
+  await copyResearchHandoff();
+  return toast('Hybrid handoff prepared. Open ChatGPT to process this task.');
+ }
+ if(state.executionMode==='chatgpt_connect')return toast('ChatGPT Connect is awaiting approval. Select Hybrid Bridge.');
+ if(state.executionMode==='api_auto')return hybridRun();
+}
+
 function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
  const signed='';
  return '<div class="home-metrics">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([label,count])=>'<div class="home-metric"><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
- '<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div>'+attachmentsPanel()+'<div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
+ executionSwitcher('home')+'<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div>'+attachmentsPanel()+'<div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. API Auto is available only after administrator setup; ChatGPT Connect is awaiting approval.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
 function taskList(){
  const workflow=state.workflowFilter;
  const filtered=tasks.filter(t=>(state.filter==='All'||t.status===state.filter)&&(!workflow||t.workflow===workflow)&&(!state.search||[t.title,t.brand,t.workflow,t.brief,t.url].some(v=>String(v||'').toLowerCase().includes(state.search))));
- const context=workflow?'<section class="workflow-context"><h2>'+escapeHtml(workflow==='LDP'?'Landing pages':workflow==='UGC'?'UGC materials':workflow)+'</h2><p>'+escapeHtml(({Onepage:'Create and manage a product-specific Onepage brief, content review and material QA.',LDP:'Organize a landing page brief around niche, recipient, occasion, collections and featured items.',UGC:'Prepare UGC concepts, image requirements, creative feedback and exportable briefs.','Scale Store Brand':'Record brand-specific UI guidance, research references and implementation tasks.'})[workflow])+'</p><div class="actions">'+button('View all tasks','clearWorkflow')+'</div><p class="composer-help">Task planning and review are active. AI execution, rendering and automatic publishing are not available.</p></section>':'';
+ const context=workflow?'<section class="workflow-context"><h2>'+escapeHtml(workflow==='LDP'?'Landing pages':workflow==='UGC'?'UGC materials':workflow)+'</h2><p>'+escapeHtml(({Onepage:'Create and manage a product-specific Onepage brief, content review and material QA.',LDP:'Organize a landing page brief around niche, recipient, occasion, collections and featured items.',UGC:'Prepare UGC concepts, image requirements, creative feedback and exportable briefs.','Scale Store Brand':'Record brand-specific UI guidance, research references and implementation tasks.'})[workflow])+'</p><div class="actions">'+button('View all tasks','clearWorkflow')+'</div><p class="composer-help">Task planning and review are active. AI execution depends on the selected mode and server configuration; automatic publishing is disabled.</p></section>':'';
  const qc=workflow==='Onepage'?'<div class="workflow-context" aria-live="polite"><h2>Shared Onepage Core</h2><p>'+escapeHtml(state.onepagePolicy?.schema_version?'Đang đọc chung quy tắc từ UID Brands Gateway · '+state.onepagePolicy.schema_version:'Chưa xác nhận kết nối QC live — không được tự nhận đã qua kiểm tra')+'</p><p>Research PDP/variants, GTK/FAQs, EO icons, banner mobile, anatomy, Product Details góc vuông, overall desktop/mobile. Quy tắc này không thay thế việc review ảnh thật hay tự chạy AI.</p></div>':'';
  return context+qc+'<s-section heading="'+(workflow?escapeHtml(workflow)+' tasks':'All tasks')+'"><div class="panelhead"><div><p class="slim">Select a task to edit or review it</p></div><div class="filters">'+['All',...statuses].map(s=>'<button class="'+(state.filter===s?'active':'')+'" data-filter="'+s+'">'+s+'</button>').join('')+'</div>'+(filtered.length?taskTable(filtered.sort((a,b)=>b.updatedAt-a.updatedAt)) :'<div class="empty">'+(workflow?'No '+escapeHtml(workflow)+' tasks yet. Use Create to start a brief.':'No tasks in this category.')+'</div>')+'</s-section>';
 }
@@ -555,10 +636,10 @@ polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Lig
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 attachmentsPanel(fresh?null:t.id)+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
-(!fresh?'<div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
+(!fresh?executionSwitcher('task')+'<div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
 (!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy handoff + sync token','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
-(!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">AI generation is not enabled. Review and materials workflow remain manual until a supported integration is approved.</p>':'')+'</s-section>';}
+(!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">Hybrid Bridge supports ChatGPT handoff; API Auto requires server configuration and per-call approval. Image generation and automatic publishing are not enabled.</p>':'')+'</s-section>';}
 function researchMarkup(pack){
  if(!pack)return '<p class="research-note">Chưa có research pack. Bấm Scan product data để đọc storefront công khai của source URL đang lưu.</p>';
  const p=pack.snapshot||pack;
@@ -643,7 +724,7 @@ function openChatGPTHandoff(){
  window.open('https://chatgpt.com/','_blank','noopener,noreferrer');
 }
 
-function settings(){return '<s-section heading="Workspace settings"><p class="lead">UID Brands Studio operates independently from Shopify admin and the existing UID Brands gateway.</p><s-banner tone="info" heading="AI API is disabled"><s-paragraph>No OpenAI API credentials are configured. Task management, content editing and review work without paid AI execution.</s-paragraph></s-banner><div class="space"><s-section heading="Data and access"><s-paragraph>'+(state.cloud?'Task drafts are stored in Supabase and protected by user ownership and team membership.':'Local task drafts are stored only in this browser.')+'</s-paragraph>'+(state.cloud&&state.user?'<div class="settings-account"><span>Signed in as '+escapeHtml(state.user.email||'team member')+'</span>'+button('Sign out','logout')+'</div>':'')+'</s-section></div><div class="space"><s-section heading="Platform"><s-paragraph>UI components: Shopify Polaris Web Components 2.0. Runs as a standalone Render web app and does not use Shopify App Bridge or impersonate Shopify Admin.</s-paragraph></s-section></div></s-section>';}
+function settings(){return executionSwitcher('settings')+'<s-section heading="Workspace settings"><p class="lead">UID Brands Studio operates independently from Shopify admin and the existing UID Brands gateway.</p><s-banner tone="info" heading="AI execution controls"><s-paragraph>API Auto requires server-side OPENAI_API_KEY and STUDIO_AI_EXECUTOR_ENABLED=true; this Studio never requests your API key in a form. ChatGPT Connect remains locked until approved. All modes share the same task and deliverable data.</s-paragraph></s-banner><div class="space"><s-section heading="Data and access"><s-paragraph>'+(state.cloud?'Task drafts are stored in Supabase and protected by user ownership and team membership.':'Local task drafts are stored only in this browser.')+'</s-paragraph>'+(state.cloud&&state.user?'<div class="settings-account"><span>Signed in as '+escapeHtml(state.user.email||'team member')+'</span>'+button('Sign out','logout')+'</div>':'')+'</s-section></div><div class="space"><s-section heading="Platform"><s-paragraph>UI components: Shopify Polaris Web Components 2.0. Runs as a standalone Render web app and does not use Shopify App Bridge or impersonate Shopify Admin.</s-paragraph></s-section></div></s-section>';}
 function loginScreen(){
  const mode=state.signupMode;
  return '<div class="panel" style="max-width:480px;margin:38px auto"><div class="eyebrow">UID BRANDS · TEAM ACCESS</div><h2 style="font-size:26px;margin-top:10px">'+(mode?'Create your workspace account':'Sign in to UID Brands')+'</h2>'+
@@ -673,7 +754,7 @@ async function cloudRequest(path,method='GET',body){
 }
 function fromCloud(t){return {...t,url:t.source_url,updatedAt:Date.parse(t.updated_at),createdAt:Date.parse(t.created_at)};}
 async function loadCloud(){
- try{const r=await cloudRequest('/api/tasks');tasks=(r.tasks||[]).map(fromCloud);state.selected=null;render();}
+ try{const r=await cloudRequest('/api/tasks');tasks=(r.tasks||[]).map(fromCloud);await loadExecutionModes();state.selected=null;render();}
  catch(e){toast(e.message); if(/access|login|token|session/i.test(e.message)){state.auth=null;state.user=null;render();}}
 }
 async function signup(){
@@ -702,7 +783,7 @@ async function login(){
  await loadCloud();toast('Signed in successfully.');
  }catch(e){toast(e.message);}finally{state.busy=false;}
 }
-function signOut(){state.auth=null;state.user=null;tasks=[];state.selected=null;render();toast('Signed out.');}
+function signOut(){state.auth=null;state.user=null;tasks=[];state.selected=null;state.executionMode='hybrid_bridge';state.executionModes=[];render();toast('Signed out.');}
 function record(v){return {...v,source_url:v.url};}
 function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):'<div class="grid"><div>'+taskList()+'</div><div>'+(selected?taskEditor(selected):'<div class="panel"><h2>Task details</h2><p class="lead">Select a task from the list to edit, review, generate content or export.</p></div>')+'</div></div>';}
 function values(){return {title:el('title').value.trim(),brand:el('brand').value,workflow:el('workflow').value,url:el('url').value.trim(),brief:el('brief').value.trim(),content:el('content')?.value||'',feedback:el('feedback')?.value||'',status:el('status')?.value||'Draft'};}
@@ -792,10 +873,11 @@ document.addEventListener('focusout',e=>{if(e.target?.id==='url'&&state.cloud&&s
 document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const executionChoice=e.target.closest('[data-execution-mode]');if(executionChoice)return changeExecutionMode(executionChoice.dataset.executionMode);
+ const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
