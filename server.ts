@@ -1,4 +1,5 @@
 import { evaluateOnepageCreativeQc, ONEPAGE_CREATIVE_QC_INPUT_SCHEMA, ONEPAGE_CREATIVE_QC_DESCRIPTION, EO_ICON_DEFECTS } from "./supabase/functions/_shared/onepage-creative-qc.ts";
+import { ONEPAGE_FAQ_LEGACY_VERSION } from './onepage-faq-template.ts';
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
 import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
 import {registerHostedReviews} from './uid-hosted-review.ts';
@@ -724,6 +725,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     inputSchema: { version: z.string().trim().max(80).optional(), format: z.enum(["manifest", "source"]).optional(), bindings: z.object({ text: z.record(z.string(), z.string()), assets: z.record(z.string(), z.string()), faq_count: z.number().int().min(1).max(100).optional() }).strict().optional() },
   }), async ({ version, format, bindings }) => {
     try {
+      if (version === ONEPAGE_FAQ_LEGACY_VERSION) throw new Error('RETIRED_CHECKBOX_FAQ_TEMPLATE');
       return withUidProgress({ content: [{ type: "text", text: JSON.stringify(bindings === undefined ? getOnepageUiTemplate(version, format) : bindOnepageUiTemplate(version, bindings), null, 2) }] }, "template");
     } catch {
       return withUidProgress({ content: [{ type: "text", text: JSON.stringify({ error: "Invalid Onepage template version, format or bindings" }) }], isError: true }, "template");
@@ -1011,6 +1013,10 @@ export function createApp(): express.Application {
 
   // Versioned backend-owned template: no Library session or datastore query required.
   app.get("/api/onepage-ui-template/:version/:file", (req: Request, res: Response) => {
+    if (req.params.version === ONEPAGE_FAQ_LEGACY_VERSION) {
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(410).json({ error: "RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2", replacement_version: "2026-11-11.faq.v2" });
+    }
     const file = getTemplateFile(String(req.params.version), String(req.params.file));
     if (!file) return res.status(404).json({ error: "Unknown Onepage UI template version or file" });
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
@@ -1036,6 +1042,10 @@ export function createApp(): express.Application {
   });
   app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
+    if (input.version === ONEPAGE_FAQ_LEGACY_VERSION) {
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(410).json({ error: "RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2", replacement_version: "2026-11-11.faq.v2" });
+    }
     try { getOnepageUiTemplate(input.version, input.format); return res.json(input.bindings === undefined ? getOnepageUiTemplate(input.version, input.format) : bindOnepageUiTemplate(input.version, input.bindings)); }
     catch { return res.status(400).json({ error: "Invalid Onepage template version, format or bindings" }); }
   });

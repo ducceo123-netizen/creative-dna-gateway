@@ -56,21 +56,29 @@ const templates: Record<string, typeof originalTemplate> = {
   [faqTemplate.version]: faqTemplate,
 };
 export const ONEPAGE_TEMPLATE_VERSION = qualityAlignedTemplate.version;
+/** Only archival source records retain the FAQ v1 checkbox prototype; never serve it as a mapping. */
+export const ONEPAGE_NO_CHECKBOX_POLICY = 'CURRENT_MAPPING_ZERO_CHECKBOX_INPUTS';
+export function assertNoCheckboxMapping(html: string) {
+  if (/<input\b[^>]*\btype\s*=\s*(?:["']checkbox["']|checkbox\b)|<input\b[^>]*\bclass\s*=\s*["'][^"']*product-tabs__radio|<label\b[^>]*\bfor\s*=\s*["']uid-faq-/i.test(html))
+    throw new Error('CHECKBOX_FORBIDDEN_IN_ONEPAGE_MAPPING');
+}
 export const TEMPLATE_PRODUCTION_ORIGIN = 'https://uid-brands-gateway-preview.onrender.com';
 const LEGACY_TEMPLATE_ORIGIN = 'https://creative-dna-gateway.vercel.app';
 export const ONEPAGE_BINDINGS_SCHEMA = { type: 'object', additionalProperties: false, required: ['text', 'assets'], properties: { text: { type: 'object', additionalProperties: { type: 'string' } }, assets: { type: 'object', additionalProperties: { type: 'string' } }, faq_count: { type: 'integer', minimum: 1, maximum: 100 } } };
-export const ONEPAGE_TEMPLATE_DESC = 'Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.' + ' ' + ONEPAGE_PRODUCTION_QC_GUIDANCE;
+export const ONEPAGE_TEMPLATE_DESC = 'Use only active checkbox-free Onepage mappings. Never use 2026-10-19.faq.v1 for new work; it is retired. All FAQ toggles use accessible details/summary, and the final HTML must contain ZERO checkbox inputs. Read the versioned, shared Onepage UI mapping template. Returns stable download URLs, SHA-256 hashes, required asset/text slots and exact-layout instructions. Download template.html and styles.css into the same folder, bind approved assets/copy using a DOM parser, then render. No ChatGPT Library access is needed. Use format=source only when inline HTML/CSS is necessary; source is large. Never redraw the mapping or reload the live PDP to reconstruct the layout. For final mapping call this same tool with bindings: exact text-slot copy and asset-slot references, plus faq_count for FAQ only. It returns deterministically bound HTML and unchanged CSS; unknown/missing slots are rejected and caller HTML/CSS is never accepted. No files are fetched, stored or published; approval and visual QC are still required.' + ' ' + ONEPAGE_PRODUCTION_QC_GUIDANCE;
 
 export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format: 'manifest' | 'source' = 'manifest') {
   const template = Object.hasOwn(templates, version) ? templates[version] : undefined;
   if (!template) throw new Error('Unknown Onepage UI template version');
   if (format !== 'manifest' && format !== 'source') throw new Error('Invalid template format');
+  if (version !== ONEPAGE_FAQ_LEGACY_VERSION) assertNoCheckboxMapping(template.html);
   const base = `${[qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? TEMPLATE_PRODUCTION_ORIGIN : LEGACY_TEMPLATE_ORIGIN}/api/onepage-ui-template/${version}`;
   const manifest = {
     id: template.id, version, scope: template.scope,
     live_html_feedback: getOnepageReviewContract(),
     post_story_section: [faqTemplate.version, legacyFaqTemplate.version].includes(version) ? 'faq' : 'gtk',
     variants: { gtk: qualityAlignedTemplate.version, faq: faqTemplate.version },
+    ui_mapping_policy: { checkboxes: 'FORBIDDEN_ALL_SECTIONS', retired_template: ONEPAGE_FAQ_LEGACY_VERSION, active_faq: faqTemplate.version, faq_control: 'native details/summary', gtk_control: 'static content', compliance: ONEPAGE_NO_CHECKBOX_POLICY },
     ...([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? {
       faq_binding: version === faqTemplate.version ? {
         ...faqSection.binding,
@@ -93,7 +101,7 @@ export function getOnepageUiTemplate(version = ONEPAGE_TEMPLATE_VERSION, format:
     layout_lock: 'HARD: preserve captured DOM/classes/section order, widths, columns, gaps, padding, typography, borders, backgrounds, masks, object-fit, object-position and responsive CSS. Preserve the approved outer canvas gutters in this version. Substitute approved images and exact copy only. Render mapping from this template; never use imagegen to redraw the page.',
     loading: 'Download html + css into the same folder (styles.css is relative to template.html), or use bundle.json. Fonts and fixed UI checkmarks are embedded. This backend-owned template supersedes libfile/ZIP references and split feedback payloads as the executable UI source. Do not fetch the live PDP to rebuild layout. If unavailable, report template retrieval failure without guessing.',
     binding: 'Use a DOM parser. Set img[src] and source[srcset] using data-asset-slot; delete stale img[srcset]. Set textContent of data-text-slot elements using exact approved copy. ui_checkmark is a fixed embedded GTK-only UI dependency. FAQ row repetition follows faq_binding. Resolve supplied asset paths relative to output HTML. Do not alter other DOM/style properties.',
-    qa: 'Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, full badge readability and final-package assets. ' + ([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? (version === faqTemplate.version ? 'Check native details/summary rows open during mapping and zero checkbox inputs/label toggles on desktop and mobile; retain long-question wrapping and no GTK placeholders. ' : 'Check every FAQ answer expanded, long question wrapping, unique input/label IDs and no GTK placeholders. ') : 'Check rounded Good To Know masks. ') + 'Downloadability/source hashes do not certify pixel parity. ' + ([qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
+    qa: 'BLOCKING QA: Zero checkbox inputs, checked toggles and FAQ label controls in all Onepage HTML mappings. Use the current FAQ v2 native details/summary, never archived FAQ v1. If any checkbox appears in external/generated mapping, refuse delivery and regenerate from server-owned current template. Compare at the same viewport; inspect desktop, mobile and 798/799px breakpoints. Check circular Product Details masks, full badge readability and final-package assets. ' + ([faqTemplate.version, legacyFaqTemplate.version].includes(version) ? (version === faqTemplate.version ? 'Check native details/summary rows open during mapping and zero checkbox inputs/label toggles on desktop and mobile; retain long-question wrapping and no GTK placeholders. ' : 'Check every FAQ answer expanded, long question wrapping, unique input/label IDs and no GTK placeholders. ') : 'Check rounded Good To Know masks. ') + 'Downloadability/source hashes do not certify pixel parity. ' + ([qualityAlignedTemplate.version, legacyFaqTemplate.version, faqTemplate.version].includes(version) ? 'Ship exactly one full-page desktop PNG mapping named onepage_{product_slug}-overall.png (lowercase snake_case product slug) in the normal creative package; production assets remain WebP. This explicit mapping exception supersedes historical WebP-only preview metadata.' : 'Ship the existing WebP mapping only in the normal creative package.')
   };
   return format === 'source' ? { ...manifest, html: template.html, css: template.css } : manifest;
 }
@@ -114,6 +122,7 @@ export type OnepageBindings = { text: Record<string, string>; assets: Record<str
  * The only repeated structure is the existing FAQ row prototype.
  */
 export function bindOnepageUiTemplate(version: string | undefined, bindings: OnepageBindings) {
+  if (version === ONEPAGE_FAQ_LEGACY_VERSION) throw new Error('RETIRED_CHECKBOX_FAQ_TEMPLATE_USE_CURRENT_FAQ_V2');
   const source = getOnepageUiTemplate(version, 'source') as ReturnType<typeof getOnepageUiTemplate> & { html: string; css: string };
   if (!bindings || typeof bindings !== 'object' || Array.isArray(bindings) || Object.keys(bindings).some(key => !['text', 'assets', 'faq_count'].includes(key))) throw new Error('INVALID_TEMPLATE_BINDINGS');
   const mode = source.post_story_section;
@@ -146,12 +155,14 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
       throw new Error('CHECKBOX_FORBIDDEN_IN_FAQ_MAPPING');
     }
   }
+  assertNoCheckboxMapping(html);
   const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const values = { ...assets, ...bindings.text };
   html = html.replace(/\{\{([a-z0-9_]+)\}\}/g, (_, slot) => {
     if (!Object.hasOwn(values, slot)) throw new Error('UNBOUND_TEMPLATE_SLOT');
     return escape(values[slot]);
   });
+  assertNoCheckboxMapping(html);
   return {
     status: 'BOUND_REQUIRES_VISUAL_QA', template_version: source.version,
     template_sha256: source.sha256, html, css: source.css,
