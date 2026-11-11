@@ -31,7 +31,7 @@ assert.match(server,/STUDIO_AI_EXECUTOR_ENABLED/);
 assert.match(server,/acknowledge_metered_api!==true/);
 assert.match(server,/Vision QA/);
 assert.match(server,/studio-attachments/);
-assert.match(server,/Canonical Creative DNA gateway manifest inaccessible/);
+assert.match(server,/resolveGatewayDNA\(\{task,research:state\.research\}\)/);
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(script);
 new vm.Script(script);
 const fields=new Map();
