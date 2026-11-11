@@ -419,11 +419,13 @@ createServer(async(req,res)=>{
           if(!writable)return json(res,403,{error:'Read-only user'});
           if(stageLocks.has(taskId))return json(res,409,{error:'Another pipeline step is already processing'});
           const existing=await getPipeline();
-          if(existing)return json(res,409,{error:'A pipeline already exists for this task. Continue it; history and outputs are preserved.'});
           const requested=await readBody(req);
+          if(existing&&existing.stage!=='complete')return json(res,409,{error:'An unfinished pipeline exists. Resume it before starting another run.'});
+          if(existing&&requested?.reset_completed!==true)return json(res,409,{error:'This pipeline has completed. Explicitly confirm a new revision run.'});
           let slots;try{slots=validateSelectedSlots(requested?.slots);}catch(e){return json(res,422,{error:e.message});}
           const fresh=freshPipeline({runId:randomUUID(),slots});
-          const saved=await savePipeline(fresh,null);
+          if(existing)fresh.revision=existing.revision+1; // CAS revision, run ID rotates; old immutable snapshots remain
+          const saved=await savePipeline(fresh,existing);
           return json(res,201,{...saved,configured:taskAiEnabled});
         }
         if(action==='next'&&req.method==='POST'){
