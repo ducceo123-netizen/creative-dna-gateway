@@ -61,7 +61,7 @@ with sync_playwright() as p:
     page.evaluate('Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async()=>{throw Error("denied")}}})')
     page.locator('#onepage-review-controls #copy').evaluate('(el)=>el.click()')
     assert page.locator('#onepage-review-controls #prompt-details').evaluate('(n)=>n.open')
-    assert 'Clipboard' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("Clipboard")')
     # Live mutation clears generated prompt and disables copying until reload.
     page.locator('[data-text-slot="headline"]').evaluate('(n)=>n.textContent="mutated"')
     page.wait_for_function('document.querySelector("#onepage-review-controls").shadowRoot.querySelector("#copy").disabled')
