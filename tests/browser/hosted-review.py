@@ -26,7 +26,7 @@ try:
                 page.locator(prefix+'#inventory').select_option('image:banner_desktop')
             else:
                 page.locator('[data-review-id]').first.click(force=True)
-            page.locator(prefix+'#feedback').fill('Desktop test feedback')
+            page.locator(prefix+'#quick-text').fill('Desktop test feedback')
             quick=page.locator(prefix+'#quick-add')
     if quick.is_visible():
         quick.click()
