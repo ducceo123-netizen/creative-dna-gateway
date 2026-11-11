@@ -28,3 +28,5 @@ jobs:
       - run: node studio/tests/company-auth.mjs
 
       - run: node studio/tests/hybrid.mjs
+
+      - run: node studio/tests/execution-modes.mjs
