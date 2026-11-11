@@ -19,7 +19,7 @@ assert.match(run('dashboard()'),/executor-switcher compact/);
 assert.doesNotMatch(run('dashboard()'),/Choose how UID Brands runs/);
 assert.match(run('taskEditor({id:"UID-TEST",title:"Test",brand:"PawfectHouse",workflow:"Onepage",url:"",brief:"test",content:"",feedback:"",status:"Draft"})'),/data-execution-mode="api_auto"/);
 run("state.executionMode='api_auto'");
-assert.match(run('dashboard()'),/API Auto selected, but server API is not configured/);
+assert.match(run('dashboard()'),/Setup required/);
 assert.match(run('hybridMarkup("UID-TEST")'),/Run API Auto/);
 run("state.executionMode='hybrid_bridge'");
 assert.match(run('hybridMarkup("UID-TEST")'),/Copy ChatGPT handoff/);
