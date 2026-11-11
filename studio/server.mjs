@@ -33,6 +33,56 @@ async function member(token){
 }
 function authorized(req){const header=req.headers.authorization||'';return /^Bearer [^\s]+$/.test(header)?header.slice(7):null;}
 function failure(res,error){return json(res,error==='body_too_large'?413:400,{error:String(error).slice(0,180)});}
+
+const ATTACH_BUCKET='studio-attachments';
+const ATTACH_MAX_SIZE=8*1024*1024;
+const ATTACH_EXT=Object.freeze({
+ png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',
+ pdf:'application/pdf',txt:'text/plain',md:'text/markdown',csv:'text/csv',
+ docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+ xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+});
+function attachmentInfo(name){
+ if(typeof name!=='string'||name.length>130||!name.trim())throw Error('Invalid attachment name');
+ const safe=name.replace(/[^\p{L}\p{N}._ -]/gu,'_').replace(/^[ .]+/,'').slice(0,100);
+ const ext=safe.split('.').at(-1)?.toLowerCase();
+ if(!safe||!Object.hasOwn(ATTACH_EXT,ext))throw Error('Unsupported file format');
+ return {safe,ext,mime:ATTACH_EXT[ext]};
+}
+function fileSignatureOK(bytes,ext){
+ const has=(arr,at=0)=>arr.every((v,i)=>bytes[at+i]===v);
+ if(bytes.length<1)return false;
+ if(ext==='png')return has([137,80,78,71,13,10,26,10]);
+ if(ext==='jpg'||ext==='jpeg')return has([255,216,255]);
+ if(ext==='gif')return has([71,73,70,56,55])||has([71,73,70,56,57]);
+ if(ext==='webp')return has([82,73,70,70])&&has([87,69,66,80],8);
+ if(ext==='pdf')return has([37,80,68,70,45]);
+ if(ext==='docx'||ext==='xlsx')return has([80,75,3,4]);
+ if(ext==='txt'||ext==='md'||ext==='csv')return !bytes.includes(0)&&new TextDecoder('utf-8',{fatal:true}).decode(bytes).length>=0;
+ return false;
+}
+async function readAttachment(req){
+ const length=Number(req.headers['content-length']||0);
+ if(length>ATTACH_MAX_SIZE)return null;
+ let count=0;const pieces=[];
+ for await(const chunk of req){count+=chunk.length;if(count>ATTACH_MAX_SIZE)return null;pieces.push(chunk);}
+ return Buffer.concat(pieces);
+}
+async function storageCall(path,{method='GET',token,body,mime='application/json'}={}){
+ const response=await fetch(supabaseUrl+'/storage/v1/'+path,{
+  method,headers:{apikey:supabaseKey,Authorization:'Bearer '+token,...(body?{'Content-Type':mime}:{})},
+  body,signal:AbortSignal.timeout(20000),redirect:'error'
+ });
+ return response;
+}
+function attachmentFolder(uid,taskId){return uid+'/'+taskId+'/';}
+async function listAttachments(uid,taskId,token){
+ const response=await storageCall('object/list/'+ATTACH_BUCKET,{method:'POST',token,body:JSON.stringify({prefix:attachmentFolder(uid,taskId),limit:100,offset:0,sortBy:{column:'name',order:'asc'}})});
+ if(!response.ok)throw Error('Could not list private attachments');
+ const objects=await response.json();
+ return (Array.isArray(objects)?objects:[]).filter(x=>/^[0-9a-f-]{36}--/.test(x.name)).map(x=>({id:x.name,name:x.name.replace(/^[0-9a-f-]{36}--/,''),size:x.metadata?.size||null,mime:x.metadata?.mimetype||null,created_at:x.created_at||null}));
+}
+
 const STORES=Object.freeze({PawfectHouse:'https://pawfecthouse.com',GiftSoul:'https://giftsoul.co',SoulPrise:'https://soulprise.co'});
 const taskFields=['title','brand','workflow','source_url','brief','content','feedback','status'];
 const searchCache=new Map();
@@ -155,6 +205,48 @@ createServer(async(req,res)=>{
         const item=created.data?.[0];
         const version=await sb('/rest/v1/studio_task_versions',{method:'POST',token,body:{task_id:id,owner_id:team.id,revision:1,snapshot:item},prefer:'return=minimal'});
         return json(res,201,{task:item,versionSaved:version.ok});
+      }
+
+      const attachmentsMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/attachments(?:\/([0-9a-f-]{36}--[^/]+))?$/);
+      if(attachmentsMatch){
+        const taskId=attachmentsMatch[1],objectName=attachmentsMatch[2];
+        const owner=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id&limit=1',{token});
+        if(!owner.ok)return json(res,502,{error:'Cannot verify task ownership'});
+        if(owner.data?.[0]?.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        if(!objectName && req.method==='GET'){
+          try{return json(res,200,{attachments:await listAttachments(team.id,taskId,token)});}
+          catch{return json(res,502,{error:'Could not load task attachments'});}
+        }
+        if(!objectName && req.method==='POST'){
+          if(!writable)return json(res,403,{error:'Read-only member'});
+          const original=new URL(req.url,'http://localhost').searchParams.get('name');
+          let info;try{info=attachmentInfo(original);}catch(e){return json(res,422,{error:e.message});}
+          if(req.headers['content-type']?.split(';')[0]!==info.mime)return json(res,415,{error:'File content type does not match extension'});
+          const listed=await listAttachments(team.id,taskId,token);
+          if(listed.length>=8)return json(res,422,{error:'Maximum 8 attachments per task'});
+          const bytes=await readAttachment(req);
+          if(!bytes)return json(res,413,{error:'File exceeds 8 MB'});
+          if(!fileSignatureOK(bytes,info.ext))return json(res,422,{error:'File content does not match supported format'});
+          const id=randomUUID()+'--'+info.safe,storagePath=attachmentFolder(team.id,taskId)+id;
+          const upstream=await storageCall('object/'+ATTACH_BUCKET+'/'+storagePath,{method:'POST',token,body:bytes,mime:info.mime});
+          if(!upstream.ok)return json(res,502,{error:'Private attachment upload failed',upstream_status:upstream.status});
+          return json(res,201,{attachment:{id,name:info.safe,size:bytes.length,mime:info.mime}});
+        }
+        if(objectName && ['GET','DELETE'].includes(req.method)){
+          // Only owner-scoped, listed objects may be read or deleted.
+          const listed=await listAttachments(team.id,taskId,token);
+          if(!listed.some(f=>f.id===objectName))return json(res,404,{error:'Attachment not found'});
+          if(req.method==='DELETE'&&!writable)return json(res,403,{error:'Read-only member'});
+          const response=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(objectName),{method:req.method,token});
+          if(!response.ok)return json(res,502,{error:'Attachment storage operation failed'});
+          if(req.method==='DELETE')return json(res,200,{deleted:true});
+          const buffer=Buffer.from(await response.arrayBuffer());
+          if(buffer.byteLength>ATTACH_MAX_SIZE)return json(res,502,{error:'Attachment exceeds permitted size'});
+          const ext=objectName.split('.').at(-1).toLowerCase(),mime=ATTACH_EXT[ext]||'application/octet-stream';
+          res.writeHead(200,{'Content-Type':mime,'Content-Length':buffer.length,'Content-Disposition':'attachment; filename="'+objectName.replace(/^[0-9a-f-]{36}--/,'').replace(/[^\x20-\x7E]/g,'_').replace(/"/g,'_')+'"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
+          return res.end(buffer);
+        }
+        return json(res,405,{error:'Unsupported attachment operation'});
       }
       const researchMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/research$/);
       if(researchMatch&&(req.method==='GET'||req.method==='POST')){
