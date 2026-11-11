@@ -259,6 +259,56 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .pipeline-history-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:8px 0;font-size:11px}
 .pipeline-history-row small{color:#888;font-size:10px}
 @media(max-width:720px){.pipeline-panel{padding:12px}.pipeline-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.pipeline-slot-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.task-review-layout{display:grid;grid-template-columns:195px minmax(0,1fr) 310px;gap:15px;align-items:start;width:100%;min-width:0}
+.review-task-rail,.task-review-center,.task-review-inspector{min-width:0}
+.review-task-rail{border:1px solid #e8e8e8;border-radius:12px;padding:12px;background:#fff;position:sticky;top:12px;max-height:calc(100vh - 35px);overflow:auto}
+.review-rail-heading{display:flex;justify-content:space-between;align-items:center;padding:3px 5px 12px}.review-rail-heading strong{font-size:13px}.review-rail-heading small{color:#999}
+.review-task-list{display:flex;flex-direction:column;gap:4px}
+.review-task-card{border:0;text-align:left;padding:11px 10px;display:flex;flex-direction:column;gap:5px;background:transparent;border-radius:8px;cursor:pointer;color:#4b4b4b;width:100%}
+.review-task-card:hover{background:#f4f4f4}.review-task-card.active{background:#f0f4f0;box-shadow:inset 3px 0 0 #3b7b53}
+.review-task-card strong{font-size:12px;font-weight:650;line-height:1.45;overflow-wrap:anywhere}.review-task-card span{font-size:10px;color:#888}
+.review-task-rail-actions{display:flex;flex-wrap:wrap;gap:5px;border-top:1px solid #eee;padding-top:12px;margin-top:15px}
+.task-review-center{border:1px solid #e8e8e8;background:#f7f7f7;border-radius:12px;padding:14px}
+.review-preview-header{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:13px}
+.review-preview-header h2{font-size:17px;font-weight:700;line-height:1.35;margin:5px 0;letter-spacing:-.02em}
+.review-preview-header p{font-size:11px;color:#858585;line-height:1.5}
+.review-view-toggle{border:1px solid #ddd;border-radius:9px;padding:3px;display:flex;gap:3px;background:#eee;flex:none}
+.review-view-toggle button{border:0;border-radius:6px;background:transparent;padding:8px;font-size:11px;color:#666;cursor:pointer}
+.review-view-toggle button.active{background:#fff;color:#242424;box-shadow:0 1px 2px #00000011}
+.review-frame-stage{display:flex;justify-content:center;background:#e9e9e9;padding:13px;border-radius:10px;min-width:0;overflow:auto;max-height:calc(100vh - 245px)}
+.review-frame-stage iframe{width:100%;min-width:0;border:0;background:white;box-shadow:0 3px 18px #00000016;min-height:850px;display:block}
+.review-frame-stage.mobile iframe{width:390px;max-width:100%;flex:none}
+.review-template-loading{background:#fff;padding:40px 20px;border-radius:8px;text-align:center;font-size:12px;color:#888}
+.review-preview-disclaimer{font-size:10px;color:#888;line-height:1.5;padding:11px 2px}
+.task-review-inspector{position:sticky;top:12px;max-height:calc(100vh - 35px);overflow:auto;background:#fff;border:1px solid #e6e6e6;border-radius:12px;padding:15px}
+.review-feedback-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.review-feedback-head h3{font-size:17px;text-transform:capitalize;font-weight:700;letter-spacing:-.02em;margin:4px 0}
+.review-feedback-count{font-size:10px;border:1px solid #e7e7e7;border-radius:30px;padding:6px 9px;color:#777;white-space:nowrap}
+.review-feedback-panel .research-note{font-size:11px;color:#858585;margin:12px 0}
+.review-label{display:block;font-size:11px;font-weight:650;margin:11px 0 5px;color:#666}
+.review-feedback-panel select,.review-feedback-panel input,.review-feedback-panel textarea{display:block;width:100%;border:1px solid #dedede;border-radius:8px;background:white;padding:9px;font-size:12px;color:#333;box-sizing:border-box}
+.review-feedback-panel textarea{resize:vertical;min-height:83px}
+.review-feedback-actions{margin:12px 0}
+.review-grouped-feedback{border-top:1px solid #eee;margin-top:14px;padding-top:10px}
+.review-feedback-group{padding-bottom:9px;border-bottom:1px solid #f2f2f2;margin-bottom:9px}
+.review-feedback-group>strong{font-size:12px}
+.review-feedback-note{background:#f8f8f8;border-radius:8px;padding:10px;margin:7px 0}
+.review-feedback-note.resolved{opacity:.6}
+.review-feedback-note small{font-size:10px;color:#858585}
+.review-feedback-note p{font-size:11px;color:#444;line-height:1.5;margin:7px 0}
+.review-feedback-note button{border:0;background:none;padding:0;color:#346c4a;font-size:10px;cursor:pointer}
+.review-advanced{margin-top:17px;border-top:1px solid #e9e9e9;padding-top:13px}
+.review-advanced>summary{cursor:pointer;font-size:12px;font-weight:700;color:#464646}
+.review-advanced>summary span{font-size:10px;color:#888;font-weight:400;float:right}
+.review-advanced-inner{margin-top:12px}
+.review-advanced-inner s-section{padding:0!important}
+.review-advanced-inner .grid{grid-template-columns:1fr!important}
+.review-advanced-inner .panelhead{flex-wrap:wrap}
+.review-advanced-inner .badge{max-width:100%;word-break:break-all}
+@media(max-width:1250px){.task-review-layout{grid-template-columns:155px minmax(0,1fr) 275px;gap:9px}.review-task-rail,.task-review-inspector{padding:10px}.task-review-center{padding:10px}}
+@media(max-width:970px){.task-review-layout{grid-template-columns:minmax(0,1fr) 280px}.review-task-rail{grid-column:1/-1;position:static;max-height:none}.review-task-list{flex-direction:row;overflow-x:auto}.review-task-card{min-width:185px}.task-review-inspector{position:static;max-height:none}}
+@media(max-width:690px){.task-review-layout{grid-template-columns:1fr}.task-review-inspector{grid-row:2}.task-review-center{grid-row:3}.review-frame-stage{max-height:800px}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -285,7 +335,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},pipelineRuns:{},pipelineBusy:false,pipelineProgress:'',pipelineSelectedSlots:['banner_desktop','banner_mobile','pd_main','wyl1','occasion1','ugc1'],hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},sectionFeedback:{},selectedSection:'hero',onepageTemplate:null,onepageTemplateError:'',onepageFrameMode:'desktop',pipelineRuns:{},pipelineBusy:false,pipelineProgress:'',pipelineSelectedSlots:['banner_desktop','banner_mobile','pd_main','wyl1','occasion1','ugc1'],hybridBusy:false,overallMode:'desktop',executionMode:'hybrid_bridge',executionModes:[],executionBusy:false,onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -301,7 +351,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);}
+function selectTask(id){state.selectedSection='hero';state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);loadSectionFeedback(id);if(tasks.find(t=>t.id===id)?.workflow==='Onepage')loadOnepageTemplate();}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -477,7 +527,7 @@ async function loadTaskAttachments(taskId){
     const data=await response.blob();
     if(state.attachmentPreviews[key])URL.revokeObjectURL(state.attachmentPreviews[key]);
     state.attachmentPreviews[key]=URL.createObjectURL(data);
-    if(state.selected===taskId)refreshAttachmentTray();
+    if(state.selected===taskId){refreshAttachmentTray();refreshCanonicalPreview();}
    }catch{}
   }
  }catch(e){if(state.selected===taskId)toast('Could not load attachments: '+e.message);}
@@ -778,7 +828,7 @@ function hybridInput(id){
 }
 async function hybridLoad(id){
  if(!state.cloud||!state.auth)return;
- try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable');state.deliverables[id]=r.deliverable||{content:'',materials:[],evidence:[],qa:{}};if(state.selected===id&&el('hybridPanel'))el('hybridPanel').innerHTML=hybridMarkup(id);}
+ try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable');state.deliverables[id]=r.deliverable||{content:'',materials:[],evidence:[],qa:{}};if(state.selected===id){if(el('hybridPanel'))el('hybridPanel').innerHTML=hybridMarkup(id);refreshCanonicalPreview();}}
  catch(e){toast('Hybrid results unavailable: '+e.message);}
 }
 async function hybridSave(){
@@ -879,6 +929,154 @@ function dashboard(){
  executionSwitcher('home')+'<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div>'+attachmentsPanel()+'<div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. API Auto is available only after administrator setup; ChatGPT Connect is awaiting approval.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
+
+function compactTaskRail(){
+ const filtered=tasks.filter(t=>(state.filter==='All'||t.status===state.filter)&&(!state.workflowFilter||t.workflow===state.workflowFilter));
+ return '<aside class="review-task-rail"><div class="review-rail-heading"><strong>Tasks</strong><small>'+filtered.length+'</small></div>'+
+ '<div class="review-task-list">'+filtered.slice(0,50).map(t=>'<button type="button" class="review-task-card '+(t.id===state.selected?'active':'')+'" data-select="'+escapeHtml(t.id)+'"><strong>'+escapeHtml(t.title)+'</strong><span>'+escapeHtml(t.brand)+' · '+escapeHtml(t.workflow)+' · '+escapeHtml(t.status)+'</span></button>').join('')+'</div>'+
+ '<div class="review-task-rail-actions">'+button('All tasks','clearSelection')+button('New task','create')+'</div></aside>';
+}
+function fixedOnepagePreview(id){
+ const task=tasks.find(x=>x.id===id);
+ return '<div class="review-preview-header"><div><span class="executor-kicker">ONEPAGE · CANONICAL TEMPLATE</span><h2>'+escapeHtml(task?.title||'Onepage Preview')+'</h2><p>Click an image or section to leave grouped feedback. This is a template mapping preview, not the live product page.</p></div><div class="review-view-toggle">'+
+ '<button type="button" data-review-view="desktop" class="'+(state.onepageFrameMode==='desktop'?'active':'')+'">Desktop</button><button type="button" data-review-view="mobile" class="'+(state.onepageFrameMode==='mobile'?'active':'')+'">Mobile</button></div></div>'+
+ '<div class="review-frame-stage '+(state.onepageFrameMode==='mobile'?'mobile':'desktop')+'">'+
+ (state.onepageTemplate?'<iframe id="onepageFrame" sandbox="allow-same-origin" title="Canonical Onepage preview" referrerpolicy="no-referrer"></iframe>':
+ '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
+ '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>';
+}
+function sectionFeedbackInspector(id){
+ const items=state.sectionFeedback[id]||[],selected=state.selectedSection||'hero';
+ const grouped=Object.groupBy?Object.groupBy(items,x=>x.group_name):items.reduce((m,x)=>(m[x.group_name]=(m[x.group_name]||[]).concat(x),m),{});
+ return '<div class="review-feedback-panel"><div class="review-feedback-head"><div><span class="executor-kicker">SECTION FEEDBACK</span><h3>'+escapeHtml(selected.replace(/[_-]/g,' '))+'</h3></div><span class="review-feedback-count">'+items.filter(x=>x.status==='open').length+' open</span></div>'+
+ '<p class="research-note">Choose an element on the preview, or select a section below. Group related notes for one revision request.</p>'+
+ '<label class="review-label" for="reviewSection">Section</label><select id="reviewSection">'+sectionChoices(id,selected)+'</select>'+
+ '<label class="review-label" for="reviewGroup">Feedback group</label><input id="reviewGroup" maxlength="80" placeholder="e.g. Banner typography / Product fidelity" value="General">'+
+ '<label class="review-label" for="reviewNote">Feedback</label><textarea id="reviewNote" maxlength="2000" rows="4" placeholder="What needs changing and why?"></textarea>'+
+ '<div class="review-feedback-actions">'+button('Add feedback','addSectionFeedback')+'</div>'+
+ '<div class="review-grouped-feedback">'+Object.entries(grouped).map(([group,notes])=>'<section class="review-feedback-group"><strong>'+escapeHtml(group)+'</strong>'+notes.map(x=>'<div class="review-feedback-note '+(x.status==='resolved'?'resolved':'')+'"><small>'+escapeHtml(x.section_id.replace(/[_-]/g,' '))+' · '+escapeHtml(x.status)+'</small><p>'+escapeHtml(x.note)+'</p>'+(x.status==='open'?'<button data-feedback-resolve="'+escapeHtml(x.id)+'" type="button">Mark resolved</button>':'')+'</div>').join('')+'</section>').join('')+'</div></div>';
+}
+function sectionChoices(id,selected){
+ const defaults=['hero','product_details','why_you_love_it','occasion','good_to_know','ugc','icons'];
+ const slots=state.onepageTemplate?.asset_slots||[];
+ const sections=[...new Set([...defaults,...slots,...(state.sectionFeedback[id]||[]).map(x=>x.section_id)])].filter(x=>/^[a-z0-9_-]{2,40}$/.test(x));
+ if(!sections.includes(selected))sections.unshift(selected);
+ return sections.map(key=>'<option value="'+escapeHtml(key)+'" '+(key===selected?'selected':'')+'>'+escapeHtml(key.replace(/[_-]/g,' '))+'</option>').join('');
+}
+function reviewWorkspace(t){
+ const preview=t.workflow==='Onepage'?fixedOnepagePreview(t.id):
+ '<div class="review-preview-header"><h2>'+escapeHtml(t.title)+'</h2><p>Structured material mapping preview</p></div>'+overallPreview(t.id);
+ return '<div class="task-review-layout">'+compactTaskRail()+'<main class="task-review-center">'+preview+'</main>'+
+ '<aside class="task-review-inspector"><div id="sectionFeedbackPane">'+sectionFeedbackInspector(t.id)+'</div>'+
+ '<details class="review-advanced" id="reviewAdvanced"><summary>Task details, pipeline & research <span>Expand</span></summary><div class="review-advanced-inner">'+taskEditor(t)+'</div></details></aside></div>';
+}
+async function loadOnepageTemplate(){
+ if(state.onepageTemplate)return;
+ try{
+  const response=await fetch('/api/onepage/template-source',{credentials:'same-origin'});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Canonical UI unavailable');
+  if(data.version!=='2026-10-11.v3'||!data.html||!data.css||!Array.isArray(data.asset_slots))throw Error('Unexpected Onepage template version');
+  state.onepageTemplate=data;state.onepageTemplateError='';
+  if(state.page==='tasks'&&tasks.find(x=>x.id===state.selected)?.workflow==='Onepage'){
+   const center=document.querySelector('.task-review-center');if(center)center.innerHTML=fixedOnepagePreview(state.selected);
+   const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(state.selected);
+   refreshCanonicalPreview();
+  }
+ }catch(e){state.onepageTemplateError='Canonical Onepage template unavailable: '+e.message+'. No substitute layout will be shown.';const center=document.querySelector('.task-review-center');if(center)center.innerHTML=fixedOnepagePreview(state.selected);}
+}
+function templateAssetFromSlot(asset){
+ const id=state.selected,d=hybridValue(id),files=state.savedAttachments[id]||[];
+ const direct=(d.materials||[]).find(x=>x.slot===asset||String(x.notes||'').includes('template_slot:'+asset));
+ let mapped=direct;
+ if(!mapped){
+  const normalized=asset.toLowerCase();
+  const key=normalized.includes('banner')?(normalized.includes('mobile')?'banner_mobile':'banner_desktop'):
+   normalized.includes('pd_')||normalized.includes('product_detail')?'pd_main':
+   normalized.includes('wyl')?'wyl1':
+   normalized.includes('occasion')?'occasion1':
+   normalized.includes('ugc')?'ugc1':
+   normalized.includes('icon')?'icons':null;
+  if(key)mapped=(d.materials||[]).find(x=>x.slot===key);
+ }
+ const file=files.find(f=>f.id===mapped?.file_id);
+ return file?state.attachmentPreviews[id+'|'+file.id]:null;
+}
+function refreshCanonicalPreview(){
+ const frame=el('onepageFrame'),template=state.onepageTemplate;
+ if(!frame||!template||!state.selected)return;
+ const parser=new DOMParser(),doc=parser.parseFromString(template.html,'text/html');
+ for(const node of doc.querySelectorAll('script,iframe,object,embed'))node.remove();
+ const placeholder='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#f4f4f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">Material not mapped</text></svg>');
+ const mapped=state.onepageTemplate.asset_slots;
+ for(const node of doc.querySelectorAll('*')){
+  const attrs=Array.from(node.attributes||[]);
+  let assetName=null;
+  for(const attr of attrs){
+   if(!attr.value.includes('{{'))continue;
+   const tokens=[...attr.value.matchAll(/\{\{([a-z0-9_]+)\}\}/g)].map(x=>x[1]);
+   for(const token of tokens){
+    const isAsset=mapped.includes(token),value=isAsset?(templateAssetFromSlot(token)||placeholder):'';
+    attr.value=attr.value.replace('{{'+token+'}}',value);
+    if(isAsset)assetName=token;
+   }
+   node.setAttribute(attr.name,attr.value);
+  }
+  if(assetName)node.setAttribute('data-uid-review',assetName);
+  else if(node.tagName==='SECTION'||node.className&&typeof node.className==='string'&&/hero|occasion|product.details|why.you|good.to.know|customer|ugc|icon/i.test(node.className)){
+   const name=String(node.id||node.className||'section').toLowerCase().replace(/[^a-z0-9_-]+/g,'_').slice(0,40);
+   if(name.length>1)node.setAttribute('data-uid-review',name);
+  }
+ }
+ const source=doc.documentElement.outerHTML.replace(/\{\{([a-z0-9_]+)\}\}/g,(_,slot)=>escapeHtml(slot.replace(/_/g,' ')));
+ const chrome='<style>'+template.css.replace(/<\/style/gi,'<\\/style')+'</style><style>[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #3e9266;outline-offset:-2px}.uid-review-picked{outline:3px solid #27844d!important;outline-offset:-3px}</style>';
+ frame.onload=()=>{
+  try{
+   const inner=frame.contentDocument;if(!inner)return;
+   inner.addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();
+    let target=event.target.closest?.('[data-uid-review]');
+    if(!target){const sections=Array.from(inner.querySelectorAll('section'));target=sections.find(x=>x.contains(event.target))||event.target.closest?.('img,section,article')||event.target;}
+    const slot=target?.getAttribute?.('data-uid-review')||'general';
+    inner.querySelectorAll('.uid-review-picked').forEach(x=>x.classList.remove('uid-review-picked'));
+    target?.classList?.add('uid-review-picked');
+    state.selectedSection=/^[a-z0-9_-]{2,40}$/.test(slot)?slot:'general';
+    const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(state.selected);
+  },true);
+  frame.style.height=Math.min(16000,Math.max(900,inner.documentElement.scrollHeight+40))+'px';
+  }catch(e){toast('Unable to select preview elements: '+e.message);}
+ };
+ frame.srcdoc=source.replace(/<\/head>/i,chrome+'</head>');
+}
+async function loadSectionFeedback(id){
+ if(!state.cloud||!state.auth||!id)return;
+ try{const result=await cloudRequest('/api/tasks/'+id+'/section-feedback');state.sectionFeedback[id]=result.feedback||[];
+  if(id===state.selected&&el('sectionFeedbackPane'))el('sectionFeedbackPane').innerHTML=sectionFeedbackInspector(id);
+ }catch(e){toast('Feedback unavailable: '+e.message);}
+}
+async function addSectionFeedback(){
+ const id=state.selected,section_id=el('reviewSection')?.value,group_name=el('reviewGroup')?.value.trim()||'General',note=el('reviewNote')?.value.trim();
+ if(!id||!section_id||!note)return toast('Select a section and enter feedback.');
+ try{
+  const r=await cloudRequest('/api/tasks/'+id+'/section-feedback','POST',{section_id,group_name,note});
+  state.sectionFeedback[id]=[...(state.sectionFeedback[id]||[]),r.feedback];
+  el('sectionFeedbackPane').innerHTML=sectionFeedbackInspector(id);
+  toast('Feedback saved to this task and group.');
+ }catch(e){toast('Feedback save failed: '+e.message);}
+}
+async function resolveSectionFeedback(feedbackId){
+ const id=state.selected;if(!id)return;
+ try{await cloudRequest('/api/tasks/'+id+'/section-feedback/'+encodeURIComponent(feedbackId),'PATCH',{status:'resolved'});
+  await loadSectionFeedback(id);toast('Feedback marked resolved.');
+ }catch(e){toast('Could not update feedback: '+e.message);}
+}
+function switchReviewView(mode){
+ if(!['desktop','mobile'].includes(mode))return;
+ state.onepageFrameMode=mode;
+ const center=document.querySelector('.task-review-center');
+ if(center){center.innerHTML=fixedOnepagePreview(state.selected);refreshCanonicalPreview();}
+}
+
 function taskList(){
  const workflow=state.workflowFilter;
  const filtered=tasks.filter(t=>(state.filter==='All'||t.status===state.filter)&&(!workflow||t.workflow===workflow)&&(!state.search||[t.title,t.brand,t.workflow,t.brief,t.url].some(v=>String(v||'').toLowerCase().includes(state.search))));
@@ -1043,7 +1241,7 @@ async function login(){
 }
 function signOut(){state.auth=null;state.user=null;tasks=[];state.selected=null;state.executionMode='hybrid_bridge';state.executionModes=[];render();toast('Signed out.');}
 function record(v){return {...v,source_url:v.url};}
-function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):'<div class="grid"><div>'+taskList()+'</div><div>'+(selected?taskEditor(selected):'<div class="panel"><h2>Task details</h2><p class="lead">Select a task from the list to edit, review, generate content or export.</p></div>')+'</div></div>';}
+function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):(selected?reviewWorkspace(selected):taskList());}
 function values(){return {title:el('title').value.trim(),brand:el('brand').value,workflow:el('workflow').value,url:el('url').value.trim(),brief:el('brief').value.trim(),content:el('content')?.value||'',feedback:el('feedback')?.value||'',status:el('status')?.value||'Draft'};}
 function valid(v){if(!v.title||!v.brief){toast('Cần có task name và brief.');return false;}if(v.url.length>2000){toast('Tên hoặc URL quá dài.');return false;}if(v.url.includes('://')&&!/^https:\/\//i.test(v.url)){toast('Link phải bắt đầu bằng https://');return false;}return true;}
 const normalizeName=s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
@@ -1113,7 +1311,8 @@ async function showHistory(){
 function exportTask(t){const blob=new Blob([JSON.stringify(t,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=t.id+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function generate(){const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(!state.ai){toast('AI chưa cấu hình. Xem Settings.');return;}if(!state.token){navigate('settings');toast('Nhập Studio access token trước.');return;}const v=values();if(!valid(v))return;const btn=document.querySelector('[data-action="generate"]');btn.disabled=true;btn.textContent='Generating…';try{const response=await fetch('/api/ai/content',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},body:JSON.stringify({brand:v.brand,workflow:v.workflow,brief:'Title: '+v.title+'\nSource URL: '+v.url+'\n'+v.brief})});const data=await response.json();if(!response.ok)throw new Error(data.error||'AI request failed');if(!data.output)throw new Error('Empty output');v.content=data.output;v.status='In review';Object.assign(t,v,{updatedAt:Date.now()});save();render();toast('AI draft ready for review.');}catch(e){toast(String(e.message));if(btn){btn.disabled=false;btn.textContent='Generate content with AI';}}}
 
-document.addEventListener('change',e=>{
+document.addEventListener('change',e=>{if(e.target?.id==='reviewSection'){state.selectedSection=e.target.value;const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(state.selected);return;}
+
  if(e.target?.id==='attachmentPicker'){addAttachments(e.target.files);e.target.value='';}
 });
 document.addEventListener('paste',e=>{
@@ -1132,10 +1331,12 @@ document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&s
 document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
 document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const executionChoice=e.target.closest('[data-execution-mode]');if(executionChoice)return changeExecutionMode(executionChoice.dataset.executionMode);
+ const viewMode=e.target.closest('[data-review-view]');if(viewMode)return switchReviewView(viewMode.dataset.reviewView);
+ const sectionResolve=e.target.closest('[data-feedback-resolve]');if(sectionResolve)return resolveSectionFeedback(sectionResolve.dataset.feedbackResolve);
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
