@@ -20,3 +20,5 @@ jobs:
       - run: node --check studio/server.mjs
       - run: node studio/tests/smoke.mjs
       - run: node studio/tests/workflows.mjs
+
+      - run: node studio/tests/research.mjs
