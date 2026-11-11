@@ -66,7 +66,7 @@ with sync_playwright() as p:
     page.locator('[data-text-slot="headline"]').evaluate('(n)=>n.textContent="mutated"')
     page.wait_for_function('document.querySelector("#onepage-review-controls").shadowRoot.querySelector("#copy").disabled')
     assert page.locator('#onepage-review-controls #prompt').input_value()==''
-    assert 'thay đổi' in status(page)
+    page.wait_for_function('() => document.querySelector("#onepage-review-controls")?.shadowRoot?.getElementById("status")?.textContent.includes("thay đổi")')
     # Different inventory faults, including exact duplicate and missing mappings.
     for manifest,suffix,expected in [
         ({**M,'asset_manifest':M['asset_manifest'][:1]},'', 'không khớp'),
