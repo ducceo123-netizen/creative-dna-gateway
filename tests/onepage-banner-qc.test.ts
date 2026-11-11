@@ -88,3 +88,18 @@ test("copy-space flattening and fake wall texture are blocked even without a lit
     assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   }
 });
+
+test("subtle feathered support is permitted when actual image report finds no visual defects",()=>{
+  const v:any=input();
+  v.inspections[1].evidence_note="Full-size mobile headline inspected with subtle feathered translucent tonal support. Scene texture and light falloff remain visible through it; text contrast readable.";
+  const result=evaluateOnepageBannerQc(v);
+  assert.equal(result.status,"REPORTED_CLEAR_REQUIRES_INDEPENDENT_VISUAL_QA");
+  assert.equal(result.can_release,false);
+  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_contrast,/ALLOW a subtle localized/);
+});
+test("too-weak headlines block delivery even when no solid rectangle is visible",()=>{
+  const v:any=input();v.inspections[1].findings.under_supported_headline_contrast=true;
+  const result=evaluateOnepageBannerQc(v);
+  assert.equal(result.status,"BLOCKED");
+  assert.ok(result.reasons.some((x:string)=>x==="BANNER_DEFECT:mobile:under_supported_headline_contrast"));
+});
