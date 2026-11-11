@@ -322,6 +322,8 @@ createServer(async(req,res)=>{
         if(!tr.ok)return json(res,502,{error:'Could not verify task'});
         if(tr.data?.[0]?.owner_id!==team.id)return json(res,404,{error:'Task not found'});
         clearExpiredHandoffs();
+        // Reissuing a handoff for the same owner/task invalidates the older token.
+        for(const [key,cap] of handoffTokens)if(cap.owner===team.id&&cap.task===taskId&&!cap.busy)handoffTokens.delete(key);
         if(handoffTokens.size>=150)return json(res,429,{error:'Handoff capacity reached; retry later'});
         let existing=0;for(const cap of handoffTokens.values())if(cap.owner===team.id)existing++;
         if(existing>=8)return json(res,429,{error:'Too many active handoffs. Let existing links expire.'});
