@@ -504,6 +504,7 @@ createServer(async(req,res)=>{
           const pref=await sb('/rest/v1/studio_execution_preferences?user_id=eq.'+team.id+'&select=mode&limit=1',{token});
           if(!pref.ok||pref.data?.[0]?.mode!=='api_auto')return json(res,409,{error:'Select API Auto first'});
           stageLocks.add(taskId);
+          let heldApiLock=false;
           try {
             const prior=await getPipeline();
             if(!prior)return json(res,404,{error:'Start a pipeline first'});
@@ -513,7 +514,7 @@ createServer(async(req,res)=>{
             if(chargeable){
               if(!taskAiEnabled)throw Error('OpenAI API executor is not enabled. No paid call attempted');
               if(apiUserLocks.has(team.id))throw Error('A paid task request is already executing for this user');
-              apiUserLocks.add(team.id);
+              apiUserLocks.add(team.id);heldApiLock=true;
               await reserveApiQuota(team.id,token,{image:prior.stage==='materials'});
             }
             let state=structuredClone(prior.state||{}),next=prior.stage,detail='',paid=false;
@@ -630,7 +631,7 @@ createServer(async(req,res)=>{
             }
             return json(res,502,{error:String(error.message||'Pipeline stage failed').slice(0,290),
               status:'blocked',note:'Stage did not advance. Timed-out API calls may still be charged; inspect usage before retrying.'});
-          }finally{stageLocks.delete(taskId);apiUserLocks.delete(team.id);}
+          }finally{stageLocks.delete(taskId);if(heldApiLock)apiUserLocks.delete(team.id);}
         }
         return json(res,405,{error:'Unsupported pipeline method'});
       }
