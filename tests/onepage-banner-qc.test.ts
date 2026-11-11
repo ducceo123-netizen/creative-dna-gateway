@@ -1,3 +1,4 @@
+import { createApp } from "../server.ts";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_FLAGS, ONEPAGE_BANNER_QC_VERSION } from "../supabase/functions/_shared/onepage-banner-qc.ts";
@@ -42,4 +43,25 @@ test("new banner hard gate flows through both ChatGPT and Web App shared contrac
   assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_typography_gate.fail_closed,true);
   assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
   assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
+});
+
+test("public gateway banner QC endpoint blocks flagged viewport and clean report still needs visual review", async () => {
+  const app=createApp().listen(0, "127.0.0.1");
+  await new Promise<void>(resolve=>app.once("listening",resolve));
+  const url="http://127.0.0.1:"+String((app.address() as any).port)+"/api/tools/evaluate_onepage_banner_qc";
+  try {
+    const bad=input();bad.inspections[1].findings.visible_solid_text_slab=true;
+    const flagged=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(bad)});
+    assert.equal(flagged.status,422);
+    const issue=await flagged.json();
+    assert.equal(issue.status,"BLOCKED");
+    assert.equal(issue.can_release,false);
+    const clean=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(input())});
+    assert.equal(clean.status,200);
+    const clear=await clean.json();
+    assert.equal(clear.can_release,false);
+    assert.equal(clear.pixel_inspected_by_server,false);
+  } finally {
+    await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));
+  }
 });
