@@ -584,6 +584,12 @@ async function changeExecutionMode(mode){
  if(!['hybrid_bridge','api_auto'].includes(mode))return;
  if(!state.cloud||!state.auth)return toast('Sign in to save your execution mode.');
  if(mode===state.executionMode)return;
+ if(state.page==='tasks'&&state.selected){
+  const task=tasks.find(t=>t.id===state.selected),draft=el('hybridOutput')?.value;
+  const unsavedOutput=draft!==undefined&&draft!==String(hybridValue(state.selected).content||'');
+  const unsavedBrief=task&&el('brief')?.value!==undefined&&el('brief').value!==String(task.brief||'');
+  if((unsavedOutput||unsavedBrief)&&!confirm('You have unsaved task edits. Switching modes will refresh this page and discard those edits. Continue?'))return;
+ }
  state.executionBusy=true;
  try{
   const result=await cloudRequest('/api/execution/modes','PUT',{mode});
