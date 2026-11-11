@@ -24,3 +24,5 @@ jobs:
       - run: node studio/tests/research.mjs
 
       - run: node studio/tests/attachments.mjs
+
+      - run: node studio/tests/company-auth.mjs
