@@ -32,3 +32,5 @@ jobs:
       - run: node studio/tests/execution-modes.mjs
 
       - run: node studio/tests/orchestrator.mjs
+
+      - run: node studio/tests/pipeline-integration.mjs
