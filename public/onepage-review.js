@@ -16,8 +16,14 @@
     }
     const panel = document.createElement('aside');
     panel.setAttribute('aria-label', 'Onepage feedback'); panel.lang = 'vi';
-    panel.innerHTML = `<details open id="panel"><summary>UID Brands · Onepage feedback <span id="count"></span></summary><p>Chọn nhiều mục → thêm nhóm góp ý → sao chép vào chat. Không tự gửi hoặc Train.</p><div class="tools"><label><input type="checkbox" id="mode" checked> Chọn trực tiếp</label><select id="kind" aria-label="Selection level"><option value="element">Ảnh / chữ</option><option value="section">Cả section</option></select><button id="clear" type="button">Bỏ chọn</button></div><p id="viewport"></p><label for="inventory">Chọn mục từ inventory (kể cả mục khó bấm)</label><select id="inventory"><option value="">Chọn mục…</option></select><ul id="selected"></ul><label for="feedback">Góp ý cho nhóm đã chọn</label><textarea id="feedback" maxlength="4000"></textarea><div class="tools"><button id="add" type="button">Thêm nhóm góp ý</button><button id="reset" type="button">Xóa các nhóm</button></div><ul id="groups"></ul><details id="prompt-details"><summary>Prompt để dán vào chat</summary><textarea id="prompt" readonly aria-label="Generated feedback prompt"></textarea></details><button id="copy" type="button">Sao chép prompt</button><p id="status" role="status" aria-live="polite"></p></details>`;
-    shadow.append(panel); document.body.append(host);
+    panel.innerHTML = `<details open id="panel"><summary>UID Brands · Onepage feedback <span id="count"></span></summary><p>Chọn nhiều mục → thêm nhóm góp ý → sao chép vào chat. Không tự gửi hoặc Train.</p><div class="tools"><button id="mode" type="button" aria-pressed="true">Chọn trực tiếp: Bật</button><select id="kind" aria-label="Selection level"><option value="element">Ảnh / chữ</option><option value="section">Cả section</option></select><button id="clear" type="button">Bỏ chọn</button></div><p id="viewport"></p><label for="inventory">Chọn mục từ inventory (kể cả mục khó bấm)</label><select id="inventory"><option value="">Chọn mục…</option></select><ul id="selected"></ul><label for="feedback">Góp ý cho nhóm đã chọn</label><textarea id="feedback" maxlength="4000"></textarea><div class="tools"><button id="add" type="button">Thêm nhóm góp ý</button><button id="reset" type="button">Xóa các nhóm</button></div><ul id="groups"></ul><details id="prompt-details"><summary>Prompt để dán vào chat</summary><textarea id="prompt" readonly aria-label="Generated feedback prompt"></textarea></details><button id="copy" type="button">Sao chép prompt</button><p id="status" role="status" aria-live="polite"></p></details>`;
+    shadow.append(panel);
+    const quick = document.createElement('section');
+    quick.id = 'quick-feedback';
+    quick.hidden = true;
+    quick.setAttribute('aria-label', 'Góp ý nhanh theo mục đã chọn');
+    quick.innerHTML = `<div class="quick-head"><strong>Feedback · <span id="quick-count">0</span> mục</strong><button type="button" id="quick-close" aria-label="Bỏ chọn các mục">×</button></div><div id="quick-chips" class="quick-chips"></div><textarea id="quick-text" rows="2" maxlength="4000" placeholder="Góp ý chung cho các mục đã chọn…"></textarea><div class="quick-actions"><span id="quick-hint">Chỉ sửa các mục đã chọn</span><button id="quick-add" type="button">+ Thêm nhóm</button></div>`;
+    shadow.append(quick); document.body.append(host);
     const $ = id => shadow.getElementById(id);
     let manifest, baseline, blocked = false;
     const selected = new Set(), groups = [], byId = new Map();
@@ -113,6 +119,17 @@
       $('copy').disabled = !groups.length || !!selected.size || !!$('feedback').value.trim();
       $('prompt').value = groups.length ? prompt() : '';
       $('status').textContent = selected.size || $('feedback').value.trim() ? 'Thêm nhóm hoặc bỏ chọn và xóa nội dung trước khi sao chép.' : 'Bản nháp chỉ ở trang này. Chưa gửi sang chat.';
+      $('quick-count').textContent = String(selected.size);
+      $('quick-feedback').hidden = !selected.size;
+      $('quick-chips').replaceChildren(...[...selected].map(id => {
+        const chip = document.createElement('button');
+        chip.type = 'button'; chip.className = 'quick-chip';
+        chip.textContent = id + ' ×'; chip.title = 'Bỏ chọn ' + id;
+        chip.onclick = () => { selected.delete(id); draw(); };
+        return chip;
+      }));
+      $('quick-text').value = $('feedback').value;
+      $('quick-add').disabled = !selected.size || !$('feedback').value.trim();
       paint();
     }
     try { baseline = collect(); manifest = baseline.manifest; baseline.entries.forEach(e => byId.set(e.data.id, e)); }
@@ -121,7 +138,7 @@
     const toggle = id => { if (!valid()) return; selected.has(id) ? selected.delete(id) : selected.add(id); draw(); };
     $('inventory').onchange = () => {const id = $('inventory').value; if (byId.has(id)) toggle(id); $('inventory').value = '';};
     document.addEventListener('click', event => {
-      if (event.composedPath().includes(host) || !$('mode').checked || blocked) return;
+      if (event.composedPath().includes(host) || $('mode').getAttribute('aria-pressed') !== 'true' || blocked) return;
       const target = event.target;
       let entry;
       if ($('kind').value === 'section') entry = baseline.entries.filter(e => e.data.kind === 'section' && e.node.contains(target)).sort((a,b) => a.node.contains(b.node) ? 1 : -1)[0];
@@ -132,6 +149,14 @@
       if (!entry) return;
       event.preventDefault(); event.stopImmediatePropagation(); toggle(entry.data.id);
     }, true);
+    $('mode').onclick = () => {
+      const enabled = $('mode').getAttribute('aria-pressed') !== 'true';
+      $('mode').setAttribute('aria-pressed', String(enabled));
+      $('mode').textContent = 'Chọn trực tiếp: ' + (enabled ? 'Bật' : 'Tắt');
+    };
+    $('quick-text').oninput = () => { $('feedback').value = $('quick-text').value; draw(); };
+    $('quick-close').onclick = () => { selected.clear(); draw(); };
+    $('quick-add').onclick = () => $('add').click();
     $('feedback').oninput = draw;
     $('clear').onclick = () => {selected.clear(); draw();};
     $('reset').onclick = () => {groups.length = 0; draw();};
