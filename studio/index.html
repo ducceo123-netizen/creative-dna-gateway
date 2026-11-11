@@ -189,6 +189,24 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .team-auth-tabs button.selected{background:#fff;color:#252525;box-shadow:0 1px 3px #00000012}
 .team-password-hint,.team-auth-footnote{font-size:11px;line-height:1.6;color:#888;margin:10px 0}
 .team-auth-footnote{margin-top:19px;border-top:1px solid #efefef;padding-top:14px}
+
+.hybrid-workspace{background:#fff;border:1px solid #dedede;border-radius:13px;padding:17px;margin:16px 0}
+.hybrid-heading h3{font-size:17px;margin:0 0 4px;letter-spacing:-.02em}.hybrid-heading p,.hybrid-section .research-note{font-size:11px;line-height:1.6;color:#858585}
+.hybrid-section{border-top:1px solid #ededed;padding:17px 0 5px;margin-top:13px}.hybrid-section h4{font-size:13px;font-weight:700;margin:0 0 9px;color:#3e3e3e}
+.hybrid-inline{display:flex;gap:8px;align-items:center}.hybrid-inline input{min-width:0;flex:1;font-size:12px}
+.hybrid-evidence{border:1px solid #e8e8e8;border-radius:10px;padding:10px;margin-top:10px;overflow-wrap:anywhere}.hybrid-evidence a{font-size:12px;color:#286744}.hybrid-evidence small{display:block;color:#888;font-size:10px;margin-top:5px}.hybrid-evidence p{font-size:11px;color:#777;margin:5px 0}
+.hybrid-section textarea{display:block;width:100%;margin-top:12px;min-height:150px;resize:vertical}
+.hybrid-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.hybrid-slots label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#666;font-weight:650;text-transform:capitalize}
+.hybrid-slots select{width:100%;min-width:0;padding:8px;border:1px solid #ddd;border-radius:8px;background:white;color:#333;font-size:11px}
+.hybrid-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.hybrid-toolbar h4{margin:0}
+.hybrid-gates{display:grid;gap:9px;padding:10px 0}.hybrid-gates label{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;color:#494949}.hybrid-gates input{accent-color:#2f754b;margin:2px 0 0}
+.overall-preview{border:1px solid #e8e8e8;border-radius:11px;max-width:100%;margin:16px auto;padding:16px;background:white;box-shadow:0 4px 19px #00000008}
+.overall-preview.mobile{max-width:340px;padding:12px}.overall-preview h4{font-size:15px;text-align:center;margin:18px 0 10px}
+.overall-two{display:grid;grid-template-columns:1fr 1fr;gap:11px}.overall-preview.mobile .overall-two{grid-template-columns:1fr}
+.overall-tile{background:#fafafa;border:1px solid #ededed;border-radius:8px;overflow:hidden;margin:7px 0}.overall-tile img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}.overall-preview.mobile .overall-tile img{aspect-ratio:1/1}
+.overall-tile small{display:block;text-align:center;font-size:10px;color:#888;padding:7px}.overall-placeholder{display:grid;place-items:center;text-align:center;font-size:11px;color:#aaa;background:repeating-linear-gradient(45deg,#fafafa,#fafafa 9px,#f5f5f5 9px,#f5f5f5 18px);min-height:90px;padding:9px}
+@media(max-width:700px){.hybrid-workspace{padding:12px}.hybrid-inline{flex-direction:column;align-items:stretch}.hybrid-slots{grid-template-columns:1fr}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -215,7 +233,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',pendingFiles:[],signupMode:false,signupNotice:'',savedAttachments:{},attachmentPreviews:{},researchPacks:{},deliverables:{},hybridBusy:false,overallMode:'desktop',onepagePolicy:null,ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -231,7 +249,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];render();loadTaskResearch(id);loadTaskAttachments(id);}
+function selectTask(id){state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -398,7 +416,7 @@ async function loadTaskAttachments(taskId){
  try{
   const result=await cloudRequest('/api/tasks/'+taskId+'/attachments');
   state.savedAttachments[taskId]=result.attachments||[];
-  if(state.selected===taskId)refreshAttachmentTray();
+  if(state.selected===taskId){refreshAttachmentTray();if(el('hybridPanel'))el('hybridPanel').innerHTML=hybridMarkup(taskId);}
   for(const file of state.savedAttachments[taskId].filter(x=>String(x.mime||'').startsWith('image/')).slice(0,8)){
    const key=taskId+'|'+file.id;
    if(state.attachmentPreviews[key])continue;
@@ -446,6 +464,75 @@ async function deleteAttachment(id){
  }catch(e){toast(e.message);}
 }
 
+
+const QA_GATES=[['product_truth','PDP, gallery, variants and construction verified'],['evidence','Customer insight supported by real evidence'],['content_choice','Research-backed GTK / FAQs choice'],['design_diversity','Real designs diversified across sections'],['physical_fidelity','Scale, anatomy and product interaction checked'],['desktop','Desktop overall reviewed'],['mobile','Mobile overall reviewed'],['icons','EO icons reviewed']];
+const MATERIAL_SLOTS=['banner_desktop','banner_mobile','pd_main','pd_closeup','wyl1','wyl2','occasion1','occasion2','ugc1','ugc2','icons'];
+function hybridValue(id){return state.deliverables[id]||{content:'',materials:[],evidence:[],qa:{},source:'manual_chatgpt'};}
+function overallPreview(id){
+ const d=hybridValue(id),mapping=Object.fromEntries((d.materials||[]).map(v=>[v.slot,v.file_id])),files=state.savedAttachments[id]||[];
+ function tile(slot){const f=files.find(f=>f.id===mapping[slot]);const src=f?state.attachmentPreviews[id+'|'+f.id]:null;
+  return '<div class="overall-tile">'+(src?'<img src="'+escapeHtml(src)+'" alt="'+escapeHtml(slot)+'">':'<div class="overall-placeholder">Not mapped: '+escapeHtml(slot)+'</div>')+'<small>'+escapeHtml(slot.replace(/_/g,' '))+'</small></div>';}
+ const mobile=state.overallMode==='mobile';
+ return '<div class="overall-preview '+(mobile?'mobile':'desktop')+'"><p class="research-note">Structural preview of uploaded assets only — not an actual rendered Onepage, not AI image QA.</p>'+tile(mobile?'banner_mobile':'banner_desktop')+
+ '<h4>'+escapeHtml(tasks.find(x=>x.id===id)?.title||'')+'</h4><div class="overall-two">'+tile('pd_main')+tile('pd_closeup')+'</div>'+
+ '<h4>Why You’ll Love It</h4><div class="overall-two">'+tile('wyl1')+tile('wyl2')+'</div>'+
+ '<h4>Occasions</h4><div class="overall-two">'+tile('occasion1')+tile('occasion2')+'</div>'+
+ '<h4>Customer moments</h4><div class="overall-two">'+tile('ugc1')+tile('ugc2')+'</div>'+tile('icons')+'</div>';
+}
+function hybridMarkup(id){
+ const d=hybridValue(id),files=state.savedAttachments[id]||[],slots=Object.fromEntries((d.materials||[]).map(v=>[v.slot,v.file_id]));
+ const evidence=(d.evidence||[]).map(e=>'<div class="hybrid-evidence"><a target="_blank" rel="noopener noreferrer" href="'+escapeHtml(e.url)+'">'+escapeHtml(e.title||e.url)+'</a><small>'+escapeHtml(e.status==='metadata_only'?'Metadata only — verify claims separately':'Unavailable / blocked')+'</small><p>'+escapeHtml(e.description||e.limitations||'')+'</p></div>').join('');
+ return '<div class="hybrid-workspace"><div class="hybrid-heading"><h3>Hybrid production</h3><p>Evidence → Content → Materials → Overall QA. Shared task record, no fake Process status.</p></div>'+
+ '<div class="hybrid-section"><h4>External evidence</h4><div class="hybrid-inline"><input id="hybridEvidenceUrl" class="input" type="url" maxlength="1400" placeholder="Direct Trustpilot / Etsy / Reddit / Amazon / Pinterest URL">'+button('Capture metadata','hybridEvidence')+'</div>'+(evidence||'<p class="research-note">No external source captured yet. Metadata collection does not verify individual reviews.</p>')+'</div>'+
+ '<div class="hybrid-section"><h4>ChatGPT result → Studio</h4><p class="research-note">Copy the task handoff into ChatGPT, then paste its result here and save. Automatic execution is only available when an explicitly enabled, metered API is configured.</p>'+
+ '<textarea id="hybridOutput" class="input textarea" rows="7" maxlength="50000" placeholder="Paste verified creative content and materials plan…">'+escapeHtml(d.content||'')+'</textarea>'+
+ '<div class="research-actions">'+button('Sync result & QA','hybridSave')+button('Run via paid API (optional)','hybridRun')+'</div></div>'+
+ '<div class="hybrid-section"><h4>Map real materials</h4><p class="research-note">Attach images/files above, then assign them to actual layout slots. Missing files are clearly marked.</p>'+
+ '<div class="hybrid-slots">'+MATERIAL_SLOTS.map(slot=>'<label>'+escapeHtml(slot.replace(/_/g,' '))+'<select data-hybrid-slot="'+slot+'"><option value="">Not mapped</option>'+files.map(f=>'<option value="'+escapeHtml(f.id)+'" '+(slots[slot]===f.id?'selected':'')+'>'+escapeHtml(f.name)+'</option>').join('')+'</select></label>').join('')+'</div></div>'+
+ '<div class="hybrid-section"><div class="hybrid-toolbar"><h4>Overall layout preview</h4><div class="research-actions">'+button('Desktop','hybridDesktop')+button('Mobile','hybridMobile')+'</div></div><div id="hybridOverall">'+overallPreview(id)+'</div></div>'+
+ '<div class="hybrid-section"><h4>Manual QA gates</h4><p class="research-note">These are explicit reviewer attestations, not automatic checks of image fidelity.</p><div class="hybrid-gates">'+QA_GATES.map(([key,label])=>'<label><input type="checkbox" data-hybrid-qa="'+key+'" '+(d.qa?.[key]?'checked':'')+'> '+escapeHtml(label)+'</label>').join('')+'</div>'+
+ '<div class="research-actions">'+button('Save mapping & QA','hybridSave')+'</div></div></div>';
+}
+function hybridInput(id){
+ const prev=hybridValue(id);
+ return {content:el('hybridOutput')?.value??prev.content,
+  evidence:prev.evidence||[],
+  materials:Array.from(document.querySelectorAll('[data-hybrid-slot]')).map(x=>({slot:x.dataset.hybridSlot,file_id:x.value||'',notes:''})),
+  qa:Object.fromEntries(Array.from(document.querySelectorAll('[data-hybrid-qa]')).map(x=>[x.dataset.hybridQa,!!x.checked]))};
+}
+async function hybridLoad(id){
+ if(!state.cloud||!state.auth)return;
+ try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable');state.deliverables[id]=r.deliverable||{content:'',materials:[],evidence:[],qa:{}};if(state.selected===id&&el('hybridPanel'))el('hybridPanel').innerHTML=hybridMarkup(id);}
+ catch(e){toast('Hybrid results unavailable: '+e.message);}
+}
+async function hybridSave(){
+ const id=state.selected;if(!id||state.hybridBusy)return;
+ state.hybridBusy=true;
+ try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=r.deliverable;el('hybridPanel').innerHTML=hybridMarkup(id);toast('Content, materials and QA synced to task.');}
+ catch(e){toast('Sync failed: '+e.message);}finally{state.hybridBusy=false;}
+}
+async function hybridEvidence(){
+ const id=state.selected,url=el('hybridEvidenceUrl')?.value.trim();
+ if(!id||!url||state.hybridBusy)return;
+ state.hybridBusy=true;
+ try{
+  const saved=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=saved.deliverable;
+  const r=await cloudRequest('/api/tasks/'+id+'/external-evidence','POST',{url});state.deliverables[id]=r.deliverable;
+  el('hybridPanel').innerHTML=hybridMarkup(id);
+  toast(r.evidence.status==='metadata_only'?'Metadata recorded; verify full source independently.':'Evidence source blocked; no claims inferred.');
+ }catch(e){toast(e.message);}finally{state.hybridBusy=false;}
+}
+async function hybridRun(){
+ const id=state.selected;if(!id||state.hybridBusy)return;
+ if(!state.ai){toast('Paid API disabled. Use ChatGPT handoff and paste the result here.');return;}
+ if(!confirm('This uses separately billed OpenAI API credits, NOT your ChatGPT subscription. Continue?'))return;
+ state.hybridBusy=true;
+ try{const saved=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=saved.deliverable;
+  const r=await cloudRequest('/api/tasks/'+id+'/execute','POST',{acknowledge_metered_api:true});state.deliverables[id]=r.deliverable;el('hybridPanel').innerHTML=hybridMarkup(id);toast('AI draft automatically synced. Manual QA still required.');
+ }catch(e){toast(e.message);}finally{state.hybridBusy=false;}
+}
+function hybridMode(mode){state.overallMode=mode;const id=state.selected;if(id&&el('hybridOverall'))el('hybridOverall').innerHTML=overallPreview(id);}
+
 function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
  const signed='';
@@ -468,6 +555,7 @@ polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Lig
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 attachmentsPanel(fresh?null:t.id)+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
+(!fresh?'<div id="hybridPanel">'+hybridMarkup(t.id)+'</div>':'')+
 (!fresh?'<div class="research-workspace"><div class="research-heading"><div><h3>Hybrid Research</h3><p>Scan public storefront data → review evidence → hand off to ChatGPT.</p></div><span class="research-tag">No AI API</span></div><div class="research-actions">'+button('Scan product data','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+button('Open ChatGPT','openChatGPT')+'</div><div id="researchResult" aria-live="polite">'+researchMarkup(state.researchPacks[t.id]||null)+'</div></div>':'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">AI generation is not enabled. Review and materials workflow remain manual until a supported integration is approved.</p>':'')+'</s-section>';}
@@ -651,7 +739,7 @@ async function persist(){
    const route=existing?'/api/tasks/'+existing.id:'/api/tasks';
    const result=await cloudRequest(route,existing?'PATCH':'POST',{...record(v),revision:existing?.revision});
    const item=fromCloud(result.task);tasks=existing?tasks.map(t=>t.id===item.id?item:t):[item,...tasks];
-   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);
+   state.selected=item.id;state.page='tasks';render();loadTaskResearch(item.id);hybridLoad(item.id);
    const attachmentResult=await uploadPendingAttachments(item.id);
    if(attachmentResult.failed)toast(attachmentResult.uploaded+' saved, '+attachmentResult.failed+' upload(s) failed. Retry attach from task.');
    toast(result.versionSaved?'Saved to Supabase with revision history.':'Saved, but revision history was not recorded.');
@@ -693,7 +781,7 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLower
 document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.aiConfigured;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
