@@ -208,26 +208,19 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .overall-tile small{display:block;text-align:center;font-size:10px;color:#888;padding:7px}.overall-placeholder{display:grid;place-items:center;text-align:center;font-size:11px;color:#aaa;background:repeating-linear-gradient(45deg,#fafafa,#fafafa 9px,#f5f5f5 9px,#f5f5f5 18px);min-height:90px;padding:9px}
 @media(max-width:700px){.hybrid-workspace{padding:12px}.hybrid-inline{flex-direction:column;align-items:stretch}.hybrid-slots{grid-template-columns:1fr}}
 
-.executor-switcher{border:1px solid #e3e3e3;border-radius:14px;padding:17px;background:#fff;margin:16px 0 24px;box-shadow:0 1px 3px #00000005}
-.executor-switcher-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-.executor-switcher-header h3{font-size:15px;font-weight:700;letter-spacing:-.025em;margin:3px 0;color:#313131}
-.executor-kicker{font-size:10px;letter-spacing:.12em;font-weight:720;color:#858585}
-.executor-active-label{border:1px solid #ddd;border-radius:999px;padding:7px 10px;background:#f9f9f9;color:#595959;font-size:11px;white-space:nowrap}
-.executor-mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.executor-mode{border:1px solid #e3e3e3;border-radius:11px;padding:13px;text-align:left;background:#fafafa;display:flex;flex-direction:column;align-items:stretch;gap:8px;cursor:pointer;min-height:137px;transition:border-color .15s,background .15s;min-width:0}
-.executor-mode:hover:not(:disabled){background:#f8faf8;border-color:#a1b5a7}
-.executor-mode.selected{border:2px solid #353535;padding:12px;background:#fff}
-.executor-mode.locked{opacity:.66;cursor:not-allowed;background:#f7f7f7}
-.executor-mode-title{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#303030;font-size:13px}
-.executor-mode-title strong{font-weight:700}
-.executor-mode-indicator{color:#393939;font-size:17px}
-.executor-mode-detail{font-size:11px;line-height:1.5;color:#777;flex:1}
-.executor-mode-status{font-size:10px;color:#666;align-self:flex-start}
-.executor-mode-status.available{color:#33744d}
-.executor-mode-status.setup_required{color:#9a7020}
-.executor-mode-status.awaiting_approval{color:#8b8b8b}
-.executor-hint{font-size:11px;color:#737373;margin:12px 0 0;line-height:1.55}
-@media(max-width:760px){.executor-mode-grid{grid-template-columns:1fr}.executor-mode{min-height:0}.executor-switcher{padding:12px}.executor-switcher-header h3{font-size:14px}}
+.executor-switcher.compact{display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap;border:1px solid #e7e7e7;background:#fff;border-radius:12px;padding:9px 13px;margin:10px 0 14px;box-shadow:none;min-height:55px}
+.executor-compact-label{font-size:11px;font-weight:700;color:#7b7b7b;white-space:nowrap;letter-spacing:.015em}
+.executor-switcher.compact .executor-mode-grid{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px;background:#f5f5f5;border:1px solid #e9e9e9;border-radius:9px}
+.executor-switcher.compact .executor-mode{border:1px solid transparent;border-radius:7px;min-height:0;min-width:0;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;padding:7px 12px;background:transparent;box-shadow:none;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.executor-switcher.compact .executor-mode:hover:not(:disabled){background:#eaeaea;border-color:#e3e3e3}
+.executor-switcher.compact .executor-mode.selected{background:#fff;border-color:#ddd;box-shadow:0 1px 3px #00000011;color:#262626}
+.executor-switcher.compact .executor-mode.locked{opacity:.48;cursor:not-allowed}
+.executor-switcher.compact .executor-mode-title{font-size:11px;color:inherit}
+.executor-switcher.compact .executor-mode-title strong{font-weight:660;white-space:nowrap}
+.executor-lock{font-size:10px;line-height:1}
+.executor-current-status{font-size:10px;color:#777;white-space:nowrap;margin-left:auto}
+@media(max-width:760px){.executor-switcher.compact{gap:8px;padding:8px 10px}.executor-switcher.compact .executor-mode-grid{gap:1px}.executor-switcher.compact .executor-mode{padding:7px 9px}.executor-current-status{display:none}}
+@media(max-width:420px){.executor-switcher.compact{align-items:flex-start}.executor-compact-label{padding:5px 0}.executor-switcher.compact .executor-mode-grid{width:100%;justify-content:space-between}.executor-switcher.compact .executor-mode{padding:7px 5px}.executor-switcher.compact .executor-mode-title{font-size:10px}}
 
 .pipeline-panel{border:1px solid #dcdcdc;border-radius:14px;background:#fff;padding:17px;margin:18px 0}
 .pipeline-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:0 0 15px;flex-wrap:wrap}
@@ -825,18 +818,17 @@ function currentExecutionMode(){
 }
 function executionSwitcher(location='home'){
  const modes=state.executionModes.length?state.executionModes:EXECUTION_MODE_DEFAULTS;
- const current=currentExecutionMode();
- return '<section class="executor-switcher" aria-label="AI execution mode"><div class="executor-switcher-header"><div><span class="executor-kicker">EXECUTION MODE</span><h3>Choose how UID Brands runs</h3></div><span class="executor-active-label">'+escapeHtml(current.label)+'</span></div>'+
- '<div class="executor-mode-grid">'+modes.map(mode=>{
+ return '<div class="executor-switcher compact" role="group" aria-label="AI execution mode">'+
+ '<span class="executor-compact-label">AI mode</span><div class="executor-mode-grid">'+modes.map(mode=>{
   const selected=mode.id===state.executionMode,locked=mode.status==='awaiting_approval';
-  return '<button type="button" class="executor-mode '+(selected?'selected ':'')+(locked?'locked':'')+'" data-execution-mode="'+mode.id+'" aria-pressed="'+selected+'" '+(locked?'disabled aria-disabled="true"':'')+'>'+
-  '<span class="executor-mode-title"><strong>'+escapeHtml(mode.label)+'</strong><span class="executor-mode-indicator">'+(selected?'●':'○')+'</span></span>'+
-  '<span class="executor-mode-detail">'+escapeHtml(mode.description)+'</span>'+
-  '<span class="executor-mode-status '+escapeHtml(mode.status)+'">'+escapeHtml(mode.status==='available'?'Available':mode.status==='setup_required'?'Requires API setup':'Awaiting approval')+'</span></button>';
+  const hint=mode.status==='awaiting_approval'?'Awaiting approval':mode.status==='setup_required'?'API setup required':mode.id==='hybrid_bridge'?'Ready':'API ready';
+  const label=mode.id==='chatgpt_connect'?'ChatGPT Connect':mode.label;
+  return '<button type="button" class="executor-mode '+(selected?'selected ':'')+(locked?'locked':'')+'" data-execution-mode="'+mode.id+'" aria-pressed="'+selected+'" title="'+escapeHtml(mode.description+' · '+hint)+'" '+(locked?'disabled aria-disabled="true"':'')+'>'+
+   '<span class="executor-mode-title"><strong>'+escapeHtml(label)+'</strong></span>'+
+   (locked?'<span class="executor-lock" aria-label="Awaiting approval">🔒</span>':'')+'</button>';
  }).join('')+'</div>'+
- '<p class="executor-hint">'+(state.executionMode==='api_auto'?
-  (state.ai?'API Auto selected. Every paid execution requires your confirmation.':'API Auto selected, but server API is not configured. No calls will be made. Add credentials in Render when authorized.'):
-  'Hybrid Bridge is the working fallback. '+(location==='task'?'Use Copy handoff + sync token below to process in ChatGPT.':'ChatGPT Connect will unlock only after official approval.'))+'</p></section>';
+ '<span class="executor-current-status" title="'+escapeHtml(currentExecutionMode().description)+'">'+
+ (state.executionMode==='api_auto'?(state.ai?'API ready':'Setup required'):'Ready')+'</span></div>';
 }
 async function changeExecutionMode(mode){
  if(state.executionBusy)return;
