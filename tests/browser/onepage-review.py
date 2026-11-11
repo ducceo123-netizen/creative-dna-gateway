@@ -21,12 +21,12 @@ def setup(page, manifest=None, suffix='', width=1200):
 def pick(page, selector):
     page.locator(selector).click(force=True)
 def group(page, text):
-    page.locator('#onepage-review-controls #feedback').fill(text)
-    # Active quick-feedback tray overlays the main Add button; use its visible equivalent.
-    quick = page.locator('#onepage-review-controls #quick-add')
+    quick = page.locator('#onepage-review-controls #quick-feedback')
     if quick.is_visible():
-        quick.click()
+        page.locator('#onepage-review-controls #quick-text').fill(text)
+        page.locator('#onepage-review-controls #quick-add').click()
     else:
+        page.locator('#onepage-review-controls #feedback').fill(text)
         page.locator('#onepage-review-controls #add').click()
 def packet(page):
     value=page.locator('#onepage-review-controls #prompt').input_value()
