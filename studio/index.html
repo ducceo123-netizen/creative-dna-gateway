@@ -363,10 +363,13 @@ function buildHandoff(t,pack){
  'Evidence URL: '+(p?.task_source||t.url),
  'Products collected ('+products.length+' shown):'
  ];
- for(const x of products.slice(0,12)){
+ for(const x of products.slice(0,16)){
   parts.push('- '+x.title+' | '+x.url+' | variants: '+x.variantCount+' | gallery: '+x.images.length+' image links');
-  if(x.description)parts.push('  Description: '+x.description.slice(0,300));
+  if(x.description)parts.push('  Storefront description: '+x.description.slice(0,430));
+  if(Array.isArray(x.variants)&&x.variants.length)parts.push('  Listed options: '+x.variants.slice(0,5).map(v=>v.title).join(' / '));
+  if(Array.isArray(x.images)&&x.images.length)parts.push('  Gallery source URLs: '+x.images.slice(0,3).join(' | '));
  }
+ if(state.onepagePolicy?.schema_version)parts.push('Shared Onepage QC contract version: '+state.onepagePolicy.schema_version);
  parts.push('Not verified: external reviews, buyer pain points, competitive research, physical/product fidelity, Creative DNA visual gates.');
  parts.push('INSTRUCTION: Continue this UID Brands task with canonical Creative DNA and research gate. Verify missing external evidence before conclusions; choose Good To Know or FAQs only from supported insights. Do not invent products, variants, claims, layouts or generated assets. Return content plus QA findings, and preserve task ID/version. Do not publish.');
  return parts.join('\n').slice(0,11000);
