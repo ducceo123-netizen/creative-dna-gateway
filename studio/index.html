@@ -613,15 +613,20 @@ function buildHandoff(t,pack){
   if(Array.isArray(x.variants)&&x.variants.length)parts.push('  Listed options: '+x.variants.slice(0,5).map(v=>v.title).join(' / '));
   if(Array.isArray(x.images)&&x.images.length)parts.push('  Gallery source URLs: '+x.images.slice(0,3).join(' | '));
  }
+ const result=hybridValue(t.id);
+ for(const e of (result.evidence||[]).slice(0,10))parts.push('External evidence — '+e.url+' | '+(e.title||'No title')+' | '+e.status+' | '+(e.description||e.limitations||'').slice(0,260));
+ const fileNames=(state.savedAttachments[t.id]||[]).map(f=>f.name).slice(0,8);
+ parts.push('Task attachment filenames (must be attached in ChatGPT separately for visual inspection): '+(fileNames.join(' / ')||'none'));
  if(state.onepagePolicy?.schema_version)parts.push('Shared Onepage QC contract version: '+state.onepagePolicy.schema_version);
  parts.push('Not verified: external reviews, buyer pain points, competitive research, physical/product fidelity, Creative DNA visual gates.');
  parts.push('INSTRUCTION: Continue this UID Brands task with canonical Creative DNA and research gate. Verify missing external evidence before conclusions; choose Good To Know or FAQs only from supported insights. Do not invent products, variants, claims, layouts or generated assets. Return content plus QA findings, and preserve task ID/version. Do not publish.');
- return parts.join('\n').slice(0,11000);
+ parts.push('HANDOFF BACK TO STUDIO: Return a copy-ready Content Draft / Materials Plan / QA Gaps block. Paste into Hybrid production → ChatGPT result → Studio, click Sync result & QA, link actually uploaded files to slots, then verify desktop/mobile. This is manual handoff; do not assert an automatic sync or image generation occurred.');
+ return parts.join('\n').slice(0,14500);
 }
 async function copyResearchHandoff(){
  const t=tasks.find(x=>x.id===state.selected);if(!t)return;
  const pack=state.researchPacks[t.id];
- if(!pack)return toast('Scan product data first. No research snapshot is available.');
+ if(!pack)toast('No Shopify scan saved: handoff will include unverified sources.');
  try{await navigator.clipboard.writeText(buildHandoff(t,pack));toast('Handoff copied. Paste into UID Brands ChatGPT thread.');}
  catch{toast('Clipboard unavailable. Check browser permission.');}
 }
@@ -783,6 +788,6 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
  const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
-fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.aiConfigured;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
+fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
 </script></body></html>
