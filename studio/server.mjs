@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { scanPublicSource } from './research.mjs';
+import {resolveGatewayDNA} from './creative-dna.mjs';
 import {freshPipeline,recordStage,nextPipelineStage,validateSelectedSlots,textStage,generateProductMaterial,visionReview,pipelineExport,PIPELINE_STAGES} from './orchestrator.mjs';
 import {inspectPublicEvidence,cleanDeliverable,qaSummary} from './hybrid.mjs';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
@@ -456,23 +457,9 @@ createServer(async(req,res)=>{
               if(!saved.ok)throw Error('Research captured but database save failed');
               next=nextPipelineStage(prior.stage);detail='Shopify product data captured; external customer reviews still unverified';
             }else if(prior.stage==='creative_dna'){
-              if(task.workflow==='Onepage'){
-                const policyURL='https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/manifest.json';
-                const response=await fetch(policyURL,{redirect:'error',signal:AbortSignal.timeout(11000)});
-                if(!response.ok)throw Error('Canonical Creative DNA gateway manifest inaccessible');
-                const txt=await response.text();
-                if(txt.length>250000)throw Error('Creative DNA manifest exceeds limit');
-                const qc=JSON.parse(txt)?.production_qc_contract;
-                if(!qc?.schema_version||qc.scope!=='onepage-system')throw Error('Onepage Creative DNA manifest incompatible');
-                state.dna={source:policyURL,version:qc.schema_version,scope:qc.scope,
-                  content_choice:qc.content_choice||null,image_gates:qc.image_gates||null,
-                  note:'Canonical Onepage UI/QC manifest fetched; MCP executor-level tools not invoked'};
-              }else{
-                state.dna={source:null,version:null,scope:task.workflow,
-                  note:'No versioned canonical LDP/UGC/Scale Brand creative tool adapter exposed to Studio yet; manual Creative DNA review required'};
-                state.warnings=[...(state.warnings||[]),'Creative DNA tool adapter missing for '+task.workflow].slice(-30);
-              }
-              next=nextPipelineStage(prior.stage);detail='Creative DNA policy resolved where available; other workflows flagged';
+              state.dna=await resolveGatewayDNA({task,research:state.research});
+              next=nextPipelineStage(prior.stage);
+              detail='Gateway tools resolved: '+state.dna.tools.map(x=>x.name).join(', ')+'; policy gates retained';
             }else if(prior.stage==='content'){
               if(!taskAiEnabled)throw Error('API executor not configured. No paid call attempted');
               paid=true;
