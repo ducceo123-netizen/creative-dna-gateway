@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { scanPublicSource } from './research.mjs';
+import {freshPipeline,recordStage,nextPipelineStage,validateSelectedSlots,textStage,generateProductMaterial,visionReview,pipelineExport,PIPELINE_STAGES} from './orchestrator.mjs';
 import {inspectPublicEvidence,cleanDeliverable,qaSummary} from './hybrid.mjs';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -22,6 +23,7 @@ function executionCatalog(){
   {id:'chatgpt_connect',label:'ChatGPT Connect',status:PLAN_GATEWAY_APPROVED?'available':'awaiting_approval',description:'ChatGPT Plan Usage integration; not approved for hosted Studio.'}
  ];
 }
+const stageLocks=new Set(); // One process; serialized paid stage calls per task on this Render instance.
 const handoffTokens=new Map(); // ephemeral one-time capability: only a task owner can issue it
 const handoffHash=token=>createHash('sha256').update(token).digest('hex');
 function clearExpiredHandoffs(){
@@ -363,6 +365,201 @@ createServer(async(req,res)=>{
         const expires=Date.now()+45*60*1000;
         handoffTokens.set(handoffHash(handoff_token),{task:taskId,owner:team.id,token,expires,busy:false});
         return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
+      }
+
+      const pipelineMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/pipeline(?:\/(start|next|export|history))?$/);
+      if(pipelineMatch){
+        const taskId=pipelineMatch[1],action=pipelineMatch[2]||'current';
+        const ownerResult=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id,brand,workflow,source_url,title,brief,revision&limit=1',{token});
+        if(!ownerResult.ok)return json(res,502,{error:'Cannot verify pipeline task'});
+        const task=ownerResult.data?.[0];
+        if(!task||task.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        const getPipeline=async()=>{
+          const p=await sb('/rest/v1/studio_pipeline_runs?task_id=eq.'+taskId+'&select=*&limit=1',{token});
+          if(!p.ok)throw Error('Cannot load pipeline');
+          return p.data?.[0]||null;
+        };
+        const savePipeline=async(next,prior)=>{
+          const payload={task_id:taskId,owner_id:team.id,run_id:next.run_id,stage:next.stage,status:next.status,
+            state:next.state,revision:next.revision,updated_at:next.updated_at};
+          let out;
+          if(prior){
+            // Optimistic revision gate avoids an old operation overwriting a newer step.
+            out=await sb('/rest/v1/studio_pipeline_runs?task_id=eq.'+taskId+'&run_id=eq.'+prior.run_id+'&revision=eq.'+prior.revision,{
+              method:'PATCH',token,prefer:'return=representation',body:payload});
+          }else{
+            out=await sb('/rest/v1/studio_pipeline_runs',{method:'POST',token,prefer:'return=representation',body:payload});
+          }
+          if(!out.ok||!out.data?.length)throw Error('Pipeline changed concurrently; refresh before retrying');
+          const run=out.data[0];
+          const history=await sb('/rest/v1/studio_pipeline_snapshots',{method:'POST',token,
+            body:{task_id:taskId,owner_id:team.id,run_id:next.run_id,revision:next.revision,snapshot:{stage:next.stage,status:next.status,state:next.state,updated_at:next.updated_at}},
+            prefer:'return=minimal'});
+          return {run,versionSaved:history.ok};
+        };
+        if(action==='current'&&req.method==='GET'){
+          const run=await getPipeline();
+          return json(res,200,{run,configured:taskAiEnabled,stages:PIPELINE_STAGES});
+        }
+        if(action==='history'&&req.method==='GET'){
+          const list=await sb('/rest/v1/studio_pipeline_snapshots?task_id=eq.'+taskId+'&select=run_id,revision,created_at,snapshot&order=created_at.desc&limit=60',{token});
+          return json(res,list.ok?200:502,list.ok?{history:list.data}:{error:'Cannot load pipeline history'});
+        }
+        if(action==='export'&&req.method==='GET'){
+          const run=await getPipeline();
+          if(!run?.state?.export||run.stage!=='complete')return json(res,409,{error:'Export stage has not completed'});
+          const pack=pipelineExport({task,run});
+          const data=Buffer.from(JSON.stringify(pack,null,2),'utf8');
+          res.writeHead(200,{'Content-Type':'application/json; charset=utf-8',
+            'Content-Disposition':'attachment; filename="uid-studio-'+taskId+'-pipeline.json"',
+            'Content-Length':data.length,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
+          return res.end(data);
+        }
+        if(action==='start'&&req.method==='POST'){
+          if(!writable)return json(res,403,{error:'Read-only user'});
+          if(stageLocks.has(taskId))return json(res,409,{error:'Another pipeline step is already processing'});
+          const existing=await getPipeline();
+          if(existing)return json(res,409,{error:'A pipeline already exists for this task. Continue it; history and outputs are preserved.'});
+          const requested=await readBody(req);
+          let slots;try{slots=validateSelectedSlots(requested?.slots);}catch(e){return json(res,422,{error:e.message});}
+          const fresh=freshPipeline({runId:randomUUID(),slots});
+          const saved=await savePipeline(fresh,null);
+          return json(res,201,{...saved,configured:taskAiEnabled});
+        }
+        if(action==='next'&&req.method==='POST'){
+          if(!writable)return json(res,403,{error:'Read-only user'});
+          if(stageLocks.has(taskId))return json(res,409,{error:'This task is already executing a stage; do not retry a paid request'});
+          const data=await readBody(req);
+          if(data?.acknowledge_metered_api!==true)return json(res,422,{error:'Explicit confirmation of potential API charges required for every requested stage'});
+          const pref=await sb('/rest/v1/studio_execution_preferences?user_id=eq.'+team.id+'&select=mode&limit=1',{token});
+          if(!pref.ok||pref.data?.[0]?.mode!=='api_auto')return json(res,409,{error:'Select API Auto first'});
+          stageLocks.add(taskId);
+          try {
+            const prior=await getPipeline();
+            if(!prior)return json(res,404,{error:'Start a pipeline first'});
+            if(prior.stage==='complete')return json(res,409,{error:'Pipeline already completed'});
+            let state=structuredClone(prior.state||{}),next=prior.stage,detail='',paid=false;
+            const existingResearch=await sb('/rest/v1/studio_research_packs?task_id=eq.'+taskId+'&select=snapshot&limit=1',{token});
+            if(!existingResearch.ok)throw Error('Cannot load research');
+            const snapshot=existingResearch.data?.[0]?.snapshot;
+            if(prior.stage==='research'){
+              if(!String(task.source_url||'').trim())throw Error('Provide a real collection/PDP URL before research');
+              const research=snapshot?.task_source===task.source_url&&snapshot?.product_count>0?snapshot:await scanPublicSource(task.brand,task.source_url);
+              if(!research.product_count)throw Error('No actual product data found; research blocked');
+              state.research={task_source:research.task_source,scanned_at:research.scanned_at,
+                product_count:research.product_count,warnings:research.warnings,
+                products:research.products.slice(0,16)};
+              const saved=await sb('/rest/v1/studio_research_packs?on_conflict=task_id',{method:'POST',token,prefer:'resolution=merge-duplicates,return=representation',
+                body:{task_id:taskId,owner_id:team.id,source_url:research.task_source,snapshot:research,updated_at:new Date().toISOString()}});
+              if(!saved.ok)throw Error('Research captured but database save failed');
+              next=nextPipelineStage(prior.stage);detail='Shopify product data captured; external customer reviews still unverified';
+            }else if(prior.stage==='creative_dna'){
+              if(task.workflow==='Onepage'){
+                const policyURL='https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/manifest.json';
+                const response=await fetch(policyURL,{redirect:'error',signal:AbortSignal.timeout(11000)});
+                if(!response.ok)throw Error('Canonical Creative DNA gateway manifest inaccessible');
+                const txt=await response.text();
+                if(txt.length>250000)throw Error('Creative DNA manifest exceeds limit');
+                const qc=JSON.parse(txt)?.production_qc_contract;
+                if(!qc?.schema_version||qc.scope!=='onepage-system')throw Error('Onepage Creative DNA manifest incompatible');
+                state.dna={source:policyURL,version:qc.schema_version,scope:qc.scope,
+                  content_choice:qc.content_choice||null,image_gates:qc.image_gates||null,
+                  note:'Canonical Onepage UI/QC manifest fetched; MCP executor-level tools not invoked'};
+              }else{
+                state.dna={source:null,version:null,scope:task.workflow,
+                  note:'No versioned canonical LDP/UGC/Scale Brand creative tool adapter exposed to Studio yet; manual Creative DNA review required'};
+                state.warnings=[...(state.warnings||[]),'Creative DNA tool adapter missing for '+task.workflow].slice(-30);
+              }
+              next=nextPipelineStage(prior.stage);detail='Creative DNA policy resolved where available; other workflows flagged';
+            }else if(prior.stage==='content'){
+              if(!taskAiEnabled)throw Error('API executor not configured. No paid call attempted');
+              paid=true;
+              const priorDeliverable=await sb('/rest/v1/studio_deliverables?task_id=eq.'+taskId+'&select=evidence,materials&limit=1',{token});
+              if(!priorDeliverable.ok)throw Error('Cannot load existing evidence');
+              const original=priorDeliverable.data?.[0]||{};
+              const output=await textStage({task,research:state.research,dna:state.dna,evidence:original.evidence||[]});
+              state.content=output.content;state.plan=output.plan;
+              state.calls=(state.calls||0)+1;
+              state.usage=[...(state.usage||[]),{stage:'content',model:output.model,usage:output.usage}].slice(-20);
+              const d=await sb('/rest/v1/studio_deliverables?on_conflict=task_id',{
+                method:'POST',token,prefer:'resolution=merge-duplicates,return=representation',
+                body:{task_id:taskId,owner_id:team.id,source:'api_executor',content:output.content,
+                  materials:original.materials||[],evidence:original.evidence||[],qa:{},updated_at:new Date().toISOString()}});
+              if(!d.ok)throw Error('Content generated but could not be saved; do not rerun until usage is checked');
+              next=nextPipelineStage(prior.stage);detail='AI content and material prompt plan saved';
+            }else if(prior.stage==='materials'){
+              if(!taskAiEnabled)throw Error('API executor not configured. No paid call attempted');
+              if(!state.research?.products?.length)throw Error('Verified PDP product reference missing');
+              const slots=state.selected_slots||[];
+              if((state.next_material||0)>=slots.length){next=nextPipelineStage(prior.stage);detail='Material slots completed';}
+              else{
+                const index=state.next_material||0,slot=slots[index];
+                // Vary real collection products where available to avoid repeated artwork; use actual PDPs only.
+                const product=state.research.products[index%state.research.products.length];
+                paid=true;
+                const result=await generateProductMaterial({slot,plan:state.plan,product});
+                const id=randomUUID()+'--ai-'+slot+'.jpg',storagePath=attachmentFolder(team.id,taskId)+id;
+                const upstream=await storageCall('object/'+ATTACH_BUCKET+'/'+storagePath,{
+                  method:'POST',token,body:result.bytes,mime:'image/jpeg'});
+                if(!upstream.ok)throw Error('Image generated but private asset upload failed. Check usage before regenerating');
+                const mapped={slot,file_id:id,reference:result.reference,product_source:product.url,
+                  model:result.model,generated_at:new Date().toISOString(),status:'generated_draft_unapproved'};
+                state.materials=[...(state.materials||[]),mapped];
+                state.next_material=index+1;state.calls=(state.calls||0)+1;
+                state.usage=[...(state.usage||[]),{stage:'materials',slot,model:result.model,usage:result.usage}].slice(-20);
+                // Persist mapping in existing unified deliverable without overwriting content or evidence.
+                const prev=await sb('/rest/v1/studio_deliverables?task_id=eq.'+taskId+'&select=content,evidence,materials&limit=1',{token});
+                if(!prev.ok)throw Error('Image saved but deliverable mapping failed to load');
+                const d=prev.data?.[0]||{};
+                const others=(Array.isArray(d.materials)?d.materials:[]).filter(x=>x.slot!==slot);
+                const updated=await sb('/rest/v1/studio_deliverables?on_conflict=task_id',{
+                  method:'POST',token,prefer:'resolution=merge-duplicates,return=representation',
+                  body:{task_id:taskId,owner_id:team.id,source:'api_executor',content:d.content||state.content,
+                    evidence:d.evidence||[],materials:[...others,{slot,file_id:id,notes:'AI-generated draft; physical product QA required'}],qa:{},updated_at:new Date().toISOString()}});
+                if(!updated.ok)throw Error('Asset saved but deliverable mapping failed; inspect task files before retry');
+                if(state.next_material>=slots.length)next=nextPipelineStage(prior.stage);
+                detail='AI reference-guided '+slot+' saved as private draft ('+state.next_material+'/'+slots.length+')';
+              }
+            }else if(prior.stage==='vision_qa'){
+              if(!taskAiEnabled)throw Error('API executor not configured. No paid call attempted');
+              const visual=state.materials?.slice(0,4)||[];
+              if(!visual.length)throw Error('No generated image assets for Vision QA');
+              const images=[];
+              for(const item of visual){
+                const response=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(item.file_id),{method:'GET',token});
+                if(!response.ok)throw Error('Cannot access generated material for QA');
+                const bytes=Buffer.from(await response.arrayBuffer());
+                if(bytes.length>6*1024*1024)throw Error('Visual QA asset exceeds 6MB');
+                images.push({slot:item.slot,mime:'image/jpeg',bytes});
+              }
+              paid=true;const report=await visionReview({task,content:state.content,images});
+              state.vision=report;state.calls=(state.calls||0)+1;
+              state.usage=[...(state.usage||[]),{stage:'vision_qa',model:report.model,usage:report.usage}].slice(-20);
+              // Never automatically mark human QC gates complete.
+              next=nextPipelineStage(prior.stage);
+              detail='AI inspected '+images.length+' individual images, with unverified overall checks requiring human review';
+            }else if(prior.stage==='export'){
+              state.export={ready:true,generated_at:new Date().toISOString(),
+                type:'application/json',note:'Export draft includes creative content and private asset IDs; it is NOT a public image ZIP or approved storefront render'};
+              next='complete';detail='Versioned JSON handoff ready; human approval still required';
+            }else return json(res,409,{error:'Unknown pipeline stage'});
+            const final=recordStage(prior,{stage:next,status:next==='complete'?'needs_review':'ready',state,detail});
+            const saved=await savePipeline(final,prior);
+            return json(res,200,{...saved,detail,paid,readyForReview:final.stage==='complete'});
+          }catch(error){
+            // Fail closed, do not mark failed work as completed; preserve stage for explicit retry.
+            const prior=await getPipeline();
+            if(prior&&prior.stage!=='complete'){
+              const blocked=recordStage(prior,{stage:prior.stage,status:'blocked',
+                state:{...prior.state,warnings:[...(prior.state.warnings||[]),String(error.message||'Step failed').slice(0,280)].slice(-30)},
+                detail:'Blocked: '+String(error.message||'Step failed')});
+              try{await savePipeline(blocked,prior);}catch{}
+            }
+            return json(res,502,{error:String(error.message||'Pipeline stage failed').slice(0,290),
+              status:'blocked',note:'Stage did not advance. Timed-out API calls may still be charged; inspect usage before retrying.'});
+          }finally{stageLocks.delete(taskId);}
+        }
+        return json(res,405,{error:'Unsupported pipeline method'});
       }
       const hybridMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/(deliverable|external-evidence|execute)$/);
       if(hybridMatch){
