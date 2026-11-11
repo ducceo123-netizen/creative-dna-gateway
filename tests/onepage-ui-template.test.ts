@@ -147,7 +147,7 @@ test('FAQ variant has matching source hashes and no GTK assets or hidden answers
   assert.equal(faq.post_story_section, 'faq');
   assert.equal(sha(faq.html), faq.sha256.html);
   assert.equal(sha(faq.css), faq.sha256.css);
-  assert.equal(faq.css, gtk.css, 'reuse the captured responsive store CSS');
+  assert.ok(faq.css.startsWith(gtk.css), 'retain captured responsive CSS and append only scoped native FAQ rules');
   assert.ok(faq.html.includes('uid-product-content-faqs'));
   assert.ok(!faq.html.includes('uid-product-good-to-know'));
   assert.ok(!faq.asset_slots.some((s: string) => s.startsWith('gtk_')));
@@ -206,13 +206,13 @@ test('FAQ replacement preserves every byte outside the post-story block and all 
   assert.throws(() => replacePostStorySection('<div>no section</div>', ''), /Expected one/);
   assert.throws(() => replacePostStorySection(marker + marker + '</div></div>', ''), /Expected one/);
   assert.throws(() => replacePostStorySection(marker + '<div>', ''), /Unbalanced/);
-  assert.doesNotMatch(faq.html, /<input\\b|type="checkbox"/i);
+  assert.doesNotMatch(faq.html, /<input\b|type="checkbox"/i);
   assert.match(faq.html, /<details class="uid-faq-entry" open>/);
   assert.match(faq.html, /<summary class="uid-faqs-question">/);
-  assert.match(faq.css, /uid-faq-entry\\[open\\]/);
+  assert.match(faq.css, /uid-faq-entry\[open\]/);
   const archived = getOnepageUiTemplate('2026-10-19.faq.v1', 'source') as any;
   assert.match(archived.html, /type="checkbox" hidden[^>]*checked/);
-  assert.match(archived.css, /product-tabs__radio:checked \\+ \\.uid-faqs-question/);
+  assert.match(archived.css, /product-tabs__radio:checked \+ \.uid-faqs-question/);
   assert.equal(faq.verification.source_capture, 'reconstructed_from_verified_store_css');
   assert.equal(faq.verification.pixel_parity, 'not_claimed_no_live_faq_dom_found');
 });
