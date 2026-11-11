@@ -561,6 +561,7 @@ function pipelineMarkup(id){
  '<div class="pipeline-actions">'+
  (r&&stage!=='complete'?button(state.pipelineBusy?'Processing…':'Run next stage','pipelineNext'):button(r?'Start new revision':'Start pipeline','pipelineStart'))+
  (r&&stage!=='complete'?button(state.pipelineBusy?'Processing…':'Process remaining stages','pipelineAll'):'')+
+ (r&&stage==='vision_qa'?button('Refresh overall captures','pipelineCapture'):'')+
  (r?button('Version history','pipelineHistory'):'')+
  (r?.stage==='complete'?button('Export results JSON','pipelineExport'):'')+
  '</div>'+
@@ -611,6 +612,91 @@ async function pipelineStart(){
  }catch(e){state.pipelineProgress=e.message;pipelineRefresh(id);toast(e.message);}
  finally{state.pipelineBusy=false;pipelineRefresh(id);}
 }
+
+// A real JPEG composite of task assets, rendered locally in the browser for model inspection.
+// It is an approximation of the overall structure, NOT the store's live Onepage screenshot.
+async function pipelineCanvasImage(id,view){
+ const run=state.pipelineRuns[id],mobile=view==='mobile',w=mobile?420:1080;
+ const slots=run?.state?.materials||[],bySlot=Object.fromEntries(slots.map(x=>[x.slot,x.file_id]));
+ const banners=mobile?['banner_mobile']:['banner_desktop'];
+ const rows=[['pd_main','pd_closeup'],['wyl1','wyl2'],['occasion1','occasion2'],['ugc1','ugc2'],['icons']];
+ const head=mobile?480:350,heroHeight=mobile?550:450;
+ const rectHeight=mobile?310:270,pad=mobile?18:35,gap=mobile?12:18;
+ const height=head+heroHeight+rows.length*(mobile?rectHeight*2+65:rectHeight+75)+150;
+ const canvas=document.createElement('canvas');canvas.width=w;canvas.height=height;
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Browser Canvas is unavailable');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,w,height);
+ ctx.fillStyle='#777';ctx.font=(mobile?'12':'18')+'px Arial';ctx.fillText('UID Brands · Structural '+view+' overall · NOT a live storefront render',pad,30);
+ ctx.fillStyle='#171717';ctx.font='bold '+(mobile?23:38)+'px Arial';
+ const task=tasks.find(x=>x.id===id);
+ ctx.fillText(String(task?.title||'Creative task').slice(0,mobile?23:48),pad,75);
+ const snippet=String(run.state?.content||'').replace(/[#*_\n]/g,' ').trim();
+ ctx.fillStyle='#666';ctx.font=(mobile?13:18)+'px Arial';
+ ctx.fillText(snippet.slice(0,mobile?48:105),pad,115);
+ const assets=new Map();
+ for(const slot of [...banners,...rows.flat()]){
+  const fileId=bySlot[slot];if(!fileId)continue;
+  try{
+   const response=await fileRequest('/api/tasks/'+id+'/attachments/'+encodeURIComponent(fileId));
+   const blob=await response.blob();
+   const bitmap=await createImageBitmap(blob);
+   assets.set(slot,bitmap);
+  }catch{}
+ }
+ function drawFrame(slot,x,y,width,height,label){
+  const img=assets.get(slot);
+  ctx.fillStyle='#f7f7f7';ctx.fillRect(x,y,width,height);
+  ctx.strokeStyle='#e0e0e0';ctx.lineWidth=2;ctx.strokeRect(x,y,width,height);
+  if(img){
+   const ratio=Math.max(width/img.width,height/img.height),sw=width/ratio,sh=height/ratio;
+   ctx.save();ctx.beginPath();ctx.rect(x,y,width,height);ctx.clip();
+   ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,width,height);ctx.restore();
+  }else{
+   ctx.fillStyle='#999';ctx.font='14px Arial';ctx.textAlign='center';
+   ctx.fillText('MISSING: '+slot,x+width/2,y+height/2,Math.max(80,width-15));
+   ctx.textAlign='left';
+  }
+  ctx.fillStyle='#444';ctx.font='bold '+(mobile?11:15)+'px Arial';
+  ctx.fillText(label,x+8,y+height+22);
+ }
+ let y=165;
+ drawFrame(banners[0],pad,y,w-pad*2,heroHeight,banners[0].replace('_',' '));
+ y+=heroHeight+72;
+ for(let i=0;i<rows.length;i++){
+  const slotsInRow=rows[i],count=mobile?1:slotsInRow.length;
+  const sectionTitle=['Product details','Why You’ll Love It','Moments & occasions','Customer moments','EO icons'][i];
+  ctx.fillStyle='#252525';ctx.font='bold '+(mobile?21:26)+'px Arial';ctx.fillText(sectionTitle,pad,y-12);
+  if(mobile){
+   for(const slot of slotsInRow){drawFrame(slot,pad,y+10,w-pad*2,rectHeight,slot.replace(/_/g,' '));y+=rectHeight+50;}
+  }else{
+   for(let j=0;j<slotsInRow.length;j++){
+    const cellWidth=(w-pad*2-gap)/2;
+    drawFrame(slotsInRow[j],pad+j*(cellWidth+gap),y+10,cellWidth,rectHeight,slotsInRow[j].replace(/_/g,' '));
+   }
+   y+=rectHeight+78;
+  }
+ }
+ for(const bitmap of assets.values())bitmap.close?.();
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Could not render overall image')),'image/jpeg',0.78));
+}
+async function pipelineCaptureOveralls(id,{force=false}={}){
+ if(!id||!state.pipelineRuns[id]||state.pipelineRuns[id].stage!=='vision_qa')throw Error('Complete materials before capturing overall previews');
+ for(const view of ['desktop','mobile']){
+  const run=state.pipelineRuns[id];
+  if(!force&&run.state?.overalls?.[view])continue;
+  state.pipelineProgress='Rendering '+view+' structural overall preview from actual task assets…';
+  pipelineRefresh(id);
+  const blob=await pipelineCanvasImage(id,view);
+  const file=new File([blob],'overall-'+view+'.jpg',{type:'image/jpeg'});
+  const response=await fileRequest('/api/tasks/'+id+'/pipeline/preview?view='+view,'POST',file);
+  const result=await response.json();
+  if(!result.run?.state?.overalls?.[view])throw Error('Overall '+view+' upload not confirmed');
+  state.pipelineRuns[id]=result.run;
+ }
+ state.pipelineProgress='Desktop/mobile structural overall JPGs saved for Vision review.';
+ pipelineRefresh(id);
+}
+
 async function pipelineNext({loop=false}={}){
  const id=state.selected;if(!id||state.pipelineBusy||!state.pipelineRuns[id])return;
  if(state.executionMode!=='api_auto')return toast('Switch to API Auto before processing.');
@@ -621,6 +707,7 @@ async function pipelineNext({loop=false}={}){
   do{
    const before=state.pipelineRuns[id],stage=before?.stage;
    if(!before||stage==='complete')break;
+   if(stage==='vision_qa')await pipelineCaptureOveralls(id);
    state.pipelineProgress='Running '+stage.replace(/_/g,' ')+'…';
    pipelineRefresh(id);
    const result=await cloudRequest('/api/tasks/'+id+'/pipeline/next','POST',{acknowledge_metered_api:true});
@@ -636,6 +723,13 @@ async function pipelineNext({loop=false}={}){
   state.pipelineProgress='Blocked: '+e.message+' · State preserved; check cost history before retrying.';
   await pipelineLoad(id);toast(e.message);
  }finally{state.pipelineBusy=false;pipelineRefresh(id);}
+}
+async function pipelineCapture(){
+ const id=state.selected;if(!id||state.pipelineBusy)return;
+ state.pipelineBusy=true;
+ try{await pipelineCaptureOveralls(id,{force:true});toast('Structural desktop and mobile images captured for Vision.');}
+ catch(e){state.pipelineProgress=e.message;toast(e.message);}
+ finally{state.pipelineBusy=false;pipelineRefresh(id);}
 }
 async function pipelineAll(){
  const id=state.selected,run=state.pipelineRuns[id];
@@ -1047,7 +1141,7 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
 render();
