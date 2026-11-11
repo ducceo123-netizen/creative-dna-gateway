@@ -206,8 +206,13 @@ test('FAQ replacement preserves every byte outside the post-story block and all 
   assert.throws(() => replacePostStorySection('<div>no section</div>', ''), /Expected one/);
   assert.throws(() => replacePostStorySection(marker + marker + '</div></div>', ''), /Expected one/);
   assert.throws(() => replacePostStorySection(marker + '<div>', ''), /Unbalanced/);
-  assert.match(faq.html, /type="checkbox" hidden[^>]*checked/);
-  assert.match(faq.css, /product-tabs__radio:checked \+ \.uid-faqs-question \+ \.uid-faqs-answer\s*\{\s*display: block/);
+  assert.doesNotMatch(faq.html, /<input\\b|type="checkbox"/i);
+  assert.match(faq.html, /<details class="uid-faq-entry" open>/);
+  assert.match(faq.html, /<summary class="uid-faqs-question">/);
+  assert.match(faq.css, /uid-faq-entry\\[open\\]/);
+  const archived = getOnepageUiTemplate('2026-10-19.faq.v1', 'source') as any;
+  assert.match(archived.html, /type="checkbox" hidden[^>]*checked/);
+  assert.match(archived.css, /product-tabs__radio:checked \\+ \\.uid-faqs-question/);
   assert.equal(faq.verification.source_capture, 'reconstructed_from_verified_store_css');
   assert.equal(faq.verification.pixel_parity, 'not_claimed_no_live_faq_dom_found');
 });
