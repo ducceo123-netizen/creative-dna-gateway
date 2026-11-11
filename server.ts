@@ -1,3 +1,4 @@
+import { evaluateOnepageCreativeQc, ONEPAGE_CREATIVE_QC_INPUT_SCHEMA, ONEPAGE_CREATIVE_QC_DESCRIPTION, EO_ICON_DEFECTS } from "./supabase/functions/_shared/onepage-creative-qc.ts";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
 import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
 import {registerHostedReviews} from './uid-hosted-review.ts';
@@ -528,6 +529,10 @@ export const TOOL_DEFINITIONS = [
     inputSchema: ONEPAGE_BANNER_QC_INPUT_SCHEMA,
   },
   {
+    name: "evaluate_onepage_creative_qc", title: "Evaluate Onepage Creative QC", description: ONEPAGE_CREATIVE_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: ONEPAGE_CREATIVE_QC_INPUT_SCHEMA,
+  },
+  {
     name: "resolve_creative_dna",
     title: "Resolve Creative DNA",
     description: RESOLVE_CREATIVE_DNA_DESC,
@@ -753,6 +758,21 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
       structuredContent: gate,
       isError: gate.status === "BLOCKED",
     }, "template");
+  });
+
+  const eoFlags = z.object(Object.fromEntries(EO_ICON_DEFECTS.map(k=>[k,z.boolean()])) as Record<typeof EO_ICON_DEFECTS[number],z.ZodBoolean>).strict();
+  server.registerTool("evaluate_onepage_creative_qc", uidProgressTool("evaluate_onepage_creative_qc", {
+    title:"Evaluate Onepage Creative QC", description:ONEPAGE_CREATIVE_QC_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: {
+      task_id:z.string().trim().min(1).max(160), content_version:z.string().trim().min(1).max(160),
+      scope:z.enum(["design_diversity","eo_icons"]),
+      inventory:z.array(z.object({product_id:z.string().min(1),design_id:z.string().min(1),pdp_url:z.string().url(),visually_inspected:z.boolean()}).strict()).max(200).optional(),
+      placements:z.array(z.object({slot:z.string().min(1),story_id:z.string().min(1),section:z.enum(["banner","occasion","why_you_love_it","ugc","product_details","other"]),product_id:z.string().min(1),design_id:z.string().min(1)}).strict()).max(100).optional(),
+      icons:z.array(z.object({slot:z.string().min(1),asset_id:z.string().min(1),reference_url:z.string().url(),inspected_at_full_size:z.boolean(),tested_at_small_size:z.boolean(),evidence_note:z.string().min(40),defects:eoFlags}).strict()).max(30).optional(),
+    },
+  }),async(input)=>{
+    const gate=evaluateOnepageCreativeQc(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(gate)}],structuredContent:gate,isError:gate.status==="BLOCKED"},"template");
   });
 
   // Tool 1: resolve_creative_dna
@@ -1007,6 +1027,12 @@ export function createApp(): express.Application {
     const gate = evaluateOnepageBannerQc(input);
     res.setHeader("Cache-Control", "no-store");
     return res.status(gate.status === "BLOCKED" ? 422 : 200).json(gate);
+  });
+  app.post("/api/tools/evaluate_onepage_creative_qc",(req:Request,res:Response)=>{
+    const input=req.body?.arguments||req.body||{};
+    const gate=evaluateOnepageCreativeQc(input);
+    res.setHeader("Cache-Control","no-store");
+    return res.status(gate.status==="BLOCKED"?422:200).json(gate);
   });
   app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
