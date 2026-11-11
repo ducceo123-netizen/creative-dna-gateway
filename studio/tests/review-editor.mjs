@@ -16,7 +16,7 @@ assert.match(workspace,/task-review-layout/);
 assert.match(workspace,/task-review-center/);
 assert.match(workspace,/task-review-inspector/);
 assert.match(workspace,/reviewAdvanced/);
-assert.match(workspace,/onepageFrame/);
+assert.match(workspace,/Loading canonical Onepage HTML\/CSS/);
 assert.match(workspace,/sectionFeedbackPane/);
 assert.match(workspace,/Copy grouped feedback/);
 assert.doesNotMatch(workspace,/<s-table/);
