@@ -132,6 +132,19 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 @media(max-width:710px){.welcome-hero{padding:38px 0}.welcome-hero h2{font-size:30px}.welcome-hero>p{font-size:13px;margin-bottom:20px}.welcome-hero .sidekick-composer{padding:17px 16px}.welcome-hero .composer-footer{align-items:flex-start;flex-direction:column}.welcome-hero .composer-workflow{align-items:flex-start;flex-direction:column;gap:6px}.welcome-hero .quick-workflows{gap:5px}}
 
 .intent-preview{font-size:12px;color:#777;margin:0 0 6px;line-height:1.5}.intent-preview:empty{display:none}.intent-preview strong{color:#262626}.intent-preview .preview-key{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#999}.intent-preview .uncertain{color:#aa752d}.welcome-hero .quick-workflows button.active,.welcome-hero .quick-workflows button[aria-pressed="true"]{background:#292929;border-color:#292929;color:#fff}
+
+/* Intake and verification polish */
+.welcome-hero{padding:42px 0 26px!important}
+.welcome-hero h2{font-size:clamp(28px,2.6vw,37px)!important;letter-spacing:-.045em!important}
+.welcome-hero>p{font-size:14px!important;margin-bottom:22px!important}
+.dashboard-user{display:none}
+.home-bottom{margin-top:12px}
+.setup-kicker{font-size:12px;color:#767676;margin:0 0 11px;line-height:1.5}
+.verify-row{margin:8px 0 14px;align-items:center}
+.catalog-match{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid #ededed;background:#fcfcfc;border-radius:10px;padding:12px 14px;margin:7px 0}
+.catalog-match>div{display:flex;flex-direction:column;gap:4px;min-width:0}.catalog-match strong{font-size:12px;font-weight:630;color:#353535;line-height:1.5}
+.catalog-match .muted{font-size:10px;text-transform:capitalize}
+@media(max-width:700px){.catalog-match{align-items:flex-start;flex-direction:column}.welcome-hero{padding-top:26px!important}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -158,7 +171,7 @@ const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
 const iconFor={Onepage:'▣',LDP:'▤','Scale Store Brand':'◈',UGC:'◎'};
-const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
+const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,composerWorkflow:null,prefillWorkflow:null,prefillBrief:'',prefillTitle:'',prefillSource:'',prefillBrand:'PawfectHouse',prefillKind:'unknown',composerDraft:'',search:'',ai:false,cloud:false,auth:null,user:null,token:'',busy:false};
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
@@ -183,7 +196,7 @@ function navigate(page){
  }
  state.page=page;
  if(page==='create')state.selected=null;
- else {state.prefillWorkflow=null;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';}
+ else {state.prefillWorkflow=null;state.prefillBrief='';state.prefillTitle='';state.prefillSource='';state.prefillBrand='PawfectHouse';state.prefillKind='unknown';}
  if(page==='tasks')state.workflowFilter=null;
  render();
 }
@@ -197,7 +210,7 @@ function startWorkflow(workflow){
  state.page='dashboard';render();
 }
 function intentPreviewMarkup(result){
- return '<span class="preview-key">Detected</span> <strong>'+escapeHtml(result.workflow)+'</strong> · '+(result.source?'<span>'+escapeHtml(result.source)+'</span>':'<span class="uncertain">Add a product/collection name or URL</span>');
+ return '<span class="preview-key">Đã nhận diện</span> <strong>'+escapeHtml(result.workflow)+'</strong> · '+(result.source?'<span>'+escapeHtml(result.source)+'</span>':'<span class="uncertain">Thêm tên sản phẩm/collection hoặc URL</span>');
 }
 function updateComposerPreview(){
  const target=el('intentPreview');if(!target)return;
@@ -227,15 +240,22 @@ function parseTaskRequest(raw,selectedWorkflow=null){
  const direct=/\b(?:onepage|landing\s*pages?|landingpage|ldp|ugc(?:\s*materials?)?|scale\s*store\s*brand)\s+(?:cho|for|of|về|sản phẩm|collection)\s*[-–—:]?\s*(.+)$/i.exec(input);
  const afterFor=/\b(?:cho|for|of)\s*[-–—:]\s*(.+)$/i.exec(input);
  const named=/\b(?:product|collection|sản phẩm)\s*[:：]\s*(.+)$/i.exec(input);
- let source=(urlMatch?.[0]||direct?.[1]||afterFor?.[1]||named?.[1]||'').trim().replace(/[.!?]+$/,'');
+ let source=(urlMatch?.[0]||direct?.[1]||afterFor?.[1]||named?.[1]||'').trim();
+ let kind=/\b(?:dòng\s+sản\s+phẩm|collection|bộ\s+sưu\s+tập|nhóm\s+sản\s+phẩm)\b/i.test(source)?'collection':'unknown';
+ // Strip natural-language wrappers only at the beginning, never strip real product words.
+ source=source.replace(/^(?:(?:cho|for|of)\s+)?(?:dòng\s+sản\s+phẩm|bộ\s+sưu\s+tập|nhóm\s+sản\s+phẩm|collection|sản\s+phẩm|product)\s*(?:[-–—:]?\s*)/i,'');
+ source=source.replace(/^[\s\-–—:]+|[.!?\s]+$/g,'');
  if(source.length>180)source='';
+ if(/^https:\/\//i.test(source)){
+  try{const url=new URL(source);kind=url.pathname.startsWith('/collections/')?'collection':url.pathname.startsWith('/products/')?'product':'unknown';}catch{}
+ }
  const hasSource=Boolean(source)&&!/(^onepage$|^ldp$|^ugc$)/i.test(source);
  let productName=source;
  if(/^https:\/\//i.test(source)){
   try{const url=new URL(source);const part=url.pathname.split('/').filter(Boolean).at(-1)||url.hostname;productName=decodeURIComponent(part).replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}catch{productName='Linked product or collection';}
  }
  productName=productName.replace(/\s+/g,' ').trim();
- return {workflow,brand,source:hasSource?source:'',title:hasSource?productName.slice(0,120)+' · '+workflow:workflow+' · New task',brief:input};
+ return {workflow,brand,kind,source:hasSource?source:'',title:hasSource?productName.slice(0,120)+' · '+workflow:workflow+' · New task',brief:input};
 }
 function createFromComposer(){
  const input=el('composerBrief');
@@ -247,18 +267,19 @@ function createFromComposer(){
  state.prefillTitle=intent.title;
  state.prefillWorkflow=intent.workflow;
  state.prefillBrand=intent.brand;
+ state.prefillKind=intent.kind;
  state.prefillSource=intent.source;
  state.selected=null;state.page='create';render();
- if(intent.source&&state.cloud&&state.auth&&!intent.source.startsWith('https://'))setTimeout(()=>lookupStore(),0);
+ // Store search is intentionally opt-in; broad product results must never be mistaken for a collection.
 }
 function taskRow(t){return '<s-table-row data-select="'+escapeHtml(t.id)+'"><s-table-cell><strong>'+escapeHtml(t.title)+'</strong></s-table-cell><s-table-cell>'+escapeHtml(t.brand)+'</s-table-cell><s-table-cell>'+escapeHtml(t.workflow)+'</s-table-cell><s-table-cell>'+statusBadge(t.status)+'</s-table-cell><s-table-cell>'+new Date(t.updatedAt).toLocaleDateString('vi-VN')+'</s-table-cell></s-table-row>';}
 function taskTable(rows){return '<div class="polaris-task-table"><s-table><s-table-header-row><s-table-header listSlot="primary">Task</s-table-header><s-table-header>Brand</s-table-header><s-table-header>Workflow</s-table-header><s-table-header>Status</s-table-header><s-table-header>Updated</s-table-header></s-table-header-row><s-table-body>'+rows.map(taskRow).join('')+'</s-table-body></s-table></div>';}
 function stats(){return '<div class="stats">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([name,value])=>'<s-section class="polaris-stat" heading="'+name+'"><div class="polaris-stat-value">'+value+'</div><div class="polaris-stat-label">'+(state.cloud?'Cloud workspace':'Local workspace')+'</div></s-section>').join('')+'</div>';}
 function dashboard(){
  const recent=[...tasks].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);
- const signed=state.cloud?'<div class="dashboard-user"><span class="workspace-chip">Signed in · '+escapeHtml(state.user?.email||'')+'</span>'+button('Sign out','logout')+'</div>':'';
+ const signed='';
  return '<div class="home-metrics">'+[['Total tasks',tasks.length],['In progress',tasks.filter(t=>t.status==='In progress').length],['In review',tasks.filter(t=>t.status==='In review').length],['Approved',tasks.filter(t=>t.status==='Approved').length]].map(([label,count])=>'<div class="home-metric"><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
- '<section class="welcome-hero"><h2>What will we create today?</h2><p>Start with a product, an idea, or a link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
+ '<section class="welcome-hero"><h2>What will we create today?</h2><p>Describe your task, or paste a product/collection link.</p><div class="sidekick-composer"><label class="composer-label" for="composerBrief">New creative task</label><textarea id="composerBrief" class="composer-input" rows="2" maxlength="12000" placeholder="e.g. Anh cần làm Onepage cho - LED Bottle Light Topper">'+escapeHtml(state.composerDraft)+'</textarea><div id="intentPreview" class="intent-preview" aria-live="polite">'+(state.composerDraft?intentPreviewMarkup(parseTaskRequest(state.composerDraft,state.composerWorkflow)):'')+'</div><div class="composer-footer"><div class="composer-workflow"><span class="composer-footer-label">Workflow</span><div id="composerWorkflows" class="quick-workflows">'+types.map(type=>'<button type="button" aria-pressed="'+(state.composerWorkflow===type?'true':'false')+'" class="'+(state.composerWorkflow===type?'active':'')+'" data-create-workflow="'+escapeHtml(type)+'">'+escapeHtml(type)+'</button>').join('')+'</div></div>'+button('Continue','composerCreate','')+'</div></div><p class="composer-help">Creates a draft for review. Automatic AI execution is not enabled.</p></section>'+
  signed+'<div class="home-bottom"><s-section heading="Recent tasks"><div class="panelhead"><p class="slim">Pick up where you left off</p>'+button('View all','all')+'</div>'+(recent.length?taskTable(recent):'<div class="empty">No tasks yet. Choose a workflow above to create your first brief.</div>')+'</s-section></div>';
 }
 function taskList(){
@@ -268,10 +289,10 @@ function taskList(){
  return context+'<s-section heading="'+(workflow?escapeHtml(workflow)+' tasks':'All tasks')+'"><div class="panelhead"><div><p class="slim">Select a task to edit or review it</p></div><div class="filters">'+['All',...statuses].map(s=>'<button class="'+(state.filter===s?'active':'')+'" data-filter="'+s+'">'+s+'</button>').join('')+'</div>'+(filtered.length?taskTable(filtered.sort((a,b)=>b.updatedAt-a.updatedAt)) :'<div class="empty">'+(workflow?'No '+escapeHtml(workflow)+' tasks yet. Use Create to start a brief.':'No tasks in this category.')+'</div>')+'</s-section>';
 }
 function taskEditor(t){const fresh=!t; t=t||{id:'',title:state.prefillTitle||'',brand:state.prefillBrand||'PawfectHouse',workflow:state.prefillWorkflow||'Onepage',url:state.prefillSource||'',brief:state.prefillBrief||'',content:'',feedback:'',status:'Draft'};return '<s-section heading="'+(fresh?'Create creative task':'Task workspace')+'"><div class="panelhead"><div><p class="slim">'+(fresh?'Add a brief to start a traceable task':'Edit brief, content draft, feedback and approval status')+'</p></div>'+(fresh?'':'<span class="badge">'+escapeHtml(t.id)+'</span>')+'</div>'+
-'<div class="task-setup-intro"><div class="setup-eyebrow">TASK SETUP</div><p>We’ve separated the product and workflow from your request. Check the details and save when ready.</p></div>'+polarisField('title','Task name',t.title,'e.g. LED Bottle Light Topper · Onepage')+
+(fresh?'<div class="setup-kicker">Review the details extracted from your brief</div>':'')+polarisField('title','Task name',t.title,'e.g. LED Bottle Light Topper · Onepage')+
 '<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div>'+polarisSelect('brand','Brand',brands,t.brand)+'</div><div>'+polarisSelect('workflow','Workflow',types,t.workflow)+'</div></div>'+
 polarisField('url','Product / collection name or URL',t.url,'e.g. LED Bottle Light Topper or https://...')+
-'<div class="row" style="margin:4px 0 10px">'+button('Verify on store','lookup')+'<span class="slim">Find and confirm a real matching product or collection before production.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
+'<div class="row verify-row">'+button('Verify on store','lookup')+'<span class="slim">Optional · Only matching collections/products will be shown.</span></div><div id="catalogMatches" role="status" aria-live="polite"></div>'+
 (fresh?'<details class="original-request"><summary>Original request & additional notes <span class="optional-label">Edit if needed</span></summary>'+polarisArea('brief','Request / creative direction',t.brief,'Add direction, requirements or references...')+'</details>':polarisArea('brief','Brief / Creative direction',t.brief,'Product truth, target buyer, angle, constraints, references...'))+
 (!fresh?polarisArea('content','Content draft',t.content,'Edit content draft...')+polarisArea('feedback','Feedback & QA notes',t.feedback,'Review notes, issues, revision request...')+polarisSelect('status','Status',statuses,t.status):'')+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
@@ -331,14 +352,27 @@ async function lookupStore(){
   if(source.value.trim()!==q||brand.value!==result.brand)return;
   const entries=result.results||[];
   if(!entries.length){target.innerHTML='<div class="notice">Không tìm thấy kết quả công khai phù hợp. Anh vẫn có thể lưu tên này làm brief để xử lý sau.</div>';return;}
-  const exact=entries.filter(x=>normalizeName(x.title)===normalizeName(q));
-  if(exact.length===1){
-    source.value=exact[0].url;
-    target.innerHTML='<div class="notice">Đã nhận diện '+escapeHtml(exact[0].type)+': <strong>'+escapeHtml(exact[0].title)+'</strong>. URL đã được điền tự động.</div>';
-    return;
+  // Collection-targeted briefs must not be flooded with unrelated SKU suggestions.
+  const kind=state.prefillKind||'unknown';
+  const cleanQuery=normalizeName(q);
+  const collections=entries.filter(x=>x.type==='collection');
+  const products=entries.filter(x=>x.type==='product');
+  const chosenPool=kind==='collection'?collections:(collections.length?collections:products);
+  const ranked=chosenPool.map(item=>{
+    const label=normalizeName(item.title);
+    const score=label===cleanQuery?100:label.includes(cleanQuery)?80:cleanQuery.includes(label)?65:0;
+    return {...item,score};
+  }).filter(item=>item.score>=65).sort((a,b)=>b.score-a.score).slice(0,4);
+  if(!ranked.length){
+    target.innerHTML='<div class="notice">Chưa tìm thấy '+(kind==='collection'?'collection':'kết quả')+' khớp tên <strong>'+escapeHtml(q)+'</strong>. Anh có thể lưu tên làm brief hoặc dán URL collection chính xác. Không tự chọn sản phẩm khác.</div>';
+    state.catalogMatches=[];return;
   }
-  target.innerHTML='<div class="subheading">Kết quả trên store — chọn đúng sản phẩm/collection</div>'+entries.map((item,i)=>'<div class="row" style="justify-content:space-between;margin:6px 0;gap:8px"><span class="sectiontext">'+escapeHtml(item.type==='collection'?'Collection':'Product')+' · <strong>'+escapeHtml(item.title)+'</strong></span><s-button variant="secondary" data-catalog-index="'+i+'">Chọn</s-button></div>').join('');
-  state.catalogMatches=entries;
+  if(ranked.length===1&&ranked[0].score===100){
+    target.innerHTML='<div class="catalog-match"><span class="badge">Exact match</span><strong>'+escapeHtml(ranked[0].title)+'</strong><s-button variant="secondary" data-catalog-index="0">Dùng URL này</s-button></div>';
+    state.catalogMatches=ranked;return;
+  }
+  target.innerHTML='<div class="subheading">Kết quả phù hợp — xác nhận đúng collection/sản phẩm</div>'+ranked.map((item,i)=>'<div class="catalog-match"><div><span class="muted">'+escapeHtml(item.type)+'</span><strong>'+escapeHtml(item.title)+'</strong></div><s-button variant="secondary" data-catalog-index="'+i+'">Chọn</s-button></div>').join('');
+  state.catalogMatches=ranked;
  }catch(e){target.innerHTML='<div class="notice">Không thể quét storefront lúc này. Anh vẫn lưu tên được; chưa xác nhận được URL. '+escapeHtml(e.message)+'</div>';}
 }
 async function persist(){
