@@ -980,7 +980,8 @@ async function saveOnepageBindings(){
  const fields=Array.from(document.querySelectorAll('[data-exact-binding]'));
  const mapping={...(state.onepageBindings[id]||{})};
  // The selected-slot quick control wins over the collapsed full mapping list.
- for(const field of fields)mapping[field.dataset.exactBinding]=field.value;
+ for(const field of fields.filter(f=>!f.closest('.review-selected-asset')))mapping[field.dataset.exactBinding]=field.value;
+ for(const field of fields.filter(f=>f.closest('.review-selected-asset')))mapping[field.dataset.exactBinding]=field.value;
  try{const r=await cloudRequest('/api/tasks/'+id+'/onepage-bindings','PUT',{bindings:mapping});
   state.onepageBindings[id]=r.bindings||{};
   refreshCanonicalPreview();const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(id);
