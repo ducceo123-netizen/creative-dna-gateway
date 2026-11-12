@@ -13,6 +13,7 @@ export const UID_PROGRESS_DESCRIPTION = " Give concise factual progress before r
 // They remain true for isError, auth failures, missing evidence and unknown outcomes.
 export const UID_TOOL_INVOCATION_LABELS = {
   sync_uid_studio_result: ["Syncing creative result to UID Brands Studio…", "Studio sync call ended"],
+  sync_uid_studio_image: ["Uploading selected image to UID Brands Studio…", "Image sync call ended"],
   get_website_brand_ui_skill: ["Loading Website Brand UI skill…", "Website Brand UI call ended"],
   read_ldp_figma_comments: ["Reading Figma comments…", "Figma comments call ended"],
   ingest_uid_brands_attachment: ["Reading attachment reference…", "Attachment call ended"],
