@@ -153,17 +153,14 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const automatic=visibleData?.automatic_review;
   const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
   const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
-  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
+  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!refreshing&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
   const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!refreshing&&!busy&&!stale&&!uncertain;
   const canAcceptRule=canReview&&typeof visibleData?.owner_user_id==="string"&&!!visibleData.owner_user_id&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
-    if(!alive.current||mutation.current||proposalKey!==proposalKeyRef.current||loadedProposalKey.current!==proposalKeyRef.current||dataRef.current!==visibleData||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
-    // An advisory 10-second background refresh must not eat an explicit Owner
-    // click. Abort only that read; the server rechecks version/hash/authority.
-    if(activeRead.current){activeRead.current.abort();activeRead.current=null;setRefreshing(false);}
+    if(!alive.current||mutation.current||activeRead.current||proposalKey!==proposalKeyRef.current||loadedProposalKey.current!==proposalKeyRef.current||dataRef.current!==visibleData||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
     clearPoll();
     mutation.current=true;onBusyChangeRef.current?.(true);setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
@@ -253,7 +250,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
     {path==="owner"&&uncertain&&<button type="button" className={button} disabled={!!busy||loading||refreshing} onClick={recoverOwner}>Khôi phục thao tác chưa rõ kết quả</button>}
     {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
-    {refreshing&&!loading&&<p role="status" className="text-xs text-slate-500">Đang cập nhật trạng thái…</p>}
+    {refreshing&&!loading&&<p role="status" className="text-xs text-slate-500">Đang xác minh phiên bản hiện tại… Nút duyệt sẽ khả dụng sau khi kiểm tra xong.</p>}
     {loading&&<p role="status" className="text-xs text-slate-600">{path==="owner"?"Đang tải nội dung rule và phạm vi áp dụng hiện tại…":"Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…"}</p>}
     {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
     {visibleData&&<>
