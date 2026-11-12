@@ -460,6 +460,12 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .prepared-handoff textarea{display:block;box-sizing:border-box;width:100%;height:190px;border:1px solid #c9d7ce;background:#fff;color:#26362c;border-radius:9px;padding:12px;resize:vertical;font:12px/1.6 ui-monospace,monospace}
 .prepared-handoff .research-actions{margin:12px 0}
 .prepared-handoff small{font-size:11px;color:#69766e;line-height:1.5}
+
+.review-workflow-results{margin:20px 0 12px;padding:20px;border:1px solid #dce6de;background:#fafdfa;border-radius:14px}
+.review-workflow-results h4{font-size:15px;font-weight:700;color:#1d3928;margin:0 0 12px}
+.review-workflow-results .research-status{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.review-workflow-results .research-products{max-height:480px;overflow:auto}
+@media(max-width:650px){.review-workflow-results{padding:13px}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1215,8 +1221,9 @@ function sectionFeedbackInspector(id){
    '<div><small>AI mode</small><strong>'+escapeHtml(currentExecutionMode().label)+'</strong></div>'+
    '<div><small>Pipeline</small><strong>'+escapeHtml(run?.stage||'Not started')+'</strong></div>'+
    '<div><small>Materials</small><strong>'+((d.materials||[]).filter(x=>x.file_id).length)+' linked</strong></div></div>'+
-   '<div class="review-workflow-actions">'+button('Scan product','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+
+   '<div class="review-workflow-actions">'+button('Scan & prepare Hybrid handoff','prepareHybrid')+button('Scan product','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+
    (state.executionMode==='api_auto'?button('Process with API','hybridRun'):'')+'</div>'+
+   '<div class="review-workflow-results"><h4>Storefront research</h4><div id="researchResult" role="status" aria-live="polite">'+researchMarkup(state.researchPacks[id]||null)+'</div><div id="hybridHandoffBox" class="prepared-handoff" hidden><label for="hybridHandoffPreview">Hybrid handoff · kiểm tra trước khi gửi ChatGPT</label><textarea id="hybridHandoffPreview" rows="8" readonly></textarea><div class="research-actions">'+button('Copy prepared handoff','copyPreparedHybrid')+button('Open ChatGPT','openChatGPT')+'</div></div></div>'+
    '<details class="review-advanced" id="reviewAdvanced"><summary>Open task details & advanced tools</summary><div class="review-advanced-inner">'+taskEditor(task)+'</div></details></section>';
  }
  if(tasks.find(x=>x.id===id)?.workflow==='Onepage'){
@@ -1431,14 +1438,14 @@ async function scanTaskResearch(){
  if(!state.cloud||!state.auth)return toast('Research sync requires team sign-in.');
  if(state.busy)return;
  // Require saved source; do not accidentally scan an unsaved URL from the editor.
- if(el('url')?.value.trim()!==task.url)return toast('Save changes to source URL before scanning.');
+ if(el('url')&&el('url').value.trim()!==task.url)return toast('Save changes to source URL before scanning.');
  state.busy=true;
  const target=el('researchResult');if(target)target.textContent='Scanning public storefront data…';
  try {
   const result=await cloudRequest('/api/tasks/'+task.id+'/research','POST');
   state.researchPacks[task.id]=result.research;
   if(target)target.innerHTML=researchMarkup(result.research);
-  toast('Storefront research snapshot saved. Review before AI handoff.');
+  toast('Đã lưu research: '+String((result.research?.snapshot||result.research)?.product_count||0)+' sản phẩm. Xem kết quả ngay bên dưới.');
  }catch(e){if(target)target.textContent='Scan failed: '+e.message;toast(e.message);}
  finally{state.busy=false;}
 }
@@ -1446,7 +1453,7 @@ async function prepareHybridHandoff(){
  const task=tasks.find(x=>x.id===state.selected);
  if(!task||state.busy)return;
  if(!state.cloud||!state.auth)return toast('Đăng nhập Studio trước khi chuẩn bị handoff.');
- if(el('url')?.value.trim()!==task.url)return toast('Lưu URL sản phẩm/bộ sưu tập trước khi scan.');
+ if(el('url')&&el('url').value.trim()!==task.url)return toast('Lưu URL sản phẩm/bộ sưu tập trước khi scan.');
  state.busy=true;
  const target=el('researchResult'),box=el('hybridHandoffBox');
  if(box)box.hidden=true;
