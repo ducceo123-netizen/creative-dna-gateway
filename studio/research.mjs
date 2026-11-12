@@ -50,13 +50,25 @@ async function scanPublicSource(brand,raw){
   if(!p)throw Error('Store did not return valid product data');
   products.push(p);
  }else{
-  try {
-   const j=await fetchJSON(source.url+'/products.json?limit=24',500000);
-   for(const p of (Array.isArray(j?.products)?j.products:[]).slice(0,24)){
-    const clean=normalizeProduct(p,STORES[brand]);if(clean)products.push(clean);
+  // Public Shopify JSON is paginated and sometimes restricted. Never claim full coverage.
+  const seen=new Set();
+  for(let page=1;page<=3;page++){
+   try{
+    const endpoint=source.url+'/products.json?limit=24'+(page===1?'':'&page='+page);
+    const j=await fetchJSON(endpoint,500000);
+    const batch=(Array.isArray(j?.products)?j.products:[]).slice(0,24);
+    for(const p of batch){
+     const clean=normalizeProduct(p,STORES[brand]);
+     if(clean&&!seen.has(clean.handle)){products.push(clean);seen.add(clean.handle);}
+    }
+    if(batch.length<24)break;
+    if(page===3)failures.push('Public scan capped at 72 products; collection may contain more');
+   }catch(e){
+    failures.push('Collection page '+page+' unavailable: '+String(e.message).slice(0,120));
+    break;
    }
-   if(!products.length)failures.push('Collection products endpoint returned no usable products');
-  }catch(e){failures.push('Collection product scan unavailable: '+String(e.message).slice(0,120));}
+  }
+  if(!products.length)failures.push('Collection products endpoint returned no usable products');
   try{
    const j=await fetchJSON(source.url+'.json',350000);
    collectionTitle=String(j?.collection?.title||'').slice(0,180)||null;
@@ -65,8 +77,8 @@ async function scanPublicSource(brand,raw){
  const status=products.length?'partial':'blocked';
  return {schema_version:'studio-research-v1',task_source:source.url,brand,type:source.type,
   source_title:collectionTitle||products[0]?.title||null,scanned_at:startedAt,status,
-  products,product_count:products.length,maximum_products:source.type==='collection'?24:1,
-  warnings:[...failures,'External customer reviews and competitor sources are NOT scanned by this collector.','Images and variants are storefront metadata only; physical construction and fidelity require manual/AI verification.'],
+  products,product_count:products.length,maximum_products:source.type==='collection'?72:1,
+  warnings:[...failures,'Collection scan captures at most 72 products; compare with live collection for coverage.','External customer reviews and competitor sources are NOT scanned by this collector.','Images and variants are storefront metadata only; physical construction and fidelity require manual/AI verification.'],
   evidence:[{url:source.url,source:'brand storefront',access:'public',captured_at:startedAt}],
   required_ai_gates:['Verify PDP/gallery/materials and product construction','Research verified external buyer feedback','Select Good To Know or FAQs based on evidence','Creative DNA content and visual QA']};
 }
