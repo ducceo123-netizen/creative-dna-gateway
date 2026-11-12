@@ -36,12 +36,15 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    required_state:["matching_pdps_inspected","verified_design_count","product_pool","product_to_asset_allocation","diversity_gate"]
   },
   hard_gates:{
-   product_physical_truth:"HARD_MULTI_SOURCE",content_approval:"HARD",content_to_visual_proof:"HARD",
+   product_physical_truth:"HARD_MULTI_SOURCE",content_approval:"AUTO_CONTINUE_NO_INTERMEDIATE_CONTENT_SIGNOFF",content_to_visual_proof:"HARD",
    product_asset_allocation:"HARD",responsive_banner_pair:"HARD_SAME_CREATIVE",
    exact_dimensions:"HARD",standalone_assets:"HARD",ui_mapping_preview:"HARD",
    thumbnail_casting_bias:"FORBIDDEN_HARD",casting_diversity:"HARD",
    moment_story_interaction:"HARD",moment_product_causality:"HARD"
   },
+  content_to_materials_contract:{mode:"AUTO_CONTINUE_AFTER_INTERNAL_CONTENT_MAP",require_intermediate_content_approval:false,keep_user_supplied_content_locked:true,allow_explicit_user_review_first:true,final_outcome_review_required:true,product_truth_and_asset_qc_required:true},
+  product_line_title_contract:{short_title_behavior:"NATURAL_CONTEXTUAL_QUALIFIER_WHEN_SUPPORTED",examples:["Personalized [Product Name]","[Product Name], Made Personal"],never_invent_customization:true,preserve_approved_copy:true,avoid_mechanical_prefixes:true},
+  desktop_support_typography_contract:{align_to_title_lockup:true,default_alignment:"MATCH_TITLE_OPTICAL_AXIS_USUALLY_CENTER",readability:"CHECK_ACTUAL_RENDERED_DESKTOP_SIZE",reject:["misaligned_support","tiny_hairline_copy","weak_contrast","isolated_support_copy"],mobile_rules_remain_separate:true},
   main_banner_contract:{
    desktop_size:"2560x960",mobile_size:"720x700",
    policy_source:"creative_quality_contract.rules",
@@ -64,11 +67,11 @@ export async function buildOnepagePacket(r: ResolvedDna & { branch: NonNullable<
    subject_to_design_continuity:"HARD",
    rule:"Keep exact product/design grammar while varying creative subjects and verified PDP variants. Thumbnail subject identity is never a lock."
   }:null,
-  execution:["ACQUIRE_SOURCE","BUILD_VERIFIED_PRODUCT_POOL","CHECK_DIVERSITY_GATE","BUILD_CONTENT_MAP","CONTENT_APPROVAL_GATE","BUILD_ASSET_MANIFEST","ALLOCATE_PRODUCTS_VARIANTS_CAST_TO_ASSETS","GENERATE_SLOT_BY_SLOT","QA_EACH_SLOT","BUILD_UI_MAPPING_PREVIEW"],
+  execution:["ACQUIRE_SOURCE","BUILD_VERIFIED_PRODUCT_POOL","CHECK_DIVERSITY_GATE","BUILD_CONTENT_MAP","BUILD_ASSET_MANIFEST","ALLOCATE_PRODUCTS_VARIANTS_CAST_TO_ASSETS","GENERATE_SLOT_BY_SLOT","QA_EACH_SLOT","BUILD_UI_MAPPING_PREVIEW"],
   assets: assets.map(asset => ({...asset, ...(asset.slot.startsWith("gtk_") ? {condition:"ONLY_WHEN_GTK_SELECTED"} : {}), ...(asset.slot === "ui_mapping_preview" ? {format:ruleValue("delivery.mapping_format"),delivery_rule_ids:ruleIds("delivery.mapping_format","delivery.final_package")} : {})})),
   packaging_contract: {
     ...ONEPAGE_PACKAGING_CONTRACT,
-    status: creative_quality_contract.status === "COMPILED" && ruleValue("delivery.final_package") === "WEBP_ASSETS_PLUS_ONE_PNG_MAPPING" && ruleValue("delivery.mapping_format") === "PNG" ? "READY_AFTER_EXPLICIT_APPROVAL" : "BLOCKED_INCOMPATIBLE_DELIVERY_RULES",
+    status: creative_quality_contract.status === "COMPILED" && ruleValue("delivery.final_package") === "WEBP_ASSETS_PLUS_ONE_PNG_MAPPING" && ruleValue("delivery.mapping_format") === "PNG" ? "READY_AFTER_QA_AND_FINAL_OUTCOME_REVIEW" : "BLOCKED_INCOMPATIBLE_DELIVERY_RULES",
     delivery_rule_ids: ruleIds("delivery.final_package", "delivery.mapping_format"),
   },
   template_asset_bindings: {occasion_story_01:"occasion_01",occasion_story_02:"occasion_02",occasion_story_01_mobile:"detail_main"},
