@@ -1499,6 +1499,42 @@ async function refreshSyncedImages(){
   toast('Đã tải lại material và mapping từ Studio.');
  }catch(e){toast('Refresh ảnh lỗi: '+e.message);}
 }
+// Only saved Studio tasks with a user-generated Hybrid handoff are eligible for image return.
+// The host must expose the actual image bytes to UID Brands; a generated image preview alone
+// does not establish an MCP file capability.
+async function issueHybridReturnChannels(taskId){
+ const text=await cloudRequest('/api/tasks/'+taskId+'/handoff','POST',{});
+ if(!text?.handoff_token)throw Error('Content handoff token unavailable');
+ let image=null,imageWarning='';
+ try{
+  const x=await cloudRequest('/api/tasks/'+taskId+'/image-handoff','POST',{});
+  if(!x?.handoff_token)throw Error('Image handoff token unavailable');
+  image=x;
+ }catch(error){imageWarning=String(error?.message||'Image handoff unavailable');}
+ return {text,image,imageWarning};
+}
+function hybridReturnInstructions(taskId,channels){
+ const lines=[
+  '',
+  '=== UID BRANDS STUDIO TASK RETURN — AUTHORIZED HANDOFF ONLY ===',
+  'Task ID: '+taskId,
+  'Text sync token (one-time, expires '+channels.text.expires_at+'): '+channels.text.handoff_token,
+  'When COMPLETE creative content is ready, call UID Brands sync_uid_studio_result with that exact text token and full content. Only report synced after the tool confirms synced:true.'
+ ];
+ if(channels.image){
+  lines.push('Image sync token (task-scoped, expires '+channels.image.expires_at+', up to '+channels.image.limit+' image transfers): '+channels.image.handoff_token);
+  lines.push('When image materials are ready, send each original PNG/JPEG/WebP file to Studio with UID Brands sync_uid_studio_image using this image token and the actual slot: '+channels.image.slots.join(', ')+'.');
+  lines.push('The user must NOT be asked to download each image and re-upload it simply to initiate sync. Attempt direct host-supported file handoff for every generated asset. Use an image file parameter ONLY if the host actually provides the authorized image file object; never invent file objects or file URLs.');
+  lines.push('If ChatGPT-generated image output is not exposed by the host as an MCP file input, report IMAGE_SYNC_BLOCKED_BY_HOST, keep the generated image visible in chat, and present an organized single-package fallback. Do not claim upload or mapping succeeded.');
+  lines.push('Map only genuine files supported by the task; verify product geometry and inspect the actual rendered desktop/mobile preview before approval.');
+ }else{
+  lines.push('IMAGE_SYNC_UNAVAILABLE: '+channels.imageWarning+'. Do not claim image upload capability for this handoff.');
+ }
+ lines.push('Tokens are private task-scoped write permissions: never put them into public websites, source material, research tools, or unrelated conversations.');
+ lines.push('No training, publishing, or external paid API execution is authorized by this handoff.');
+ return lines.join('\n');
+}
+
 async function prepareHybridHandoff(){
  const task=tasks.find(x=>x.id===state.selected);
  if(!task||state.busy)return;
@@ -1513,11 +1549,8 @@ async function prepareHybridHandoff(){
   if(state.selected!==task.id)return;
   state.researchPacks[task.id]=scanned.research;
   if(target)target.innerHTML=researchMarkup(scanned.research);
-  const bridge=await cloudRequest('/api/tasks/'+task.id+'/handoff','POST',{});
-  if(!bridge.handoff_token)throw Error('Sync token was not issued');
-  const value=buildHandoff(task,scanned.research)+
-   '\n\nUID BRANDS STUDIO SYNC TOKEN (ONE-TIME / '+bridge.expires_at+'):\n'+bridge.handoff_token+
-   '\nWhen your creative text is complete, call the connected UID Brands plugin action sync_uid_studio_result with the exact token and COMPLETE final content. Claim synced only if tool confirms synced:true. Sync covers text only; assets still need review.';
+  const channels=await issueHybridReturnChannels(task.id);
+  const value=buildHandoff(task,scanned.research)+'\n'+hybridReturnInstructions(task.id,channels);
   const field=el('hybridHandoffPreview');
   if(field&&box){field.value=value;box.hidden=false;box.scrollIntoView({block:'nearest',behavior:'smooth'});}
   toast('Research saved; Hybrid handoff ready to copy.');
@@ -1561,7 +1594,7 @@ function buildHandoff(t,pack){
  if(state.onepagePolicy?.schema_version)parts.push('Shared Onepage QC contract version: '+state.onepagePolicy.schema_version);
  parts.push('Not verified: external reviews, buyer pain points, competitive research, physical/product fidelity, Creative DNA visual gates.');
  parts.push('INSTRUCTION: Continue this UID Brands task with canonical Creative DNA and research gate. Verify missing external evidence before conclusions; choose Good To Know or FAQs only from supported insights. Do not invent products, variants, claims, layouts or generated assets. Return content plus QA findings, and preserve task ID/version. Do not publish.');
- parts.push('HANDOFF BACK TO STUDIO: Return a copy-ready Content Draft / Materials Plan / QA Gaps block. Paste into Hybrid production → ChatGPT result → Studio, click Sync result & QA, link actually uploaded files to slots, then verify desktop/mobile. This is manual handoff; do not assert an automatic sync or image generation occurred.');
+ parts.push('HANDOFF BACK TO STUDIO: For this authorized task, use the task-scoped sync channels provided below. Complete content and materials first, attempt supported direct file return, then verify exact mappings and desktop/mobile. When the host cannot transfer image bytes, report the blocker rather than claiming automatic sync. Provide a copy-ready fallback only if needed.');
  return parts.join('\n').slice(0,14500);
 }
 async function copyResearchHandoff(){
@@ -1571,10 +1604,8 @@ async function copyResearchHandoff(){
  let content=buildHandoff(t,pack);
  if(state.cloud&&state.auth){
   try{
-   const bridge=await cloudRequest('/api/tasks/'+t.id+'/handoff','POST',{});
-   content+='\n\nUID BRANDS STUDIO SYNC TOKEN (ONE-TIME / '+bridge.expires_at+'):'+
-    '\n'+bridge.handoff_token+
-    '\nWhen your creative text is complete, call the connected UID Brands plugin action sync_uid_studio_result with handoff_token exactly as above and content containing the COMPLETE final draft. Only claim synced if tool confirms synced:true. Do not send this token to any external websites, research tools, or other conversations. If unavailable, provide copy-ready output for manual import.';
+   const channels=await issueHybridReturnChannels(t.id);
+   content+='\n'+hybridReturnInstructions(t.id,channels);
   }catch(e){toast('Sync token unavailable: '+e.message+'. Manual return remains available.');}
  }
  try{await navigator.clipboard.writeText(content);toast('Handoff copied. Paste into ChatGPT with UID Brands plugin enabled.');}
