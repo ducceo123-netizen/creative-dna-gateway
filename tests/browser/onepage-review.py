@@ -17,6 +17,8 @@ def setup(page, manifest=None, suffix='', width=1200):
     original = page.locator('main').evaluate('(n) => ({html:n.outerHTML,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})')
     page.add_script_tag(content=JS)
     page.wait_for_selector('#onepage-review-controls')
+    # Legacy browser checks exercise manual form controls; current UI keeps them collapsed by default.
+    page.locator('#onepage-review-controls #panel').evaluate('(n) => n.open = true')
     return original
 def pick(page, selector):
     page.locator(selector).click(force=True)
