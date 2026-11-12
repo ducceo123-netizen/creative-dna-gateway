@@ -1474,7 +1474,7 @@ function buildHandoff(t,pack){
  'Products collected ('+products.length+' shown):'
  ];
  for(const x of products.slice(0,16)){
-  parts.push('- '+x.title+' | '+x.url+' | variants: '+x.variantCount+' | gallery: '+x.images.length+' image links');
+  parts.push('- '+x.title+' | '+x.url+' | type: '+(x.product_type||'not exposed')+' | tags: '+(Array.isArray(x.tags)?x.tags.slice(0,10).join(', '):'not exposed')+' | variants: '+x.variantCount+' | gallery: '+x.images.length+' image links');
   if(x.description)parts.push('  Storefront description: '+x.description.slice(0,430));
   if(Array.isArray(x.variants)&&x.variants.length)parts.push('  Listed options: '+x.variants.slice(0,5).map(v=>v.title).join(' / '));
   if(Array.isArray(x.images)&&x.images.length)parts.push('  Gallery source URLs: '+x.images.slice(0,3).join(' | '));
