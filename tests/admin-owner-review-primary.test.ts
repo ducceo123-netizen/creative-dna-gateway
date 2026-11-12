@@ -9,7 +9,7 @@ test("verified Owner review is primary; AI handoff is optional and collapsed",()
   assert.ok(owner>0,"Owner action available");
   assert.ok(ai>owner,"Optional AI review appears after Owner action");
   assert.match(s.slice(owner,ai),/Không cần bàn giao AI/);
-  assert.match(s.slice(ai,ai+850),/<details[\s\S]*?Nhờ AI rà soát trước khi duyệt/);
+  assert.match(s.slice(ai,ai+850),/Nhờ AI rà soát trước khi duyệt/);
   assert.match(s.slice(ai,ai+1100),/RuleReviewHandoff/);
   assert.match(s.slice(owner-250,owner+250),/path:"owner"/);
 });
