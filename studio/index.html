@@ -466,6 +466,20 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .review-workflow-results .research-status{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .review-workflow-results .research-products{max-height:480px;overflow:auto}
 @media(max-width:650px){.review-workflow-results{padding:13px}}
+
+.research-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:14px 0}
+.research-metrics>div{display:flex;flex-direction:column;gap:3px;padding:12px;border:1px solid #e0e8e2;border-radius:10px;background:white}
+.research-metrics strong{font-size:20px;color:#204f35}
+.research-metrics small{font-size:11px;color:#737e77}
+.research-items-detail summary{cursor:pointer;font-weight:650;font-size:13px;color:#2b4835;margin:12px 0}
+.research-item-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:520px;overflow:auto}
+.research-item{padding:12px;background:#fff;border:1px solid #e6ece7;border-radius:10px}
+.research-item strong{display:block;font-size:12px;color:#213328}
+.research-item small{display:block;margin:5px 0;font-size:11px;color:#748079}
+.research-item a{font-size:11px;color:#247349;text-decoration:underline}
+.research-tags{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.research-tags span{border-radius:6px;background:#eef5ef;color:#43584a;padding:2px 6px;font-size:10px}
+@media(max-width:600px){.research-metrics{grid-template-columns:repeat(2,1fr)}.research-item-list{grid-template-columns:1fr}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1414,14 +1428,22 @@ attachmentsPanel(fresh?null:t.id)+
 '<div class="actions">'+button(fresh?'Save task & open workspace':'Save changes','save','')+(!fresh?button('Version history','history')+button('Export JSON','export')+button('Delete task','delete','danger'):'')+'</div>'+
 (!fresh?'<div id="versions" class="space"></div>':'')+(!fresh?'<p class="notice">Hybrid Bridge supports ChatGPT handoff; API Auto requires server configuration and per-call approval. Image generation and automatic publishing are not enabled.</p>':'')+'</s-section>';}
 function researchMarkup(pack){
- if(!pack)return '<p class="research-note">Chưa có research pack. Bấm Scan product data để đọc storefront công khai của source URL đang lưu.</p>';
- const p=pack.snapshot||pack;
- const items=Array.isArray(p.products)?p.products:[];
- const warnings=Array.isArray(p.warnings)?p.warnings:[];
- return '<div class="research-status"><strong>'+escapeHtml(p.status==='partial'?'Public scan completed · AI review pending':'Scan blocked / no product data')+'</strong><span>'+escapeHtml(String(p.scanned_at||''))+'</span></div>'+
- '<p class="research-note">'+escapeHtml(String(p.product_count||0))+' product(s) captured · '+escapeHtml(p.type||'unknown')+' · source: '+escapeHtml(p.task_source||'')+'</p>'+
- (items.length?'<div class="research-products">'+items.slice(0,8).map(x=>'<div><strong>'+escapeHtml(x.title)+'</strong><span>'+escapeHtml(String(x.variantCount||0))+' variants · '+escapeHtml(String(x.images?.length||0))+' gallery image URLs</span></div>').join('')+'</div>':'')+
- '<details class="research-warning"><summary>Scope and evidence limitations ('+warnings.length+')</summary>'+warnings.map(w=>'<p>'+escapeHtml(w)+'</p>').join('')+'</details>';
+ if(!pack)return '<p class="research-note">Chưa có research. Bấm Scan product để quét dữ liệu công khai của PDP/collection đã lưu.</p>';
+ const p=pack.snapshot||pack,items=Array.isArray(p.products)?p.products:[],warnings=Array.isArray(p.warnings)?p.warnings:[];
+ const collected=Number(p.product_count||items.length),totalVariants=items.reduce((n,x)=>n+Number(x.variantCount||0),0),galleryLinks=items.reduce((n,x)=>n+(x.images?.length||0),0);
+ const heading=collected>0?'Đã lấy dữ liệu công khai · cần kiểm chứng sản phẩm':'Không lấy được sản phẩm · kiểm tra nguồn';
+ const detail=items.map((x,i)=>'<div class="research-item"><strong>'+(i+1)+'. '+escapeHtml(x.title||'Untitled')+'</strong>'+
+  '<small>'+escapeHtml(x.product_type||'Type not exposed')+' · '+Number(x.variantCount||0)+' variants · '+(x.images?.length||0)+' gallery images</small>'+
+  (x.tags?.length?'<div class="research-tags">'+x.tags.slice(0,8).map(t=>'<span>'+escapeHtml(t)+'</span>').join('')+'</div>':'')+
+  (x.url?'<a href="'+escapeHtml(x.url)+'" rel="noopener noreferrer" target="_blank">Open PDP</a>':'')+
+  '</div>').join('');
+ return '<div class="research-status"><strong>'+escapeHtml(heading)+'</strong><span>Scanned '+escapeHtml(String(p.scanned_at||'unknown'))+'</span></div>'+
+  '<div class="research-metrics"><div><strong>'+collected+'</strong><small>Products</small></div><div><strong>'+totalVariants+'</strong><small>Variants</small></div><div><strong>'+galleryLinks+'</strong><small>Gallery URLs</small></div><div><strong>'+warnings.length+'</strong><small>Warnings</small></div></div>'+
+  '<p class="research-note">Source: '+escapeHtml(p.task_source||'unknown')+' · Status: '+escapeHtml(p.status||'unknown')+
+  ' · Collection cap: '+escapeHtml(String(p.maximum_products||'not specified'))+'.</p>'+
+  (detail?'<details class="research-items-detail" open><summary>Product inventory ('+items.length+')</summary><div class="research-item-list">'+detail+'</div></details>':'<p class="research-note">No product metadata returned. Check the source URL or storefront endpoint restrictions.</p>')+
+  '<details class="research-warning" '+(warnings.length?'open':'')+'><summary>Data gaps and limits ('+warnings.length+')</summary>'+
+  (warnings.length?warnings.map(w=>'<p>'+escapeHtml(w)+'</p>').join(''):'<p>No collector warnings recorded; product truth and artwork still require review.</p>')+'</details>';
 }
 async function loadTaskResearch(id){
  if(!id||!state.cloud||!state.auth)return;
