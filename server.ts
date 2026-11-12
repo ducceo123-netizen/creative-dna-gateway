@@ -1,3 +1,4 @@
+import { evaluateOnepagePhysicalQc, ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA, ONEPAGE_PHYSICAL_QC_DESCRIPTION, ONEPAGE_PHYSICAL_DEFECTS } from "./supabase/functions/_shared/onepage-physical-qc.ts";
 import { evaluateOnepageCreativeQc, ONEPAGE_CREATIVE_QC_INPUT_SCHEMA, ONEPAGE_CREATIVE_QC_DESCRIPTION, EO_ICON_DEFECTS } from "./supabase/functions/_shared/onepage-creative-qc.ts";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
 import {isRetiredLdpDemo} from './uid-ldp-retired-demos.ts';
@@ -529,6 +530,11 @@ export const TOOL_DEFINITIONS = [
     inputSchema: ONEPAGE_BANNER_QC_INPUT_SCHEMA,
   },
   {
+    name: "evaluate_onepage_physical_qc", title: "Evaluate Onepage Physical QC",
+    description: ONEPAGE_PHYSICAL_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA,
+  },
+  {
     name: "evaluate_onepage_creative_qc", title: "Evaluate Onepage Creative QC", description: ONEPAGE_CREATIVE_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: ONEPAGE_CREATIVE_QC_INPUT_SCHEMA,
   },
@@ -772,6 +778,27 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     },
   }),async(input)=>{
     const gate=evaluateOnepageCreativeQc(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(gate)}],structuredContent:gate,isError:gate.status==="BLOCKED"},"template");
+  });
+
+  server.registerTool("evaluate_onepage_physical_qc", uidProgressTool("evaluate_onepage_physical_qc", {
+    title:"Evaluate Onepage Physical QC",description:ONEPAGE_PHYSICAL_QC_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{
+      task_id:z.string().trim().min(1).max(160),content_version:z.string().trim().min(1).max(160),
+      inspections:z.array(z.object({
+        asset_id:z.string().trim().min(1).max(160),
+        section:z.enum(["banner","occasion","why_you_love_it","ugc","product_details","other"]),
+        shot_role:z.enum(["lifestyle_moment","ugc_moment","product_closeup","product_detail"]),
+        product_id:z.string().trim().min(1).max(160),
+        source_pdp_url:z.string().url(),visually_inspected:z.boolean(),
+        inspector_note:z.string().trim().min(40).max(2000),
+        interaction_direction:z.enum(["toward_real_user","not_applicable_still_life","unknown"]),
+        camera_strategy:z.enum(["natural_observer_angle","over_shoulder","elevated_angle","top_down","dedicated_closeup","forced_camera_facing"]),
+        findings:z.object(Object.fromEntries(ONEPAGE_PHYSICAL_DEFECTS.map(k=>[k,z.boolean()])) as Record<typeof ONEPAGE_PHYSICAL_DEFECTS[number],z.ZodBoolean>).strict(),
+      }).strict()).min(1).max(50),
+    },
+  }),async(input)=>{
+    const gate=evaluateOnepagePhysicalQc(input);
     return withUidProgress({content:[{type:"text",text:JSON.stringify(gate)}],structuredContent:gate,isError:gate.status==="BLOCKED"},"template");
   });
 
@@ -1027,6 +1054,12 @@ export function createApp(): express.Application {
     const gate = evaluateOnepageBannerQc(input);
     res.setHeader("Cache-Control", "no-store");
     return res.status(gate.status === "BLOCKED" ? 422 : 200).json(gate);
+  });
+  app.post("/api/tools/evaluate_onepage_physical_qc",(req:Request,res:Response)=>{
+    const input=req.body?.arguments||req.body||{};
+    const gate=evaluateOnepagePhysicalQc(input);
+    res.setHeader("Cache-Control","no-store");
+    return res.status(gate.status==="BLOCKED"?422:200).json(gate);
   });
   app.post("/api/tools/evaluate_onepage_creative_qc",(req:Request,res:Response)=>{
     const input=req.body?.arguments||req.body||{};
