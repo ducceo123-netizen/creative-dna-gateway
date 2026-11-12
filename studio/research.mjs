@@ -35,7 +35,10 @@ function normalizeProduct(p,base){
    title:String(x?.title||'').slice(0,100),available:typeof x?.available==='boolean'?x.available:null,
    options:[x?.option1,x?.option2,x?.option3].filter(Boolean).map(z=>String(z).slice(0,80))
  }));
+ const tagsRaw=Array.isArray(p.tags)?p.tags:(typeof p.tags==='string'?p.tags.split(','):[]);
+ const tags=tagsRaw.slice(0,24).map(x=>String(x).trim().slice(0,65)).filter(Boolean);
  return {title:String(p.title||'').slice(0,180),handle,url:base+'/products/'+handle,
+   product_type:String(p.product_type||p.type||'').slice(0,100),tags,
    description:cleanHtml(p.body_html||p.description||''),images,variants,variantCount:Array.isArray(p.variants)?p.variants.length:0};
 }
 async function scanPublicSource(brand,raw){
