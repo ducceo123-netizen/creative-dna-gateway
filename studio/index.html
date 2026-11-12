@@ -488,6 +488,15 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 /* Intrinsic canonical preview height: never force 1080px below short pages. */
 .review-frame-stage iframe{min-height:0!important;height:140px}
 .review-frame-stage{min-height:0!important;align-items:flex-start}
+
+.canonical-copy-editor{margin:12px 0;padding:14px 17px;border:1px solid #dae5dc;border-radius:12px;background:#fcfdfc}
+.canonical-copy-editor summary{font-size:13px;font-weight:650;cursor:pointer;color:#285b3d}
+.canonical-copy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:980px;margin:15px 0}
+.canonical-copy-pair{border:1px solid #e1e8e2;border-radius:10px;padding:13px;background:#fff}
+.canonical-copy-pair strong{display:block;color:#30473a;font-size:12px;margin-bottom:10px}
+.canonical-copy-pair label{display:block;font-size:11px;font-weight:600;color:#59645d;margin:8px 0}
+.canonical-copy-pair input,.canonical-copy-pair textarea{display:block;box-sizing:border-box;width:100%;padding:10px;margin-top:5px;border:1px solid #cfdacf;border-radius:8px;font:13px/1.5 Inter,system-ui,sans-serif;color:#25382c;resize:vertical}
+@media(max-width:670px){.canonical-copy-grid{grid-template-columns:1fr}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1213,6 +1222,55 @@ function parseStudioOnepageCopy(raw){
  const keys=Object.keys(values);
  return {values,count:keys.length,issues,remaining:Array.from({length:13},(_,i)=>String(i+1).padStart(2,'0')).flatMap(n=>['title_'+n,'description_'+n]).filter(k=>!values[k])};
 }
+const STUDIO_CANONICAL_START='<!-- UID_STUDIO_CANONICAL_COPY_BEGIN -->';
+const STUDIO_CANONICAL_END='<!-- UID_STUDIO_CANONICAL_COPY_END -->';
+function canonicalCopyEditor(id){
+ const result=studioCopyMap(id);
+ const rows=[];
+ for(let n=1;n<=13;n++){
+  const suffix=String(n).padStart(2,'0');
+  const title='title_'+suffix,description='description_'+suffix;
+  if(result.values[title]&&result.values[description])continue;
+  const group=n<=3?'Why You’ll Love It':n<=6?'Product Details':n<=10?'Occasion icon cards':'Good To Know';
+  rows.push('<div class="canonical-copy-pair"><strong>'+suffix+' · '+group+'</strong>'+
+   '<label>Title '+suffix+'<input type="text" data-canonical-slot="'+title+'" maxlength="180" placeholder="'+escapeHtml(title)+'" value="'+escapeHtml(result.values[title]||'')+'"></label>'+
+   '<label>Description '+suffix+'<textarea rows="2" data-canonical-slot="'+description+'" maxlength="900" placeholder="'+escapeHtml(description)+'">'+escapeHtml(result.values[description]||'')+'</textarea></label></div>');
+ }
+ if(!rows.length)return '<p class="research-note">All 26 copy slots are populated. Review the wording and layout before approval.</p>';
+ return '<details class="canonical-copy-editor"><summary>Complete missing copy slots ('+result.remaining.length+')</summary>'+
+  '<p class="research-note">These fields belong only to canonical title/description slots. The two Occasion images have no text. Enter verified approved copy or request the missing fields from ChatGPT; empty fields are never invented.</p>'+
+  '<div class="canonical-copy-grid">'+rows.join('')+'</div>'+button('Save exact copy mapping','saveCanonicalCopy')+'</details>';
+}
+async function saveCanonicalCopy(){
+ const id=state.selected;if(!id||!state.cloud||!state.auth)return toast('Sign in and open a task.');
+ const fields=[...document.querySelectorAll('[data-canonical-slot]')],updates={};
+ for(const field of fields){
+  const key=field.dataset.canonicalSlot,value=field.value.trim();
+  if(!value)continue;
+  if(!/^(title|description)_(0[1-9]|1[0-3])$/.test(key))return toast('Invalid canonical slot');
+  if(value.includes('\n')&&key.startsWith('title_'))return toast('Titles must be one line.');
+  updates[key]=value.replace(/\s+/g,' ').slice(0,key.startsWith('title_')?180:900);
+ }
+ if(!Object.keys(updates).length)return toast('No additional copy entered.');
+ const d=hybridValue(id);
+ const previous=String(d.content||'');
+ const start=previous.indexOf(STUDIO_CANONICAL_START),end=previous.indexOf(STUDIO_CANONICAL_END);
+ let original=previous;
+ if(start>=0&&end>start)original=(previous.slice(0,start)+previous.slice(end+STUDIO_CANONICAL_END.length)).trim();
+ const existing=start>=0&&end>start?parseStudioOnepageCopy(previous.slice(start,end)).values:{};
+ const combined={...existing,...updates};
+ const block=STUDIO_CANONICAL_START+'\n'+Object.entries(combined).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+': '+v).join('\n')+'\n'+STUDIO_CANONICAL_END;
+ const payload={content:block+'\n\n'+original,materials:d.materials||[],evidence:d.evidence||[],qa:d.qa||{}};
+ try{
+  const saved=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',payload);
+  state.deliverables[id]=saved.deliverable;
+  const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(id);
+  if(el('hybridPanel'))el('hybridPanel').innerHTML=hybridMarkup(id);
+  refreshCanonicalPreview();
+  toast('Canonical copy saved; preview updated. Missing slots remain visible.');
+ }catch(e){toast('Cannot save copy: '+e.message);}
+}
+
 function studioCopyMap(id){return parseStudioOnepageCopy(hybridValue(id).content);}
 function studioCopyStatus(id){
  const mapped=studioCopyMap(id),has=String(hybridValue(id).content||'').trim().length>0;
@@ -1296,7 +1354,7 @@ function sectionFeedbackInspector(id){
    '<div><small>AI mode</small><strong>'+escapeHtml(currentExecutionMode().label)+'</strong></div>'+
    '<div><small>Pipeline</small><strong>'+escapeHtml(run?.stage||'Not started')+'</strong></div>'+
    '<div><small>Materials</small><strong>'+((d.materials||[]).filter(x=>x.file_id).length)+' linked</strong></div></div>'+
-   studioCopyStatus(id)+'<div class="review-workflow-actions">'+button('Refresh synced content','refreshSyncedContent')+button('Scan & prepare Hybrid handoff','prepareHybrid')+button('Scan product','scanResearch')+button('Copy task handoff · text + images','copyHandoff')+
+   studioCopyStatus(id)+canonicalCopyEditor(id)+'<div class="review-workflow-actions">'+button('Refresh synced content','refreshSyncedContent')+button('Scan & prepare Hybrid handoff','prepareHybrid')+button('Scan product','scanResearch')+button('Copy task handoff · text + images','copyHandoff')+
    (state.executionMode==='api_auto'?button('Process with API','hybridRun'):'')+'</div>'+
    '<div class="review-workflow-results"><h4>ChatGPT image return</h4><p class="research-note">Đã tích hợp image return vào nút Copy task handoff. Với task có handoff, ChatGPT sẽ thử trả ảnh về Studio theo slot nếu host cấp file hợp lệ. Nút token riêng bên dưới chỉ dành cho khôi phục/đồng bộ lại.</p><div class="research-actions">'+button('Generate image sync token','createImageHandoff')+button('Refresh synced images','refreshSyncedImages')+'</div><div id="imageSyncTokenBox" class="prepared-handoff" hidden><label for="imageSyncTokenText">Token cho UID Brands plugin · expires in 45 minutes</label><textarea id="imageSyncTokenText" readonly rows="3"></textarea><div class="research-actions">'+button('Copy image token instructions','copyImageSyncToken')+'</div><small>Chỉ dùng trong ChatGPT thread được anh cho phép. Token cho tối đa 8 ảnh; không đăng công khai.</small></div><h4>Storefront research</h4><div id="researchResult" role="status" aria-live="polite">'+researchMarkup(state.researchPacks[id]||null)+'</div><div id="hybridHandoffBox" class="prepared-handoff" hidden><label for="hybridHandoffPreview">Hybrid handoff · kiểm tra trước khi gửi ChatGPT</label><textarea id="hybridHandoffPreview" rows="8" readonly></textarea><div class="research-actions">'+button('Copy prepared handoff','copyPreparedHybrid')+button('Open ChatGPT','openChatGPT')+'</div></div></div>'+
    '<details class="review-advanced" id="reviewAdvanced"><summary>Open task details & advanced tools</summary><div class="review-advanced-inner">'+taskEditor(task)+'</div></details></section>';
@@ -1910,7 +1968,7 @@ document.addEventListener('click',e=>{
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='createImageHandoff')return createImageHandoff();if(action==='copyImageSyncToken')return copyImageSyncToken();if(action==='refreshSyncedImages')return refreshSyncedImages();if(action==='prepareHybrid')return prepareHybridHandoff();if(action==='copyPreparedHybrid')return copyPreparedHybrid();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='refreshSyncedContent')return refreshSyncedContent();if(action==='hybridZip')return hybridExportZip();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='createImageHandoff')return createImageHandoff();if(action==='copyImageSyncToken')return copyImageSyncToken();if(action==='refreshSyncedImages')return refreshSyncedImages();if(action==='prepareHybrid')return prepareHybridHandoff();if(action==='copyPreparedHybrid')return copyPreparedHybrid();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='saveCanonicalCopy')return saveCanonicalCopy();if(action==='refreshSyncedContent')return refreshSyncedContent();if(action==='hybridZip')return hybridExportZip();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 async function resumeAuth(){
  const saved=readRememberedAuth();if(!saved)return false;
