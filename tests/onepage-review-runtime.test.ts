@@ -7,7 +7,7 @@ const source=readFileSync(new URL('../public/onepage-review.js',import.meta.url)
 function harness(change?: (m:any,n:any)=>void, clipboardFails=false) {
  const nodes:Record<string,any>={}; let listener:any, observer:any, copied='';
  class El {
-  tagName:string; id=''; dataset:any={}; children:any[]=[]; parentElement:any; textContent=''; value=''; disabled=false; checked=true; open=false; style={}; attrs:any={}; currentSrc=''; src=''; onclick:any; onchange:any; oninput:any;
+  tagName:string; classList={toggle:(_name:string,_on?:boolean)=>false,add:(_name:string)=>{},remove:(_name:string)=>{}}; id=''; dataset:any={}; children:any[]=[]; parentElement:any; textContent=''; value=''; disabled=false; checked=true; open=false; style={}; attrs:any={}; currentSrc=''; src=''; onclick:any; onchange:any; oninput:any;
   constructor(tag='div'){this.tagName=tag.toUpperCase();}
   get outerHTML(){return JSON.stringify([this.tagName,this.id,this.dataset,this.textContent,this.attrs,this.children.map(n=>n.outerHTML)]);}
   set innerHTML(html:string){for(const match of html.matchAll(/id="([^"]+)"/g)){const n=new El();n.id=match[1];nodes[n.id]=n;}nodes.kind.value='element';}
