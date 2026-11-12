@@ -64,5 +64,14 @@ assert.match(server,/Canonical Onepage template hash mismatch/);
 assert.match(server,/studio_section_feedback/);
 assert.match(server,/taskId.*owner_id/);
 assert.match(html,/sandbox="allow-same-origin"/);
+assert.match(html,/data-canonical-onepage-css/);
+assert.match(html,/canonicalStyle\.textContent=template\.css/);
+assert.match(html,/link\.getAttribute\('href'\)==='styles\.css'/);
+assert.match(html,/inner\.fonts\?\.ready/);
+assert.match(html,/inner\.fonts\?\.check\('400 16px Poppins'\)/);
+assert.match(html,/ResizeObserver\(resize\)/);
+assert.match(html,/frame\.srcdoc='<!doctype html>'\+source/);
+assert.doesNotMatch(html,/const chrome='<style>'\+template\.css/);
+
 assert.match(html,/data-uid-review/);
 console.log('Full-width review, canonical iframe, inline grouped feedback and history passed');
