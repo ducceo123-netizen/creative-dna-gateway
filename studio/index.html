@@ -1487,11 +1487,11 @@ function refreshCanonicalPreview(){
   node.setAttribute('data-uid-review',id);
   node.setAttribute('data-review-label',label);
  });
- const source=doc.documentElement.outerHTML.replace(/\{\{([a-z0-9_]+)\}\}/g,(_,slot)=>escapeHtml(slot.replace(/_/g,' ')));
  // Review styling is scoped to selectable elements and never changes font or layout.
  const reviewStyle=doc.createElement('style');
  reviewStyle.textContent='[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #348bff;outline-offset:-2px}.uid-review-picked{outline:3px solid #348bff!important;outline-offset:-3px;background-color:#348bff0b!important}';
  doc.head.append(reviewStyle);
+ const source=doc.documentElement.outerHTML.replace(/\{\{([a-z0-9_]+)\}\}/g,(_,slot)=>escapeHtml(slot.replace(/_/g,' ')));
  frame.onload=()=>{
   try{
    const inner=frame.contentDocument;if(!inner)return;
