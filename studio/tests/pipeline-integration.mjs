@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {packZip} from '../zip.mjs';
+import {resolveGatewayDNA} from '../creative-dna.mjs';
+const zip=packZip([{name:'manifest.json',bytes:Buffer.from('{"ok":true}')},{name:'materials/banner_desktop.jpg',bytes:Buffer.from([255,216,255,217])}]);
+assert.equal(zip.readUInt32LE(0),0x04034b50);
+assert.equal(zip.readUInt32LE(zip.length-22),0x06054b50);
+assert.equal(zip.readUInt16LE(zip.length-12),2);
+assert.throws(()=>packZip([{name:'../unsafe',bytes:'oops'}]));
+assert.throws(()=>packZip([{name:'x',bytes:Buffer.alloc(8*1024*1024+1)}]));
+const original=globalThis.fetch,calls=[];
+globalThis.fetch=async(url,options)=>{
+ calls.push({url,options});
+ assert.equal(options.redirect,'error');
+ if(url.endsWith('/api/tools/resolve_creative_dna'))return {ok:true,text:async()=>JSON.stringify({brand:{slug:'pawfecthouse'},branch:{slug:'onepage-system'},resolved:{brand:'PawfectHouse'}})};
+ if(url.endsWith('/api/tools/compile_onepage_job'))return {ok:true,text:async()=>JSON.stringify({status:'READY',plan:{verified:true}})};
+ if(url.endsWith('/manifest.json'))return {ok:true,text:async()=>JSON.stringify({production_qc_contract:{schema_version:'2026.v3',scope:'onepage-system',image_gates:{minWidth:300},content_choice:{mode:'research'}}})};
+ return {ok:false,status:404,text:async()=>JSON.stringify({error:'unknown'})};
+};
+try{
+ const result=await resolveGatewayDNA({task:{brand:'PawfectHouse',workflow:'Onepage',title:'Pet Ornament',source_url:'https://pawfecthouse.com/products/pet-ornament'},research:{type:'product',products:[{title:'Pet Ornament',url:'https://pawfecthouse.com/products/pet-ornament',variantCount:2}]}});
+ assert.equal(result.tools.length,3);
+ assert.equal(result.version,'2026.v3');
+ assert.equal(calls.length,3);
+ const resolved=JSON.parse(calls[0].options.body);
+ assert.equal(resolved.branch,'onepage-system');
+ assert.equal(resolved.research.products[0].variantCount,2);
+ const b=await resolveGatewayDNA({task:{brand:'GiftSoul',workflow:'LDP',title:'For Mom',source_url:'https://giftsoul.co/collections/mom'},research:{products:[]}});
+ assert.equal(b.tools.length,1);
+ assert.equal(calls[3].url,'https://uid-brands-gateway-preview.onrender.com/api/tools/resolve_creative_dna');
+}finally{globalThis.fetch=original;}
+const server=await readFile(new URL('../server.mjs',import.meta.url),'utf8');
+assert.match(server,/studio_ai_usage_daily/);
+assert.match(server,/MAX_API_CALLS_PER_DAY/);
+assert.match(server,/if\(heldApiLock\)apiUserLocks\.delete/);
+assert.match(server,/action==='preview'/);
+assert.match(server,/overall_'\+view/);
+assert.match(server,/format'\)==='zip'/);
+const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+assert.match(html,/pipelineCaptureOveralls/);
+assert.match(html,/Download materials ZIP/);
+console.log('Gateway tool adapter, ZIP bundle, API quota and structural desktop/mobile Vision gate passed');

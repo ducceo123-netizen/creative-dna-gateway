@@ -1,0 +1,38 @@
+name: UID Brands Studio MVP
+on:
+  push:
+    branches: ['webapp/uid-brands-studio-mvp']
+    paths:
+      - 'studio/**'
+      - '.github/workflows/studio-mvp.yml'
+  pull_request:
+    paths:
+      - 'studio/**'
+      - '.github/workflows/studio-mvp.yml'
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check studio/server.mjs
+      - run: node studio/tests/smoke.mjs
+      - run: node studio/tests/workflows.mjs
+
+      - run: node studio/tests/research.mjs
+
+      - run: node studio/tests/attachments.mjs
+
+      - run: node studio/tests/company-auth.mjs
+
+      - run: node studio/tests/hybrid.mjs
+
+      - run: node studio/tests/execution-modes.mjs
+
+      - run: node studio/tests/orchestrator.mjs
+
+      - run: node studio/tests/pipeline-integration.mjs
+
+      - run: node studio/tests/review-editor.mjs
