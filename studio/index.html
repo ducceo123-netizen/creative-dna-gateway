@@ -1130,7 +1130,8 @@ function fixedOnepagePreview(id){
  '<div class="review-frame-stage '+(state.onepageFrameMode==='mobile'?'mobile':'desktop')+'">'+
  (state.onepageTemplate?'<iframe id="onepageFrame" sandbox="allow-same-origin" title="Canonical Onepage preview" referrerpolicy="no-referrer"></iframe>':
  '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
- '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+\n '<div id="inlineFeedbackDock" class="inline-feedback-dock" hidden aria-label="Group feedback"><div class="inline-feedback-chips" id="inlineFeedbackChips"></div><div class="inline-feedback-entry"><textarea id="inlineFeedbackText" rows="1" maxlength="2000" placeholder="Add a comment…" aria-label="Feedback cho các mục đã chọn"></textarea><button type="button" id="inlineFeedbackSend" data-inline-submit aria-label="Save grouped feedback" title="Lưu feedback" disabled>✓</button></div><div class="inline-feedback-meta"><span id="inlineFeedbackCount"></span><button type="button" data-inline-clear>Bỏ chọn</button></div></div>';
+ '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+ 
+ '<div id="inlineFeedbackDock" class="inline-feedback-dock" hidden aria-label="Group feedback"><div class="inline-feedback-chips" id="inlineFeedbackChips"></div><div class="inline-feedback-entry"><textarea id="inlineFeedbackText" rows="1" maxlength="2000" placeholder="Add a comment…" aria-label="Feedback cho các mục đã chọn"></textarea><button type="button" id="inlineFeedbackSend" data-inline-submit aria-label="Save grouped feedback" title="Lưu feedback" disabled>✓</button></div><div class="inline-feedback-meta"><span id="inlineFeedbackCount"></span><button type="button" data-inline-clear>Bỏ chọn</button></div></div>';
 }
 
 function onepageBindingControl(id){
@@ -1278,7 +1279,7 @@ function refreshCanonicalPreview(){
  let textIndex=0;
  doc.querySelectorAll('h1,h2,h3,h4,p').forEach(node=>{
   if(node.hasAttribute('data-uid-review')||node.closest('[data-uid-review]')===node)return;
-  const label=(node.textContent||'').trim().replace(/\\s+/g,' ').slice(0,70);
+  const label=(node.textContent||'').trim().replace(/\s+/g,' ').slice(0,70);
   if(!label)return;
   const id='text_'+String(++textIndex).padStart(4,'0');
   node.setAttribute('data-uid-review',id);
