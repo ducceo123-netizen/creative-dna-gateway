@@ -110,6 +110,7 @@ with sync_playwright() as p:
     capture='(n)=>({html:n.outerHTML,rects:[n,...n.querySelectorAll("*")].map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})})'
     original=page.locator('.uid-product-content-container').evaluate(capture)
     page.add_script_tag(content=JS)
+    page.locator('#onepage-review-controls #panel').evaluate('(n) => n.open = true')
     assert 'Không thể' not in status(page),status(page)
     assert page.locator('.uid-product-content-container').evaluate(capture)==original
     assert page.locator('#onepage-review-controls #inventory option').count()>len(assets)
