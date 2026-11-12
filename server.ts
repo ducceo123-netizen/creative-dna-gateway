@@ -1,3 +1,4 @@
+import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_DESC } from "./supabase/functions/_shared/onepage-portable-quality.ts";
 import { evaluateOnepagePhysicalQc, ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA, ONEPAGE_PHYSICAL_QC_DESCRIPTION, ONEPAGE_PHYSICAL_DEFECTS } from "./supabase/functions/_shared/onepage-physical-qc.ts";
 import { evaluateOnepageCreativeQc, ONEPAGE_CREATIVE_QC_INPUT_SCHEMA, ONEPAGE_CREATIVE_QC_DESCRIPTION, EO_ICON_DEFECTS } from "./supabase/functions/_shared/onepage-creative-qc.ts";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
@@ -80,11 +81,11 @@ export const RESOLVE_CREATIVE_DNA_DESC = UID_EXECUTION_AUTHORITY_GUIDANCE + " " 
 - GiftSoul Shop By Product Image
 - SoulPrise Onepage
 
-The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task.`;
+The returned canonical Creative DNA specification must be treated as source-of-truth instructions for the requested creative task. Onepage results also carry the portable_quality_playbook: apply it without relying on account memory or invented visual references.`;
 
 export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.`;
 
-export const COMPILE_ONEPAGE_DESC = UID_EXECUTION_AUTHORITY_GUIDANCE + " " + RESEARCH_GUIDANCE + ` Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation. Apply creative_quality_contract active scoped content, typography, banner and proof rules. Report its revision/hash in execution provenance. Stop the affected stage on BLOCKED/stale/conflicting rules or unavailable required references; inspect actual reference pixels before generation. Matching policy does not guarantee identical pixels or replace human artistic review.`;
+export const COMPILE_ONEPAGE_DESC = UID_EXECUTION_AUTHORITY_GUIDANCE + " " + RESEARCH_GUIDANCE + " " + ONEPAGE_QUALITY_PACK_DESC + ` Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation. Apply creative_quality_contract active scoped content, typography, banner and proof rules. Report its revision/hash in execution provenance. Stop the affected stage on BLOCKED/stale/conflicting rules or unavailable required references; inspect actual reference pixels before generation. Matching policy does not guarantee identical pixels or replace human artistic review.`;
 
 export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. BEFORE submission, convert the member's feedback plus all visible conversation/image context into a self-contained training_spec. The stored rule must remain useful after the current chat and image are unavailable. Preserve the member's words in feedback, but put durable learning in training_spec: observed_issue, generalized_rule, expected_behavior, reject_conditions, scope, rule_class, evidence_summary, confidence. ALSO create admin_summary_vi, admin_reason_vi, and admin_change_vi in natural concise Vietnamese for the admin review card. These fields are REQUIRED and review-only context, not canonical database content. The sentence body MUST be Vietnamese; keep only necessary established keywords in English when they are clearer or canonical, such as Banner, Product Details, Good To Know, Asset ID, Before/After, Studio Soft Shadow, WYL, PDP, UGC. Do not output English prose like "No additional evidence summary" or "ADMIN QUICK SCAN Case". admin_summary_vi should let an admin understand the case at a glance; admin_reason_vi should say why this wisdom was extracted; admin_change_vi should state the proposed behavior change plainly. Never write vague evidence such as "this image" or "make it like above"; describe the visible problem and desired behavior concretely. Distinguish STRUCTURAL reusable system rules from BRAND_STYLE rules. For Onepage, structural presentation/format/mechanics feedback should be scoped for shared cross-brand behavior when supported; brand vibe/style stays brand-specific. The image itself is optional evidence: if attachment bytes cannot be passed to the tool, DO NOT block submission and DO NOT ask the member to leave ChatGPT merely to upload it. Instead, encode what was observed from the image in evidence_summary.  When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This creates only a Pending proposal. When the feedback concerns generated images OR the conversation contains any image/file that materially explains why the wisdom was learned, ALWAYS attach that visual context to the proposal. Capture the smallest useful evidence set: the output being critiqued, the approved/reference target when one exists, and any product reference needed to understand fidelity. Use OUTPUT_BEING_REVIEWED for the actual outcome/problem, STYLE_REFERENCE for the desired visual target, PRODUCT_REFERENCE for PDP/design truth, and GENERATION_CONTEXT only for other necessary context. Every attached item MUST have a concise caption that tells an admin what to notice without reopening the chat (for example: "v1 rejected — icon has black specks and orange fringe" or "approved reference — clean peach badge and single brown stroke"). Preserve iteration identity or Asset ID in reference_id/caption when available so the admin can scan v1 -> v2 -> approved. Do not attach unrelated conversation images. Preferred durable flow: upload image bytes first to Creative DNA's /api/feedback/context-assets/upload surface and pass the returned asset_id in context_asset_ids. When direct image bytes are already available inside the tool invocation, context_image_uploads is also supported. Use context_images.image_url only for URLs that are genuinely cross-site accessible. Never use chatgpt.com Library download URLs as image_url. If bytes are unavailable, pass the exact file/library/reference identifier in context_images.reference_id plus a concise caption. References are review evidence only and never become canonical style references automatically.`;
 
@@ -522,6 +523,10 @@ export const TOOL_DEFINITIONS = [
     
   },
   {
+    name: "get_onepage_quality_playbook", title: "Get Onepage Quality Playbook", description: ONEPAGE_QUALITY_PACK_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: { type:"object", properties:{ brand:{type:"string",enum:["PawfectHouse","GiftSoul","SoulPrise"]} }, required:["brand"] },
+  },
+  {
     name: "get_onepage_ui_template", title: "Get Onepage UI Template", description: ONEPAGE_TEMPLATE_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: { type: "object", properties: { version: { type: "string" }, format: { type: "string", enum: ["manifest", "source"] }, bindings: ONEPAGE_BINDINGS_SCHEMA } },
   },
@@ -723,6 +728,14 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     } catch (err) {
       return withUidProgress({ content: [{ type: "text" as const, text: CHAT_BRIEF_GUIDANCE + " Route lookup failed; do not guess routes or claim they were verified. Retry list_creative_dna_routes only when needed for the brief." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", renderer: "chat", external_panel: UID_EXTERNAL_PANEL, ui_status: { response: "prepared", render: "disabled", stage: "launcher", routing: "degraded" }, routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } });
     }
+  });
+
+  server.registerTool("get_onepage_quality_playbook", uidProgressTool("get_onepage_quality_playbook", {
+    title: "Get Onepage Quality Playbook", description: ONEPAGE_QUALITY_PACK_DESC, annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema: { brand:z.enum(["PawfectHouse","GiftSoul","SoulPrise"]) },
+  }), async ({brand})=>{
+    const result=getOnepagePortableQualityPack(brand);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result},"template");
   });
 
   server.registerTool("get_onepage_ui_template", uidProgressTool("get_onepage_ui_template", {
@@ -1066,6 +1079,18 @@ export function createApp(): express.Application {
     const gate=evaluateOnepageCreativeQc(input);
     res.setHeader("Cache-Control","no-store");
     return res.status(gate.status==="BLOCKED"?422:200).json(gate);
+  });
+  app.get("/api/onepage-quality-playbook/:brand",(req:Request,res:Response)=>{
+    const brand=String(req.params.brand||"");
+    if(!["pawfecthouse","giftsoul","soulprise"].includes(brand.toLowerCase()))return res.status(400).json({error:"Unknown Creative DNA Onepage brand"});
+    res.setHeader("Cache-Control","public, max-age=60");
+    return res.json(getOnepagePortableQualityPack(brand));
+  });
+  app.post("/api/tools/get_onepage_quality_playbook",(req:Request,res:Response)=>{
+    const brand=String(req.body?.arguments?.brand||req.body?.brand||"");
+    if(!["pawfecthouse","giftsoul","soulprise"].includes(brand.toLowerCase()))return res.status(400).json({error:"Unknown Creative DNA Onepage brand"});
+    res.setHeader("Cache-Control","no-store");
+    return res.json(getOnepagePortableQualityPack(brand));
   });
   app.post("/api/tools/get_onepage_ui_template", (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
