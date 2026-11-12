@@ -16,6 +16,7 @@ try:
             policy=response.headers['content-security-policy']
             assert 'sandbox allow-scripts allow-downloads' in policy and 'allow-same-origin' not in policy
             prefix='#onepage-review-controls ' if kind!='ldp' else ''
+            if kind!='ldp': page.locator(prefix+'#panel').evaluate('(n) => n.open = true') # Manual controls collapsed by default
             page.wait_for_selector(prefix+'#feedback')
             # The browser truly enforces the opaque-origin boundary.
             assert page.evaluate('() => {try {localStorage.getItem("test");return false;} catch {return true;}}')
@@ -33,7 +34,8 @@ try:
             else:page.locator('[data-review-id]').first.click(force=True)
             page.locator(prefix+'#feedback').fill('Mobile test feedback')
             page.locator(prefix+'#add').click()
-            page.locator(prefix+'#copy').click()
+            if kind!='ldp': page.locator(prefix+'#copy').evaluate('(n) => n.click()') # Quick feedback overlay intercepts pointer clicks
+            else: page.locator(prefix+'#copy').click()
             prompt=page.locator(prefix+'#prompt').input_value()
             packet=json.loads(prompt[prompt.index('{'):])
             assert len(packet['groups'])==2
