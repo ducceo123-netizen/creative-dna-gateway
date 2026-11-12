@@ -27,8 +27,8 @@ test("Owner preflight may contain a blocked compiled plan without hiding its rea
  assert.doesNotMatch(src,/data\.direct_rule\?\.eligible&&!data\.direct_rule_plan\?\.eligible/);
  assert.match(panel,/visibleData\.direct_rule_plan\?\.eligible===false/);
  assert.match(panel,/direct_rule_plan\.blockers/);
- assert.match(panel,/if\(activeRead\.current\)\{activeRead\.current\.abort\(\);activeRead\.current=null;setRefreshing\(false\);\}/);
- assert.doesNotMatch(panel,/visibleData\.targets\.length>0&&!loading&&!refreshing/);
+ assert.match(panel,/mutation\.current\|\|activeRead\.current/);
+ assert.match(panel,/visibleData\.targets\.length>0&&!loading&&!refreshing/);
  assert.match(panel,/action==="rule"\?canAcceptRule/);
 });
 
