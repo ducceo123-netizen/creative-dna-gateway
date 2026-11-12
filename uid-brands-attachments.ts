@@ -321,3 +321,27 @@ export async function ingestUidAttachment(input: unknown, options: UidAttachment
     instruction: UNTRUSTED_ATTACHMENT_INSTRUCTION,
   };
 }
+
+/** Download an explicit, host-authorized PNG/JPEG/WebP for a task-scoped Studio handoff.
+ * Requires UID_ATTACHMENT_ALLOWED_ORIGINS to be explicitly configured.
+ * Returns file bytes only to the server-side caller; never embed them in tool responses.
+ */
+export async function downloadUidStudioImage(input: unknown, options: UidAttachmentOptions = {}) {
+  const parsed = FILE_INPUT_SCHEMA.safeParse(input);
+  if (!parsed.success) return fail("INVALID_FILE_REFERENCE", "Use a fresh host-provided image file attachment.");
+  const file = parsed.data,declaredFormat=inferFormat(file);
+  if (!declaredFormat || !["png","jpeg","webp"].includes(declaredFormat)) {
+    return fail("UNSUPPORTED_FILE_TYPE", "Image sync accepts PNG, JPEG or WebP only.");
+  }
+  const url=authorizedUrl(file.download_url,options);
+  const maxImageBytes=boundedOption(options.maxImageBytes,8*1024*1024);
+  const timeoutMs=boundedOption(options.timeoutMs,UID_ATTACHMENT_LIMITS.timeoutMs);
+  const {bytes,contentType}=await download(url,options,maxImageBytes,timeoutMs);
+  const format=inferFormat(file,contentType);
+  if (!format || !["png","jpeg","webp"].includes(format)) return fail("UNSUPPORTED_FILE_TYPE","Image format mismatch.");
+  validateImageSignature(bytes,format);
+  if(bytes.length<1000||bytes.length>8*1024*1024)return fail("DOWNLOAD_TOO_LARGE","Image must be between 1 KB and 8 MB.");
+  return {bytes, mime:formatMimes[format], size_bytes:bytes.length,
+    sha256:createHash("sha256").update(bytes).digest("hex"),
+    file_name:file.file_name?.split(/[\\/]/).pop()||("image."+format)};
+}
