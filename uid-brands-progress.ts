@@ -19,6 +19,7 @@ export const UID_TOOL_INVOCATION_LABELS = {
   show_uid_brands_review: ["Preparing outcome and actions…", "Review call ended"],
   get_uid_brands_native_workflow: ["Loading workflow controls…", "Workflow call ended"],
   launch_creative_dna: ["Loading task launcher…", "Launcher call ended"],
+  get_onepage_quality_playbook: ["Reading shared Onepage quality standards…", "Quality standards call ended"],
   get_onepage_ui_template: ["Reading Onepage template…", "Template call ended"],
   evaluate_onepage_banner_qc: ["Checking Onepage banner QC report…", "Banner QC call ended"],
   evaluate_onepage_creative_qc: ["Checking Onepage design and EO icon QA…", "Creative QC call ended"],
