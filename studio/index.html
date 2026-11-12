@@ -398,6 +398,38 @@ s-text-field,s-text-area,s-select{margin:14px 0}
   .review-inspector-tabs button{padding:13px 12px;font-size:12px}
 }
 
+
+/* Studio feedback form v5: actual rendered IDs, not obsolete .review-feedback-panel. */
+#sectionFeedbackPane .review-inspector-body { padding: 26px 32px 30px; }
+#sectionFeedbackPane .review-feedback-head { max-width: 940px; align-items: center; }
+#sectionFeedbackPane .review-feedback-head h3 { font-size: 20px; line-height: 1.3; margin: 5px 0 0; letter-spacing: -.02em; text-transform: capitalize; }
+#sectionFeedbackPane .research-note { font-size: 13px; line-height: 1.55; margin: 13px 0 20px; color: #69716d; max-width: 760px; }
+#sectionFeedbackPane .review-label { display:block; font-size: 13px; font-weight: 650; letter-spacing: -.01em; color: #3d4741; margin: 19px 0 8px; }
+#sectionFeedbackPane #reviewSection,
+#sectionFeedbackPane #reviewNote,
+#sectionFeedbackPane #reviewGroup {
+ display: block; box-sizing: border-box; width: min(100%, 760px); max-width: 760px;
+ color: #252d28; background: #fff; font-family: inherit; font-size: 14px; line-height: 1.5;
+ padding: 12px 14px; border: 1px solid #cbd5ce; border-radius: 10px;
+ box-shadow: 0 1px 2px #0b201309; outline: none; transition: border-color .16s ease,box-shadow .16s ease;
+}
+#sectionFeedbackPane #reviewSection { min-height: 48px; appearance: auto; cursor: pointer; }
+#sectionFeedbackPane #reviewNote { min-height: 126px; resize: vertical; }
+#sectionFeedbackPane #reviewNote::placeholder,
+#sectionFeedbackPane #reviewGroup::placeholder { color: #9aa29e; }
+#sectionFeedbackPane #reviewGroup { min-height: 48px; }
+#sectionFeedbackPane #reviewSection:focus,
+#sectionFeedbackPane #reviewNote:focus,
+#sectionFeedbackPane #reviewGroup:focus { border-color: #24804e; box-shadow: 0 0 0 3px #24804e1d; }
+#sectionFeedbackPane .review-feedback-primary { margin: 22px 0 24px; }
+#sectionFeedbackPane .review-feedback-primary s-button { display: inline-flex; }
+#sectionFeedbackPane .review-grouped-feedback { max-width: 960px; }
+@media (max-width: 720px) {
+ #sectionFeedbackPane .review-inspector-body { padding: 18px 16px 24px; }
+ #sectionFeedbackPane #reviewSection,#sectionFeedbackPane #reviewNote,#sectionFeedbackPane #reviewGroup { width:100%; max-width:none; font-size:16px; }
+ #sectionFeedbackPane .review-feedback-head h3 { font-size:18px; }
+}
+
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
