@@ -655,7 +655,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
       const response=await fetch('https://uid-brands-studio-webapp.onrender.com/api/hybrid-image-sync',{
         method:'POST',redirect:'error',
         headers:{'Authorization':'Bearer '+handoff_token,'Content-Type':image.mime,'X-UID-Slot':slot,'Accept':'application/json'},
-        body:image.bytes,signal:AbortSignal.timeout(30000),
+        body:new Uint8Array(image.bytes),signal:AbortSignal.timeout(30000),
       });
       const data=await response.json().catch(()=>({}));
       if(!response.ok||data.synced!==true){
