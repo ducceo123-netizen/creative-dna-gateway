@@ -1240,8 +1240,8 @@ export function createApp(): express.Application {
     const authorization = req.header("authorization");
     if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Admin authentication required" });
     const status = typeof req.body?.status === "string" ? req.body.status.trim().toLowerCase() : "";
-    if (!["pending","accepted","merged","rejected","all"].includes(status)) {
-      return res.status(400).json({ error: "Valid status is required" });
+    if (status !== "rejected") {
+      return res.status(400).json({ error: "Only Rejected feedback may be bulk deleted" });
     }
     try {
       const upstream = await fetch(adminUpstreamUrl, {
