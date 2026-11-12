@@ -1234,7 +1234,7 @@ function fixedOnepagePreview(id){
  (state.onepageTemplate?'<iframe id="onepageFrame" sandbox="allow-same-origin" title="Canonical Onepage preview" referrerpolicy="no-referrer"></iframe>':
  '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
  studioCopyStatus(id)+
- '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+ 
+ '<div class="review-preview-disclaimer"><span id="onepageFontStatus">Checking canonical font…</span> · '+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+ 
  '<div id="inlineFeedbackDock" class="inline-feedback-dock" hidden aria-label="Group feedback"><div class="inline-feedback-chips" id="inlineFeedbackChips"></div><div class="inline-feedback-entry"><textarea id="inlineFeedbackText" rows="1" maxlength="2000" placeholder="Add a comment…" aria-label="Feedback cho các mục đã chọn"></textarea><button type="button" id="inlineFeedbackSend" data-inline-submit aria-label="Save grouped feedback" title="Lưu feedback" disabled>✓</button></div><div class="inline-feedback-meta"><span id="inlineFeedbackCount"></span><button type="button" data-inline-clear>Bỏ chọn</button></div></div>';
 }
 
@@ -1370,6 +1370,19 @@ function refreshCanonicalPreview(){
  document.querySelectorAll('[data-studio-copy-status]').forEach(node=>{node.outerHTML=studioCopyStatus(state.selected);});
  const parser=new DOMParser(),doc=parser.parseFromString(template.html,'text/html');
  for(const node of doc.querySelectorAll('script,iframe,object,embed'))node.remove();
+ // The canonical HTML references sibling styles.css. srcdoc otherwise resolves this
+ // against the Studio origin, not the immutable Gateway template directory.
+ // Inline the hash-verified canonical CSS exactly once and remove ONLY that link.
+ for(const link of doc.querySelectorAll('link[rel~="stylesheet"]')){
+  if(link.getAttribute('href')==='styles.css')link.remove();
+ }
+ const base=doc.createElement('base');
+ base.setAttribute('href','https://uid-brands-gateway-preview.onrender.com/api/onepage-ui-template/2026-10-11.v3/');
+ doc.head.prepend(base);
+ const canonicalStyle=doc.createElement('style');
+ canonicalStyle.setAttribute('data-canonical-onepage-css',template.version);
+ canonicalStyle.textContent=template.css;
+ doc.head.append(canonicalStyle);
  const placeholder='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#f4f4f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">Material not mapped</text></svg>');
  const mapped=state.onepageTemplate.asset_slots;
  const copy=studioCopyMap(state.selected);
@@ -1414,7 +1427,10 @@ function refreshCanonicalPreview(){
   node.setAttribute('data-review-label',label);
  });
  const source=doc.documentElement.outerHTML.replace(/\{\{([a-z0-9_]+)\}\}/g,(_,slot)=>escapeHtml(slot.replace(/_/g,' ')));
- const chrome='<style>'+template.css.replace(/<\/style/gi,'<\\/style')+'</style><style>[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #348bff;outline-offset:-2px}.uid-review-picked{outline:3px solid #348bff!important;outline-offset:-3px;background-color:#348bff0b!important}</style>';
+ // Review styling is scoped to selectable elements and never changes font or layout.
+ const reviewStyle=doc.createElement('style');
+ reviewStyle.textContent='[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #348bff;outline-offset:-2px}.uid-review-picked{outline:3px solid #348bff!important;outline-offset:-3px;background-color:#348bff0b!important}';
+ doc.head.append(reviewStyle);
  frame.onload=()=>{
   try{
    const inner=frame.contentDocument;if(!inner)return;
@@ -1432,11 +1448,37 @@ function refreshCanonicalPreview(){
     state.selectedSection=slot;
     drawInlineFeedback();
   },true);
-  frame.style.height=Math.min(16000,Math.max(900,inner.documentElement.scrollHeight+40))+'px';
+  const resize=()=>{
+   if(frame.contentDocument!==inner)return;
+   const height=Math.max(inner.documentElement.scrollHeight,inner.body?.scrollHeight||0);
+   frame.style.height=Math.min(16000,Math.max(900,height+24))+'px';
+  };
+  resize();
+  // Embedded canonical Poppins font uses font-display:swap; initial DOM load
+  // can occur before it finishes, causing fallback typography/height mismatch.
+  Promise.resolve(inner.fonts?.ready).then(()=>{
+   if(frame.contentDocument!==inner)return;
+   resize();
+   const indicator=el('onepageFontStatus');
+   const cssFont=inner.defaultView?.getComputedStyle(inner.body).fontFamily||'';
+   const ready=inner.fonts?.check('400 16px Poppins')&&inner.fonts?.check('700 16px Poppins');
+   if(indicator){
+    indicator.textContent=ready&&/Poppins/i.test(cssFont)?'Canonical CSS · Poppins ready':'Font/style check needed';
+    indicator.dataset.status=ready&&/Poppins/i.test(cssFont)?'ready':'warning';
+   }
+  }).catch(()=>{const indicator=el('onepageFontStatus');if(indicator)indicator.textContent='Font load not confirmed';});
+  inner.querySelectorAll('img').forEach(img=>{
+   if(!img.complete)img.addEventListener('load',resize,{once:true});
+  });
+  if(typeof ResizeObserver!=='undefined'){
+   if(frame._uidPreviewObserver)frame._uidPreviewObserver.disconnect();
+   frame._uidPreviewObserver=new ResizeObserver(resize);
+   frame._uidPreviewObserver.observe(inner.documentElement);
+  }
   drawInlineFeedback();
   }catch(e){toast('Unable to select preview elements: '+e.message);}
  };
- frame.srcdoc=source.replace(/<\/head>/i,chrome+'</head>');
+ frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
 }
 async function loadSectionFeedback(id){
  if(!state.cloud||!state.auth||!id)return;
