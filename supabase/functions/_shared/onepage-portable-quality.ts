@@ -75,7 +75,8 @@ export function getOnepagePortableQualityPack(brand:string,quality?:any){
     if(row&&typeof row==="object"&&typeof row.id==="string")ids.add(row.id);
   }
   const selectedCount=ids.size||Math.max(catalog.length,refs.length);
-  const live={status:selectedCount>0?"REFERENCE_METADATA_PRESENT_REQUIRES_PIXEL_VERIFICATION":"NO_VERIFIED_VISUAL_STYLE_EXEMPLARS_IN_COMPILED_JOB",
+  const checked=quality!==undefined&&quality!==null;
+  const live={status:!checked?"REFERENCE_CATALOG_NOT_QUERIED":selectedCount>0?"REFERENCE_METADATA_PRESENT_REQUIRES_PIXEL_VERIFICATION":"NO_VERIFIED_VISUAL_STYLE_EXEMPLARS_IN_COMPILED_JOB",
     catalog_count:catalog.length,reference_count:refs.length,unique_reference_ids:ids.size,
     source:"current_compiled_creative_quality_contract",
     not_proven:"Source entries do not prove image pixels were inspected, the approval scope or that all selected assets match current brand expression.",
@@ -94,7 +95,7 @@ export function getOnepagePortableQualityPack(brand:string,quality?:any){
       steps:["resolve_creative_dna_or_compile_onepage_job","read_portable_quality_pack_and_reference_status","inspect_live_product_and_actual_reference_images","map_sources_claims_designs_and_proof_slots","get_content_approval","create_and_inspect_desktop_mobile_images","bind_to_fixed_onepage_template","host_inspect_overall_and_record_qc","get_packaging_approval"],
       per_slot_evidence:["verified_source_url","product_id","design_id","claim_id","image_asset_id","role","scene_action","camera_angle","reference_id_if_verified","actual_visual_inspection_note"],
       output_provenance:["quality_pack_schema_version","upstream_quality_revision_or_hash","template_version","selected_reference_ids_and_approval_evidence","per_asset_inspection_receipts","desktop_mobile_overall_visual_review"],
-      fail_closed_visual_certification: selectedCount===0,
+      fail_closed_visual_certification: !checked || selectedCount===0,
       safe_progress:"Continue evidence-based content planning and research when verified visual exemplars are missing. Mark style parity not verified and do not claim production-ready visual quality. No speculative borrowing of reference styles.",
     },
     rules:{
