@@ -1478,7 +1478,7 @@ function refreshCanonicalPreview(){
   drawInlineFeedback();
   }catch(e){toast('Unable to select preview elements: '+e.message);}
  };
- frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
+ frame.srcdoc='<!doctype html>'+source;
 }
 async function loadSectionFeedback(id){
  if(!state.cloud||!state.auth||!id)return;
