@@ -27,4 +27,20 @@ try{
  assert.equal(accessed.length,2);
  assert.ok(accessed.every(x=>x.startsWith('https://pawfecthouse.com/')));
 }finally{globalThis.fetch=oldFetch;}
+// Full 24-item page triggers bounded pagination; verify deduplication and stop at a short second page.
+globalThis.fetch=async(url)=>{
+ accessed.push(String(url));
+ const page=String(url).includes('page=2')?2:1;
+ const products=page===1?Array.from({length:24},(_,i)=>({handle:'product-'+i,title:'Product '+i,images:[],variants:[]})):
+ [{handle:'product-0',title:'Duplicate',images:[],variants:[]},{handle:'product-24',title:'Product 24',images:[],variants:[]}];
+ const data=String(url).includes('products.json')?{products}:{collection:{title:'Collection'}};
+ return {ok:true,headers:{get:()=>null},text:async()=>JSON.stringify(data)};
+};
+try {
+ const paged=await scanPublicSource('PawfectHouse','https://pawfecthouse.com/collections/christmas-bone-stockings');
+ assert.equal(paged.product_count,25);
+ assert.equal(paged.maximum_products,72);
+ assert.equal(new Set(paged.products.map(x=>x.handle)).size,25);
+ assert.ok(accessed.some(x=>x.includes('page=2')));
+}finally{globalThis.fetch=oldFetch;}
 console.log('Research collector origin, capture, evidence and limits passed');
