@@ -360,6 +360,12 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
             {status.label}<span>{proposals.filter(p => status.value === "all" || p.status === status.value).length}</span>
           </button>)}
         </div>
+        {filter === "rejected" && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50/40 px-3 py-2" data-admin-tool="rejected-delete-all">
+          <p className="text-xs text-slate-600">Đã từ chối: <strong>{rejectedCount}</strong> feedback · Xóa toàn bộ lịch sử Rejected của mọi brand, không phụ thuộc bộ lọc đang chọn.</p>
+          <button type="button" onClick={deleteAllRejected} disabled={bulkDeleting || loading || reviewBusy || !!activeAction || rejectedCount === 0} className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Delete all rejected feedback">
+            {bulkDeleting ? "Đang xóa…" : "Delete all"}
+          </button>
+        </div>}
         <div className="flex flex-wrap items-center gap-3">
           <label className="feedback-search flex-1 min-w-48"><Search className="w-4 h-4" aria-hidden="true"/><input type="search" aria-label="Tìm feedback" placeholder="Tìm feedback, người gửi, nội dung…" value={search} onChange={event => setSearch(event.target.value)}/></label>
           <label className="flex items-center gap-2 text-xs text-slate-500"><SlidersHorizontal className="w-4 h-4" aria-hidden="true"/><span className="sr-only">Lọc material</span><select aria-label="Lọc material" value={materialFilter} onChange={event => setMaterialFilter(event.target.value)} className="max-w-56 border border-slate-200 px-3 py-2 text-xs"><option value="all">Tất cả material</option>{materials.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
@@ -411,7 +417,6 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
       <summary className="cursor-pointer text-sm font-semibold text-slate-800">Nâng cao · Knowledge Governance</summary>
       <p className="mt-2 text-xs text-slate-500">Feedback của thành viên nằm trong danh sách phía trên. Không cần điền các biểu mẫu này để nhận hoặc xem feedback. Bạn có thể review ngay trong phần chi tiết. Phần nâng cao dành cho quản lý baseline và lịch sử governance.</p>
       {advancedLoaded && <div className="mt-4"><GovernancePanel request={authFetch}/></div>}
-      {!!rejectedCount && <div className="mt-5 border-t border-slate-100 pt-4"><p className="mb-2 text-xs text-slate-500">Dọn toàn bộ lịch sử từ chối của mọi brand, không theo bộ lọc hiện tại.</p><button onClick={deleteAllRejected} disabled={bulkDeleting || loading} className="px-3 py-2 text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 disabled:opacity-50">{bulkDeleting ? "Deleting..." : `Delete all rejected (${rejectedCount})`}</button></div>}
     </details>}
     {token && <details data-admin-tool="access" className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Admin access <span className="ml-2 text-xs font-normal text-slate-500">Quản lý quyền duyệt</span></summary><div className="mt-4">
       <div className="space-y-4">
