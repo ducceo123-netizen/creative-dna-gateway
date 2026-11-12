@@ -362,7 +362,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         </div>
         {filter === "rejected" && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50/40 px-3 py-2" data-admin-tool="rejected-delete-all">
           <p className="text-xs text-slate-600">Đã từ chối: <strong>{rejectedCount}</strong> feedback · Xóa toàn bộ lịch sử Rejected của mọi brand, không phụ thuộc bộ lọc đang chọn.</p>
-          <button type="button" onClick={deleteAllRejected} disabled={bulkDeleting || loading || queueLoading || reviewBusy || !!activeAction || rejectedCount === 0} className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Delete all rejected feedback">
+          <button type="button" onClick={deleteAllRejected} disabled={bulkDeleting || loading || reviewBusy || !!activeAction || rejectedCount === 0} className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Delete all rejected feedback">
             {bulkDeleting ? "Đang xóa…" : "Delete all"}
           </button>
         </div>}
