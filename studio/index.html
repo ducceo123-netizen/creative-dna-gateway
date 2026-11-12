@@ -1614,8 +1614,8 @@ document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.c
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
 document.addEventListener('input',e=>{if(e.target?.id==='inlineFeedbackText'){inlineFeedback.note=e.target.value;const submit=el('inlineFeedbackSend');if(submit)submit.disabled=!inlineFeedback.note.trim()||inlineFeedback.busy;}});
 document.addEventListener('click',e=>{
- const remove=e.target.closest('[data-inline-remove]');
- if(remove){inlineFeedback.selected.splice(Number(remove.dataset.inlineRemove),1);drawInlineFeedback();return;}
+ const chipRemove=e.target.closest('[data-inline-remove]');
+ if(chipRemove){inlineFeedback.selected.splice(Number(chipRemove.dataset.inlineRemove),1);drawInlineFeedback();return;}
  if(e.target.closest('[data-inline-clear]')){clearInlineFeedback();return;}
  if(e.target.closest('[data-inline-submit]')){submitInlineFeedback();return;}
  const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const executionChoice=e.target.closest('[data-execution-mode]');if(executionChoice)return changeExecutionMode(executionChoice.dataset.executionMode);
