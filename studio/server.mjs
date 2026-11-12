@@ -47,6 +47,12 @@ async function reserveApiQuota(uid,token,{image=false}={}){
 }
 
 const handoffTokens=new Map(); // ephemeral one-time capability: only a task owner can issue it
+const imageSyncTokens=new Map(); // owner-bound, short-lived, bounded upload capabilities
+const IMAGE_SYNC_SLOTS=new Set(['banner_desktop','banner_mobile','pd_main','pd_closeup','wyl1','wyl2','occasion1','occasion2','ugc1','ugc2','icons']);
+function pruneImageSyncTokens(){
+ const now=Date.now();
+ for(const [key,cap] of imageSyncTokens)if(cap.expires<now||cap.count>=8)imageSyncTokens.delete(key);
+}
 const handoffHash=token=>createHash('sha256').update(token).digest('hex');
 function clearExpiredHandoffs(){
  const now=Date.now();
@@ -232,6 +238,53 @@ createServer(async(req,res)=>{
   }
   if(req.method==='GET'&&path==='/api/status')return json(res,200,{app:'UID Brands Studio',version:'0.3',aiConfigured:aiEnabled,taskAiEnabled,cloudConfigured:cloudEnabled,mode:cloudEnabled?'authenticated-cloud':'local-workspace'});
 
+  if(path==='/api/hybrid-image-sync'&&req.method==='POST'){
+    if(!cloudEnabled)return json(res,503,{error:'Cloud image sync unavailable'});
+    pruneImageSyncTokens();
+    const bearer=authorized(req),key=bearer&&/^[A-Za-z0-9_-]{43}$/.test(bearer)?handoffHash(bearer):null;
+    const cap=key?imageSyncTokens.get(key):null;
+    if(!cap||cap.expires<Date.now()||cap.busy||cap.count>=8)return json(res,403,{error:'Image handoff invalid, expired or busy'});
+    const slot=String(req.headers['x-uid-slot']||'');
+    const mime=String(req.headers['content-type']||'').split(';')[0];
+    const types={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'};
+    if(!IMAGE_SYNC_SLOTS.has(slot)||!types[mime])return json(res,422,{error:'Unsupported material slot or image type'});
+    cap.busy=true;
+    try{
+      const owner=await member(cap.token);
+      if(!owner||owner.id!==cap.owner||!['admin','contributor'].includes(owner.role))throw Error('Owner access no longer authorized');
+      const t=await sb('/rest/v1/studio_tasks?id=eq.'+cap.task+'&select=id,owner_id,workflow&limit=1',{token:cap.token});
+      if(!t.ok||t.data?.[0]?.owner_id!==cap.owner)throw Error('Target task unavailable');
+      const files=await listAttachments(cap.owner,cap.task,cap.token);
+      if(files.length>=8)throw Error('Task attachment limit reached (8); remove unused files before syncing more');
+      const bytes=await readAttachment(req);
+      if(!bytes||bytes.length<1000||!fileSignatureOK(bytes,types[mime]))return json(res,422,{synced:false,error:'Invalid or oversized image file'});
+      const name=randomUUID()+'--'+slot+'.'+types[mime];
+      const stored=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(cap.owner,cap.task)+name,
+        {method:'POST',token:cap.token,body:bytes,mime});
+      if(!stored.ok)throw Error('Could not store private image');
+      let mapped=false,warning=null;
+      try{
+        const prior=await sb('/rest/v1/studio_deliverables?task_id=eq.'+cap.task+'&select=content,materials,evidence,qa,source&limit=1',{token:cap.token});
+        if(!prior.ok)throw Error('Current material mapping unavailable');
+        const old=prior.data?.[0]||{};
+        const materials=Array.isArray(old.materials)?old.materials.filter(x=>x.slot!==slot):[];
+        materials.push({slot,file_id:name,notes:'Imported from ChatGPT with task-scoped image handoff',status:'linked'});
+        const saved=await sb('/rest/v1/studio_deliverables?on_conflict=task_id',{
+          method:'POST',token:cap.token,prefer:'resolution=merge-duplicates,return=representation',
+          body:{task_id:cap.task,owner_id:cap.owner,source:old.source||'manual_chatgpt',
+            content:old.content||'',materials,evidence:old.evidence||[],qa:old.qa||{},updated_at:new Date().toISOString()}
+        });
+        if(!saved.ok)throw Error('Could not persist material mapping');
+        mapped=true;
+      }catch(e){warning='Private image stored but slot mapping not saved: '+String(e.message||'error').slice(0,90);}
+      cap.count++;
+      if(cap.count>=8)imageSyncTokens.delete(key);
+      return json(res,200,{synced:mapped,stored:true,task_id:cap.task,slot,file_id:name,
+        mapped,remaining:8-cap.count,status:'review_required',...(warning?{warning}:{})});
+    }catch(e){return json(res,409,{synced:false,error:String(e.message||'Image sync failed').slice(0,180)});}
+    finally{cap.busy=false;}
+  }
+
   if(path==='/api/hybrid-sync'&&req.method==='POST'){
     if(!cloudEnabled)return json(res,503,{error:'Cloud sync unavailable'});
     try{
@@ -411,6 +464,20 @@ createServer(async(req,res)=>{
         return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),method:'UID Brands ChatGPT MCP sync',note:'One use. Treat this token as task-scoped write permission; never paste into public pages or research sources. Invalid after Studio restart.'});
       }
 
+      const imageHandoffMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/image-handoff$/);
+      if(imageHandoffMatch&&req.method==='POST'){
+        if(!writable)return json(res,403,{error:'Read-only team member'});
+        const taskId=imageHandoffMatch[1];
+        const tr=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id&limit=1',{token});
+        if(!tr.ok||tr.data?.[0]?.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        pruneImageSyncTokens();
+        for(const [key,cap] of imageSyncTokens)if(cap.task===taskId&&cap.owner===team.id&&!cap.busy)imageSyncTokens.delete(key);
+        if(imageSyncTokens.size>=120)return json(res,429,{error:'Image sync at capacity'});
+        const handoff_token=randomBytes(32).toString('base64url'),expires=Date.now()+45*60*1000;
+        imageSyncTokens.set(handoffHash(handoff_token),{task:taskId,owner:team.id,token,expires,count:0,busy:false});
+        return json(res,201,{handoff_token,expires_at:new Date(expires).toISOString(),limit:8,
+          slots:[...IMAGE_SYNC_SLOTS],method:'UID Brands ChatGPT image sync',note:'Allows at most 8 image uploads into this task for 45 minutes, then expires. Never publish the token.'});
+      }
       const onepageBindingsMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/onepage-bindings$/);
       if(onepageBindingsMatch){
         const taskId=onepageBindingsMatch[1];
