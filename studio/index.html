@@ -445,6 +445,14 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .inline-feedback-meta{border-top:1px solid #414449;padding-top:8px;margin-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#c6c9ce}
 .inline-feedback-meta button{border:0;background:none;color:#d1d6df;font-size:11px;cursor:pointer}
 @media(max-width:640px){.inline-feedback-dock{bottom:8px;padding:10px 12px;border-radius:16px;max-height:48vh}}
+
+/* Inline feedback history: inspector is read-only until a note is resolved. */
+.inline-history-group-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0 4px}
+.inline-history-group-heading strong{font-size:13px;color:#25352d}
+.inline-history-group-heading span{font-size:11px;color:#8a938d}
+.inline-feedback-empty{font-size:13px;line-height:1.6;color:#858c88;padding:14px 0}
+#sectionFeedbackPane .review-feedback-handoff{border:0;margin:18px 0}
+#sectionFeedbackPane .review-grouped-feedback{border-top:1px solid #e7ebe8;padding-top:12px;max-width:960px}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1192,6 +1200,16 @@ function sectionFeedbackInspector(id){
    '<div class="review-workflow-actions">'+button('Scan product','scanResearch')+button('Copy ChatGPT handoff','copyHandoff')+
    (state.executionMode==='api_auto'?button('Process with API','hybridRun'):'')+'</div>'+
    '<details class="review-advanced" id="reviewAdvanced"><summary>Open task details & advanced tools</summary><div class="review-advanced-inner">'+taskEditor(task)+'</div></details></section>';
+ }
+ if(tasks.find(x=>x.id===id)?.workflow==='Onepage'){
+  const open=items.filter(x=>x.status==='open').length;
+  const history=Object.entries(grouped).map(([group,notes])=>
+   '<section class="review-feedback-group"><div class="inline-history-group-heading"><strong>'+escapeHtml(group)+'</strong><span>'+notes.length+' elements</span></div>'+
+   notes.map(x=>'<div class="review-feedback-note '+(x.status==='resolved'?'resolved':'')+'"><small>'+escapeHtml(x.section_id.replace(/[_-]/g,' '))+' · '+escapeHtml(x.status)+'</small><p>'+escapeHtml(x.note)+'</p>'+(x.status==='open'?'<button type="button" data-feedback-resolve="'+escapeHtml(x.id)+'">Mark resolved</button>':'')+'</div>').join('')+'</section>').join('');
+  return tabs+'<section class="review-inspector-body"><div class="review-feedback-head"><div><span class="executor-kicker">GROUPED FEEDBACK</span><h3>Review history</h3></div><span class="review-feedback-count">'+open+' open</span></div>'+
+   '<p class="research-note">Chọn ảnh, tiêu đề hoặc nội dung ngay trên preview để thêm nhiều chip. Nhập một ghi chú vào thanh nổi rồi bấm ✓ để lưu cả nhóm.</p>'+
+   (open?'<div class="review-feedback-handoff">'+button('Copy grouped feedback','copySectionFeedback')+button('Send to ChatGPT','copyHandoff')+'</div>':'')+
+   '<div class="review-grouped-feedback">'+(history||'<p class="inline-feedback-empty">Chưa có feedback. Chọn một hoặc nhiều mục trên preview để bắt đầu.</p>')+'</div></section>';
  }
  return tabs+'<section class="review-inspector-body"><div class="review-feedback-head"><div><span class="executor-kicker">SELECTED SECTION</span><h3>'+escapeHtml(selected.replace(/[_-]/g,' '))+'</h3></div><span class="review-feedback-count">'+items.filter(x=>x.status==='open').length+' open</span></div>'+
  '<p class="research-note">Click a block on the preview to select it. Add a note; related notes are grouped for the next revision.</p>'+
