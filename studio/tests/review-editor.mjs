@@ -70,6 +70,18 @@ assert.match(html,/link\.getAttribute\('href'\)==='styles\.css'/);
 assert.match(html,/inner\.fonts\?\.ready/);
 assert.match(html,/inner\.fonts\?\.check\('400 16px Poppins'\)/);
 assert.match(html,/ResizeObserver\(resize\)/);
+assert.match(html,/frame\.style\.height='1px'/);
+assert.match(html,/frame\._uidPreviewObserver\.observe\(inner\.querySelector\('\.onepage-mapping-canvas'\)\|\|inner\.body\)/);
+assert.match(html,/data-canonical-slot/);
+assert.match(html,/saveCanonicalCopy/);
+const partial=run('parseStudioOnepageCopy("[7] Dotted Name Guides\\nFour dotted name rows provide tracing space.\\n\\n[8-9] Two Occasion images follow Product Details.")');
+assert.equal(partial.values.title_07,'Dotted Name Guides');
+assert.equal(partial.values.title_08,undefined);
+const edited=run('parseStudioOnepageCopy("<!-- UID_STUDIO_CANONICAL_COPY_BEGIN -->\\ntitle_08: Everyday Learning\\ndescription_08: Practice reading and tracing together.\\n<!-- UID_STUDIO_CANONICAL_COPY_END -->\\n\\n[7] Dotted Name Guides\\nFour dotted name rows provide tracing space.")');
+assert.equal(edited.values.title_08,'Everyday Learning');
+assert.equal(edited.values.description_08,'Practice reading and tracing together.');
+assert.match(run('canonicalCopyEditor(tasks[0].id)'),/data-canonical-slot="title_08"/);
+
 assert.match(html,/frame\.srcdoc='<!doctype html>'\+source/);
 assert.doesNotMatch(html,/const chrome='<style>'\+template\.css/);
 
