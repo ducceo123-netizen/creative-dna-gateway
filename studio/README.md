@@ -1,42 +1,40 @@
-# UID Brands Studio — isolated Web App
-
-Branch: `webapp/uid-brands-studio-mvp` — stays separate from gateway `main`.
+# UID Brands Studio — Production operator notes
+Branch: `webapp/uid-brands-studio-mvp` (not Gateway `main`)
 Production: https://uid-brands-studio-webapp.onrender.com
 
-## Current status (Nov 10, 2026)
+## Current capability (12 November 2026)
+- Authenticated Studio tasks, per-owner Supabase storage, attachments and review history. Browser reload resumes a valid Supabase session using sessionStorage in the same tab; explicit sign-out clears it.
+- Onepage canonical template preview at desktop width / mobile 390px, explicit unmapped placeholders, exact slot mapping, contextual multi-select feedback and grouped history.
+- Public storefront collector supports only direct product/collection URLs for PawfectHouse, GiftSoul and SoulPrise. Collection JSON is fetched in up to three 24-product pages (72 maximum), preserving product title, handle, URL, description, variants, image URL, public product_type and tags when exposed. This is **not** complete competitor or buyer-review research. Collection endpoints may block pagination; scan reports warnings and partial coverage.
+- Hybrid Bridge: "Scan & prepare Hybrid handoff" stores a research snapshot, requests a one-time owner-bound sync token, and displays a reviewable prompt. User must copy it into an authorized ChatGPT conversation with UID Brands plugin. The connected `sync_uid_studio_result` action may write completed **text** back to the task if explicitly supplied a fresh token. No automatic ChatGPT inbox, proactive task execution, or image sync.
+- Human production: Upload assets and bind exact slots. "Download Hybrid Draft ZIP" exports mapped private task attachments plus manifest, content and manual QA. ZIP is a **draft**, not a production approval or live website proof. No publishing.
+- API Auto: staged Research → Creative DNA → Content → Materials → Vision QA → Export. This code path requires server-side `OPENAI_API_KEY` and `STUDIO_AI_EXECUTOR_ENABLED=true`, per-run confirmation, owner-specific rate limits and quota. Separately billed; not part of a ChatGPT Plus subscription. Never enable paid calls without the owner's explicit decision. Image reference fidelity and full responsive layout still require human QA.
+- ChatGPT Connect/Plan Usage is release-gated and not enabled.
 
-- Dedicated Render service, auto-deploying this branch; gateway and MCP unchanged.
-- Standalone responsive task manager for Onepage, LDP, Scale Store Brand, UGC; briefs, copy draft, QA feedback, state, JSON export.
-- **Cloud sync enabled only when `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are configured.** Login requires an **existing** Supabase Auth email/password account with active `public.creative_dna_team_members` membership. No public signup or self-provisioning.
-- Task records and revision snapshots are stored in separate RLS-enabled `public.studio_tasks` and `public.studio_task_versions` tables. Each member sees only tasks **they own**; this is not a shared team queue yet. Contributor/admin can create/edit/delete; viewer is read-only.
-- The frontend keeps session tokens in memory only, without localStorage persistence. Users sign in again after tab reload. The server uses a publishable key plus the **user's access token** for all Supabase REST calls, not service-role bypass. Refresh tokens are used only for silent token renewal in the current tab.
-- If Cloud auth is not configured, drafts fall back to **browser-local** storage with no collaboration or account protection.
-- Optional text generation endpoint requires server-side `OPENAI_API_KEY` **and** `STUDIO_ACCESS_TOKEN`. These are **not configured**. No live paid AI actions are enabled. Source URLs are never automatically fetched or inspected by AI.
-- No automated research crawler, image generation, asset uploads, ZIP export or Shopify publishing yet.
+## Recommended no-fee flow
+1. Sign in; create/save a task with a **direct valid source URL**.
+2. Open Workflow → Task & files → "Scan & prepare Hybrid handoff".
+3. Review the scan warnings, copy the prompt from the generated field and paste into the UID Brands ChatGPT thread. Do not share the one-time token publicly.
+4. In ChatGPT, ask to prepare the full copy and sync text through the UID Brands plugin using this exact token. Only accept a confirmed synced:true result.
+5. Upload actual material images to Studio and bind them in Materials. Review both desktop/mobile layouts, group feedback and mark resolved only after inspection.
+6. Export Hybrid Draft ZIP. Inspect the files and all QA gates before any external publish.
 
-## Security and limitations
+## Verified vs not verified
+- GitHub CI tests validate code-level contracts and mock workflows, NOT production Cloud auth/RLS/storage, live storefront availability, actual API billing, end-to-end browser behavior, generated image fidelity or packaging correctness with real private objects.
+- Changes to Studio code require a Render deployment on branch `webapp/uid-brands-studio-mvp`; pushing to Gateway main does not deploy Studio.
+- The production environment and its secrets must never be copied into source control, pasted into chats, or displayed to customers.
 
-- **Do not enable paid AI** on a publicly reachable service until per-user authentication is attached to the AI route, plus rate limits, usage ledger and budget caps. Temporary static token protection is only for controlled development.
-- No private keys in browser or source control. The Supabase publishable key is intentionally public but all tasks require both authenticated role and Row Level Security.
-- Team access currently reuses `creative_dna_team_members`. New users must be invited/provisioned **explicitly** in Supabase Auth and added as active team members; database tables do not auto-create members.
-- Other people's tasks are not visible. Shared organization workspaces and role-based review assignments are a separate follow-up.
-- Revisions record a best-effort post-write snapshot. If snapshot creation fails, API reports `versionSaved:false`; there is no automatic transaction rollback yet.
-- Existing Supabase governance tables `uid_tasks`, `uid_task_revisions`, and gateway MCP endpoints remain unchanged.
-- Runtime env: `PORT`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, optional `OPENAI_API_KEY`, `STUDIO_ACCESS_TOKEN`, `STUDIO_MODEL`.
-
-## Smoke tests
-
+## Developer tests
 ```sh
 node --check studio/server.mjs
 node studio/tests/smoke.mjs
+node studio/tests/workflows.mjs
+node studio/tests/research.mjs
+node studio/tests/attachments.mjs
+node studio/tests/company-auth.mjs
+node studio/tests/hybrid.mjs
+node studio/tests/execution-modes.mjs
+node studio/tests/orchestrator.mjs
+node studio/tests/pipeline-integration.mjs
+node studio/tests/review-editor.mjs
 ```
-
-CI runs the above on pushes to the Studio branch. Production Auth+RLS CRUD must still be tested with an authorized team member; CI intentionally does not use real credentials.
-
-## Next production milestones
-
-1. Real browser acceptance test with an authorized team account.
-2. Workspace/team ownership model, explicit user invitations, shared review queue and role-separated approvals.
-3. Atomic version persistence, optimistic concurrency regression tests and private attachments with storage RLS.
-4. Account-level AI budget controls, usage logging, and staged Research → Content → Materials executor.
-5. Image quality controls, materials manifests, visual previews, ZIP export, and review QA.
