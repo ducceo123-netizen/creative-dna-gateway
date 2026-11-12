@@ -452,6 +452,16 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 <script>
 'use strict';
 const KEY='uid_brands_studio_tasks_v1';
+const AUTH_SESSION_KEY='uid_brands_studio_auth_v1';
+function rememberAuth(auth){
+ try { if(auth?.access_token&&auth?.refresh_token)sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({access_token:auth.access_token,refresh_token:auth.refresh_token}));
+ else sessionStorage.removeItem(AUTH_SESSION_KEY); } catch {}
+}
+function readRememberedAuth(){
+ try { const a=JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY)||'null');
+ if(a&&typeof a.access_token==='string'&&typeof a.refresh_token==='string'&&a.access_token&&a.refresh_token)return a; } catch {}
+ rememberAuth(null);return null;
+}
 const types=['Onepage','LDP','Scale Store Brand','UGC'];
 const brands=['PawfectHouse','GiftSoul','SoulPrise'];
 const statuses=['Draft','In progress','In review','Approved'];
@@ -1401,6 +1411,7 @@ async function cloudRequest(path,method='GET',body){
     const payload=await refreshed.json();
     state.auth={access_token:payload.access_token,refresh_token:payload.refresh_token};
     state.user=payload.user;
+    rememberAuth(state.auth);
     response=await fetch(path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.auth.access_token},body:body?JSON.stringify(body):undefined});
    }
  }
@@ -1411,7 +1422,7 @@ async function cloudRequest(path,method='GET',body){
 function fromCloud(t){return {...t,url:t.source_url,updatedAt:Date.parse(t.updated_at),createdAt:Date.parse(t.created_at)};}
 async function loadCloud(){
  try{const r=await cloudRequest('/api/tasks');tasks=(r.tasks||[]).map(fromCloud);await loadExecutionModes();state.selected=null;render();}
- catch(e){toast(e.message); if(/access|login|token|session/i.test(e.message)){state.auth=null;state.user=null;render();}}
+ catch(e){toast(e.message); if(/access|login|token|session/i.test(e.message)){state.auth=null;state.user=null;rememberAuth(null);render();}}
 }
 async function signup(){
  const email=el('loginEmail')?.value.trim(),password=el('loginPassword')?.value;
@@ -1434,12 +1445,12 @@ async function login(){
  try{
  const response=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
  const data=await response.json();if(!response.ok)throw Error(data.error||'Login failed');
- state.auth={access_token:data.access_token,refresh_token:data.refresh_token};state.user=data.user;
+ state.auth={access_token:data.access_token,refresh_token:data.refresh_token};state.user=data.user;rememberAuth(state.auth);
  document.getElementById('aiPill').textContent='Signed in · '+data.user.role;
  await loadCloud();toast('Signed in successfully.');
  }catch(e){toast(e.message);}finally{state.busy=false;}
 }
-function signOut(){state.auth=null;state.user=null;tasks=[];state.selected=null;state.executionMode='hybrid_bridge';state.executionModes=[];render();toast('Signed out.');}
+function signOut(){rememberAuth(null);state.auth=null;state.user=null;tasks=[];state.selected=null;state.executionMode='hybrid_bridge';state.executionModes=[];render();toast('Signed out.');}
 function record(v){return {...v,source_url:v.url};}
 function render(){document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('active',state.page==='tasks'&&state.workflowFilter===b.dataset.workflow));const crumb=el('pageCrumb');if(crumb)crumb.textContent=({dashboard:'Home',tasks:'Tasks',create:'Create task',settings:'Settings'})[state.page];const subtitle=el('pageSubtitle');if(subtitle)subtitle.textContent=({dashboard:'Keep track of your creative tasks, reviews and approvals.',tasks:'Review, organize and update your creative work.',create:'Start with a product, collection or an existing URL.',settings:'Manage workspace configuration and access.'})[state.page];el('pageTitle').textContent=({dashboard:'Creative overview',tasks:'Creative tasks',create:'New creative task',settings:'Settings & AI executor'})[state.page];const selected=tasks.find(t=>t.id===state.selected);if(state.cloud&&!state.user){el('view').innerHTML=loginScreen();return;}el('view').innerHTML=state.page==='dashboard'?dashboard():state.page==='settings'?settings():state.page==='create'?taskEditor(null):(selected?reviewWorkspace(selected):taskList());}
 function values(){return {title:el('title').value.trim(),brand:el('brand').value,workflow:el('workflow').value,url:el('url').value.trim(),brief:el('brief').value.trim(),content:el('content')?.value||'',feedback:el('feedback')?.value||'',status:el('status')?.value||'Draft'};}
@@ -1540,6 +1551,21 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
  const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
-fetch('/api/status').then(r=>r.json()).then(d=>{state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}).catch(()=>{el('aiPill').textContent='Server unavailable';});
+async function resumeAuth(){
+ const saved=readRememberedAuth();if(!saved)return false;
+ try {
+  const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:saved.refresh_token})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.access_token||!data.refresh_token||!data.user)throw Error('Session expired');
+  state.auth={access_token:data.access_token,refresh_token:data.refresh_token};state.user=data.user;
+  rememberAuth(state.auth);el('aiPill').textContent='Signed in · '+data.user.role;
+  await loadCloud();return true;
+ }catch(e){state.auth=null;state.user=null;rememberAuth(null);toast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');render();return false;}
+}
+fetch('/api/status').then(r=>r.json()).then(async d=>{
+ state.ai=!!d.taskAiEnabled;state.cloud=!!d.cloudConfigured;
+ if(state.cloud&&readRememberedAuth()){el('aiPill').textContent='Restoring session…';await resumeAuth();}
+ else{el('aiPill').textContent=state.cloud?'Cloud workspace · sign in':'Local workspace';render();}
+}).catch(()=>{el('aiPill').textContent='Server unavailable';render();});
 render();
 </script></body></html>
