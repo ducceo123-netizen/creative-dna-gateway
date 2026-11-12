@@ -13,7 +13,7 @@ test("portable quality is independent of personal ChatGPT account and covers con
   assert.equal(pack.rules.banner.dimensions.desktop,"2560x960");
   assert.equal(pack.rules.banner.dimensions.mobile,"720x700");
   assert.ok(pack.rules.imagery.production_sequence.length>=5);
-  assert.equal(pack.rules.icons.style.badge_fill,"#FBDEBE");
+  assert.equal((pack.rules.icons as any).style.badge_fill,"#FBDEBE");
 });
 test("cross-account default manifest exposes portable quality contract without inventing canonical reference approval",()=>{
   const manifest=getOnepageUiTemplate();
