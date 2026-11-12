@@ -537,27 +537,16 @@ export default {
     }
 
     if (body.mode === "delete_all") {
-      const status = String(body.status || "").trim().toLowerCase();
-      const allowed = new Set(["pending","accepted","merged","rejected","all"]);
-      if (!allowed.has(status)) {
-        return Response.json({ error: "Valid status required" }, { status: 400 });
-      }
-
-      let query = adminDb
-        .from("knowledge_proposals")
-        .delete()
-        .select("id,status");
-
-      if (status !== "all") query = query.eq("status", status);
-
-      const { data: deleted, error } = await query;
-      if (error) return Response.json({ error: error.message }, { status: 500 });
-
-      return Response.json({
-        deleted_count: (deleted || []).length,
-        status,
-        instruction: "Selected proposal records were permanently deleted from the admin review queue.",
-      });
+      // Active, authenticated Admin membership has already been verified.
+      // Scope to Rejected only. The SQL RPC deletes dependent audit/queue rows
+      // transactionally before removing rejected knowledge_proposals.
+      if (body.status !== "rejected")
+        return Response.json({error:"Only Rejected feedback may be bulk deleted"},{status:400});
+      const {data,error}=await adminDb.rpc("uid_admin_delete_rejected_feedback",{p_confirm:true});
+      if(error) return Response.json({error:"Unable to complete atomic rejected feedback cleanup",code:"REJECTED_CLEANUP_FAILED"},{status:409});
+      if(!data || data.status!=="rejected" || !Number.isSafeInteger(data.deleted_count) || data.deleted_count<0)
+        return Response.json({error:"Rejected cleanup returned an invalid receipt",code:"INVALID_DELETE_RECEIPT"},{status:502});
+      return Response.json({deleted_count:data.deleted_count,status:"rejected",canonical_changed:false});
     }
 
     if (body.mode === "list") {
