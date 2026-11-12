@@ -476,6 +476,59 @@ createServer(async(req,res)=>{
         }
         return json(res,405,{error:'Unsupported section feedback operation'});
       }
+      // Manual Hybrid export: authenticated, owner-scoped and free of paid AI execution.
+      const hybridExportMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/hybrid-export$/);
+      if(hybridExportMatch&&req.method==='GET'){
+        const taskId=hybridExportMatch[1];
+        const own=await sb('/rest/v1/studio_tasks?id=eq.'+taskId+'&select=id,owner_id,title,brand,workflow,source_url,brief&limit=1',{token});
+        if(!own.ok)return json(res,502,{error:'Could not verify task for export'});
+        const task=own.data?.[0];
+        if(!task||task.owner_id!==team.id)return json(res,404,{error:'Task not found'});
+        const result=await sb('/rest/v1/studio_deliverables?task_id=eq.'+taskId+
+          '&select=content,materials,evidence,qa,source,updated_at&limit=1',{token});
+        if(!result.ok)return json(res,502,{error:'Could not retrieve Hybrid deliverable'});
+        const deliverable=result.data?.[0]||{};
+        const materialSlots=Array.isArray(deliverable.materials)?deliverable.materials:[];
+        const available=await listAttachments(team.id,taskId,token);
+        const byId=new Map(available.map(x=>[x.id,x]));
+        const entries=[
+          {name:'content.md',bytes:Buffer.from(String(deliverable.content||''),'utf8')},
+          {name:'qa.json',bytes:Buffer.from(JSON.stringify({status:'human_review_required',checks:deliverable.qa||{}},null,2),'utf8')}
+        ];
+        const warnings=[],included=[];
+        for(const item of materialSlots.slice(0,24)){
+          const slot=String(item?.slot||''),fileId=String(item?.file_id||'');
+          if(!/^[a-z0-9_-]{2,36}$/i.test(slot)){warnings.push('Unsafe material slot ignored');continue;}
+          if(!fileId){warnings.push('Unmapped slot: '+slot);continue;}
+          const file=byId.get(fileId);
+          if(!file){warnings.push('Missing private material for slot '+slot);continue;}
+          const extension=file.name.split('.').at(-1).toLowerCase();
+          if(!/^(png|jpg|jpeg|webp|gif|pdf|txt|md|csv|docx|xlsx)$/.test(extension)){
+            warnings.push('Unsupported file type for '+slot);continue;
+          }
+          const response=await storageCall('object/'+ATTACH_BUCKET+'/'+attachmentFolder(team.id,taskId)+encodeURIComponent(file.id),{method:'GET',token});
+          if(!response.ok)return json(res,502,{error:'Could not read mapped material: '+slot});
+          if(Number(response.headers.get('content-length')||0)>ATTACH_MAX_SIZE)return json(res,422,{error:'Mapped material exceeds ZIP limit'});
+          const bytes=Buffer.from(await response.arrayBuffer());
+          if(bytes.length>ATTACH_MAX_SIZE)return json(res,422,{error:'Mapped material exceeds ZIP limit'});
+          const name='materials/'+slot+'.'+extension;
+          entries.push({name,bytes});included.push({slot,name,original_name:file.name});
+        }
+        const manifest={
+          schema:'uid-studio-hybrid-draft-v1',exported_at:new Date().toISOString(),
+          task:{id:task.id,title:task.title,brand:task.brand,workflow:task.workflow,source_url:task.source_url},
+          source:deliverable.source||'manual_chatgpt',materials:included,
+          evidence:deliverable.evidence||[],warnings,
+          approval:'NOT APPROVED: Verify PDP fidelity, content, actual material dimensions and desktop/mobile rendering. No publishing.'
+        };
+        entries.unshift({name:'manifest.json',bytes:Buffer.from(JSON.stringify(manifest,null,2),'utf8')});
+        let zip;
+        try{zip=packZip(entries);}catch(e){return json(res,422,{error:'Cannot package Hybrid draft: '+String(e.message).slice(0,150)});}
+        res.writeHead(200,{'Content-Type':'application/zip','Content-Length':zip.length,
+          'Content-Disposition':'attachment; filename="uid-studio-'+taskId+'-hybrid-draft.zip"',
+          'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
+        return res.end(zip);
+      }
       const pipelineMatch=path.match(/^\/api\/tasks\/([0-9a-f-]{36})\/pipeline(?:\/(start|next|export|history|preview))?$/);
       if(pipelineMatch){
         const taskId=pipelineMatch[1],action=pipelineMatch[2]||'current';
