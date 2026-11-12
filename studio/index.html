@@ -480,6 +480,11 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .research-tags{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
 .research-tags span{border-radius:6px;background:#eef5ef;color:#43584a;padding:2px 6px;font-size:10px}
 @media(max-width:600px){.research-metrics{grid-template-columns:repeat(2,1fr)}.research-item-list{grid-template-columns:1fr}}
+
+.studio-copy-status{display:flex;flex-direction:column;gap:6px;padding:13px 16px;margin:12px 0;border:1px solid #dce8e0;background:#f7fbf8;border-radius:11px;color:#28553b}
+.studio-copy-status strong{font-size:13px}
+.studio-copy-status span{font-size:12px;color:#557063}
+.studio-copy-status small{font-size:11px;color:#737e78;overflow-wrap:anywhere}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1032,9 +1037,9 @@ function hybridMarkup(id){
  const evidence=(d.evidence||[]).map(e=>'<div class="hybrid-evidence"><a target="_blank" rel="noopener noreferrer" href="'+escapeHtml(e.url)+'">'+escapeHtml(e.title||e.url)+'</a><small>'+escapeHtml(e.status==='metadata_only'?'Metadata only — verify claims separately':'Unavailable / blocked')+'</small><p>'+escapeHtml(e.description||e.limitations||'')+'</p></div>').join('');
  return '<div class="hybrid-workspace"><div class="hybrid-heading"><h3>Hybrid production</h3><p>Evidence → Content → Materials → Overall QA. Shared task record, no fake Process status.</p></div>'+
  '<div class="hybrid-section"><h4>External evidence</h4><div class="hybrid-inline"><input id="hybridEvidenceUrl" class="input" type="url" maxlength="1400" placeholder="Direct Trustpilot / Etsy / Reddit / Amazon / Pinterest URL">'+button('Capture metadata','hybridEvidence')+'</div>'+(evidence||'<p class="research-note">No external source captured yet. Metadata collection does not verify individual reviews.</p>')+'</div>'+
- '<div class="hybrid-section"><h4>ChatGPT result → Studio</h4><p class="research-note">Copy the task handoff into ChatGPT, then paste its result here and save. Automatic execution is only available when an explicitly enabled, metered API is configured.</p>'+
+ '<div class="hybrid-section"><h4>ChatGPT result → Studio</h4><p class="research-note">Content synced from ChatGPT is automatically parsed into canonical text slots on the Onepage preview when exact fields or supported [N] headings are present. Missing slots remain visible for review.</p>'+studioCopyStatus(id)+
  '<textarea id="hybridOutput" class="input textarea" rows="7" maxlength="50000" placeholder="Paste verified creative content and materials plan…">'+escapeHtml(d.content||'')+'</textarea>'+
- '<div class="research-actions">'+button('Sync result & QA','hybridSave')+button('Download Hybrid Draft ZIP','hybridZip')+button(state.executionMode==='api_auto'?'Run API Auto':'Copy ChatGPT handoff','executeSelected')+'</div></div>'+
+ '<div class="research-actions">'+button('Sync result & QA','hybridSave')+button('Refresh synced content','refreshSyncedContent')+button('Download Hybrid Draft ZIP','hybridZip')+button(state.executionMode==='api_auto'?'Run API Auto':'Copy ChatGPT handoff','executeSelected')+'</div></div>'+
  '<div class="hybrid-section"><h4>Map real materials</h4><p class="research-note">Attach images/files above, then assign them to actual layout slots. Missing files are clearly marked.</p>'+
  '<div class="hybrid-slots">'+MATERIAL_SLOTS.map(slot=>'<label>'+escapeHtml(slot.replace(/_/g,' '))+'<select data-hybrid-slot="'+slot+'"><option value="">Not mapped</option>'+files.map(f=>'<option value="'+escapeHtml(f.id)+'" '+(slots[slot]===f.id?'selected':'')+'>'+escapeHtml(f.name)+'</option>').join('')+'</select></label>').join('')+'</div></div>'+
  '<div class="hybrid-section"><div class="hybrid-toolbar"><h4>Overall layout preview</h4><div class="research-actions">'+button('Desktop','hybridDesktop')+button('Mobile','hybridMobile')+'</div></div><div id="hybridOverall">'+overallPreview(id)+'</div></div>'+
@@ -1169,6 +1174,58 @@ function compactTaskRail(){
  '<div class="review-task-list">'+filtered.slice(0,50).map(t=>'<button type="button" class="review-task-card '+(t.id===state.selected?'active':'')+'" data-select="'+escapeHtml(t.id)+'"><strong>'+escapeHtml(t.title)+'</strong><span>'+escapeHtml(t.brand)+' · '+escapeHtml(t.workflow)+' · '+escapeHtml(t.status)+'</span></button>').join('')+'</div>'+
  '<div class="review-task-rail-actions">'+button('All tasks','clearSelection')+button('New task','create')+'</div></aside>';
 }
+// Exact canonical text slots. Never add text to the two image-only Occasion stories.
+function parseStudioOnepageCopy(raw){
+ const text=String(raw||'').replace(/\r\n?/g,'\n');
+ const values={},issues=[];
+ const put=(slot,value,origin)=>{
+  if(!/^(title|description)_(0[1-9]|1[0-3])$/.test(slot))return;
+  const clean=String(value||'').trim().replace(/^\*\*|\*\*$/g,'').trim();
+  if(!clean)return;
+  if(values[slot]&&values[slot]!==clean){issues.push('Conflicting '+slot+' from '+origin);return;}
+  values[slot]=clean.slice(0,1000);
+ };
+ // Preferred future output contract: explicit title_NN / description_NN keys.
+ for(const match of text.matchAll(/(?:^|\n)\s*(?:[-*]\s*)?(?:\*\*)?(title|description)_(0[1-9]|1[0-3])(?:\*\*)?\s*[:：=]\s*([^\n]+)/g)){
+  put(match[1]+'_'+match[2],match[3],'explicit slot');
+ }
+ // Legacy ChatGPT drafts: [6] Printed Artwork, followed by its descriptive paragraph.
+ // Skip ranges ([8-9]), images, instructions and sections that do not belong to text slots.
+ const lines=text.split('\n');
+ const headline=/^\s*(?:#{1,4}\s*)?(?:[-*]\s*)?\[(0?[1-9]|1[0-3])\]\s*(.+?)\s*$/;
+ for(let i=0;i<lines.length;i++){
+  const m=lines[i].match(headline);if(!m)continue;
+  const n=Number(m[1]),key=String(n).padStart(2,'0');
+  let title=m[2].replace(/^\*\*|\*\*$/g,'').trim();
+  if(!title||/^(?:occasion\s*(?:image|media|photo)|image|banner|hero|asset|mockup|ugc)\b/i.test(title))continue;
+  let j=i+1;
+  while(j<lines.length&&!lines[j].trim()&&j<i+4)j++;
+  if(j>=lines.length||headline.test(lines[j])||/^\s*(?:#{1,4}\s*|\[\d+(?:[-–]\d+)?\])/.test(lines[j]))continue;
+  let description=lines[j].trim().replace(/^\*\*|\*\*$/g,'');
+  // A valid card description is prose, never another heading, image request or a slot label.
+  if(description.length<12||/^(?:image|ảnh|mockup|asset|banner|generate|gen\s*ảnh|occasion\s*media)\b/i.test(description))continue;
+  put('title_'+key,title,'numbered heading');
+  put('description_'+key,description,'numbered description');
+ }
+ const keys=Object.keys(values);
+ return {values,count:keys.length,issues,remaining:Array.from({length:13},(_,i)=>String(i+1).padStart(2,'0')).flatMap(n=>['title_'+n,'description_'+n]).filter(k=>!values[k])};
+}
+function studioCopyMap(id){return parseStudioOnepageCopy(hybridValue(id).content);}
+function studioCopyStatus(id){
+ const mapped=studioCopyMap(id),has=String(hybridValue(id).content||'').trim().length>0;
+ return '<div class="studio-copy-status"><strong>Canonical copy mapping: '+mapped.count+'/26 slots</strong><span>'+(has?(mapped.count?'Draft · review desktop/mobile':'Content received, but no supported title/description pairs detected'):'No synced content yet')+'</span>'+
+ (mapped.issues.length?'<small>'+escapeHtml(mapped.issues.slice(0,3).join('; '))+'</small>':'')+
+ (mapped.remaining.length&&has?'<small>Unmapped: '+escapeHtml(mapped.remaining.join(', '))+'</small>':'')+
+ '</div>';
+}
+async function refreshSyncedContent(){
+ const id=state.selected;if(!id||!state.cloud||!state.auth)return toast('Đăng nhập và mở task trước.');
+ await hybridLoad(id);
+ const pane=el('sectionFeedbackPane');if(pane&&state.reviewPane==='workflow')pane.innerHTML=sectionFeedbackInspector(id);
+ refreshCanonicalPreview();
+ toast('Đã tải content mới và cập nhật Onepage Preview. Kiểm tra các slot chưa map.');
+}
+
 function fixedOnepagePreview(id){
  const task=tasks.find(x=>x.id===id);
  return '<div class="review-preview-header"><div><span class="executor-kicker">ONEPAGE · CANONICAL TEMPLATE</span><h2>'+escapeHtml(task?.title||'Onepage Preview')+'</h2><p>Click an image or section to leave grouped feedback. This is a template mapping preview, not the live product page.</p></div><div class="review-view-toggle">'+
@@ -1176,6 +1233,7 @@ function fixedOnepagePreview(id){
  '<div class="review-frame-stage '+(state.onepageFrameMode==='mobile'?'mobile':'desktop')+'">'+
  (state.onepageTemplate?'<iframe id="onepageFrame" sandbox="allow-same-origin" title="Canonical Onepage preview" referrerpolicy="no-referrer"></iframe>':
  '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
+ studioCopyStatus(id)+
  '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+ 
  '<div id="inlineFeedbackDock" class="inline-feedback-dock" hidden aria-label="Group feedback"><div class="inline-feedback-chips" id="inlineFeedbackChips"></div><div class="inline-feedback-entry"><textarea id="inlineFeedbackText" rows="1" maxlength="2000" placeholder="Add a comment…" aria-label="Feedback cho các mục đã chọn"></textarea><button type="button" id="inlineFeedbackSend" data-inline-submit aria-label="Save grouped feedback" title="Lưu feedback" disabled>✓</button></div><div class="inline-feedback-meta"><span id="inlineFeedbackCount"></span><button type="button" data-inline-clear>Bỏ chọn</button></div></div>';
 }
@@ -1235,7 +1293,7 @@ function sectionFeedbackInspector(id){
    '<div><small>AI mode</small><strong>'+escapeHtml(currentExecutionMode().label)+'</strong></div>'+
    '<div><small>Pipeline</small><strong>'+escapeHtml(run?.stage||'Not started')+'</strong></div>'+
    '<div><small>Materials</small><strong>'+((d.materials||[]).filter(x=>x.file_id).length)+' linked</strong></div></div>'+
-   '<div class="review-workflow-actions">'+button('Scan & prepare Hybrid handoff','prepareHybrid')+button('Scan product','scanResearch')+button('Copy task handoff · text + images','copyHandoff')+
+   studioCopyStatus(id)+'<div class="review-workflow-actions">'+button('Refresh synced content','refreshSyncedContent')+button('Scan & prepare Hybrid handoff','prepareHybrid')+button('Scan product','scanResearch')+button('Copy task handoff · text + images','copyHandoff')+
    (state.executionMode==='api_auto'?button('Process with API','hybridRun'):'')+'</div>'+
    '<div class="review-workflow-results"><h4>ChatGPT image return</h4><p class="research-note">Đã tích hợp image return vào nút Copy task handoff. Với task có handoff, ChatGPT sẽ thử trả ảnh về Studio theo slot nếu host cấp file hợp lệ. Nút token riêng bên dưới chỉ dành cho khôi phục/đồng bộ lại.</p><div class="research-actions">'+button('Generate image sync token','createImageHandoff')+button('Refresh synced images','refreshSyncedImages')+'</div><div id="imageSyncTokenBox" class="prepared-handoff" hidden><label for="imageSyncTokenText">Token cho UID Brands plugin · expires in 45 minutes</label><textarea id="imageSyncTokenText" readonly rows="3"></textarea><div class="research-actions">'+button('Copy image token instructions','copyImageSyncToken')+'</div><small>Chỉ dùng trong ChatGPT thread được anh cho phép. Token cho tối đa 8 ảnh; không đăng công khai.</small></div><h4>Storefront research</h4><div id="researchResult" role="status" aria-live="polite">'+researchMarkup(state.researchPacks[id]||null)+'</div><div id="hybridHandoffBox" class="prepared-handoff" hidden><label for="hybridHandoffPreview">Hybrid handoff · kiểm tra trước khi gửi ChatGPT</label><textarea id="hybridHandoffPreview" rows="8" readonly></textarea><div class="research-actions">'+button('Copy prepared handoff','copyPreparedHybrid')+button('Open ChatGPT','openChatGPT')+'</div></div></div>'+
    '<details class="review-advanced" id="reviewAdvanced"><summary>Open task details & advanced tools</summary><div class="review-advanced-inner">'+taskEditor(task)+'</div></details></section>';
@@ -1313,6 +1371,18 @@ function refreshCanonicalPreview(){
  for(const node of doc.querySelectorAll('script,iframe,object,embed'))node.remove();
  const placeholder='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#f4f4f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">Material not mapped</text></svg>');
  const mapped=state.onepageTemplate.asset_slots;
+ const copy=studioCopyMap(state.selected);
+ // Bind only declared text slots into the backend-owned DOM using textContent (not HTML).
+ // Missing values retain their canonical placeholders for transparent review.
+ const declared=new Set(Array.isArray(template.text_slots)?template.text_slots:[]);
+ for(const node of doc.querySelectorAll('[data-text-slot]')){
+  const slot=node.getAttribute('data-text-slot');
+  if((!declared.size||declared.has(slot))&&Object.hasOwn(copy.values,slot)){
+   node.textContent=copy.values[slot];
+   node.setAttribute('data-review-label',copy.values[slot].slice(0,70));
+   node.setAttribute('data-uid-review',slot);
+  }
+ }
  for(const node of doc.querySelectorAll('*')){
   const attrs=Array.from(node.attributes||[]);
   let assetName=null;
@@ -1780,7 +1850,7 @@ document.addEventListener('click',e=>{
  const item=e.target.closest('[data-select]');if(item)return selectTask(item.dataset.select);
  const pending=e.target.closest('[data-remove-pending]');if(pending)return removePendingAttachment(Number(pending.dataset.removePending));
  const dl=e.target.closest('[data-download-attachment]');if(dl)return downloadAttachment(dl.dataset.downloadAttachment);
- const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='createImageHandoff')return createImageHandoff();if(action==='copyImageSyncToken')return copyImageSyncToken();if(action==='refreshSyncedImages')return refreshSyncedImages();if(action==='prepareHybrid')return prepareHybridHandoff();if(action==='copyPreparedHybrid')return copyPreparedHybrid();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='hybridZip')return hybridExportZip();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
+ const remove=e.target.closest('[data-delete-attachment]');if(remove)return deleteAttachment(remove.dataset.deleteAttachment);const catalog=e.target.closest('[data-catalog-index]');if(catalog){const choice=state.catalogMatches?.[Number(catalog.dataset.catalogIndex)];if(choice&&el('url')){el('url').value=choice.url;el('catalogMatches').innerHTML='<div class="notice">Đã chọn '+escapeHtml(choice.title)+' · '+escapeHtml(choice.url)+'</div>';}return;}const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;return render();}const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;if(action==='saveOnepageBindings')return saveOnepageBindings();if(action==='createImageHandoff')return createImageHandoff();if(action==='copyImageSyncToken')return copyImageSyncToken();if(action==='refreshSyncedImages')return refreshSyncedImages();if(action==='prepareHybrid')return prepareHybridHandoff();if(action==='copyPreparedHybrid')return copyPreparedHybrid();if(action==='copySectionFeedback')return copyGroupedFeedback();if(action==='addSectionFeedback')return addSectionFeedback();if(action==='clearSelection'){state.selected=null;return render();}if(action==='create')return navigate('dashboard');if(action==='composerCreate')return createFromComposer();if(action==='createFiltered')return startWorkflow(state.workflowFilter||'Onepage');if(action==='clearWorkflow')return navigate('tasks');if(action==='all')return navigate('tasks');if(action==='showSignIn'){state.signupMode=false;state.signupNotice='';return render();}if(action==='showSignUp'){state.signupMode=true;state.signupNotice='';return render();}if(action==='signup')return signup();if(action==='login')return login();if(action==='logout')return signOut();if(action==='chooseAttachments')return el('attachmentPicker')?.click();if(action==='lookup')return lookupStore();if(action==='pipelineCapture')return pipelineCapture();if(action==='pipelineStart')return pipelineStart();if(action==='pipelineNext')return pipelineNext();if(action==='pipelineAll')return pipelineAll();if(action==='pipelineHistory')return pipelineHistory();if(action==='pipelineZip')return pipelineExportZip();if(action==='pipelineExport')return pipelineExport();if(action==='executeSelected')return executeSelectedMode();if(action==='refreshSyncedContent')return refreshSyncedContent();if(action==='hybridZip')return hybridExportZip();if(action==='hybridSave')return hybridSave();if(action==='hybridEvidence')return hybridEvidence();if(action==='hybridRun')return hybridRun();if(action==='hybridDesktop')return hybridMode('desktop');if(action==='hybridMobile')return hybridMode('mobile');if(action==='scanResearch')return scanTaskResearch();if(action==='copyHandoff')return copyResearchHandoff();if(action==='openChatGPT')return openChatGPTHandoff();if(action==='save')return persist();if(action==='generate')return generate();if(action==='history')return showHistory();if(action==='tokenSave'){state.token=el('token').value;toast('Token kept in current tab only.');return;}const t=tasks.find(x=>x.id===state.selected);if(!t)return;if(action==='export')return exportTask(t);if(action==='delete'&&confirm('Delete '+t.title+'? This cannot be undone.')){if(state.cloud){cloudRequest('/api/tasks/'+t.id,'DELETE').then(r=>{if(!r.deleted)throw Error('Task not deleted');tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;render();toast('Task deleted.');}).catch(e=>toast(e.message));}else{tasks=tasks.filter(x=>x.id!==t.id);state.selected=null;save();render();toast('Task deleted.');}}});
 fetch('/api/onepage/policy').then(r=>{if(!r.ok)throw Error('policy unavailable');return r.json();}).then(d=>{state.onepagePolicy=d.contract||null;render();}).catch(()=>{state.onepagePolicy=null;render();});
 async function resumeAuth(){
  const saved=readRememberedAuth();if(!saved)return false;
