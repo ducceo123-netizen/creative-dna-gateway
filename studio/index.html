@@ -1061,7 +1061,7 @@ async function hybridLoad(id){
 async function hybridSave(){
  const id=state.selected;if(!id||state.hybridBusy)return;
  state.hybridBusy=true;
- try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=r.deliverable;el('hybridPanel').innerHTML=hybridMarkup(id);toast('Content, materials and QA synced to task.');}
+ try{const r=await cloudRequest('/api/tasks/'+id+'/deliverable','PUT',hybridInput(id));state.deliverables[id]=r.deliverable;el('hybridPanel').innerHTML=hybridMarkup(id);refreshCanonicalPreview();toast('Content saved and canonical copy preview refreshed. Review unmapped slots.');}
  catch(e){toast('Sync failed: '+e.message);}finally{state.hybridBusy=false;}
 }
 async function hybridEvidence(){
@@ -1213,7 +1213,7 @@ function parseStudioOnepageCopy(raw){
 function studioCopyMap(id){return parseStudioOnepageCopy(hybridValue(id).content);}
 function studioCopyStatus(id){
  const mapped=studioCopyMap(id),has=String(hybridValue(id).content||'').trim().length>0;
- return '<div class="studio-copy-status"><strong>Canonical copy mapping: '+mapped.count+'/26 slots</strong><span>'+(has?(mapped.count?'Draft · review desktop/mobile':'Content received, but no supported title/description pairs detected'):'No synced content yet')+'</span>'+
+ return '<div class="studio-copy-status" data-studio-copy-status><strong>Canonical copy mapping: '+mapped.count+'/26 slots</strong><span>'+(has?(mapped.count?'Draft · review desktop/mobile':'Content received, but no supported title/description pairs detected'):'No synced content yet')+'</span>'+
  (mapped.issues.length?'<small>'+escapeHtml(mapped.issues.slice(0,3).join('; '))+'</small>':'')+
  (mapped.remaining.length&&has?'<small>Unmapped: '+escapeHtml(mapped.remaining.join(', '))+'</small>':'')+
  '</div>';
@@ -1367,6 +1367,7 @@ function templateAssetFromSlot(asset){
 function refreshCanonicalPreview(){
  const frame=el('onepageFrame'),template=state.onepageTemplate;
  if(!frame||!template||!state.selected)return;
+ document.querySelectorAll('[data-studio-copy-status]').forEach(node=>{node.outerHTML=studioCopyStatus(state.selected);});
  const parser=new DOMParser(),doc=parser.parseFromString(template.html,'text/html');
  for(const node of doc.querySelectorAll('script,iframe,object,embed'))node.remove();
  const placeholder='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#f4f4f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">Material not mapped</text></svg>');
@@ -1663,6 +1664,7 @@ function buildHandoff(t,pack){
  parts.push('Task attachment filenames (must be attached in ChatGPT separately for visual inspection): '+(fileNames.join(' / ')||'none'));
  if(state.onepagePolicy?.schema_version)parts.push('Shared Onepage QC contract version: '+state.onepagePolicy.schema_version);
  parts.push('Not verified: external reviews, buyer pain points, competitive research, physical/product fidelity, Creative DNA visual gates.');
+ parts.push('CANONICAL COPY RETURN CONTRACT: Return an explicit title_01: ... / description_01: ... through title_13: ... / description_13: ... for the approved GTK template. 01-03 Why You Love It, 04-06 Product Details, 07-10 Occasion icon cards, 11-13 Good To Know. The two Occasion story images after Product Details are image-only, NO text. If FAQ version selected, use its own declared slots instead. Never fabricate missing content; mark missing slots openly.');
  parts.push('INSTRUCTION: Continue this UID Brands task with canonical Creative DNA and research gate. Verify missing external evidence before conclusions; choose Good To Know or FAQs only from supported insights. Do not invent products, variants, claims, layouts or generated assets. Return content plus QA findings, and preserve task ID/version. Do not publish.');
  parts.push('HANDOFF BACK TO STUDIO: For this authorized task, use the task-scoped sync channels provided below. Complete content and materials first, attempt supported direct file return, then verify exact mappings and desktop/mobile. When the host cannot transfer image bytes, report the blocker rather than claiming automatic sync. Provide a copy-ready fallback only if needed.');
  return parts.join('\n').slice(0,14500);
