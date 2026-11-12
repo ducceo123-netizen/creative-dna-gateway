@@ -88,3 +88,19 @@ test("copy-space flattening and fake wall texture are blocked even without a lit
     assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   }
 });
+
+test("balanced contrast: gentle localized transparent support is allowed, while washed-out and unreadable type are blocked",()=>{
+  const clean=input();
+  const ok=evaluateOnepageBannerQc(clean);
+  assert.equal(ok.status,"REPORTED_CLEAR_REQUIRES_INDEPENDENT_VISUAL_QA");
+  const glare=input();glare.inspections[1].findings.text_lost_in_highlights_or_busy_scene=true;
+  assert.equal(evaluateOnepageBannerQc(glare).status,"BLOCKED");
+  const slab=input();slab.inspections[0].findings.uniform_tonal_wash_behind_headline=true;
+  assert.equal(evaluateOnepageBannerQc(slab).status,"BLOCKED");
+});
+test("v5 shared guidance explicitly permits subtle support rather than forcing no overlay",()=>{
+  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_contrast,/ALLOW a VERY SUBTLE/i);
+  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.composition,/IS ALLOWED/i);
+  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.mobile,/mobile display size/i);
+  assert.ok(ONEPAGE_BANNER_QC_FLAGS.includes("text_lost_in_highlights_or_busy_scene"));
+});

@@ -17,6 +17,8 @@ def setup(page, manifest=None, suffix='', width=1200):
     original = page.locator('main').evaluate('(n) => ({html:n.outerHTML,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})')
     page.add_script_tag(content=JS)
     page.wait_for_selector('#onepage-review-controls')
+    # Legacy browser checks exercise manual form controls; current UI keeps them collapsed by default.
+    page.locator('#onepage-review-controls #panel').evaluate('(n) => n.open = true')
     return original
 def pick(page, selector):
     page.locator(selector).click(force=True)
@@ -54,7 +56,7 @@ with sync_playwright() as p:
     assert three['groups'][2]['section_elements'][0]['id']=='text:copy'
     # Fail clipboard, expose editable-selection fallback, never auto-send.
     page.evaluate('Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async()=>{throw Error("denied")}}})')
-    page.locator('#onepage-review-controls #copy').click()
+    page.locator('#onepage-review-controls #copy').evaluate('(n) => n.click()') # Exercise legacy action despite floating quick-feedback layer
     assert page.locator('#onepage-review-controls #prompt-details').evaluate('(n)=>n.open')
     assert 'Clipboard' in status(page)
     # Live mutation clears generated prompt and disables copying until reload.
@@ -108,6 +110,7 @@ with sync_playwright() as p:
     capture='(n)=>({html:n.outerHTML,rects:[n,...n.querySelectorAll("*")].map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})})'
     original=page.locator('.uid-product-content-container').evaluate(capture)
     page.add_script_tag(content=JS)
+    page.locator('#onepage-review-controls #panel').evaluate('(n) => n.open = true')
     assert 'Không thể' not in status(page),status(page)
     assert page.locator('.uid-product-content-container').evaluate(capture)==original
     assert page.locator('#onepage-review-controls #inventory option').count()>len(assets)
