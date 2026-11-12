@@ -296,6 +296,15 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>}
           {path==="owner"&&<p className="text-xs">Nhấn Xác nhận hard merge để duyệt đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</p>}
           <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":path==="owner"?"Xác nhận hard merge":"Duyệt rule & merge ngay"}</button>
+          {!canAcceptRule&&path==="owner"&&<div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 space-y-1" data-testid="owner-merge-blocker">
+            <p className="font-semibold">Hard merge đang bị khóa — lý do:</p>
+            {visibleData?.direct_rule_plan?.eligible===false&&(visibleData.direct_rule_plan.blockers||[]).map((issue,i)=><p key={i}><strong>{issue.code}:</strong> {issue.message} {issue.next_action}</p>)}
+            {visibleData?.direct_rule?.eligible===false&&(visibleData.direct_rule.blockers||[]).map((issue,i)=><p key={i}><strong>{issue.code}:</strong> {issue.message} {issue.next_action}</p>)}
+            {(!visibleData||loading||refreshing||stale)&&<p>Preflight đang tải hoặc dữ liệu đã thay đổi. Nhấn “Tải lại / Retry” và kiểm tra kết quả mới.</p>}
+            {uncertain&&<p>Kết quả thao tác trước chưa rõ. Dùng “Khôi phục thao tác chưa rõ kết quả” trước khi duyệt lại.</p>}
+            {(!visibleData?.direct_rule_plan||!visibleData?.direct_rule)&&<p>Máy chủ chưa trả đủ thông tin rule/plan; cần tải lại để xác định.</p>}
+            {visibleData?.direct_rule_plan?.eligible===true&&visibleData?.direct_rule?.eligible===true&&!loading&&!refreshing&&!stale&&!uncertain&&<p>Snapshot quyền đã đạt nhưng trạng thái review chưa sẵn sàng. Kiểm tra phiên đăng nhập và phiên bản feedback, sau đó tải lại.</p>}
+          </div>}
         </div>
         {path!=="owner"&&<>
         <h4 className="text-sm font-semibold">Review outcome và bằng chứng</h4>
