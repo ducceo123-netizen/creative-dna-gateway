@@ -10,7 +10,7 @@ import { attachLdpDesignDraft } from "./uid-ldp-design-draft.ts";
 import { attachLdpWorkflow } from "./uid-ldp-planner.ts";
 import { UID_EXECUTION_AUTHORITY_GUIDANCE, UID_PROGRESS_GUIDANCE, uidProgressTool, withUidProgress } from "./uid-brands-progress.ts";
 import { attachResearch, RESEARCH_GUIDANCE, RESEARCH_INPUT_SCHEMA, type ResearchContext } from "./supabase/functions/_shared/product-research.ts";
-import { UID_ATTACHMENT_OUTPUT_SCHEMA, UID_ATTACHMENT_INPUT_SCHEMA, UID_ATTACHMENT_META, UID_ATTACHMENT_DESCRIPTION, ingestUidAttachment, UidAttachmentError } from "./uid-brands-attachments.ts";
+import { UID_ATTACHMENT_OUTPUT_SCHEMA, UID_ATTACHMENT_INPUT_SCHEMA, UID_ATTACHMENT_META, UID_ATTACHMENT_DESCRIPTION, ingestUidAttachment, downloadUidStudioImage, UidAttachmentError, FILE_INPUT_SCHEMA } from "./uid-brands-attachments.ts";
 import { gatewayJson, gatewayBudget, gatewayFailure, GATEWAY_TIMEOUTS, type GatewayBudget } from "./uid-gateway-upstream.ts";
 import express, { Request, Response } from "express";
 import path from "path";
@@ -502,6 +502,7 @@ const STUDIO_SYNC_DESCRIPTION="Save a completed UID Brands creative result back 
 // Tool definitions for OpenAPI / ChatGPT Actions / Discovery documentation
 export const TOOL_DEFINITIONS = [
   {name:'sync_uid_studio_result',title:'Sync UID Brands Studio Result',description:STUDIO_SYNC_DESCRIPTION,annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},inputSchema:{type:'object',properties:{handoff_token:{type:'string',description:'One-time Studio handoff token explicitly supplied by the current task owner'},content:{type:'string',description:'Completed copy and creative direction to save to the Studio task'}},required:['handoff_token','content']}},
+  {name:'sync_uid_studio_image',title:'Sync UID Brands Studio Image',description:'Upload one user-authorized PNG/JPEG/WebP file into a Studio task with a fresh, owner-generated image handoff token and approved slot. Never fabricate a file, URL or successful upload.',annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},_meta:UID_ATTACHMENT_META,inputSchema:{type:'object',properties:{handoff_token:{type:'string'},slot:{type:'string',enum:['banner_desktop','banner_mobile','pd_main','pd_closeup','wyl1','wyl2','occasion1','occasion2','ugc1','ugc2','icons']},file:{type:'object',properties:{download_url:{type:'string'},file_id:{type:'string'},mime_type:{type:'string'},file_name:{type:'string'}},required:['download_url','file_id']}},required:['handoff_token','slot','file']}},
   { name:"get_website_brand_ui_skill", title:"Website Brand UI / Scale Store Brand", description:WEBSITE_BRAND_UI_TOOL_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS, inputSchema:{type:"object",properties:{section:{type:"string",enum:[...WEBSITE_BRAND_UI_SECTIONS]}}} },
   { name:"read_ldp_figma_comments", title:"Read LDP Figma Comments", description:FIGMA_COMMENTS_DESCRIPTION, annotations:{...READ_ONLY_TOOL_ANNOTATIONS,openWorldHint:true}, inputSchema:discoverySchema(FIGMA_COMMENTS_INPUT) },
   { name: "ingest_uid_brands_attachment", title: "Read UID Brands Attachment", description: UID_ATTACHMENT_DESCRIPTION,
@@ -634,6 +635,40 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
       return {content:[{type:'text' as const,text:JSON.stringify(result)}],structuredContent:result};
     }catch{
       const result={synced:false,error:'Studio callback unavailable or timed out; do not claim results synced. Retry or use manual import.'};
+      return {isError:true,content:[{type:'text' as const,text:JSON.stringify(result)}],structuredContent:result};
+    }
+  });
+
+  server.registerTool("sync_uid_studio_image",uidProgressTool("sync_uid_studio_image",{
+    title:"Sync UID Brands Studio Image",
+    description:"Upload one host-authorized PNG/JPEG/WebP image into the owner-approved Studio task and material slot. Requires a fresh Studio image handoff token. Reject arbitrary URLs and do not claim success without storage and mapping confirmation.",
+    inputSchema:{
+      handoff_token:z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+      slot:z.enum(["banner_desktop","banner_mobile","pd_main","pd_closeup","wyl1","wyl2","occasion1","occasion2","ugc1","ugc2","icons"]),
+      file:FILE_INPUT_SCHEMA,
+    },
+    annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+    _meta:UID_ATTACHMENT_META,
+  }),async({handoff_token,slot,file})=>{
+    try{
+      const image=await downloadUidStudioImage(file);
+      const response=await fetch('https://uid-brands-studio-webapp.onrender.com/api/hybrid-image-sync',{
+        method:'POST',redirect:'error',
+        headers:{'Authorization':'Bearer '+handoff_token,'Content-Type':image.mime,'X-UID-Slot':slot,'Accept':'application/json'},
+        body:image.bytes,signal:AbortSignal.timeout(30000),
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||data.synced!==true){
+        const result={synced:false,stored:data.stored===true,slot,error:String(data.error||data.warning||'Studio did not confirm mapping').slice(0,180)};
+        return {isError:true,content:[{type:'text' as const,text:JSON.stringify(result)}],structuredContent:result};
+      }
+      const result={synced:true,task_id:data.task_id,slot:data.slot,file_id:data.file_id,
+        size_bytes:image.size_bytes,sha256:image.sha256,remaining:data.remaining,status:'review_required',
+        message:'Image stored in the private Studio task and mapped to the requested material slot. Human image QA required.'};
+      return {content:[{type:'text' as const,text:JSON.stringify(result)}],structuredContent:result};
+    }catch(error){
+      const msg=error instanceof UidAttachmentError?error.message:'Image sync unavailable or timed out; no successful sync confirmation.';
+      const result={synced:false,slot,error:msg};
       return {isError:true,content:[{type:'text' as const,text:JSON.stringify(result)}],structuredContent:result};
     }
   });
