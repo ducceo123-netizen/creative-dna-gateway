@@ -100,7 +100,10 @@ export function getOnepagePortableQualityPack(brand:string,quality?:any){
     },
     rules:{
       ...ONEPAGE_PORTABLE_QUALITY_RULES,
-      ...(isPfh?{}:{icons:{policy:"Use this brand's current canonical icon design; PawfectHouse badge tokens above are NOT inherited.",first_pass_qa:ONEPAGE_PORTABLE_QUALITY_RULES.icons.first_pass_qa}}),
+      ...(isPfh?{}:{
+        banner:{...ONEPAGE_PORTABLE_QUALITY_RULES.banner,type:"Use the active target brand typography and visual voice from its own canonical Creative DNA; PawfectHouse typography personality is NOT inherited."},
+        icons:{policy:"Use this brand's current canonical icon design; PawfectHouse badge tokens above are NOT inherited.",first_pass_qa:ONEPAGE_PORTABLE_QUALITY_RULES.icons.first_pass_qa},
+      }),
     },
     role_names:ONEPAGE_SCOPED_ROLES,
     confirmed_references:"No fixed public image set is bundled by this playbook. Only actual selected canonical reference assets with inspected pixels can certify visual fidelity.",
