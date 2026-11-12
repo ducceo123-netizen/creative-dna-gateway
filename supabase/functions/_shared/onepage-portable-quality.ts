@@ -2,9 +2,9 @@
  * The upstream canonical Creative DNA and verified product/PDP facts remain authoritative.
  * This describes portable execution and evidence; it is NOT an image renderer or visual classifier.
  */
-export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-12.v1";
+export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-12.v2";
 export const ONEPAGE_QUALITY_PACK_DESC=
-  "Read the portable, account-independent Onepage quality playbook BEFORE starting content, banner or asset work. It includes the real current reference readiness, content research and insight selection, product-to-image proof, PawfectHouse EO icons, scene-first typography, mobile recomposition, slot-specific QA and delivery gates. This is shared by ChatGPT and Web App through the same Gateway; never substitute chat memory for references. Missing verified banner/icon images means visual parity is UNVERIFIED, not PASS. The host must inspect actual PDP/reference/output pixels.";
+  "Read the portable, account-independent Onepage quality playbook BEFORE starting content, banner or asset work. It includes the real current reference readiness, content research and insight selection, product-to-image proof, PawfectHouse EO icons, integrated-final typography with feathered local blur, mobile recomposition, slot-specific QA and delivery gates. This is shared by ChatGPT and Web App through the same Gateway; never substitute chat memory for references. Missing verified banner/icon images means visual parity is UNVERIFIED, not PASS. The host must inspect actual PDP/reference/output pixels.";
 
 const ONEPAGE_SCOPED_ROLES=["banner","why_you_love_it","product_details","occasion","ugc","good_to_know","faqs"] as const;
 
@@ -41,12 +41,14 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
   },
   banner:{
     dimensions:{desktop:"2560x960",mobile:"720x700"},
-    preferred_workflow:["scene_without_baked_text","inspect_natural_copy_zone","add_typography_as_separate_layer","if_needed_add_subtle_feathered_local_tonal_support","inspect_final_on_real_desktop_and_mobile"],
+    preferred_workflow:["verify_product_copy_and_real_scene_story","inspect_true_pfh_reference_if_approved_and_available","generate_complete_desktop_banner_including_final_typography_and_soft_blur","generate_separately_recomposed_complete_mobile_banner_including_final_typography_and_soft_blur","inspect_actual_final_desktop_mobile_pixels_and_mapping"],
+    generation_mode:"single_pass_integrated_final_banner",
+    local_blur:"REQUIRED: a very soft feathered local blur supporting title contrast must be fully integrated into each generated final banner. It must never form a visible flat plate, artificial wall, gradient stripe or cloudy blur patch.",
     composition:"Create a motivated real-life scene and a natural text-safe region; do not flatten a wall or push all people to one side mechanically.",
-    type:"Distinctive PawfectHouse story/category-appropriate expressive title treatment and semantically purposeful line breaks; one visual voice plus restrained support. Do not mechanically impose the same serif/decorative font on all product lines.",
-    contrast:"Type must be easy to read while preserving scene texture. Subtle feathered transparent localized tonal support is allowed; no abrupt solid shape, block, broad uniform wash, hard shadow or unreadable pale type on bright detail.",
-    responsive:"Same campaign/story/cast/product/design/light as desktop. Recompose typography and crop independently for mobile; check optical hierarchy and avoid covering important faces/product.",
-    required_visual_checks:["headline_size_and_linebreak","text_background_local_contrast","environment_texture_continuity","type_zone_not_over_face_or_product","natural_relationship","product_true_to_pdp","mobile_specific_legibility"],
+    type:"GEN INTEGRATED FINAL IMAGE with designed PawfectHouse EO typography already rendered: correct approved title, expressive hierarchy, natural brand/occasion personality, semantic line breaks, professionally composed scale/kerning and optional approved concise support. No separate typography output, generic PowerPoint title, or mechanical one-font-for-all product lines.",
+    contrast:"Typography must be legible; retain a gentle localized feathered SOFT BLUR behind text as part of the integrated generated banner. Preserve photographic texture outside focal blur. Never allow obvious solid panels, gradients with cut edges, synthetic empty walls or unreadable pale text.",
+    responsive:"Create complete DESKTOP and MOBILE banners separately, each with embedded final typo/blur, both sharing approved product/design, human moment, title, emotional tone and scene identity. Recompose type hierarchy and framing; never merely resize/crop a desktop banner.",
+    required_visual_checks:["final_image_contains_all_typography","approved_title_spelling_exact","expressive_eo_title_scale_and_semantic_linebreak","subtle_feathered_blur_under_text","text_background_local_contrast","no_visible_solid_panel_or_fake_flat_wall","type_zone_not_over_face_or_product","natural_relationship_and_product_physics","desktop_mobile_story_parity","mobile_specific_legibility"],
   },
   icons:{
     context:"PawfectHouse Onepage Occasion glyphs; not a blanket visual rule for other brands or asset families.",
@@ -106,7 +108,7 @@ export function getOnepagePortableQualityPack(brand:string,quality?:any){
       }),
     },
     role_names:ONEPAGE_SCOPED_ROLES,
-    confirmed_references:"No fixed public image set is bundled by this playbook. Only actual selected canonical reference assets with inspected pixels can certify visual fidelity.",
+    confirmed_references:"No fixed publicly available approved PFH reference image set is bundled by this playbook. User-provided example images and their stylistic patterns can guide an active task, but are not automatically approved canonical training. Only independently inspected selected canonical reference assets can certify visual fidelity.",
     limitation:"This Gateway does not itself generate images, evaluate visual pixel fidelity or guarantee equivalent artistic quality on different models/accounts.",
   };
 }
