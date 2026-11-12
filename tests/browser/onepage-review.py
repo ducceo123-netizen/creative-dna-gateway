@@ -56,7 +56,7 @@ with sync_playwright() as p:
     assert three['groups'][2]['section_elements'][0]['id']=='text:copy'
     # Fail clipboard, expose editable-selection fallback, never auto-send.
     page.evaluate('Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async()=>{throw Error("denied")}}})')
-    page.locator('#onepage-review-controls #copy').click(force=True) # Floating quick-feedback overlaps the legacy form
+    page.locator('#onepage-review-controls #copy').evaluate('(n) => n.click()') # Exercise legacy action despite floating quick-feedback layer
     assert page.locator('#onepage-review-controls #prompt-details').evaluate('(n)=>n.open')
     assert 'Clipboard' in status(page)
     # Live mutation clears generated prompt and disables copying until reload.
