@@ -553,6 +553,7 @@ export default {
       const { data, error } = await adminDb
         .from("knowledge_proposals")
         .select("id,status,raw_feedback,proposed_content_md,proposed_scope,change_summary,evidence_summary,submitted_by_name,created_at,reviewed_at,review_note,merged_at,resolution,context_images,brands(name),knowledge_nodes(title,slug)")
+        .is("rejected_archived_at", null)
         .order("created_at", { ascending: false })
         .limit(300);
 
