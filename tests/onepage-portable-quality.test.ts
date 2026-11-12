@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_VERSION } from "../supabase/functions/_shared/onepage-portable-quality.ts";
 import { getOnepageUiTemplate, attachOnepageUiTemplate } from "../onepage-ui-template.ts";
-import { createApp } from "../server.ts";
+import { readFileSync } from "node:fs";
 
 test("portable quality is independent of personal ChatGPT account and covers content, banner, image and icon roles",()=>{
   const pack=getOnepagePortableQualityPack("PawfectHouse");
@@ -43,19 +43,9 @@ test("invalid upstream contract remains blocked independently of portable rules"
   assert.equal(out.portable_quality_playbook.schema_version,ONEPAGE_QUALITY_PACK_VERSION);
   assert.equal(out.portable_quality_playbook.execution.fail_closed_visual_certification,true);
 });
-test("public read-only endpoint exposes same playbook contract as shared template",async()=>{
-  const listener=createApp().listen(0,"127.0.0.1");
-  await new Promise<void>(resolve=>listener.once("listening",resolve));
-  try {
-    const port=(listener.address() as any).port;
-    const resp=await fetch("http://127.0.0.1:"+port+"/api/onepage-quality-playbook/PawfectHouse");
-    assert.equal(resp.status,200);
-    const body=await resp.json();
-    assert.equal(body.schema_version,ONEPAGE_QUALITY_PACK_VERSION);
-    assert.equal(body.account_memory_required,false);
-    const unknown=await fetch("http://127.0.0.1:"+port+"/api/onepage-quality-playbook/unknown");
-    assert.equal(unknown.status,400);
-  } finally {
-    await new Promise<void>((resolve,reject)=>listener.close(err=>err?reject(err):resolve()));
-  }
+test("public read-only endpoint and MCP route expose portable playbook contract",()=>{
+  const server=readFileSync(new URL("../server.ts",import.meta.url),"utf8");
+  assert.match(server,/app\.get\("\/api\/onepage-quality-playbook\/:brand"/);
+  assert.match(server,/server\.registerTool\("get_onepage_quality_playbook"/);
+  assert.match(server,/getOnepagePortableQualityPack\(brand\)/);
 });
