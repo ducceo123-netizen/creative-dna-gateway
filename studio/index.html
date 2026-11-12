@@ -485,6 +485,9 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 .studio-copy-status strong{font-size:13px}
 .studio-copy-status span{font-size:12px;color:#557063}
 .studio-copy-status small{font-size:11px;color:#737e78;overflow-wrap:anywhere}
+/* Intrinsic canonical preview height: never force 1080px below short pages. */
+.review-frame-stage iframe{min-height:0!important;height:140px}
+.review-frame-stage{min-height:0!important;align-items:flex-start}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -1448,10 +1451,23 @@ function refreshCanonicalPreview(){
     state.selectedSection=slot;
     drawInlineFeedback();
   },true);
+  // Measure intrinsic page height, not the iframe viewport's scrollHeight.
+  // Using scrollHeight + padding on a viewport-sized HTML element grew the
+  // iframe on each ResizeObserver callback and created a huge white tail.
+  let resizeQueued=false;
   const resize=()=>{
-   if(frame.contentDocument!==inner)return;
-   const height=Math.max(inner.documentElement.scrollHeight,inner.body?.scrollHeight||0);
-   frame.style.height=Math.min(16000,Math.max(900,height+24))+'px';
+   if(frame.contentDocument!==inner||resizeQueued)return;
+   resizeQueued=true;
+   requestAnimationFrame(()=>{
+    resizeQueued=false;
+    if(frame.contentDocument!==inner)return;
+    frame.style.height='1px';
+    const page=inner.querySelector('.onepage-mapping-canvas')||inner.body;
+    const pageBounds=page?.getBoundingClientRect();
+    const pageHeight=Math.ceil(Math.max(0,pageBounds?.bottom||0,inner.body?.scrollHeight||0));
+    const next=Math.min(16000,Math.max(140,pageHeight+2));
+    frame.style.height=next+'px';
+   });
   };
   resize();
   // Embedded canonical Poppins font uses font-display:swap; initial DOM load
@@ -1473,7 +1489,7 @@ function refreshCanonicalPreview(){
   if(typeof ResizeObserver!=='undefined'){
    if(frame._uidPreviewObserver)frame._uidPreviewObserver.disconnect();
    frame._uidPreviewObserver=new ResizeObserver(resize);
-   frame._uidPreviewObserver.observe(inner.documentElement);
+   frame._uidPreviewObserver.observe(inner.querySelector('.onepage-mapping-canvas')||inner.body);
   }
   drawInlineFeedback();
   }catch(e){toast('Unable to select preview elements: '+e.message);}
