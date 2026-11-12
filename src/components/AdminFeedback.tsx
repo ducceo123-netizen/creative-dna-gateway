@@ -296,9 +296,12 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         body:JSON.stringify({ status:"rejected" })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to delete rejected proposals");
-      const deleted = Number(data.deleted_count ?? data.deleted ?? rejectedCount);
-      setMessage(`Deleted ${deleted} rejected feedback proposal${deleted===1?"":"s"}. Canonical Creative DNA was not changed.`);
+      if (!res.ok) throw new Error(data.error || "Không thể xóa feedback Rejected. Chưa có dữ liệu nào được xác nhận xóa.");
+      if (data.status !== "rejected" || data.canonical_changed !== false ||
+          !Number.isSafeInteger(data.deleted_count) || data.deleted_count < 0)
+        throw new Error("Kết quả xóa chưa được xác minh. Hãy Refresh để đối chiếu trước khi thử lại.");
+      const deleted = data.deleted_count;
+      setMessage(`Đã xóa ${deleted} feedback Rejected. Các trạng thái khác và Creative DNA không thay đổi.`);
       await load(undefined, true, true);
     } catch(e:any) {
       setMessage(e.message);

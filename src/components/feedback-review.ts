@@ -128,7 +128,11 @@ export function validatePreflight(value:unknown, proposalId:string):FeedbackPref
   if(data.automatic_review)validateAutomaticReview(data.automatic_review,data.candidate_hash);
   if(data.direct_rule)validateDirectRule(data.direct_rule);
   if(data.direct_rule_plan)validateDirectRulePlan(data.direct_rule_plan,data);
-  if(data.direct_rule?.eligible&&!data.direct_rule_plan?.eligible)throw Error("Chưa có bản hướng dẫn rule hợp lệ. Hãy tải lại.");
+  // A rule can be structurally eligible while its canonical plan is blocked.
+  // Keep the verified preview and show plan blockers to Owner; do not hide the
+  // actionable diagnosis behind a generic reload error. Acceptance still
+  // requires plan.eligible===true and an exact plan_hash.
+  if(data.direct_rule?.eligible&&!data.direct_rule_plan)throw Error("Thiếu bản hướng dẫn rule từ máy chủ. Hãy tải lại.");
   if(data.review_request!==undefined)validateReviewRequest(data.review_request,proposalId);
   if(data.queue_available!==undefined&&typeof data.queue_available!=="boolean")throw Error("Trạng thái quyền review không hợp lệ.");
   if(data.queue_available===false&&(data.review_intent_hash!==null||data.review_request!==null))throw Error("Dữ liệu hàng đợi không khớp quyền truy cập.");

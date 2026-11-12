@@ -250,7 +250,7 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
     <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="text-sm font-bold">{path==="covered"?"Đóng feedback đã được quy chuẩn bao phủ":path==="owner"?"Hard merge · Tự duyệt rule":"Duyệt & xử lý"}</h3><div className="flex gap-2"><button type="button" className={button} disabled={!!busy||loading} onClick={()=>load()}>Tải lại / Retry</button><button type="button" className={button} onClick={close}>Đóng</button></div></div>
     {path==="owner"&&uncertain&&<button type="button" className={button} disabled={!!busy||loading||refreshing} onClick={recoverOwner}>Khôi phục thao tác chưa rõ kết quả</button>}
     {(busy||uncertain)&&<p role="status" className="text-xs text-amber-900">Đóng chỉ đóng cửa sổ, không hủy yêu cầu đã gửi. Kết quả chưa rõ sẽ được kiểm tra trước khi cho phép thao tác mới.</p>}
-    {refreshing&&!loading&&<p role="status" className="text-xs text-slate-500">Đang cập nhật trạng thái…</p>}
+    {refreshing&&!loading&&<p role="status" className="text-xs text-slate-500">Đang cập nhật trạng thái… Nút duyệt sẽ khả dụng khi xác minh xong phiên bản hiện tại.</p>}
     {loading&&<p role="status" className="text-xs text-slate-600">{path==="owner"?"Đang tải nội dung rule và phạm vi áp dụng hiện tại…":"Đang tải quy chuẩn, baseline và kết quả kiểm tra hiện tại…"}</p>}
     {error&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Chưa hoàn tất thao tác: {readableIssue(error,visibleData?.baselines,visibleData?.targets)}</p>{errorIssues.map((issue,i)=><p key={i}>{readableIssue(issue,visibleData?.baselines,visibleData?.targets)}</p>)}{stale&&<p className="mt-2">Dữ liệu hoặc kết quả thao tác cần được kiểm tra lại. Tải lại giữ ghi chú; cần xác nhận lại nếu phạm vi hoặc phiên bản thay đổi. Kết quả chưa rõ chỉ được kiểm tra, không gửi lại.</p>}</div>}
     {visibleData&&<>
@@ -289,6 +289,11 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>}
           {!visibleData.direct_rule&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng duyệt rule trực tiếp. Hãy tải lại sau khi cập nhật.</p>}
           {visibleData.direct_rule?.blockers.map((issue,i)=><p key={i} role="alert" className="text-xs text-amber-900">{issue.message} {issue.next_action}</p>)}
+          {visibleData.direct_rule_plan?.eligible===false&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 space-y-2">
+            <p className="font-semibold">Rule hiện chưa thể merge vì bản kế hoạch cập nhật bị chặn. Quyền Owner vẫn hợp lệ; đây không phải lỗi nút bấm.</p>
+            {(visibleData.direct_rule_plan.blockers||[]).map((issue,i)=><p key={i}><strong>{issue.code||"Plan check"}:</strong> {issue.message} {issue.next_action}</p>)}
+            <p>Hãy xem lý do cụ thể trước khi thử lại. Không tự bỏ qua kiểm tra phiên bản, xung đột hoặc giới hạn nguồn.</p>
+          </div>}
           {path==="owner"&&<p className="text-xs">Nhấn Xác nhận hard merge để duyệt đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</p>}
           <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":path==="owner"?"Xác nhận hard merge":"Duyệt rule & merge ngay"}</button>
         </div>
