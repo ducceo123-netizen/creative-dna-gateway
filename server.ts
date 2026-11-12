@@ -641,7 +641,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
 
   server.registerTool("sync_uid_studio_image",uidProgressTool("sync_uid_studio_image",{
     title:"Sync UID Brands Studio Image",
-    description:"Upload one host-authorized PNG/JPEG/WebP image into the owner-approved Studio task and material slot. Requires a fresh Studio image handoff token. Reject arbitrary URLs and do not claim success without storage and mapping confirmation.",
+    description:"Upload one user-authorized PNG/JPEG/WebP file into a Studio task with a fresh, owner-generated image handoff token and approved slot. Never fabricate a file, URL or successful upload.",
     inputSchema:{
       handoff_token:z.string().regex(/^[A-Za-z0-9_-]{43}$/),
       slot:z.enum(["banner_desktop","banner_mobile","pd_main","pd_closeup","wyl1","wyl2","occasion1","occasion2","ugc1","ugc2","icons"]),
