@@ -423,7 +423,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
   // external API is contacted and no real review, merge, or deletion is made.
   const examples = [
     { action: 'reject', status: 'pending', label: 'Reject', path: 'synthetic-action/review', finalStatus: 'rejected', message: /Rejected\. Canonical DNA was not changed/ },
-    { action: 'delete', status: 'rejected', label: 'Delete all', path: 'delete-all', finalStatus: '', message: /Deleted 1 rejected feedback proposal/ },
+    { action: 'delete', status: 'rejected', label: 'Delete all', path: 'delete-all', finalStatus: '', message: /Đã xóa 1 feedback Rejected/ },
   ];
   for (const example of examples) await t.test(example.action, async t => {
     const mutationUrl = '/api/admin/feedback/' + example.path;
@@ -441,7 +441,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
       assert.equal(JSON.parse(String(ui.mutationCalls[0].init.body)).decision, example.action);
     }
     assert.equal(ui.confirmations.length, example.action === 'merge' || example.action === 'delete' ? 1 : 0);
-    ui.mutationCalls[0].resolve(Response.json({ merged_nodes: 1, deleted_count: 1, proposal:{id:previous.id,status:"rejected"} })); await flush();
+    ui.mutationCalls[0].resolve(Response.json({ merged_nodes: 1, deleted_count: 1, status:"rejected",canonical_changed:false, proposal:{id:previous.id,status:"rejected"} })); await flush();
     assert.equal(ui.calls.length, 3, 'The post-mutation reload replaces the older in-flight poll');
     assert.equal(oldPoll.init.signal?.aborted, true);
     assert.equal(ui.queue().props['aria-busy'], true);
