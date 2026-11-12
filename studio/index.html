@@ -430,6 +430,21 @@ s-text-field,s-text-area,s-select{margin:14px 0}
  #sectionFeedbackPane .review-feedback-head h3 { font-size:18px; }
 }
 
+
+/* Contextual grouped comments live above the full-width Onepage preview only. */
+.inline-feedback-dock{position:fixed;z-index:1200;left:50%;bottom:22px;transform:translateX(-50%);box-sizing:border-box;width:min(580px,calc(100vw - 30px));max-height:40vh;overflow:auto;border:1px solid #4b4d51;border-radius:22px;background:#292a2c;color:#f6f7f9;padding:12px 14px;box-shadow:0 14px 45px #0005;font-family:Inter,system-ui,sans-serif}
+.inline-feedback-dock[hidden]{display:none!important}
+.inline-feedback-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.inline-feedback-chip{display:inline-flex;align-items:center;gap:9px;padding:5px 10px;border:1px solid #316dc8;border-radius:12px;background:#34383f;color:#e8f1ff;font-size:12px;max-width:100%;cursor:pointer}
+.inline-feedback-chip span{font-size:17px;line-height:1;color:#bbc8db}
+.inline-feedback-entry{display:flex;align-items:flex-end;gap:10px;min-width:0}
+#inlineFeedbackText{min-height:42px;max-height:140px;resize:vertical;flex:1;min-width:0;box-sizing:border-box;background:transparent;border:0;outline:none;font:inherit;font-size:14px;line-height:1.5;color:white;padding:10px 4px}
+#inlineFeedbackText::placeholder{color:#9fa2a8}
+#inlineFeedbackSend{border:0;flex:none;width:38px;height:38px;border-radius:50%;font-size:18px;font-weight:700;background:#e4e5e7;color:#242529;cursor:pointer}
+#inlineFeedbackSend:disabled{background:#66686c;color:#bebfc1;cursor:default}
+.inline-feedback-meta{border-top:1px solid #414449;padding-top:8px;margin-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#c6c9ce}
+.inline-feedback-meta button{border:0;background:none;color:#d1d6df;font-size:11px;cursor:pointer}
+@media(max-width:640px){.inline-feedback-dock{bottom:8px;padding:10px 12px;border-radius:16px;max-height:48vh}}
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
@@ -470,6 +485,47 @@ const state={page:'dashboard',selected:null,filter:'All',workflowFilter:null,com
 let tasks=[];
 try {const stored=JSON.parse(localStorage.getItem(KEY)||'[]');tasks=Array.isArray(stored)?stored.filter(x=>x&&typeof x.id==='string'):[];}catch{}
 const el=id=>document.getElementById(id);
+const inlineFeedback={taskId:null,selected:[],note:'',busy:false};
+const reviewIdValid=id=>/^[a-z0-9_-]{2,40}$/.test(id);
+function clearInlineFeedback(){
+ inlineFeedback.selected=[];inlineFeedback.note='';inlineFeedback.taskId=state.selected;drawInlineFeedback();
+}
+function drawInlineFeedback(){
+ const dock=el('inlineFeedbackDock');if(!dock)return;
+ if(inlineFeedback.taskId!==state.selected){inlineFeedback.selected=[];inlineFeedback.note='';inlineFeedback.taskId=state.selected;}
+ dock.hidden=!inlineFeedback.selected.length;
+ if(dock.hidden)return;
+ const chips=el('inlineFeedbackChips');
+ if(chips)chips.innerHTML=inlineFeedback.selected.map((x,i)=>'<button class="inline-feedback-chip" type="button" data-inline-remove="'+i+'" title="Bỏ chọn '+escapeHtml(x.label)+'">'+escapeHtml(x.label)+' <span aria-hidden="true">×</span></button>').join('');
+ const input=el('inlineFeedbackText');
+ if(input&&input.value!==inlineFeedback.note)input.value=inlineFeedback.note;
+ const submit=el('inlineFeedbackSend');if(submit)submit.disabled=inlineFeedback.busy||!inlineFeedback.note.trim();
+ const count=el('inlineFeedbackCount');if(count)count.textContent=inlineFeedback.selected.length+' selected';
+ const inner=el('onepageFrame')?.contentDocument;
+ if(inner){
+  inner.querySelectorAll('[data-uid-review]').forEach(node=>node.classList.toggle('uid-review-picked',inlineFeedback.selected.some(x=>x.id===node.getAttribute('data-uid-review'))));
+ }
+}
+async function submitInlineFeedback(){
+ const taskId=state.selected,note=inlineFeedback.note.trim(),selected=[...inlineFeedback.selected];
+ if(inlineFeedback.busy||!taskId||!selected.length||!note)return;
+ if(note.length>2000)return toast('Feedback tối đa 2000 ký tự.');
+ if(!state.cloud||!state.auth)return toast('Cần đăng nhập để lưu feedback.');
+ inlineFeedback.busy=true;drawInlineFeedback();
+ const group='Review '+new Date().toISOString().replace(/[:.]/g,'-').slice(0,23);
+ let saved=0;
+ try{
+  for(const item of selected){
+   const r=await cloudRequest('/api/tasks/'+taskId+'/section-feedback','POST',{section_id:item.id,group_name:group,note});
+   state.sectionFeedback[taskId]=[...(state.sectionFeedback[taskId]||[]),r.feedback];saved++;
+  }
+  if(state.selected===taskId){clearInlineFeedback();const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(taskId);}
+  toast('Đã lưu 1 nhóm feedback cho '+saved+' mục.');
+ }catch(e){
+  if(saved){inlineFeedback.selected=selected.slice(saved);toast('Đã lưu '+saved+'/'+selected.length+' mục; phần còn lại chưa lưu: '+e.message);}
+  else toast('Không lưu được feedback: '+e.message);
+ }finally{inlineFeedback.busy=false;drawInlineFeedback();}
+}
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const save=()=>{if(state.cloud)return;try{localStorage.setItem(KEY,JSON.stringify(tasks));}catch{toast('Không thể lưu: browser storage đầy hoặc bị chặn.');}};
 function toast(m){const n=el('toast');n.textContent=m;n.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>n.style.display='none',3600);}
@@ -482,7 +538,7 @@ function polarisField(id,labelText,value,placeholder=''){return '<s-text-field i
 function polarisArea(id,labelText,value,placeholder=''){return '<s-text-area id="'+id+'" label="'+escapeHtml(labelText)+'" rows="5" value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder)+'"></s-text-area>';}
 function polarisSelect(id,labelText,values,value){return '<s-select id="'+id+'" label="'+escapeHtml(labelText)+'" value="'+escapeHtml(value)+'">'+options(values,value)+'</s-select>';}
 function button(text,act,cls='secondary'){const variant=cls===''?'primary':'secondary',tone=cls==='danger'?'critical':'auto';return '<s-button variant="'+variant+'" tone="'+tone+'" data-action="'+act+'">'+text+'</s-button>';}
-function selectTask(id){state.reviewPane='feedback';state.selectedSection='hero';state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);loadSectionFeedback(id);if(tasks.find(t=>t.id===id)?.workflow==='Onepage'){loadOnepageTemplate();loadOnepageBindings(id);}}
+function selectTask(id){clearInlineFeedback();state.reviewPane='feedback';state.selectedSection='hero';state.selected=id;state.page='tasks';state.pendingFiles=[];state.overallMode='desktop';state.pipelineProgress='';render();loadTaskResearch(id);loadTaskAttachments(id);hybridLoad(id);pipelineLoad(id);loadSectionFeedback(id);if(tasks.find(t=>t.id===id)?.workflow==='Onepage'){loadOnepageTemplate();loadOnepageBindings(id);}}
 function navigate(page){
  // All Create task entry points from Home preserve the user's typed request.
  if(page==='create'&&state.page==='dashboard'){
@@ -1074,7 +1130,7 @@ function fixedOnepagePreview(id){
  '<div class="review-frame-stage '+(state.onepageFrameMode==='mobile'?'mobile':'desktop')+'">'+
  (state.onepageTemplate?'<iframe id="onepageFrame" sandbox="allow-same-origin" title="Canonical Onepage preview" referrerpolicy="no-referrer"></iframe>':
  '<div class="review-template-loading">'+escapeHtml(state.onepageTemplateError||'Loading canonical Onepage HTML/CSS from UID Brands Gateway…')+'</div>')+'</div>'+
- '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>';
+ '<div class="review-preview-disclaimer">'+(state.onepageTemplate?'Template version '+escapeHtml(state.onepageTemplate.version)+' · Fixed HTML/CSS · Missing assets appear as placeholders.':'Gateway template must be available for exact Onepage preview.')+'</div>'+\n '<div id="inlineFeedbackDock" class="inline-feedback-dock" hidden aria-label="Group feedback"><div class="inline-feedback-chips" id="inlineFeedbackChips"></div><div class="inline-feedback-entry"><textarea id="inlineFeedbackText" rows="1" maxlength="2000" placeholder="Add a comment…" aria-label="Feedback cho các mục đã chọn"></textarea><button type="button" id="inlineFeedbackSend" data-inline-submit aria-label="Save grouped feedback" title="Lưu feedback" disabled>✓</button></div><div class="inline-feedback-meta"><span id="inlineFeedbackCount"></span><button type="button" data-inline-clear>Bỏ chọn</button></div></div>';
 }
 
 function onepageBindingControl(id){
@@ -1218,8 +1274,18 @@ function refreshCanonicalPreview(){
    if(name.length>1)node.setAttribute('data-uid-review',name);
   }
  }
+ // Make each visible copy block individually selectable without modifying the canonical template.
+ let textIndex=0;
+ doc.querySelectorAll('h1,h2,h3,h4,p').forEach(node=>{
+  if(node.hasAttribute('data-uid-review')||node.closest('[data-uid-review]')===node)return;
+  const label=(node.textContent||'').trim().replace(/\\s+/g,' ').slice(0,70);
+  if(!label)return;
+  const id='text_'+String(++textIndex).padStart(4,'0');
+  node.setAttribute('data-uid-review',id);
+  node.setAttribute('data-review-label',label);
+ });
  const source=doc.documentElement.outerHTML.replace(/\{\{([a-z0-9_]+)\}\}/g,(_,slot)=>escapeHtml(slot.replace(/_/g,' ')));
- const chrome='<style>'+template.css.replace(/<\/style/gi,'<\\/style')+'</style><style>[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #3e9266;outline-offset:-2px}.uid-review-picked{outline:3px solid #27844d!important;outline-offset:-3px}</style>';
+ const chrome='<style>'+template.css.replace(/<\/style/gi,'<\\/style')+'</style><style>[data-uid-review]{cursor:pointer}[data-uid-review]:hover{outline:2px dashed #348bff;outline-offset:-2px}.uid-review-picked{outline:3px solid #348bff!important;outline-offset:-3px;background-color:#348bff0b!important}</style>';
  frame.onload=()=>{
   try{
    const inner=frame.contentDocument;if(!inner)return;
@@ -1228,13 +1294,17 @@ function refreshCanonicalPreview(){
     let target=event.target.closest?.('[data-uid-review]');
     if(!target){const sections=Array.from(inner.querySelectorAll('section'));target=sections.find(x=>x.contains(event.target))||event.target.closest?.('img,section,article')||event.target;}
     const slot=target?.getAttribute?.('data-uid-review')||'general';
-    inner.querySelectorAll('.uid-review-picked').forEach(x=>x.classList.remove('uid-review-picked'));
-    target?.classList?.add('uid-review-picked');
-    state.selectedSection=/^[a-z0-9_-]{2,40}$/.test(slot)?slot:'general';
-    if(state.reviewPane==='workflow')state.reviewPane='feedback';
-    const pane=el('sectionFeedbackPane');if(pane)pane.innerHTML=sectionFeedbackInspector(state.selected);
+    if(!reviewIdValid(slot))return;
+    if(inlineFeedback.taskId!==state.selected)clearInlineFeedback();
+    const label=target?.getAttribute?.('data-review-label')||((target?.tagName==='IMG'?'img · ':'')+slot.replace(/_/g,' '));
+    const idx=inlineFeedback.selected.findIndex(x=>x.id===slot);
+    if(idx>=0)inlineFeedback.selected.splice(idx,1);
+    else inlineFeedback.selected.push({id:slot,label:label.slice(0,58)});
+    state.selectedSection=slot;
+    drawInlineFeedback();
   },true);
   frame.style.height=Math.min(16000,Math.max(900,inner.documentElement.scrollHeight+40))+'px';
+  drawInlineFeedback();
   }catch(e){toast('Unable to select preview elements: '+e.message);}
  };
  frame.srcdoc=source.replace(/<\/head>/i,chrome+'</head>');
@@ -1541,7 +1611,13 @@ document.addEventListener('focusout',e=>{if(e.target?.id==='url'&&state.cloud&&s
 document.addEventListener('change',e=>{if(e.target?.id==='brand'&&state.cloud&&state.auth&&el('url')?.value.trim()&&!el('url').value.trim().startsWith('https://'))lookupStore();});
 document.addEventListener('input',e=>{if(e.target?.id==='composerBrief'){state.composerDraft=e.target.value;updateComposerPreview();return;}if(e.target?.id==='taskSearch'){state.search=e.target.value.toLowerCase().trim();if(state.search){state.page='tasks';state.workflowFilter=null;}render();const q=el('taskSearch');if(q&&q.value!==state.search)q.value=state.search;}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('taskSearch')?.focus();}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&e.target?.id==='composerBrief'){e.preventDefault();createFromComposer();}});
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const executionChoice=e.target.closest('[data-execution-mode]');if(executionChoice)return changeExecutionMode(executionChoice.dataset.executionMode);
+document.addEventListener('input',e=>{if(e.target?.id==='inlineFeedbackText'){inlineFeedback.note=e.target.value;const submit=el('inlineFeedbackSend');if(submit)submit.disabled=!inlineFeedback.note.trim()||inlineFeedback.busy;}});
+document.addEventListener('click',e=>{
+ const remove=e.target.closest('[data-inline-remove]');
+ if(remove){inlineFeedback.selected.splice(Number(remove.dataset.inlineRemove),1);drawInlineFeedback();return;}
+ if(e.target.closest('[data-inline-clear]')){clearInlineFeedback();return;}
+ if(e.target.closest('[data-inline-submit]')){submitInlineFeedback();return;}
+ const nav=e.target.closest('[data-page]');if(nav)return navigate(nav.dataset.page);const createWorkflow=e.target.closest('[data-create-workflow]');if(createWorkflow){selectComposerWorkflow(createWorkflow.dataset.createWorkflow);return;}const workflowLink=e.target.closest('[data-workflow]');if(workflowLink){openWorkflow(workflowLink.dataset.workflow);return;}const executionChoice=e.target.closest('[data-execution-mode]');if(executionChoice)return changeExecutionMode(executionChoice.dataset.executionMode);
  const paneChoice=e.target.closest('[data-review-pane]');if(paneChoice){state.reviewPane=paneChoice.dataset.reviewPane;const panel=el('sectionFeedbackPane');if(panel)panel.innerHTML=sectionFeedbackInspector(state.selected);return;}
  const railToggle=e.target.closest('[data-review-toggle-rail]');if(railToggle){state.reviewRailCollapsed=!state.reviewRailCollapsed;return render();}
  const viewMode=e.target.closest('[data-review-view]');if(viewMode)return switchReviewView(viewMode.dataset.reviewView);
