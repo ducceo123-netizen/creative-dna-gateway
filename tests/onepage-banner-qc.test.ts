@@ -17,6 +17,7 @@ const inspection=(viewport:"desktop"|"mobile")=>({
   evidence_note:"Reviewed final full image at target viewport: heading legible, expressive PFH scale, correct approved title, localized soft blur has no hard edges, real plastic cup product interaction verified.",
   findings:Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k=>[k,false])),
 });
+const reasons=(result:ReturnType<typeof evaluateOnepageBannerQc>)=>result.status==="BLOCKED"?result.reasons:[];
 const input=()=>({task_id:"onepage-banner-test",content_version:"content-v3",inspections:[inspection("desktop"),inspection("mobile")]});
 test("exactly two complete banner images are required",()=>{
   assert.equal(evaluateOnepageBannerQc(undefined).status,"BLOCKED");
@@ -33,7 +34,7 @@ test("integrated final artwork including title and subtle blur is valid producti
 });
 test("blank-scene then separately rendered typography is rejected",()=>{
   const v:any=input();v.inspections[0].generation_mode="scene_first_no_typography";
-  assert.ok(evaluateOnepageBannerQc(v).reasons.some((x:string)=>x.includes("NON_INTEGRATED_BANNER")));
+  assert.ok(reasons(evaluateOnepageBannerQc(v)).some((x:string)=>x.includes("NON_INTEGRATED_BANNER")));
   const w:any=input();w.inspections[0].typography_in_final_image=false;
   assert.equal(evaluateOnepageBannerQc(w).status,"BLOCKED");
 });
@@ -42,7 +43,7 @@ test("required localized blur cannot disappear or become an opaque panel",()=>{
   assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   for(const flag of ["visible_solid_text_slab","visible_blur_patch_or_excessive_blurring","unreadable_typography"] as const){
     const w=input();w.inspections[0].findings[flag]=true;
-    assert.ok(evaluateOnepageBannerQc(w).reasons.includes("BANNER_DEFECT:desktop:"+flag));
+    assert.ok(reasons(evaluateOnepageBannerQc(w)).includes("BANNER_DEFECT:desktop:"+flag));
   }
 });
 test("every explicit defect flag blocks even when reporter claims integrated generation",()=>{
@@ -53,11 +54,11 @@ test("every explicit defect flag blocks even when reporter claims integrated gen
 });
 test("different approved titles or story continuity block mobile/desktop",()=>{
   const title:any=input();title.inspections[1].approved_title="Different cups";
-  assert.ok(evaluateOnepageBannerQc(title).reasons.includes("DESKTOP_MOBILE_APPROVED_TITLE_MISMATCH"));
+  assert.ok(reasons(evaluateOnepageBannerQc(title)).includes("DESKTOP_MOBILE_APPROVED_TITLE_MISMATCH"));
   const story:any=input();story.inspections[1].scene_story_id="unrelated-shot";
-  assert.ok(evaluateOnepageBannerQc(story).reasons.includes("DESKTOP_MOBILE_STORY_MISMATCH"));
+  assert.ok(reasons(evaluateOnepageBannerQc(story)).includes("DESKTOP_MOBILE_STORY_MISMATCH"));
   const sameImage:any=input();sameImage.inspections[1].sha256=sameImage.inspections[0].sha256;
-  assert.ok(evaluateOnepageBannerQc(sameImage).reasons.includes("DESKTOP_MOBILE_DISTINCT_FINAL_IMAGES_REQUIRED"));
+  assert.ok(reasons(evaluateOnepageBannerQc(sameImage)).includes("DESKTOP_MOBILE_DISTINCT_FINAL_IMAGES_REQUIRED"));
 });
 test("incorrect version, missing actual-image evidence or incomplete checks blocks",()=>{
   const v:any=input();v.inspections[0].content_version="old";
