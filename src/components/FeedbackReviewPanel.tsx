@@ -153,14 +153,17 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
   const automatic=visibleData?.automatic_review;
   const currentRequest=queueRequest===undefined?visibleData?.review_request:queueRequest;
   const activeRequest=!!currentRequest&&["queued","leased","blocked"].includes(currentRequest.status);
-  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!refreshing&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
+  const canReview=!!visibleData&&loadedProposalKey.current===proposalKey&&visibleData.proposal.status==="pending"&&visibleData.targets.length>0&&!loading&&!busy&&!stale&&!uncertain&&proposal.status==="pending";
   const canResolve=canReview&&!!candidate&&coveredScope&&safeguards&&meaningfulNote(note);
   const canCancel=!!visibleData&&loadedProposalKey.current===proposalKey&&activeRequest&&!loading&&!refreshing&&!busy&&!stale&&!uncertain;
   const canAcceptRule=canReview&&typeof visibleData?.owner_user_id==="string"&&!!visibleData.owner_user_id&&visibleData?.direct_rule?.eligible===true&&visibleData.direct_rule_plan?.eligible===true;
   const canProcess=canReview&&visibleData?.queue_available!==false&&!!automatic&&!!visibleData?.review_intent_hash&&!activeRequest;
 
   const post=async(action:"covered"|"process"|"rule"|"cancel")=>{
-    if(!alive.current||mutation.current||activeRead.current||proposalKey!==proposalKeyRef.current||loadedProposalKey.current!==proposalKeyRef.current||dataRef.current!==visibleData||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
+    if(!alive.current||mutation.current||proposalKey!==proposalKeyRef.current||loadedProposalKey.current!==proposalKeyRef.current||dataRef.current!==visibleData||getReviewLock(lockKey)||!visibleData||!(action==="covered"?canResolve:action==="rule"?canAcceptRule:action==="cancel"?canCancel:canProcess))return;
+    // An advisory 10-second background refresh must not eat an explicit Owner
+    // click. Abort only that read; the server rechecks version/hash/authority.
+    if(activeRead.current){activeRead.current.abort();activeRead.current=null;setRefreshing(false);}
     clearPoll();
     mutation.current=true;onBusyChangeRef.current?.(true);setBusy(action);setError("");setErrorIssues([]);
     const currentId=proposal.id;
@@ -289,6 +292,11 @@ export function FeedbackReviewPanel({proposal, path, request, onClose, onComplet
           </div>}
           {!visibleData.direct_rule&&<p role="alert" className="text-xs text-amber-900">Máy chủ chưa cung cấp luồng duyệt rule trực tiếp. Hãy tải lại sau khi cập nhật.</p>}
           {visibleData.direct_rule?.blockers.map((issue,i)=><p key={i} role="alert" className="text-xs text-amber-900">{issue.message} {issue.next_action}</p>)}
+          {visibleData.direct_rule_plan?.eligible===false&&<div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 space-y-2">
+            <p className="font-semibold">Rule hiện chưa thể merge vì bản kế hoạch cập nhật bị chặn. Quyền Owner vẫn hợp lệ; đây không phải lỗi nút bấm.</p>
+            {(visibleData.direct_rule_plan.blockers||[]).map((issue,i)=><p key={i}><strong>{issue.code||"Plan check"}:</strong> {issue.message} {issue.next_action}</p>)}
+            <p>Hãy xem lý do cụ thể trước khi thử lại. Không tự bỏ qua kiểm tra phiên bản, xung đột hoặc giới hạn nguồn.</p>
+          </div>}
           {path==="owner"&&<p className="text-xs">Nhấn Xác nhận hard merge để duyệt đúng nội dung và toàn bộ phạm vi trên với tư cách owner. Đây là quyết định về rule, không chứng nhận QC hình ảnh.</p>}
           <button type="button" className={`${button} bg-emerald-700 text-white border-emerald-700`} disabled={!canAcceptRule} onClick={()=>post("rule")}>{busy==="rule"?"Đang merge rule…":path==="owner"?"Xác nhận hard merge":"Duyệt rule & merge ngay"}</button>
         </div>
