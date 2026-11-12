@@ -524,11 +524,19 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
         {isOpen && <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"><div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Original member feedback</div><div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{parsed.memberFeedback || p.raw_feedback}</div></div>{Array.isArray(spec?.reject_conditions) && spec.reject_conditions.length>0 && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 mb-1">Reject when</div><div className="flex flex-wrap gap-1.5">{spec.reject_conditions.map((x:any,i:number)=><span key={i} className="px-2 py-1 rounded-md bg-white border border-rose-100 text-[11px] text-rose-700">{String(x)}</span>)}</div></div>}{!!p.context_images?.filter(x=>!x.image_url).length && <div><div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Unrendered image references</div><div className="text-[10px] text-slate-400 break-all">{p.context_images?.filter(x=>!x.image_url).length} private reference(s); xem metadata đầy đủ trong Advanced của review.</div></div>}</div>}
         {actionErrors[p.id] && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Chưa hoàn tất thao tác: {actionErrors[p.id]}</p>}
         {p.status==="pending" && <div className="space-y-3 border-t border-slate-100 pt-4">
-          <RuleReviewHandoff key={`ai-${p.id}`} proposalId={p.id} disabled={!!reviewing||loading||!!activeAction} request={authFetch} onBusyChange={changeReviewBusy} onMerged={()=>{setDetailNotice({id:p.id,message:"AI đã merge feedback sau khi xem xét quy chuẩn và phạm vi."});void load(undefined,true,true);}}/>
           <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 space-y-2" aria-label="Owner tự duyệt rule">
-            <button type="button" onClick={()=>setReviewing({id:p.id,path:"owner"})} disabled={loading||reviewBusy||!!reviewing||!!activeAction} className="rounded-lg bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">Hard merge · Tự duyệt rule</button>
-            <p className="text-xs text-slate-600">Mở bản so sánh và phạm vi để bạn xác nhận. Chưa merge khi bấm nút này; vẫn kiểm tra quyền, phiên bản và xung đột.</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={()=>setReviewing({id:p.id,path:"owner"})} disabled={loading||reviewBusy||!!reviewing||!!activeAction} className="rounded-lg bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">Duyệt trực tiếp · Owner</button>
+              <span className="text-[11px] font-semibold text-indigo-700">Ưu tiên chủ sở hữu · Không cần bàn giao AI</span>
+            </div>
+            <p className="text-xs text-slate-600">Bạn tự quyết định nội dung và phạm vi quy tắc trong bước tiếp theo, không cần chờ AI review hoặc queue. Chỉ kiểm tra đăng nhập Owner, bản thay đổi hiện tại và xung đột để tránh nạp sai Creative DNA.</p>
           </div>
+          <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-3" data-admin-tool="ai-review">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-700">Tùy chọn · Nhờ AI rà soát trước khi duyệt</summary>
+            <div className="mt-3">
+              <RuleReviewHandoff key={`ai-${p.id}`} proposalId={p.id} disabled={!!reviewing||loading||!!activeAction} request={authFetch} onBusyChange={changeReviewBusy} onMerged={()=>{setDetailNotice({id:p.id,message:"AI đã merge feedback sau khi xem xét quy chuẩn và phạm vi."});void load(undefined,true,true);}}/>
+            </div>
+          </details>
           <details><summary className="cursor-pointer text-xs text-slate-500">Xử lý thủ công / Đối chiếu quy chuẩn</summary>
           <div className="flex flex-wrap gap-2 mt-3">
             <button type="button" onClick={()=>setReviewing({id:p.id,path:"covered"})} disabled={loading||reviewBusy||!!reviewing} className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 disabled:opacity-50">Đã có trong quy chuẩn</button>
