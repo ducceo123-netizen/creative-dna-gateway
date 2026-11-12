@@ -12,7 +12,7 @@ function harness(change?: (m:any,n:any)=>void, clipboardFails=false) {
   get outerHTML(){return JSON.stringify([this.tagName,this.id,this.dataset,this.textContent,this.attrs,this.children.map(n=>n.outerHTML)]);}
   set innerHTML(html:string){for(const match of html.matchAll(/id="([^"]+)"/g)){const n=new El();n.id=match[1];nodes[n.id]=n;}nodes.kind.value='element';}
   append(n:any){this.children.push(n);n.parentElement=this;}
-  attachShadow(){return {append:(n:any)=>{},getElementById:(id:string)=>nodes[id]};}
+  attachShadow(){return {append:(n:any)=>{if(n.id)nodes[n.id]=n;},getElementById:(id:string)=>nodes[id]};}
   setAttribute(k:string,v:string){this.attrs[k]=v;}
   getAttribute(k:string){return this.attrs[k]??null;}
   replaceChildren(...a:any[]){this.children=a;}
