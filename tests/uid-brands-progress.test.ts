@@ -42,7 +42,7 @@ test("all discovered and registered tools share supported bounded labels and pre
     assert.match(initialized.instructions.slice(0, 512), /Research-before-output gates creative deliverables, not progress updates/);
     assert.equal(initialized.instructions.split(RESEARCH_GUIDANCE).length - 1, 1, "canonical research guidance appears exactly once");
     const { tools } = await rpc("tools/list", {});
-    assert.equal(tools.length, 16, 'Studio sync and Onepage banner QC tools are additive');
+    assert.equal(tools.length, 17, 'Studio text/image sync and Onepage QC tools are additive');
     assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).sort());
     for (const tool of tools) {
       const discovery = TOOL_DEFINITIONS.find(t => t.name === tool.name)!;
@@ -58,6 +58,7 @@ test("all discovered and registered tools share supported bounded labels and pre
       assert.deepEqual(tool.annotations, discovery.annotations);
     }
     assert.deepEqual(tools.find((t: any) => t.name === "ingest_uid_brands_attachment")._meta["openai/fileParams"], ["file"]);
+    assert.deepEqual(tools.find((t: any) => t.name === "sync_uid_studio_image")._meta["openai/fileParams"], ["file"]);
     assert.equal(tools.find((t: any) => t.name === "launch_creative_dna")._meta["openai/widgetAccessible"], undefined);
     assert.equal(tools.find((t: any) => t.name === "submit_training_feedback").annotations.readOnlyHint, false);
   });
