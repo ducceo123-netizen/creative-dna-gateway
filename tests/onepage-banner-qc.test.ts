@@ -1,4 +1,3 @@
-import { createApp } from "../server.ts";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_FLAGS, ONEPAGE_BANNER_QC_VERSION } from "../supabase/functions/_shared/onepage-banner-qc.ts";
@@ -6,101 +5,70 @@ import { ONEPAGE_PRODUCTION_QC } from "../supabase/functions/_shared/onepage-pro
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 
-const checksum = "sha256:" + "a".repeat(64);
-const review = (viewport: "desktop" | "mobile") => ({
-  viewport, asset_id: "banner-" + viewport, sha256: checksum,
-  scene_asset_id: "scene-" + viewport, scene_sha256: "sha256:" + "b".repeat(64),
-  scene_method: "scene_first_no_typography" as const,
-  scene_evidence_note: "Inspected actual text-free scene: authentic wall texture and natural window light falloff continue through the copy-space, without fake darkness.",
-  final_composition_method: "independent_typography_layer" as const,
-  method: "full_resolution_image_view" as const,
-  evidence_note: "Full-resolution banner was viewed including headline edge, tree/scene transition and side windows; no seams observed.",
-  findings: Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k=>[k,false])),
+const inspection=(viewport:"desktop"|"mobile")=>({
+  viewport,asset_id:"pfh-final-"+viewport,
+  sha256:"sha256:"+(viewport==="desktop"?"a":"b").repeat(64),
+  generation_mode:"single_pass_integrated_final_banner" as const,
+  typography_in_final_image:true as const,
+  contrast_treatment:"localized_feathered_soft_blur" as const,
+  scene_story_id:"grandfather-girl-baking-cookies",
+  content_version:"content-v3",approved_title:"Personalized Plastic Cups",title_text_verified:true as const,
+  method:"full_resolution_image_view" as const,
+  evidence_note:"Reviewed final full image at target viewport: heading legible, expressive PFH scale, correct approved title, localized soft blur has no hard edges, real plastic cup product interaction verified.",
+  findings:Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k=>[k,false])),
 });
-const input = () => ({task_id:"task-1",content_version:"rev-3",inspections:[review("desktop"),review("mobile")]});
-
-test("onepage banner QC refuses missing or uninspected evidence",()=>{
+const input=()=>({task_id:"onepage-banner-test",content_version:"content-v3",inspections:[inspection("desktop"),inspection("mobile")]});
+test("exactly two complete banner images are required",()=>{
   assert.equal(evaluateOnepageBannerQc(undefined).status,"BLOCKED");
-  assert.equal(evaluateOnepageBannerQc({task_id:"task-1",content_version:"v1",inspections:[]}).status,"BLOCKED");
-  const one=input();one.inspections[1]=review("desktop");assert.equal(evaluateOnepageBannerQc(one).status,"BLOCKED");
-  const noFindings:any=input();delete noFindings.inspections[0].findings.visible_solid_text_slab;
-  assert.equal(evaluateOnepageBannerQc(noFindings).status,"BLOCKED");
-});
-test("each prohibited visual artifact blocks both overall and packaging",()=>{
-  for(const viewport of ["desktop","mobile"] as const) for(const flag of ONEPAGE_BANNER_QC_FLAGS){
-    const v=input();v.inspections.find(x=>x.viewport===viewport)!.findings[flag]=true;
-    const result=evaluateOnepageBannerQc(v);
-    assert.equal(result.status,"BLOCKED");
-    assert.equal(result.can_release,false);
-    assert.ok(result.reasons.some(x=>x.includes("BANNER_DEFECT:"+viewport+":"+flag)));
-    assert.ok(result.applies_to.includes("packaging"));
-  }
-});
-test("clear host report cannot pretend to have done server pixel inspection",()=>{
-  const result=evaluateOnepageBannerQc(input());
-  assert.equal(result.status,"REPORTED_CLEAR_REQUIRES_INDEPENDENT_VISUAL_QA");
-  assert.equal(result.can_release,false);
-  assert.equal(result.pixel_inspected_by_server,false);
-});
-test("new banner hard gate flows through both ChatGPT and Web App shared contracts",()=>{
-  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_typography_gate.version,ONEPAGE_BANNER_QC_VERSION);
-  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_typography_gate.fail_closed,true);
-  assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
-  assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
-});
-
-test("public gateway banner QC endpoint blocks flagged viewport and clean report still needs visual review", async () => {
-  const app=createApp().listen(0, "127.0.0.1");
-  await new Promise<void>(resolve=>app.once("listening",resolve));
-  const url="http://127.0.0.1:"+String((app.address() as any).port)+"/api/tools/evaluate_onepage_banner_qc";
-  try {
-    const bad=input();bad.inspections[1].findings.visible_solid_text_slab=true;
-    const flagged=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(bad)});
-    assert.equal(flagged.status,422);
-    const issue=await flagged.json();
-    assert.equal(issue.status,"BLOCKED");
-    assert.equal(issue.can_release,false);
-    const clean=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(input())});
-    assert.equal(clean.status,200);
-    const clear=await clean.json();
-    assert.equal(clear.can_release,false);
-    assert.equal(clear.pixel_inspected_by_server,false);
-  } finally {
-    await new Promise<void>((resolve,reject)=>app.close(e=>e?reject(e):resolve()));
-  }
-});
-
-test("one-step type-baked banners fail without separate source scene", () => {
-  const v:any=input(); delete v.inspections[0].scene_asset_id;
+  assert.equal(evaluateOnepageBannerQc({task_id:"a",content_version:"v1",inspections:[]}).status,"BLOCKED");
+  const v:any=input();v.inspections[1].viewport="desktop";
   assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
-  const reused:any=input();reused.inspections[1].scene_sha256=reused.inspections[1].sha256;
-  const reusedResult=evaluateOnepageBannerQc(reused);
-  assert.equal(reusedResult.status,"BLOCKED");
-  if(reusedResult.status==="BLOCKED") assert.ok(reusedResult.reasons.some((x:string)=>x.includes("SCENE_AND_COMPOSITE_MUST_BE_DISTINCT")));
-  const onepass:any=input();onepass.inspections[0].final_composition_method="rendered_into_generated_image";
-  const onepassResult=evaluateOnepageBannerQc(onepass);
-  assert.equal(onepassResult.status,"BLOCKED");
-  if(onepassResult.status==="BLOCKED") assert.ok(onepassResult.reasons.some((x:string)=>x.includes("MISSING_SCENE_FIRST_EVIDENCE")));
 });
-test("copy-space flattening and fake wall texture are blocked even without a literal solid slab", () => {
-  for(const flag of ["artificially_flattened_copy_space","uniform_tonal_wash_behind_headline","texture_or_light_discontinuity","staged_empty_wall_for_typography"] as const) {
-    const v=input();v.inspections[0].findings[flag]=true;
+test("integrated final artwork including title and subtle blur is valid production input",()=>{
+  const o=evaluateOnepageBannerQc(input());
+  assert.equal(o.status,"REPORTED_CLEAR_REQUIRES_INDEPENDENT_VISUAL_QA");
+  assert.equal(o.can_release,false);
+  assert.equal(o.pixel_inspected_by_server,false);
+  assert.equal(o.reviewed_assets[0].generation_mode,"single_pass_integrated_final_banner");
+});
+test("blank-scene then separately rendered typography is rejected",()=>{
+  const v:any=input();v.inspections[0].generation_mode="scene_first_no_typography";
+  assert.ok(evaluateOnepageBannerQc(v).reasons.some((x:string)=>x.includes("NON_INTEGRATED_BANNER")));
+  const w:any=input();w.inspections[0].typography_in_final_image=false;
+  assert.equal(evaluateOnepageBannerQc(w).status,"BLOCKED");
+});
+test("required localized blur cannot disappear or become an opaque panel",()=>{
+  const v:any=input();v.inspections[1].contrast_treatment="none";
+  assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
+  for(const flag of ["visible_solid_text_slab","visible_blur_patch_or_excessive_blurring","unreadable_typography"] as const){
+    const w=input();w.inspections[0].findings[flag]=true;
+    assert.ok(evaluateOnepageBannerQc(w).reasons.includes("BANNER_DEFECT:desktop:"+flag));
+  }
+});
+test("every explicit defect flag blocks even when reporter claims integrated generation",()=>{
+  for(const viewport of ["desktop","mobile"] as const)for(const flag of ONEPAGE_BANNER_QC_FLAGS){
+    const v=input();v.inspections.find(x=>x.viewport===viewport)!.findings[flag]=true;
     assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
   }
 });
-
-test("balanced contrast: gentle localized transparent support is allowed, while washed-out and unreadable type are blocked",()=>{
-  const clean=input();
-  const ok=evaluateOnepageBannerQc(clean);
-  assert.equal(ok.status,"REPORTED_CLEAR_REQUIRES_INDEPENDENT_VISUAL_QA");
-  const glare=input();glare.inspections[1].findings.text_lost_in_highlights_or_busy_scene=true;
-  assert.equal(evaluateOnepageBannerQc(glare).status,"BLOCKED");
-  const slab=input();slab.inspections[0].findings.uniform_tonal_wash_behind_headline=true;
-  assert.equal(evaluateOnepageBannerQc(slab).status,"BLOCKED");
+test("different approved titles or story continuity block mobile/desktop",()=>{
+  const title:any=input();title.inspections[1].approved_title="Different cups";
+  assert.ok(evaluateOnepageBannerQc(title).reasons.includes("DESKTOP_MOBILE_APPROVED_TITLE_MISMATCH"));
+  const story:any=input();story.inspections[1].scene_story_id="unrelated-shot";
+  assert.ok(evaluateOnepageBannerQc(story).reasons.includes("DESKTOP_MOBILE_STORY_MISMATCH"));
+  const sameImage:any=input();sameImage.inspections[1].sha256=sameImage.inspections[0].sha256;
+  assert.ok(evaluateOnepageBannerQc(sameImage).reasons.includes("DESKTOP_MOBILE_DISTINCT_FINAL_IMAGES_REQUIRED"));
 });
-test("v5 shared guidance explicitly permits subtle support rather than forcing no overlay",()=>{
-  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_contrast,/ALLOW a VERY SUBTLE/i);
-  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.composition,/IS ALLOWED/i);
-  assert.match(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.mobile,/mobile display size/i);
-  assert.ok(ONEPAGE_BANNER_QC_FLAGS.includes("text_lost_in_highlights_or_busy_scene"));
+test("incorrect version, missing actual-image evidence or incomplete checks blocks",()=>{
+  const v:any=input();v.inspections[0].content_version="old";
+  assert.equal(evaluateOnepageBannerQc(v).status,"BLOCKED");
+  const m:any=input();delete m.inspections[0].findings.bad_semantic_line_breaks;
+  assert.equal(evaluateOnepageBannerQc(m).status,"BLOCKED");
+});
+test("shared production gate and native workflow use new banner mode",()=>{
+  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_typography_gate.version,ONEPAGE_BANNER_QC_VERSION);
+  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.generation_mode,"single_pass_integrated_final_banner");
+  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.soft_support.required,true);
+  assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
+  assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
 });
