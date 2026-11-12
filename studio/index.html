@@ -350,6 +350,54 @@ s-text-field,s-text-area,s-select{margin:14px 0}
 @media(max-width:1200px){.task-review-layout,.task-review-layout.rail-collapsed{grid-template-columns:minmax(0,1fr) 290px}.task-review-layout:not(.rail-collapsed) .review-task-rail{display:none}}
 @media(max-width:900px){.task-review-layout,.task-review-layout.rail-collapsed{grid-template-columns:minmax(0,1fr) 260px}.task-review-inspector{position:static;max-height:calc(100vh - 180px)}}
 @media(max-width:690px){.task-review-layout,.task-review-layout.rail-collapsed{grid-template-columns:1fr}.task-review-inspector{grid-row:2;max-height:none}.task-review-center{grid-row:1}.review-frame-stage{max-height:65vh}}
+
+/* Studio review workspace v4: true full-width preview with inspector below. */
+.task-review-layout,.task-review-layout.rail-collapsed{
+  display:flex!important;flex-direction:column!important;gap:18px!important;align-items:stretch!important;width:100%!important;
+}
+.task-review-layout>.task-review-center{order:1;width:100%;box-sizing:border-box;min-width:0;max-width:none;padding:20px;background:#fff;border:1px solid #e5e7e5;border-radius:16px;box-shadow:0 2px 10px #151d1910}
+.task-review-layout>.task-review-inspector{order:2;width:100%;box-sizing:border-box;position:static!important;max-height:none!important;overflow:visible!important;border:1px solid #e5e7e5;border-radius:16px;background:#fff;box-shadow:0 2px 10px #151d1910}
+.task-review-layout>.review-task-rail{order:0;width:100%;box-sizing:border-box;position:static!important;max-height:260px!important;overflow-y:auto;min-width:0}
+.task-review-layout.rail-collapsed>.review-task-rail{display:none!important}
+.review-task-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px}
+.review-task-card{width:auto;min-width:190px;max-width:280px;border:1px solid #e7ebe8;border-radius:10px}
+.review-preview-header{padding:4px 2px 14px;align-items:flex-start;gap:24px}
+.review-preview-header h2{font-size:22px;line-height:1.28;font-weight:700;letter-spacing:-.03em}
+.review-preview-header p{font-size:13px;max-width:680px;line-height:1.55;color:#7c827f;margin:8px 0 0}
+.review-preview-header .executor-kicker{font-size:11px;letter-spacing:.08em;color:#65746a;font-weight:700}
+.review-view-toggle{background:#f4f5f4;border-color:#e4e8e4;border-radius:11px}
+.review-view-toggle button{font-size:13px;padding:10px 16px;border-radius:8px}
+.review-frame-stage{max-height:none!important;min-height:460px;width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:visible;background:#f2f3f2;padding:24px;border:1px solid #e9eae9;border-radius:13px;align-items:flex-start}
+.review-frame-stage.desktop iframe{width:100%!important;max-width:none!important;min-width:0!important;flex:1 1 auto}
+.review-frame-stage.mobile iframe{width:390px!important;max-width:100%!important;flex:0 0 390px!important}
+.review-frame-stage iframe{min-height:1080px;border-radius:4px;box-shadow:0 8px 30px #18241e17}
+.review-preview-disclaimer{padding:12px 4px 1px;font-size:11px;color:#818984}
+.review-inspector-tabs{position:static;display:flex;align-items:center;gap:4px;background:#fff;border-bottom:1px solid #e9ecea;padding:0 16px}
+.review-inspector-tabs button{font-size:13px;padding:15px 20px;border-bottom-width:2px}
+.review-inspector-body{padding:24px;max-width:1100px}
+.review-feedback-head h3{font-size:19px}
+.review-label{font-size:12px;margin:18px 0 7px}
+.review-feedback-panel select,.review-feedback-panel input,.review-feedback-panel textarea{
+  appearance:none;width:100%;max-width:650px;min-height:42px;box-sizing:border-box;
+  padding:11px 13px;border:1px solid #d9dfdb;border-radius:10px;background:#fff;
+  color:#243029;font:inherit;font-size:13px;line-height:1.4;outline:none;
+}
+.review-feedback-panel select{appearance:auto}
+.review-feedback-panel textarea{min-height:104px;resize:vertical}
+.review-feedback-panel select:focus,.review-feedback-panel input:focus,.review-feedback-panel textarea:focus{border-color:#387e5a;box-shadow:0 0 0 3px #dff1e5}
+.review-feedback-panel .research-note{font-size:13px;max-width:720px;line-height:1.55}
+.review-grouped-feedback{max-width:900px}
+.review-editor-toolbar{margin-bottom:14px}
+@media(max-width:700px){
+  .task-review-layout>.task-review-center{padding:12px}
+  .review-preview-header{flex-direction:column;gap:12px}
+  .review-preview-header h2{font-size:18px}
+  .review-frame-stage{padding:8px;min-height:380px}
+  .review-frame-stage.mobile iframe{flex:0 1 390px!important}
+  .review-inspector-body{padding:16px}
+  .review-inspector-tabs button{padding:13px 12px;font-size:12px}
+}
+
 </style></head>
 <body><div class="shell">
 <aside class="sidebar" aria-label="Studio navigation">
