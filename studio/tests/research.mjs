@@ -23,6 +23,7 @@ try{
  assert.equal(result.products[0].title,'Christmas Bone Stockings');
  assert.equal(result.status,'partial');
  assert.equal(result.products[0].images.length,1);
+assert.equal(result.maximum_products,72);
  assert.ok(result.warnings.some(x=>x.includes('NOT scanned')));
  assert.equal(accessed.length,2);
  assert.ok(accessed.every(x=>x.startsWith('https://pawfecthouse.com/')));
