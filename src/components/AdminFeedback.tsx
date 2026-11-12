@@ -286,7 +286,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
   const deleteAllRejected = async () => {
     const rejectedCount = proposals.filter(p => p.status === "rejected").length;
     if (!rejectedCount) return;
-    if (!confirm(`Delete all ${rejectedCount} rejected feedback proposal${rejectedCount===1?"":"s"}? This only removes rejected proposal history and does not change canonical Creative DNA.`)) return;
+    if (!confirm(`Archive all ${rejectedCount} rejected feedback proposal${rejectedCount===1?"":"s"} from the active inbox? Audit history and canonical Creative DNA are preserved.`)) return;
 
     setBulkDeleting(true); setMessage("");
     try {
@@ -301,7 +301,7 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           !Number.isSafeInteger(data.deleted_count) || data.deleted_count < 0)
         throw new Error("Kết quả xóa chưa được xác minh. Hãy Refresh để đối chiếu trước khi thử lại.");
       const deleted = data.deleted_count;
-      setMessage(`Đã xóa ${deleted} feedback Rejected. Các trạng thái khác và Creative DNA không thay đổi.`);
+      setMessage(`Đã lưu trữ ${deleted} feedback Rejected khỏi danh sách. Audit và Creative DNA được giữ nguyên.`);
       await load(undefined, true, true);
     } catch(e:any) {
       setMessage(e.message);
@@ -364,9 +364,9 @@ export function AdminFeedback({ onBack }: { onBack: () => void }) {
           </button>)}
         </div>
         {filter === "rejected" && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50/40 px-3 py-2" data-admin-tool="rejected-delete-all">
-          <p className="text-xs text-slate-600">Đã từ chối: <strong>{rejectedCount}</strong> feedback · Xóa toàn bộ lịch sử Rejected của mọi brand, không phụ thuộc bộ lọc đang chọn.</p>
+          <p className="text-xs text-slate-600">Đã từ chối: <strong>{rejectedCount}</strong> feedback · Dọn khỏi inbox mọi brand, vẫn giữ lịch sử audit.</p>
           <button type="button" onClick={deleteAllRejected} disabled={bulkDeleting || loading || reviewBusy || !!activeAction || rejectedCount === 0} className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Delete all rejected feedback">
-            {bulkDeleting ? "Đang xóa…" : "Delete all"}
+            {bulkDeleting ? "Đang lưu trữ…" : "Delete all"}
           </button>
         </div>}
         <div className="flex flex-wrap items-center gap-3">
