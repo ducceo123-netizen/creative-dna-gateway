@@ -2,13 +2,14 @@
  * This evaluator checks a host-supplied, version-bound visual inspection report.
  * It does NOT view image pixels or authenticate the reviewer.
  */
-export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-11.v2";
+export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-12.v3";
 export const ONEPAGE_BANNER_QC_FLAGS = [
   "visible_solid_text_slab",
   "hard_rectangular_headline_background",
   "abrupt_horizontal_scene_split",
   "opaque_or_patchy_text_overlay",
   "unreadable_typography",
+  "text_lost_in_highlights_or_busy_scene",
   "artificially_flattened_copy_space",
   "uniform_tonal_wash_behind_headline",
   "texture_or_light_discontinuity",
@@ -36,7 +37,7 @@ export type BannerQcInput = {
 const id = (v: unknown) => typeof v === "string" && v.trim().length >= 1 && v.length <= 160;
 const hash = (v: unknown) => typeof v === "string" && /^sha256:[0-9a-f]{64}$/.test(v);
 const safeObj = (v: unknown): v is Record<string, any> => !!v && typeof v === "object" && !Array.isArray(v);
-export const ONEPAGE_BANNER_QC_DESCRIPTION = "Onepage scene-first / typography-second banner gate (desktop AND mobile). For each viewport provide actual separate text-free scene asset/hash, scene evidence, final composition asset/hash and genuine full-resolution inspection of both. Typography must be a separate graphic layer, never rendered by image generation into the background. Explicitly check solid slabs, rectangular backdrops, abrupt scene splits, patchy overlays, unreadable text, falsely flattened negative space, tonal washes, texture/light discontinuities and staged walls. Missing stage evidence or any flagged issue BLOCKS banner, overall and packaging. This evaluator does NOT read image pixels; a clear report still requires independent host visual QA and may never claim automatic image verification.";
+export const ONEPAGE_BANNER_QC_DESCRIPTION = "Onepage scene-first / typography-second banner gate (desktop AND mobile). For each viewport provide actual separate text-free scene asset/hash, scene evidence, final composition asset/hash and genuine full-resolution inspection of both. Typography must be a separate graphic layer, never rendered by image generation into the background. Explicitly check solid slabs, rectangular backdrops, abrupt scene splits, patchy overlays, text lost in highlights/busy background, falsely flattened negative space, broad uniform washes, texture/light discontinuities and staged walls. Subtle localized transparent feathered tonal support IS ALLOWED and may be needed for readable typography; reject over-treatment and under-treatment rather than blanket-banning all gradients. Missing stage evidence or any flagged issue BLOCKS banner, overall and packaging. This evaluator does NOT read image pixels; a clear report still requires independent host visual QA and may never claim automatic image verification.";
 export const ONEPAGE_BANNER_QC_INPUT_SCHEMA = {
   type: "object",
   additionalProperties: false,
