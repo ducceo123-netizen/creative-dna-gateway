@@ -423,7 +423,7 @@ test('each simulated mutation forces a new queue read and an older poll cannot o
   // external API is contacted and no real review, merge, or deletion is made.
   const examples = [
     { action: 'reject', status: 'pending', label: 'Reject', path: 'synthetic-action/review', finalStatus: 'rejected', message: /Rejected\. Canonical DNA was not changed/ },
-    { action: 'delete', status: 'rejected', label: 'Delete all rejected (1)', path: 'delete-all', finalStatus: '', message: /Deleted 1 rejected feedback proposal/ },
+    { action: 'delete', status: 'rejected', label: 'Delete all', path: 'delete-all', finalStatus: '', message: /Deleted 1 rejected feedback proposal/ },
   ];
   for (const example of examples) await t.test(example.action, async t => {
     const mutationUrl = '/api/admin/feedback/' + example.path;
