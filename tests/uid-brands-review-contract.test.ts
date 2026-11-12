@@ -42,9 +42,13 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
     list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
   };
-  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
   const sync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_result");
   assert.ok(sync, "one-time task-scoped return channel is additive");
+  const imageSync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_image");
+  assert.ok(imageSync, "task-scoped file-param image sync is additive");
+  assert.deepEqual(imageSync!.inputSchema.required, ["handoff_token", "slot", "file"]);
+  assert.deepEqual(imageSync!._meta?.["openai/fileParams"], ["file"]);
   assert.deepEqual(sync!.inputSchema.required, ["handoff_token", "content"]);
   assert.equal(sync!.annotations?.readOnlyHint, false);
   assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "get_website_brand_ui_skill"));
