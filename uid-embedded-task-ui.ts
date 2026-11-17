@@ -19,7 +19,7 @@ function unwrap(x){return x?.structuredContent||x?.toolResult?.structuredContent
 function use(output){
  state=unwrap(output);
  const stage=state.stage||"launcher";
- const content=false;
+
  const materials=["content_approval","asset_review","packaging","complete"].includes(stage);
  $("launcher").classList.toggle("hidden",stage!=="launcher");
  $("content").classList.toggle("hidden",!content);
@@ -31,7 +31,7 @@ function use(output){
    if(!brands.length){$("brand").replaceChildren(new Option("Không tải được danh mục",""));$("material").replaceChildren(new Option("Hãy thử lại danh mục",""));$("start").disabled=true;setStatus("Chưa xác minh được danh mục, không tự đoán material.");}
    else{const prev=$("brand").value;$("brand").replaceChildren(...brands.map(x=>new Option(x,x)));if(brands.includes(prev))$("brand").value=prev;renderMaterials();$("start").disabled=false;setStatus("")}
  }
- if(content||materials){
+ if(materials){
    const hasIdentity=typeof state.task_id==="string"&&state.task_id.trim()&&typeof state.content_version==="string"&&state.content_version.trim();
    $("identity").textContent=hasIdentity?"Task "+state.task_id+" · phiên bản "+state.content_version:"Chưa xác minh task/phiên bản";
    $("approve").disabled=!hasIdentity;
