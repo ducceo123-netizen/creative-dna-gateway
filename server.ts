@@ -726,7 +726,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     const chat = buildChatReview(input, review_context);
     return withUidProgress({
       content: [{ type: "text" as const, text: chat.text }],
-      structuredContent: { ui_status: { response: "prepared", render: "disabled", stage: input.stage }, renderer: "chat", next_actions: chat.next_actions, ...chat.guide_data, ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], review_context },
+      structuredContent: { ui_status: { response: "prepared", render: "enabled", stage: input.stage }, renderer: "embedded", next_actions: chat.next_actions, ...chat.guide_data, ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], review_context },
     });
   });
   server.registerTool("get_uid_brands_native_workflow", uidProgressTool("get_uid_brands_native_workflow", {
@@ -764,9 +764,9 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   }), async ({ navigation_id }) => {
     try {
       const upstream = await loadLauncherData();
-      return withUidProgress({ content: [{ type: "text" as const, text: upstream.ok ? CHAT_BRIEF_GUIDANCE : CHAT_BRIEF_GUIDANCE + " Route lookup failed; do not guess routes or claim they were verified. Retry list_creative_dna_routes only when needed for the brief." }], isError: !upstream.ok, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", renderer: "chat", external_panel: UID_EXTERNAL_PANEL, ...upstream.data, ui_status: { response: "prepared", render: "disabled", stage: "launcher", routing: upstream.ok ? "available" : "degraded" } } });
+      return withUidProgress({ content: [{ type: "text" as const, text: upstream.ok ? "UID Brands embedded task picker is ready. Select Brand, Material and Product/Collection URL; task runs to outcome with HTML preview and no content approval. This action does not generate materials until the owner submits the brief." : "Task picker cannot load verified routes. Do not invent a material; retry route lookup." }], isError: !upstream.ok, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", renderer: "embedded", ...upstream.data, ui_status: { response: "prepared", render: "enabled", stage: "launcher", routing: upstream.ok ? "available" : "degraded" } } });
     } catch (err) {
-      return withUidProgress({ content: [{ type: "text" as const, text: CHAT_BRIEF_GUIDANCE + " Route lookup failed; do not guess routes or claim they were verified. Retry list_creative_dna_routes only when needed for the brief." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", renderer: "chat", external_panel: UID_EXTERNAL_PANEL, ui_status: { response: "prepared", render: "disabled", stage: "launcher", routing: "degraded" }, routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } });
+      return withUidProgress({ content: [{ type: "text" as const, text: CHAT_BRIEF_GUIDANCE + " Route lookup failed; do not guess routes or claim they were verified. Retry list_creative_dna_routes only when needed for the brief." }], isError: true, structuredContent: { ...(navigation_id ? { navigation_id } : {}), stage: "launcher", renderer: "embedded", ui_status: { response: "prepared", render: "enabled", stage: "launcher", routing: "degraded" }, routes: [], ...gatewayFailure(gatewayBudget(0), "routes", "UPSTREAM_UNAVAILABLE", 502, true).data } });
     }
   });
 
