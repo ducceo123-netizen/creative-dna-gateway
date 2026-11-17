@@ -231,14 +231,15 @@ test("live local MCP exposes usable chat commands with exact context and static 
       assert.deepEqual(native.structuredContent.review_context, review.structuredContent.review_context);
       assert.match(native.content[0].text, /chat/);
       for (const result of [review, native]) {
-        assert.equal(result.structuredContent.renderer, "chat");
-        assert.equal(result.structuredContent.ui_status.render, "disabled");
+        assert.equal(result.structuredContent.renderer, result === review ? "embedded" : "chat");
+        assert.equal(result.structuredContent.ui_status.render, result === review ? "enabled" : "disabled");
         assert.deepEqual(result.structuredContent.assets, args.assets);
         assert.deepEqual(result.structuredContent.review_context, createReviewContext(args));
         assert.ok(result.structuredContent.next_actions.length > 0);
         for (const action of result.structuredContent.next_actions) {
           assert.equal(action.execution, "not_dispatched");
-          assert.ok(result.content[0].text.includes(action.command));
+          if (result === native || stage === "content_approval") assert.ok(result.content[0].text.includes(action.command));
+          else assert.match(result.content[0].text, /HTML outcome review/);
           for (const value of [args.task_id, args.content_version, args.retry_id, args.branch]) assert.ok(!action.command.includes(value));
           assert.notEqual(action.action, "train", "Review does not solicit or dispatch Train");
         }
