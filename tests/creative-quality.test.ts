@@ -248,7 +248,7 @@ test('packaging projection is explicit and blocks incompatible active delivery r
  assert.equal(blocked.packaging_contract.status,'BLOCKED_INCOMPATIBLE_DELIVERY_RULES');
  bundle.rules.push({id:'package',key:'delivery.final_package',value:'WEBP_ASSETS_PLUS_ONE_PNG_MAPPING',instruction:'canonical package',category:'delivery',scope,sources:[{node:'branch',locator:'canonical:onepage-system'}]}, {id:'mapping',key:'delivery.mapping_format',value:'PNG',instruction:'canonical mapping',category:'delivery',scope,sources:[{node:'branch',locator:'canonical:onepage-system'}]});
  const ready=await buildOnepagePacket(dna);
- assert.equal(ready.packaging_contract.status,'READY_AFTER_EXPLICIT_APPROVAL');
+ assert.equal(ready.packaging_contract.status,'READY_AFTER_QA_AND_FINAL_OUTCOME_REVIEW');
  assert.equal(ready.packaging_contract.role_by_slot.banner_desktop,'banner');
  assert.equal(ready.packaging_contract.root_folder_template,'Onepage - {product_line_name}');
  assert.match(ready.packaging_contract.validation,/does not inspect host archive bytes/);

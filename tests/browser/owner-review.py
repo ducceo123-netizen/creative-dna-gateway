@@ -96,10 +96,10 @@ buildSync({stdin:{contents:input.entry,loader:'tsx',resolveDir:process.cwd()},bu
             if uncertain:
                 expect(confirm).to_be_disabled()
                 page.get_by_role('button',name='Tải lại / Retry',exact=True).click()
-                expect(page.get_by_role('alert')).to_contain_text('Kết quả thao tác chưa rõ')
+                expect(page.get_by_role('alert').filter(has_text='Kết quả thao tác chưa rõ')).to_have_count(1)
                 expect(confirm).to_be_disabled()
                 page.reload()
-                expect(page.get_by_role('alert')).to_contain_text('Kết quả thao tác chưa rõ')
+                expect(page.get_by_role('alert').filter(has_text='Kết quả thao tác chưa rõ')).to_have_count(1)
                 expect(page.get_by_role('button',name='Xác nhận hard merge',exact=True)).to_be_disabled()
                 assert len([c for c in calls if c[0]=='POST'])==1
             assert not unexpected,unexpected
