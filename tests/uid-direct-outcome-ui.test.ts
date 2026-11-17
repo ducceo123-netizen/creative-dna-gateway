@@ -15,7 +15,7 @@ test("direct outcome skips content approval and retains evidence gates",()=>{
   assert.match(REVIEW_EXECUTION_GUIDANCE,/UID BRANDS DIRECT OUTCOME FLOW/);
   assert.match(UID_DIRECT_OUTCOME_GUIDANCE,/without inserting a content approval turn/);
   assert.match(UID_DIRECT_OUTCOME_GUIDANCE,/Preserve all product evidence/);
-  assert.match(UID_EMBEDDED_UI_HTML,/không duyệt content/);
+  assert.doesNotMatch(UID_EMBEDDED_UI_HTML,/id="content"/);
 });
 test("MCP launcher and review tools expose UI and host versioned resource",()=>{
  const s=readFileSync(new URL("../server.ts",import.meta.url),"utf8");
