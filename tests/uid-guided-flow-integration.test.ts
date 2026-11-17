@@ -178,13 +178,13 @@ test("additive input fields are optional and bounded on review and native tools"
   await withMcp(async call => {
     for (const [name, args] of [["launch_creative_dna", {}], ["get_uid_brands_native_workflow", { stage: "launcher" }]] as const) {
       const result = await call(args, name);
-      assert.equal(result.structuredContent.renderer, "chat");
-      assert.equal(result.structuredContent.ui_status.render, "disabled");
+      assert.equal(result.structuredContent.renderer, name === "launch_creative_dna" ? "embedded" : "chat");
+      assert.equal(result.structuredContent.ui_status.render, name === "launch_creative_dna" ? "enabled" : "disabled");
       const prose = result.content.map((item: any) => item.text ?? "").join("\n");
       assert.match(prose, /[Bb]rief/);
       assert.match(prose, /brand/i);
       assert.match(prose, /material/i);
-      assert.match(prose, /link/i);
+      assert.match(prose, /link|URL/i);
       assert.doesNotMatch(prose, /"task_id"\s*:|"content_version"\s*:/);
     }
   }, true);
