@@ -20,6 +20,7 @@ import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod";
 import { validateRegressionAttestation } from "./src/governance-regression.ts";
 import { LAUNCHER_URI, LAUNCHER_MIME, SAFE_CHAT_RESOURCE_HTML, LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI } from "./uid-brands-ui-resource.ts";
+import { UID_EMBEDDED_UI_URI, UID_EMBEDDED_UI_HTML, UID_EMBEDDED_UI_META } from "./uid-embedded-task-ui.ts";
 import { CONTEXT_ROUTING_GUIDANCE, LAUNCHER_TOOL_DESCRIPTION, UID_NATIVE_WORKFLOW, REVIEW_TOOL_DESCRIPTION, NATIVE_WORKFLOW_DESCRIPTION, REVIEW_EXECUTION_GUIDANCE } from "./uid-brands-actions.ts";
 import { buildChatReview, CHAT_BRIEF_GUIDANCE, UID_EXTERNAL_PANEL } from "./uid-brands-chat.ts";
 import { REVIEW_INPUT_SCHEMA, NATIVE_INPUT_SCHEMA, LAUNCHER_INPUT_SCHEMA, discoverySchema, createReviewContext } from "./uid-brands-review-contract.ts";
@@ -709,6 +710,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     }
   });
 
+  server.registerResource("uid-brands-embedded-brief-ui",UID_EMBEDDED_UI_URI,{mimeType:LAUNCHER_MIME,description:"Compact task launcher with HTML outcome review"},async()=>({contents:[{uri:UID_EMBEDDED_UI_URI,mimeType:LAUNCHER_MIME,text:UID_EMBEDDED_UI_HTML,_meta:{"openai/widgetDescription":"Choose a UID Brands task; output is reviewed via HTML preview, no intermediate approval."}}]}));
   const workflowResource = (uri: string) => ({contents:[{uri,mimeType:LAUNCHER_MIME,text:SAFE_CHAT_RESOURCE_HTML,_meta:{"openai/widgetDescription":"UID Brands chat-first compatibility notice. No interactive controls or scripts; continue in chat."}}]});
   server.registerResource("uid-brands-workflow-ui",LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"Retired UID Brands UI: static chat guidance only"},async()=>workflowResource(LAUNCHER_URI));
   server.registerResource("uid-brands-workflow-ui-legacy",LEGACY_LAUNCHER_URI,{mimeType:LAUNCHER_MIME,description:"Compatibility resource for existing UID Brands tool descriptors"},async()=>workflowResource(LEGACY_LAUNCHER_URI));
@@ -717,6 +719,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     title: "UID Brands Review", description: REVIEW_TOOL_DESCRIPTION,
     inputSchema: REVIEW_INPUT_SCHEMA.shape,
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    _meta: UID_EMBEDDED_UI_META,
   }), async (input) => {
     const review_context = createReviewContext(input);
     const chat = buildChatReview(input, review_context);
@@ -755,6 +758,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     description: LAUNCHER_TOOL_DESCRIPTION,
     inputSchema: LAUNCHER_INPUT_SCHEMA.shape,
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    _meta: UID_EMBEDDED_UI_META,
     
   }), async ({ navigation_id }) => {
     try {
