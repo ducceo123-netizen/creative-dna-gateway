@@ -64,7 +64,7 @@ const result = (issues:string[], input:Record<string,any>, evidence:Record<strin
 });
 export function evaluateOnepageCreativeQc(input:unknown) {
   const invalid = (issue:string)=>result([issue],record(input)?input:{scope:"unknown"});
-  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons","post_story_choice","shot_diversity"].includes(input.scope))
+  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons","post_story_choice","shot_diversity","content_visual_match"].includes(input.scope))
     return invalid("MISSING_TASK_VERSION_OR_SCOPE");
   const issues:string[]=[];
   if(input.scope==="post_story_choice") {
