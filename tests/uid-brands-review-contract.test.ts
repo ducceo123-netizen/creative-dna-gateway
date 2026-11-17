@@ -165,8 +165,12 @@ test("live local MCP exposes usable chat commands with exact context and static 
     assert.doesNotMatch(initialize.instructions, /Whenever the user invokes UID Brands without a complete brief/);
     const { tools } = await rpc("tools/list", {});
     for (const tool of tools) {
-      assert.equal(tool._meta?.ui?.resourceUri, undefined, tool.name);
-      assert.equal(tool._meta?.["openai/outputTemplate"], undefined, tool.name);
+      if (["launch_creative_dna","show_uid_brands_review"].includes(tool.name)) {
+        assert.equal(tool._meta?.ui?.resourceUri, "ui://uid-brands/brief-content-v5.html", tool.name);
+        assert.equal(tool._meta?.["openai/outputTemplate"], "ui://uid-brands/brief-content-v5.html", tool.name);
+      } else if (tool.name !== "ingest_uid_brands_attachment") {
+        assert.equal(tool._meta?.ui?.resourceUri, undefined, tool.name);
+      }
     }
     for (const name of ["launch_creative_dna", "show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
       const runtime = tools.find((tool: any) => tool.name === name);
