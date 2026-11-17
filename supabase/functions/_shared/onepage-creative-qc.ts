@@ -1,7 +1,7 @@
 /** Evidence-bound, deterministic Onepage collection diversity & EO icon reporting gates.
  * No image pixels are inspected here. False self-attestation is not proof of actual QA.
  */
-export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-17.v2";
+export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-17.v3";
 export const EO_ICON_DEFECTS = [
   "inconsistent_stroke_weight", "fragmented_or_noisy_details", "distorted_anatomy_or_geometry",
   "inconsistent_perspective_or_proportions", "unclear_small_size_silhouette",
@@ -11,12 +11,12 @@ const record = (v: unknown): v is Record<string, any> => !!v && typeof v === "ob
 const nonempty = (v: unknown) => typeof v === "string" && v.trim().length > 0 && v.length <= 400;
 const sourceUrl = (v: unknown) => typeof v === "string" && /^https:\/\/[^\s]+$/i.test(v) && v.length <= 2000;
 export const ONEPAGE_CREATIVE_QC_DESCRIPTION =
-  "Onepage cross-section artwork diversity and first-pass EO icons QA. Supply current task/version, verified PDP/collection design inventory and the final page-wide section-to-design mapping OR inspected icon list with explicit EO defects. The tool blocks repeated designs AND product/SKU overuse when verified alternatives exist, weak catalog coverage, fake diversity from changed crop/name/background, and visibly failed icons based on supplied inspection. Product Detail closeups may repeat the same anchor SKU but must use real differentiated details. This reports evidence, never scans image pixels. A clean report is not visual approval or authorization to publish.";
+  "Onepage cross-section artwork diversity, content-to-visual proof and first-pass EO icons QA. Supply current task/version, verified PDP/collection design inventory and the final page-wide section-to-design mapping OR inspected icon list with explicit EO defects. The tool blocks repeated designs AND product/SKU overuse when verified alternatives exist, weak catalog coverage, fake diversity from changed crop/name/background, and visibly failed icons based on supplied inspection. Product Detail closeups may repeat the same anchor SKU but must use real differentiated details. This reports evidence, never scans image pixels. A clean report is not visual approval or authorization to publish.";
 export const ONEPAGE_CREATIVE_QC_INPUT_SCHEMA = {
   type:"object", additionalProperties:false, required:["task_id","content_version","scope"],
   properties:{
     task_id:{type:"string",minLength:1,maxLength:160},content_version:{type:"string",minLength:1,maxLength:160},
-    scope:{type:"string",enum:["design_diversity","eo_icons","post_story_choice","shot_diversity"]},
+    scope:{type:"string",enum:["design_diversity","eo_icons","post_story_choice","shot_diversity","content_visual_match"]},
     inventory:{type:"array",maxItems:200,items:{type:"object",additionalProperties:false,required:["product_id","design_id","pdp_url","visually_inspected"],properties:{
       product_id:{type:"string"},design_id:{type:"string"},pdp_url:{type:"string"},visually_inspected:{type:"boolean"}
     }}},
@@ -33,6 +33,16 @@ export const ONEPAGE_CREATIVE_QC_INPUT_SCHEMA = {
       gtk_insights:{type:"array",maxItems:20,items:{type:"object",additionalProperties:false,required:["insight","evidence_url","nonduplicative"],properties:{insight:{type:"string"},evidence_url:{type:"string"},nonduplicative:{type:"boolean"}}}},
       faq_questions:{type:"array",maxItems:20,items:{type:"string"}},page_overlap_check:{type:"boolean"},selection_reason:{type:"string"}
     }},
+    visual_proofs:{type:"array",maxItems:80,items:{type:"object",additionalProperties:false,
+      required:["slot","section","content_key","proof_target","proof_source_url","angle","framing","proof_visible","content_supported","generic_lifestyle","inspected_full_size","inspection_note"],
+      properties:{
+        slot:{type:"string"},section:{type:"string",enum:["banner","occasion","why_you_love_it","ugc","product_details","other"]},
+        content_key:{type:"string"},proof_target:{type:"string"},proof_source_url:{type:"string"},
+        angle:{type:"string",enum:["eye_level","elevated","top_down","side","three_quarter","over_shoulder","macro"]},
+        framing:{type:"string",enum:["wide","medium","closeup","detail"]},
+        proof_visible:{type:"boolean"},content_supported:{type:"boolean"},generic_lifestyle:{type:"boolean"},
+        inspected_full_size:{type:"boolean"},inspection_note:{type:"string"}
+      }}},
     shots:{type:"array",maxItems:60,items:{type:"object",additionalProperties:false,required:["slot","section","angle","framing","composition","product_id","visually_inspected"],properties:{
       slot:{type:"string"},section:{type:"string",enum:["occasion","why_you_love_it","ugc","product_details"]},
       angle:{type:"string",enum:["eye_level","elevated","top_down","side","three_quarter","over_shoulder","macro"]},
@@ -54,7 +64,7 @@ const result = (issues:string[], input:Record<string,any>, evidence:Record<strin
 });
 export function evaluateOnepageCreativeQc(input:unknown) {
   const invalid = (issue:string)=>result([issue],record(input)?input:{scope:"unknown"});
-  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons","post_story_choice","shot_diversity"].includes(input.scope))
+  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons","post_story_choice","shot_diversity","content_visual_match"].includes(input.scope))
     return invalid("MISSING_TASK_VERSION_OR_SCOPE");
   const issues:string[]=[];
   if(input.scope==="post_story_choice") {
@@ -75,6 +85,36 @@ export function evaluateOnepageCreativeQc(input:unknown) {
     return result(issues,input,{selected:p.selected,verified_buyer_question_count:p.buyer_questions.length,
       gtk_insight_count:p.gtk_insights.length,decision_is_not_a_default:true,
       note:"URLs and supplied notes are not independent verification; the host must inspect the underlying sources."});
+  }
+  if(input.scope==="content_visual_match") {
+    const proofs=input.visual_proofs;
+    if(!Array.isArray(proofs)||!proofs.length||proofs.length>80)return invalid("MISSING_CONTENT_VISUAL_PROOF_MAP");
+    const slots=new Set<string>(), evidenceTargets=new Map<string,string[]>();
+    for(const p of proofs){
+      if(!record(p)||!nonempty(p.slot)||!nonempty(p.section)||!["banner","occasion","why_you_love_it","ugc","product_details","other"].includes(p.section)||
+         !nonempty(p.content_key)||!nonempty(p.proof_target)||!sourceUrl(p.proof_source_url)||
+         !["eye_level","elevated","top_down","side","three_quarter","over_shoulder","macro"].includes(p.angle)||
+         !["wide","medium","closeup","detail"].includes(p.framing)||
+         typeof p.proof_visible!=="boolean"||typeof p.content_supported!=="boolean"||
+         typeof p.generic_lifestyle!=="boolean"||typeof p.inspected_full_size!=="boolean"||
+         !nonempty(p.inspection_note)||p.inspection_note.trim().length<40) {
+        issues.push("INVALID_CONTENT_VISUAL_EVIDENCE:"+String(p?.slot||"unknown"));continue;
+      }
+      if(slots.has(p.slot))issues.push("DUPLICATE_PROOF_SLOT:"+p.slot);
+      slots.add(p.slot);
+      if(!p.inspected_full_size)issues.push("CONTENT_VISUAL_NOT_INSPECTED:"+p.slot);
+      if(!p.proof_visible||!p.content_supported)issues.push("CONTENT_KEY_NOT_VISUALLY_PROVEN:"+p.slot);
+      if(p.generic_lifestyle)issues.push("GENERIC_LIFESTYLE_NOT_PROOF:"+p.slot);
+      const signature=p.section+"|"+p.content_key.trim().toLowerCase()+"|"+p.proof_target.trim().toLowerCase();
+      if(!evidenceTargets.has(signature))evidenceTargets.set(signature,[]);
+      evidenceTargets.get(signature)!.push(p.slot);
+    }
+    // More than one story asset using identical benefit + visible proof is an
+    // editorial duplication even if camera angle or scenery changes.
+    for(const slotsOfSameProof of evidenceTargets.values())
+      if(slotsOfSameProof.length>1)issues.push("DUPLICATED_VISUAL_PROOF:"+slotsOfSameProof.join(","));
+    return result(issues,input,{mapped_assets:proofs.length,distinct_proof_targets:evidenceTargets.size,
+      note:"Checks supplied proof targets and reviewer findings, not the underlying pixels. Host must inspect real full-resolution images and verify evidence against the approved copy/PDP."});
   }
   if(input.scope==="shot_diversity") {
     const shots=input.shots;

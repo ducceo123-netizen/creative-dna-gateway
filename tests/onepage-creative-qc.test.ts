@@ -129,3 +129,35 @@ test("new quality gates do not strand a task if chat has a legacy QC tool schema
   assert.match(qc.final_release,/Never call an unfinished preview complete/);
   assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/NOT_CALLED\/NOT_VERIFIED/);
 });
+
+test("content visual proof gate blocks generic, unproven or duplicated shots",()=>{
+  const proof=(slot:string,key:string,target:string)=>({
+    slot,section:"why_you_love_it",content_key:key,proof_target:target,
+    proof_source_url:"https://pawfecthouse.com/products/verified-product",
+    angle:"three_quarter",framing:"closeup",proof_visible:true,content_supported:true,
+    generic_lifestyle:false,inspected_full_size:true,
+    inspection_note:"Full-size shot inspected against PDP and corresponding factual claim; the proof target is clear and product orientation believable."
+  });
+  const input:any={task_id:"task-proof",content_version:"v1",scope:"content_visual_match",visual_proofs:[
+    proof("wyl_01","Personalize with their name","readable printed name"),
+    proof("wyl_02","Soft material texture","woven fabric closeup")
+  ]};
+  assert.equal(evaluateOnepageCreativeQc(input).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+  input.visual_proofs[0].generic_lifestyle=true;
+  assert.ok(evaluateOnepageCreativeQc(input).issues.includes("GENERIC_LIFESTYLE_NOT_PROOF:wyl_01"));
+  input.visual_proofs[0].generic_lifestyle=false;
+  input.visual_proofs[0].proof_visible=false;
+  assert.ok(evaluateOnepageCreativeQc(input).issues.includes("CONTENT_KEY_NOT_VISUALLY_PROVEN:wyl_01"));
+  input.visual_proofs[0].proof_visible=true;
+  input.visual_proofs.push(proof("wyl_03","Personalize with their name","readable printed name"));
+  assert.ok(evaluateOnepageCreativeQc(input).issues.some(x=>x.startsWith("DUPLICATED_VISUAL_PROOF:")));
+  input.visual_proofs[2].proof_target="alternate real name engraving in meaningful use";
+  assert.equal(evaluateOnepageCreativeQc(input).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+});
+test("shared workflow requires content-to-visual evidence while keeping continuous flow",()=>{
+  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.content_visual_match.scope,"content_visual_match");
+  assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.content_visual_match.version,ONEPAGE_CREATIVE_QC_VERSION);
+  assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/CONTENT-TO-VISUAL MATCH HARD GATE/);
+  assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/NOT_CALLED/);
+  assert.equal(ONEPAGE_PRODUCTION_QC.continuous_execution.requires_content_approval,false);
+});
