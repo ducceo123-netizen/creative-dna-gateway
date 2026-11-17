@@ -130,6 +130,19 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
     if (typeof value !== 'string' || !value || value.length > 4000 || /[\u0000-\u0020\u007f\\]/u.test(value) || value.startsWith('//') || value.startsWith('/') || value.startsWith('#') || (/^[a-z][a-z0-9+.-]*:/i.test(value) && !value.startsWith('https://'))) throw new Error('UNSAFE_ASSET_REFERENCE');
     if (value.startsWith('https://')) { const url = new URL(value); if (!url.hostname || url.username || url.password) throw new Error('UNSAFE_ASSET_REFERENCE'); }
   }
+  // Occasion icons are bound raster image assets, never SVG/font substitutes.
+  // The binding step cannot verify bytes: preview packaging must verify hashes.
+  for (const slot of source.asset_slots.filter(key => /^occasion_icon_\d+$/.test(key))) {
+    const reference = assets[slot];
+    if (typeof reference !== 'string' ||
+        !/\.(png|webp|jpe?g)(?:[?#].*)?$/i.test(reference) ||
+        /(?:^|\/)(?:placeholder|fallback|default|mock-icon)(?:[-_.\/]|$)/i.test(reference))
+      throw new Error('OCCASION_ICON_REQUIRES_RASTER_IMAGE:' + slot);
+    const imgTags = [...source.html.matchAll(/<img\b[^>]*>/gi)].map(match => match[0]);
+    const actual = imgTags.find(tag => tag.includes('data-asset-slot="' + slot + '"'));
+    if (!actual || !actual.includes('{{' + slot + '}}'))
+      throw new Error('OCCASION_ICON_TEMPLATE_IMAGE_BINDING_MISSING:' + slot);
+  }
   let html = source.html;
   if (mode === 'faq') {
     const marker = '<div class="uid-faqs-item" data-faq-item="01">';

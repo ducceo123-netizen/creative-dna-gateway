@@ -87,3 +87,26 @@ test('existing REST and MCP tool execute strict binding; legacy reads stay uncha
     const discovery:any=TOOL_DEFINITIONS.find(t=>t.name==='get_onepage_ui_template'); assert.ok(discovery.inputSchema.properties.bindings);assert.equal(discovery.inputSchema.properties.bindings.additionalProperties,false);
   } finally {await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
 });
+
+test('occasion icons bind to generated raster images, never SVG or semantic fallback paths', () => {
+  for (const ref of [
+    'assets/birthday.svg',
+    'data:image/svg+xml;base64,abc',
+    'assets/placeholder-birthday.webp',
+    'assets/fallback/icon-01.png',
+    'assets/icon-library/birthday.svg',
+    'assets/occasion_icon_01'
+  ]) {
+    const f=fixture(); f.bindings.assets.occasion_icon_01=ref;
+    assert.throws(()=>bindOnepageUiTemplate(f.version,f.bindings),/OCCASION_ICON_REQUIRES_RASTER_IMAGE|UNSAFE_ASSET_REFERENCE/);
+  }
+  const f=fixture();
+  const result=bindOnepageUiTemplate(f.version,f.bindings);
+  for (const n of ['01','02','03','04']) {
+    const slot='occasion_icon_'+n;
+    const tags=[...result.html.matchAll(/<img\b[^>]*>/gi)].map(match=>match[0]);
+    const img=tags.find(tag=>tag.includes('data-asset-slot="'+slot+'"'));
+    assert.ok(img,'Missing image slot '+slot);
+    assert.ok(img?.includes('src="assets/'+slot+'.webp"'),'Incorrect asset source '+slot);
+  }
+});
