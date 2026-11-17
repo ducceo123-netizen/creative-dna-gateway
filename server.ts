@@ -509,7 +509,7 @@ export const TOOL_DEFINITIONS = [
   { name: "ingest_uid_brands_attachment", title: "Read UID Brands Attachment", description: UID_ATTACHMENT_DESCRIPTION,
     annotations: READ_ONLY_TOOL_ANNOTATIONS, inputSchema: discoverySchema(UID_ATTACHMENT_INPUT_SCHEMA), outputSchema: discoverySchema(UID_ATTACHMENT_OUTPUT_SCHEMA), _meta: UID_ATTACHMENT_META },
   { name: "show_uid_brands_review", title: "UID Brands Review", description: REVIEW_TOOL_DESCRIPTION,
-    annotations: READ_ONLY_TOOL_ANNOTATIONS, inputSchema: discoverySchema(REVIEW_INPUT_SCHEMA),
+    annotations: READ_ONLY_TOOL_ANNOTATIONS, _meta: UID_EMBEDDED_UI_META, inputSchema: discoverySchema(REVIEW_INPUT_SCHEMA),
   },
   { name: "get_uid_brands_native_workflow", title: "UID Brands Native Workflow", description: NATIVE_WORKFLOW_DESCRIPTION,
     annotations: READ_ONLY_TOOL_ANNOTATIONS, inputSchema: discoverySchema(NATIVE_INPUT_SCHEMA) },
@@ -521,6 +521,7 @@ export const TOOL_DEFINITIONS = [
     title: "Open UID Brands Task Launcher",
     description: LAUNCHER_TOOL_DESCRIPTION,
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
+    _meta: UID_EMBEDDED_UI_META,
     inputSchema: discoverySchema(LAUNCHER_INPUT_SCHEMA),
     
   },
