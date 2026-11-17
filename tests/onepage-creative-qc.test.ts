@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { EO_ICON_DEFECTS, ONEPAGE_CREATIVE_QC_VERSION, evaluateOnepageCreativeQc } from "../supabase/functions/_shared/onepage-creative-qc.ts";
-import { ONEPAGE_PRODUCTION_QC } from "../supabase/functions/_shared/onepage-production-qc.ts";
+import { ONEPAGE_PRODUCTION_QC, ONEPAGE_PRODUCTION_QC_GUIDANCE } from "../supabase/functions/_shared/onepage-production-qc.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 
@@ -118,4 +118,14 @@ test("Onepage same-section camera angle and framing repetition is blocked",()=>{
   shots[1].angle="top_down";shots[1].framing="closeup";shots[1].composition="top-down realistic closeup";
   shots[2].angle="three_quarter";shots[2].framing="wide";shots[2].composition="wide real use context";
   assert.equal(evaluateOnepageCreativeQc(input).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+});
+
+test("new quality gates do not strand a task if chat has a legacy QC tool schema",()=>{
+  const qc=ONEPAGE_PRODUCTION_QC.continuous_execution;
+  assert.equal(qc.requires_content_approval,false);
+  assert.deepEqual(qc.stages,["research","internal_content_decision","materials","html_overall_desktop_mobile","feedback_ready"]);
+  assert.match(qc.stale_tool_schema,/older scopes/);
+  assert.match(qc.qc_reporting_vs_creation,/Continue with all work/);
+  assert.match(qc.final_release,/Never call an unfinished preview complete/);
+  assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/NOT_CALLED\/NOT_VERIFIED/);
 });
