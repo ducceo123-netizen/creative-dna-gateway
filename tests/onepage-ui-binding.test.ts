@@ -104,7 +104,7 @@ test('occasion icons bind to generated raster images, never SVG or semantic fall
   const result=bindOnepageUiTemplate(f.version,f.bindings);
   for (const n of ['01','02','03','04']) {
     const slot='occasion_icon_'+n;
-    const tags=[...result.html.matchAll(/<img\\b[^>]*>/gi)].map(match=>match[0]);
+    const tags=[...result.html.matchAll(/<img\b[^>]*>/gi)].map(match=>match[0]);
     const img=tags.find(tag=>tag.includes('data-asset-slot="'+slot+'"'));
     assert.ok(img,'Missing image slot '+slot);
     assert.ok(img?.includes('src="assets/'+slot+'.webp"'),'Incorrect asset source '+slot);
