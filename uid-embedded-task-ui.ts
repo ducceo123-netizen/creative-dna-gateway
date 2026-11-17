@@ -22,7 +22,7 @@ function use(output){
 
  const materials=["content_approval","asset_review","packaging","complete"].includes(stage);
  $("launcher").classList.toggle("hidden",stage!=="launcher");
- $("content").classList.toggle("hidden",!content);
+
  $("materials").classList.toggle("hidden",!materials);
  $("intro").textContent=materials?"Flow tự chạy đến outcome. Review trên HTML preview, không duyệt content.":"Chọn brand, material và sản phẩm; chạy thẳng tới outcome.";
  if(stage==="launcher"){
