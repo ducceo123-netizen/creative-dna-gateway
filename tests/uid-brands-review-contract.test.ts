@@ -48,7 +48,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
   const imageSync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_image");
   assert.ok(imageSync, "task-scoped file-param image sync is additive");
   assert.deepEqual(imageSync!.inputSchema.required, ["handoff_token", "slot", "file"]);
-  assert.deepEqual(imageSync!._meta?.["openai/fileParams"], ["file"]);
+  assert.deepEqual((imageSync!._meta as Record<string,unknown> | undefined)?.["openai/fileParams"], ["file"]);
   assert.deepEqual(sync!.inputSchema.required, ["handoff_token", "content"]);
   assert.equal(sync!.annotations?.readOnlyHint, false);
   assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "get_website_brand_ui_skill"));
@@ -165,8 +165,12 @@ test("live local MCP exposes usable chat commands with exact context and static 
     assert.doesNotMatch(initialize.instructions, /Whenever the user invokes UID Brands without a complete brief/);
     const { tools } = await rpc("tools/list", {});
     for (const tool of tools) {
-      assert.equal(tool._meta?.ui?.resourceUri, undefined, tool.name);
-      assert.equal(tool._meta?.["openai/outputTemplate"], undefined, tool.name);
+      if (["launch_creative_dna","show_uid_brands_review"].includes(tool.name)) {
+        assert.equal(tool._meta?.ui?.resourceUri, "ui://uid-brands/brief-content-v5.html", tool.name);
+        assert.equal(tool._meta?.["openai/outputTemplate"], "ui://uid-brands/brief-content-v5.html", tool.name);
+      } else if (tool.name !== "ingest_uid_brands_attachment") {
+        assert.equal(tool._meta?.ui?.resourceUri, undefined, tool.name);
+      }
     }
     for (const name of ["launch_creative_dna", "show_uid_brands_review", "get_uid_brands_native_workflow", "ingest_uid_brands_attachment"]) {
       const runtime = tools.find((tool: any) => tool.name === name);
@@ -193,8 +197,8 @@ test("live local MCP exposes usable chat commands with exact context and static 
     const reviewTool = tools.find((tool: any) => tool.name === "show_uid_brands_review");
     assert.match(reviewTool.description, /do not invent IDs, versions or assets/);
     for (const tool of [launchTool, reviewTool]) {
-      assert.equal(tool._meta?.ui?.resourceUri, undefined);
-      assert.equal(tool._meta?.["openai/outputTemplate"], undefined);
+      assert.equal(tool._meta?.ui?.resourceUri, "ui://uid-brands/brief-content-v5.html");
+      assert.equal(tool._meta?.["openai/outputTemplate"], "ui://uid-brands/brief-content-v5.html");
       assert.equal(tool._meta?.["openai/widgetAccessible"], undefined);
     }
     assert.notEqual(launchTool._meta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
