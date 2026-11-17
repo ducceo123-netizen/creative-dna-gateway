@@ -197,8 +197,8 @@ test("live local MCP exposes usable chat commands with exact context and static 
     const reviewTool = tools.find((tool: any) => tool.name === "show_uid_brands_review");
     assert.match(reviewTool.description, /do not invent IDs, versions or assets/);
     for (const tool of [launchTool, reviewTool]) {
-      assert.equal(tool._meta?.ui?.resourceUri, undefined);
-      assert.equal(tool._meta?.["openai/outputTemplate"], undefined);
+      assert.equal(tool._meta?.ui?.resourceUri, "ui://uid-brands/brief-content-v5.html");
+      assert.equal(tool._meta?.["openai/outputTemplate"], "ui://uid-brands/brief-content-v5.html");
       assert.equal(tool._meta?.["openai/widgetAccessible"], undefined);
     }
     assert.notEqual(launchTool._meta["openai/toolInvocation/invoking"], reviewTool._meta["openai/toolInvocation/invoking"]);
