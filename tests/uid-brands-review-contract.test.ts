@@ -48,7 +48,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
   const imageSync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_image");
   assert.ok(imageSync, "task-scoped file-param image sync is additive");
   assert.deepEqual(imageSync!.inputSchema.required, ["handoff_token", "slot", "file"]);
-  assert.deepEqual(imageSync!._meta?.["openai/fileParams"], ["file"]);
+  assert.deepEqual((imageSync!._meta as Record<string,unknown> | undefined)?.["openai/fileParams"], ["file"]);
   assert.deepEqual(sync!.inputSchema.required, ["handoff_token", "content"]);
   assert.equal(sync!.annotations?.readOnlyHint, false);
   assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "get_website_brand_ui_skill"));
