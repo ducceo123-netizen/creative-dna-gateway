@@ -11,7 +11,7 @@ const record = (v: unknown): v is Record<string, any> => !!v && typeof v === "ob
 const nonempty = (v: unknown) => typeof v === "string" && v.trim().length > 0 && v.length <= 400;
 const sourceUrl = (v: unknown) => typeof v === "string" && /^https:\/\/[^\s]+$/i.test(v) && v.length <= 2000;
 export const ONEPAGE_CREATIVE_QC_DESCRIPTION =
-  "Onepage cross-section artwork diversity and first-pass EO icons QA. Supply current task/version, verified PDP/collection design inventory and the final page-wide section-to-design mapping OR inspected icon list with explicit EO defects. The tool blocks repeated designs, weak catalog coverage, fake diversity from changed crop/name/background, and visibly failed icons based on supplied inspection. Product Detail closeups may repeat the same anchor SKU but must use real differentiated details. This reports evidence, never scans image pixels. A clean report is not visual approval or authorization to publish.";
+  "Onepage cross-section artwork diversity and first-pass EO icons QA. Supply current task/version, verified PDP/collection design inventory and the final page-wide section-to-design mapping OR inspected icon list with explicit EO defects. The tool blocks repeated designs AND product/SKU overuse when verified alternatives exist, weak catalog coverage, fake diversity from changed crop/name/background, and visibly failed icons based on supplied inspection. Product Detail closeups may repeat the same anchor SKU but must use real differentiated details. This reports evidence, never scans image pixels. A clean report is not visual approval or authorization to publish.";
 export const ONEPAGE_CREATIVE_QC_INPUT_SCHEMA = {
   type:"object", additionalProperties:false, required:["task_id","content_version","scope"],
   properties:{
@@ -84,9 +84,28 @@ export function evaluateOnepageCreativeQc(input:unknown) {
       for(let i=1;i<storyList.length;i++)
         if(storyList[i-1].design_id===storyList[i].design_id)issues.push("ADJACENT_REPEAT:"+storyList[i].story_id);
     }
+    // Design variation alone is not product diversity: a single SKU with many artwork
+    // options should not dominate an editorial page when distinct verified SKUs exist.
+    // Paired desktop/mobile renditions of the same story count once. Product Detail
+    // closeups remain deliberately exempt to preserve factual SKU continuity.
+    const catalogProducts=new Set<string>();
+    for(const products of inventory.values())for(const productId of products)catalogProducts.add(productId);
+    const expectedProducts=Math.min(4,storyList.length,catalogProducts.size);
+    const productsUsed=new Set(storyList.map(p=>p.product_id));
+    if(productsUsed.size<expectedProducts)issues.push("INSUFFICIENT_DISTINCT_PRODUCTS");
+    if(expectedProducts>1) {
+      const productCounts=new Map<string,number>();
+      for(const p of storyList)productCounts.set(p.product_id,(productCounts.get(p.product_id)||0)+1);
+      const maxPerProduct=Math.ceil(storyList.length/expectedProducts);
+      for(const [productId,count] of productCounts)if(count>maxPerProduct)issues.push("OVERUSED_PRODUCT:"+productId);
+      for(let i=1;i<storyList.length;i++)
+        if(storyList[i-1].product_id===storyList[i].product_id)issues.push("ADJACENT_PRODUCT_REPEAT:"+storyList[i].story_id);
+    }
     return result(issues,input,{verified_design_count:inventory.size,source_pdp_count:sources.size,
+      verified_product_count:catalogProducts.size, distinct_products_used:productsUsed.size,
+      expected_distinct_products:expectedProducts,
       story_count:storyList.length, distinct_designs_used:used.size, expected_distinct_designs:expected,
-      note:"Counts refer only to reported and visually inspected PDP entries, never a claim of all store designs."});
+      note:"Counts refer only to reported and visually inspected PDP entries, never a claim of all store designs or products."});
   }
   if(!Array.isArray(input.icons)||!input.icons.length||input.icons.length>30)return invalid("MISSING_EO_ICON_INSPECTIONS");
   const slots=new Set<string>();const assetIds=new Set<string>();

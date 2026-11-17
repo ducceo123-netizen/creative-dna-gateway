@@ -59,3 +59,30 @@ test("gateway tool contract shared by both clients",()=>{
   assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
   assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
 });
+
+test("distinct artwork on a single product does not fake product diversity",()=>{
+  const inventory=Array.from({length:4},(_,i)=>({product_id:"only-sku",design_id:"design-"+i,pdp_url:"https://pawfecthouse.com/products/one",visually_inspected:true}));
+  const placements=Array.from({length:6},(_,i)=>({slot:"slot"+i,story_id:"story"+i,section:"occasion",product_id:"only-sku",design_id:"design-"+(i%4)}));
+  const input={task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements};
+  const o=evaluateOnepageCreativeQc(input);
+  // Only one verified SKU exists. Do not invent new products; a truthful limitation is allowed.
+  assert.equal(o.status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+  assert.equal(o.evidence.expected_distinct_products,1);
+});
+
+test("same SKU with different artwork must not dominate when real alternative SKUs exist",()=>{
+  const inventory=Array.from({length:4},(_,i)=>({product_id:"p"+i,design_id:"art"+i,pdp_url:"https://pawfecthouse.com/products/p"+i,visually_inspected:true}));
+  inventory.push(...Array.from({length:4},(_,i)=>({product_id:"p0",design_id:"p0-d"+i,pdp_url:"https://pawfecthouse.com/products/p0",visually_inspected:true})));
+  const placements=Array.from({length:6},(_,i)=>({slot:"slot"+i,story_id:"story"+i,section:"occasion",product_id:i<4?"p0":"p"+(i-2),design_id:i<4?"p0-d"+i:"art"+(i-2)}));
+  const o=evaluateOnepageCreativeQc({task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements});
+  assert.equal(o.status,"BLOCKED");
+  assert.ok(o.issues.includes("INSUFFICIENT_DISTINCT_PRODUCTS"));
+  assert.ok(o.issues.includes("OVERUSED_PRODUCT:p0"));
+  assert.ok(o.issues.some(issue=>issue.startsWith("ADJACENT_PRODUCT_REPEAT:")));
+});
+
+test("balanced verified products and artwork remain valid",()=>{
+  const o=evaluateOnepageCreativeQc(dInput([0,1,2,3,0,1],4));
+  assert.equal(o.status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+  assert.equal(o.evidence.distinct_products_used,4);
+});
