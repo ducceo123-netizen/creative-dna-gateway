@@ -1,7 +1,7 @@
 /** Evidence-bound, deterministic Onepage collection diversity & EO icon reporting gates.
  * No image pixels are inspected here. False self-attestation is not proof of actual QA.
  */
-export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-11.v1";
+export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-17.v2";
 export const EO_ICON_DEFECTS = [
   "inconsistent_stroke_weight", "fragmented_or_noisy_details", "distorted_anatomy_or_geometry",
   "inconsistent_perspective_or_proportions", "unclear_small_size_silhouette",
@@ -16,12 +16,27 @@ export const ONEPAGE_CREATIVE_QC_INPUT_SCHEMA = {
   type:"object", additionalProperties:false, required:["task_id","content_version","scope"],
   properties:{
     task_id:{type:"string",minLength:1,maxLength:160},content_version:{type:"string",minLength:1,maxLength:160},
-    scope:{type:"string",enum:["design_diversity","eo_icons"]},
+    scope:{type:"string",enum:["design_diversity","eo_icons","post_story_choice","shot_diversity"]},
     inventory:{type:"array",maxItems:200,items:{type:"object",additionalProperties:false,required:["product_id","design_id","pdp_url","visually_inspected"],properties:{
       product_id:{type:"string"},design_id:{type:"string"},pdp_url:{type:"string"},visually_inspected:{type:"boolean"}
     }}},
     placements:{type:"array",maxItems:100,items:{type:"object",additionalProperties:false,required:["slot","story_id","section","product_id","design_id"],properties:{
       slot:{type:"string"},story_id:{type:"string"},section:{type:"string",enum:["banner","occasion","why_you_love_it","ugc","product_details","other"]},product_id:{type:"string"},design_id:{type:"string"}
+    }}},
+    catalog_scan:{type:"object",additionalProperties:false,required:["scope","complete","has_more_pages","discovered_product_ids","inspected_product_ids"],properties:{
+      scope:{type:"string",enum:["single_pdp","collection","explicit_family"]}, complete:{type:"boolean"},has_more_pages:{type:"boolean"},
+      discovered_product_ids:{type:"array",maxItems:200,items:{type:"string"}},inspected_product_ids:{type:"array",maxItems:200,items:{type:"string"}}
+    }},
+    post_story:{type:"object",additionalProperties:false,required:["selected","pdp_evidence_urls","buyer_questions","gtk_insights","faq_questions","page_overlap_check","selection_reason"],properties:{
+      selected:{type:"string",enum:["good_to_know","faqs"]},pdp_evidence_urls:{type:"array",maxItems:30,items:{type:"string"}},
+      buyer_questions:{type:"array",maxItems:30,items:{type:"object",additionalProperties:false,required:["question","evidence_url","answer_supported"],properties:{question:{type:"string"},evidence_url:{type:"string"},answer_supported:{type:"boolean"}}}},
+      gtk_insights:{type:"array",maxItems:20,items:{type:"object",additionalProperties:false,required:["insight","evidence_url","nonduplicative"],properties:{insight:{type:"string"},evidence_url:{type:"string"},nonduplicative:{type:"boolean"}}}},
+      faq_questions:{type:"array",maxItems:20,items:{type:"string"}},page_overlap_check:{type:"boolean"},selection_reason:{type:"string"}
+    }},
+    shots:{type:"array",maxItems:60,items:{type:"object",additionalProperties:false,required:["slot","section","angle","framing","composition","product_id","visually_inspected"],properties:{
+      slot:{type:"string"},section:{type:"string",enum:["occasion","why_you_love_it","ugc","product_details"]},
+      angle:{type:"string",enum:["eye_level","elevated","top_down","side","three_quarter","over_shoulder","macro"]},
+      framing:{type:"string",enum:["wide","medium","closeup","detail"]},composition:{type:"string"},product_id:{type:"string"},visually_inspected:{type:"boolean"}
     }}},
     icons:{type:"array",maxItems:30,items:{type:"object",additionalProperties:false,required:["slot","asset_id","reference_url","inspected_at_full_size","tested_at_small_size","evidence_note","defects"],properties:{
       slot:{type:"string"},asset_id:{type:"string"},reference_url:{type:"string"},inspected_at_full_size:{type:"boolean"},tested_at_small_size:{type:"boolean"},evidence_note:{type:"string"},
@@ -39,9 +54,55 @@ const result = (issues:string[], input:Record<string,any>, evidence:Record<strin
 });
 export function evaluateOnepageCreativeQc(input:unknown) {
   const invalid = (issue:string)=>result([issue],record(input)?input:{scope:"unknown"});
-  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons"].includes(input.scope))
+  if(!record(input)||!nonempty(input.task_id)||!nonempty(input.content_version)||!["design_diversity","eo_icons","post_story_choice","shot_diversity"].includes(input.scope))
     return invalid("MISSING_TASK_VERSION_OR_SCOPE");
   const issues:string[]=[];
+  if(input.scope==="post_story_choice") {
+    const p=input.post_story;
+    if(!record(p)||!["good_to_know","faqs"].includes(p.selected)||!Array.isArray(p.pdp_evidence_urls)||!p.pdp_evidence_urls.length||
+       !p.pdp_evidence_urls.every(sourceUrl)||!Array.isArray(p.buyer_questions)||!Array.isArray(p.gtk_insights)||
+       !Array.isArray(p.faq_questions)||p.page_overlap_check!==true||!nonempty(p.selection_reason)||p.selection_reason.trim().length<35)
+      return invalid("POST_STORY_DECISION_EVIDENCE_MISSING");
+    for(const q of p.buyer_questions)if(!record(q)||!nonempty(q.question)||!sourceUrl(q.evidence_url)||q.answer_supported!==true)
+      issues.push("UNSUPPORTED_BUYER_QUESTION");
+    for(const insight of p.gtk_insights)if(!record(insight)||!nonempty(insight.insight)||!sourceUrl(insight.evidence_url)||insight.nonduplicative!==true)
+      issues.push("UNSUPPORTED_OR_DUPLICATE_GTK_INSIGHT");
+    if(p.selected==="faqs") {
+      if(p.faq_questions.length<2||p.buyer_questions.length<2)issues.push("FAQ_WITHOUT_REAL_BUYER_QUESTIONS");
+      for(const question of p.faq_questions)if(!p.buyer_questions.some(q=>q.question===question&&q.answer_supported===true))
+        issues.push("FAQ_QUESTION_NOT_EVIDENCE_BACKED");
+    } else if(p.gtk_insights.length<2) issues.push("GTK_WITHOUT_ACTIONABLE_INSIGHTS");
+    return result(issues,input,{selected:p.selected,verified_buyer_question_count:p.buyer_questions.length,
+      gtk_insight_count:p.gtk_insights.length,decision_is_not_a_default:true,
+      note:"URLs and supplied notes are not independent verification; the host must inspect the underlying sources."});
+  }
+  if(input.scope==="shot_diversity") {
+    const shots=input.shots;
+    if(!Array.isArray(shots)||!shots.length||shots.length>60)return invalid("SHOT_PLAN_MISSING");
+    const validAngles=["eye_level","elevated","top_down","side","three_quarter","over_shoulder","macro"];
+    const validFraming=["wide","medium","closeup","detail"];
+    const bySection=new Map<string,any[]>(),slots=new Set<string>();
+    for(const shot of shots){
+      if(!record(shot)||!nonempty(shot.slot)||!["occasion","why_you_love_it","ugc","product_details"].includes(shot.section)||
+        !validAngles.includes(shot.angle)||!validFraming.includes(shot.framing)||!nonempty(shot.composition)||
+        !nonempty(shot.product_id)||shot.visually_inspected!==true){issues.push("UNVERIFIED_SHOT:"+String(shot?.slot||"unknown"));continue}
+      if(slots.has(shot.slot))issues.push("DUPLICATE_SHOT_SLOT:"+shot.slot);slots.add(shot.slot);
+      if(!bySection.has(shot.section))bySection.set(shot.section,[]);
+      bySection.get(shot.section)!.push(shot);
+    }
+    for(const [section,entries] of bySection){
+      if(entries.length<2)continue;
+      const angleCount=new Set(entries.map(x=>x.angle)).size;
+      const framingCount=new Set(entries.map(x=>x.framing)).size;
+      if(angleCount<2)issues.push("SAME_ANGLE_IN_SECTION:"+section);
+      if(framingCount<2)issues.push("SAME_FRAMING_IN_SECTION:"+section);
+      for(let i=1;i<entries.length;i++)
+        if(entries[i-1].angle===entries[i].angle&&entries[i-1].framing===entries[i].framing&&entries[i-1].composition===entries[i].composition)
+          issues.push("REPEATED_COMPOSITION:"+entries[i].slot);
+    }
+    return result(issues,input,{section_counts:Object.fromEntries([...bySection].map(([k,v])=>[k,v.length])),
+      note:"Shot metadata is self-reported; final full-resolution image comparison is still required."});
+  }
   if(input.scope==="design_diversity") {
     if(!Array.isArray(input.inventory)||!input.inventory.length||input.inventory.length>200||
        !Array.isArray(input.placements)||!input.placements.length||input.placements.length>100)
@@ -54,6 +115,17 @@ export function evaluateOnepageCreativeQc(input:unknown) {
       if(!inventory.has(entry.design_id)) inventory.set(entry.design_id,new Set());
       inventory.get(entry.design_id)!.add(entry.product_id);
       sources.add(entry.pdp_url);
+    }
+    const scan=input.catalog_scan;
+    if(!record(scan)||!["single_pdp","collection","explicit_family"].includes(scan.scope)||
+       scan.complete!==true||scan.has_more_pages!==false||
+       !Array.isArray(scan.discovered_product_ids)||!scan.discovered_product_ids.length||
+       !Array.isArray(scan.inspected_product_ids)||!scan.inspected_product_ids.length)issues.push("INCOMPLETE_PRODUCT_SCAN");
+    else {
+      const inspected=new Set(scan.inspected_product_ids);
+      if(scan.discovered_product_ids.some((id:any)=>!nonempty(id)||!inspected.has(id)))issues.push("UNINSPECTED_DISCOVERED_PRODUCT");
+      const invProducts=new Set([...inventory.values()].flatMap(ids=>[...ids]));
+      if(scan.inspected_product_ids.some((id:any)=>!invProducts.has(id)))issues.push("INSPECTED_PRODUCT_MISSING_ARTWORK_INVENTORY");
     }
     if(!inventory.size)issues.push("NO_VERIFIED_DESIGNS");
     const stories=new Map<string,any>();const slots=new Set<string>();const details:any[]=[];
