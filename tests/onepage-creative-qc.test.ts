@@ -7,7 +7,8 @@ import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 
 const designs=(n:number)=>Array.from({length:n},(_,i)=>({product_id:"p"+i,design_id:"art"+i,pdp_url:"https://pawfecthouse.com/products/product-"+i,visually_inspected:true}));
 const stories=(ids:number[])=>ids.map((i,n)=>({slot:"occasion_"+n,story_id:"story-"+n,section:"occasion",product_id:"p"+i,design_id:"art"+i}));
-const dInput=(ids:number[],catalog=4)=>({task_id:"onepage-11",content_version:"v4",scope:"design_diversity",inventory:designs(catalog),placements:stories(ids)});
+const scan=(ids:string[])=>({scope:"collection",complete:true,has_more_pages:false,discovered_product_ids:ids,inspected_product_ids:ids});
+const dInput=(ids:number[],catalog=4)=>({task_id:"onepage-11",content_version:"v4",scope:"design_diversity",inventory:designs(catalog),placements:stories(ids),catalog_scan:scan(Array.from({length:catalog},(_,i)=>"p"+i))});
 const icon=(i:number)=>({slot:"icon-"+i,asset_id:"asset-"+i,reference_url:"https://pawfecthouse.com/assets/eo-reference",inspected_at_full_size:true,tested_at_small_size:true,evidence_note:"Inspected coherent EO line language, clean silhouette, anatomical proportions and small mobile size on approved reference.",defects:Object.fromEntries(EO_ICON_DEFECTS.map(f=>[f,false]))});
 const iInput=(n=3)=>({task_id:"onepage-11",content_version:"v4",scope:"eo_icons",icons:Array.from({length:n},(_,i)=>icon(i))});
 
@@ -63,7 +64,7 @@ test("gateway tool contract shared by both clients",()=>{
 test("distinct artwork on a single product does not fake product diversity",()=>{
   const inventory=Array.from({length:4},(_,i)=>({product_id:"only-sku",design_id:"design-"+i,pdp_url:"https://pawfecthouse.com/products/one",visually_inspected:true}));
   const placements=Array.from({length:6},(_,i)=>({slot:"slot"+i,story_id:"story"+i,section:"occasion",product_id:"only-sku",design_id:"design-"+(i%4)}));
-  const input={task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements};
+  const input={task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements,catalog_scan:scan(["only-sku"])};
   const o=evaluateOnepageCreativeQc(input);
   // Only one verified SKU exists. Do not invent new products; a truthful limitation is allowed.
   assert.equal(o.status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
@@ -74,7 +75,7 @@ test("same SKU with different artwork must not dominate when real alternative SK
   const inventory=Array.from({length:4},(_,i)=>({product_id:"p"+i,design_id:"art"+i,pdp_url:"https://pawfecthouse.com/products/p"+i,visually_inspected:true}));
   inventory.push(...Array.from({length:4},(_,i)=>({product_id:"p0",design_id:"p0-d"+i,pdp_url:"https://pawfecthouse.com/products/p0",visually_inspected:true})));
   const placements=Array.from({length:6},(_,i)=>({slot:"slot"+i,story_id:"story"+i,section:"occasion",product_id:i<4?"p0":"p"+(i-2),design_id:i<4?"p0-d"+i:"art"+(i-2)}));
-  const o=evaluateOnepageCreativeQc({task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements});
+  const o=evaluateOnepageCreativeQc({task_id:"onepage-product",content_version:"v1",scope:"design_diversity",inventory,placements,catalog_scan:scan(["p0","p1","p2","p3"])});
   assert.equal(o.status,"BLOCKED");
   assert.ok(o.issues.includes("INSUFFICIENT_DISTINCT_PRODUCTS"));
   assert.ok(o.issues.includes("OVERUSED_PRODUCT:p0"));
@@ -85,4 +86,36 @@ test("balanced verified products and artwork remain valid",()=>{
   const o=evaluateOnepageCreativeQc(dInput([0,1,2,3,0,1],4));
   assert.equal(o.status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
   assert.equal(o.evidence.distinct_products_used,4);
+});
+
+test("catalog scan must cover every discovered product before a Onepage plan can pass",()=>{
+  const x:any=dInput([0,1,2,3],4);delete x.catalog_scan;
+  assert.ok(evaluateOnepageCreativeQc(x).issues.includes("INCOMPLETE_PRODUCT_SCAN"));
+  const y:any=dInput([0,1,2,3],4);y.catalog_scan.has_more_pages=true;
+  assert.ok(evaluateOnepageCreativeQc(y).issues.includes("INCOMPLETE_PRODUCT_SCAN"));
+  const z:any=dInput([0,1,2,3],4);z.catalog_scan.inspected_product_ids=["p0","p1"];
+  assert.ok(evaluateOnepageCreativeQc(z).issues.includes("UNINSPECTED_DISCOVERED_PRODUCT"));
+});
+test("FAQs require real supported buyer questions; generic content cannot pass",()=>{
+  const base:any={task_id:"task",content_version:"v1",scope:"post_story_choice",post_story:{
+    selected:"faqs",pdp_evidence_urls:["https://example.com/pdp"],buyer_questions:[],gtk_insights:[],
+    faq_questions:["Is this a nice gift?"],page_overlap_check:true,
+    selection_reason:"Based on the available product facts, format must reduce a concrete buying uncertainty."}};
+  assert.ok(evaluateOnepageCreativeQc(base).issues.includes("FAQ_WITHOUT_REAL_BUYER_QUESTIONS"));
+  base.post_story.selected="good_to_know";
+  base.post_story.gtk_insights=[
+    {insight:"Confirm exact customization text before ordering",evidence_url:"https://example.com/pdp",nonduplicative:true},
+    {insight:"Check product dimensions against intended placement",evidence_url:"https://example.com/pdp",nonduplicative:true}];
+  assert.equal(evaluateOnepageCreativeQc(base).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+});
+test("Onepage same-section camera angle and framing repetition is blocked",()=>{
+  const shots:any=[0,1,2].map(i=>({slot:"wyl_0"+i,section:"why_you_love_it",angle:"eye_level",framing:"medium",
+    composition:"eye level front hero",product_id:"p"+i,visually_inspected:true}));
+  const input:any={task_id:"task",content_version:"v1",scope:"shot_diversity",shots};
+  const result=evaluateOnepageCreativeQc(input);
+  assert.ok(result.issues.includes("SAME_ANGLE_IN_SECTION:why_you_love_it"));
+  assert.ok(result.issues.includes("SAME_FRAMING_IN_SECTION:why_you_love_it"));
+  shots[1].angle="top_down";shots[1].framing="closeup";shots[1].composition="top-down realistic closeup";
+  shots[2].angle="three_quarter";shots[2].framing="wide";shots[2].composition="wide real use context";
+  assert.equal(evaluateOnepageCreativeQc(input).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
 });
