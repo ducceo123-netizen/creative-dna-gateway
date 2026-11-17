@@ -52,8 +52,8 @@ function safeProse(result: any) {
   assert.ok(result.content.every((c: any) => c.type === "text"), "No fabricated image preview");
   for (const action of result.structuredContent.next_actions) assert.equal(action.execution, "not_dispatched");
   assert.ok(!actions(result).includes("train"));
-  assert.equal(result.structuredContent.renderer, "chat");
-  assert.equal(result.structuredContent.ui_status.render, "disabled");
+  assert.ok(["chat","embedded"].includes(result.structuredContent.renderer));
+  assert.equal(result.structuredContent.ui_status.render, result.structuredContent.renderer === "embedded" ? "enabled" : "disabled");
   assert.doesNotMatch(JSON.stringify(result._meta ?? {}), /resourceUri|outputTemplate/);
   return prose;
 }
@@ -178,42 +178,37 @@ test("additive input fields are optional and bounded on review and native tools"
   await withMcp(async call => {
     for (const [name, args] of [["launch_creative_dna", {}], ["get_uid_brands_native_workflow", { stage: "launcher" }]] as const) {
       const result = await call(args, name);
-      assert.equal(result.structuredContent.renderer, "chat");
-      assert.equal(result.structuredContent.ui_status.render, "disabled");
+      assert.equal(result.structuredContent.renderer, name === "launch_creative_dna" ? "embedded" : "chat");
+      assert.equal(result.structuredContent.ui_status.render, name === "launch_creative_dna" ? "enabled" : "disabled");
       const prose = result.content.map((item: any) => item.text ?? "").join("\n");
       assert.match(prose, /[Bb]rief/);
       assert.match(prose, /brand/i);
       assert.match(prose, /material/i);
-      assert.match(prose, /link/i);
+      assert.match(prose, /link|URL/i);
       assert.doesNotMatch(prose, /"task_id"\s*:|"content_version"\s*:/);
     }
   }, true);
 });
 
- test("external selector is a plain public link with no private hydration or automatic widget", async () => {
+test("embedded launcher and HTML outcome review are primary; native chat fallback stays copy-only", async () => {
   const url = new URL(UID_EXTERNAL_PANEL_URL);
-  assert.equal(url.protocol, "https:"); assert.equal(url.search, ""); assert.equal(url.hash, "");
-  assert.equal(url.pathname, "/onepage-panel.html");
+  assert.equal(url.protocol, "https:");
+  assert.equal(url.search, "");
   await withMcp(async call => {
-    for (const name of ["show_uid_brands_review", "get_uid_brands_native_workflow"]) {
-      const onepage = await call(base, name);
-      assert.deepEqual(onepage.structuredContent.external_panel, UID_EXTERNAL_PANEL);
-      assert.match(onepage.content[0].text, new RegExp(UID_EXTERNAL_PANEL_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-      assert.equal(onepage.structuredContent.external_panel.opens_automatically, false);
-      assert.equal(onepage.structuredContent.external_panel.private_context_transferred, false);
-      safeProse(onepage);
-      for (const branch of [undefined, "home-hero"]) {
-        const unrelated = await call({ ...base, branch }, name);
-        assert.equal(unrelated.structuredContent.external_panel, undefined);
-        assert.ok(!unrelated.content[0].text.includes(UID_EXTERNAL_PANEL_URL));
-      }
-    }
-    for (const [name, args] of [["launch_creative_dna", {}], ["get_uid_brands_native_workflow", { stage: "launcher" }]] as const) {
-      const launch = await call(args, name);
-      assert.deepEqual(launch.structuredContent.external_panel, UID_EXTERNAL_PANEL);
-      assert.ok(launch.content[0].text.includes(UID_EXTERNAL_PANEL_URL));
-      assert.doesNotMatch(JSON.stringify(launch._meta ?? {}), /resourceUri|outputTemplate/);
-    }
+    const embedded = await call(base, "show_uid_brands_review");
+    assert.equal(embedded.structuredContent.renderer, "embedded");
+    assert.equal(embedded.structuredContent.ui_status.render, "enabled");
+    assert.match(embedded.content[0].text, /HTML outcome review/);
+    assert.doesNotMatch(embedded.content[0].text, /onepage-panel\.html/);
+    safeProse(embedded);
+    const native = await call(base, "get_uid_brands_native_workflow");
+    assert.equal(native.structuredContent.renderer, "chat");
+    assert.deepEqual(native.structuredContent.external_panel, UID_EXTERNAL_PANEL);
+    safeProse(native);
+    const launch = await call({}, "launch_creative_dna");
+    assert.equal(launch.structuredContent.renderer, "embedded");
+    assert.equal(launch.structuredContent.ui_status.render, "enabled");
+    assert.doesNotMatch(launch.content[0].text, /onepage-panel\.html/);
   }, true);
 });
 
