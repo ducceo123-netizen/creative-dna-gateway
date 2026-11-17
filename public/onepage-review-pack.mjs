@@ -25,6 +25,23 @@ export function packageOnepageReview(html, input, runtime, css) {
     if (/^(?:javascript|vbscript|data):/i.test(asset.file_url.trim())) throw new Error('UNSAFE_ASSET_URL');
     slots.add(asset.slot);
   }
+  // Every occasion icon visible in HTML must be the exact raster asset in
+  // the packaging manifest. A semantic SVG or fallback component is NOT an asset.
+  const iconTags = [...html.matchAll(/<img\b[^>]*\bdata-asset-slot=["'](occasion_icon_\d+)["'][^>]*>/gi)];
+  const manifestBySlot = new Map(input.asset_manifest.map(a => [a.slot, a]));
+  for (const match of iconTags) {
+    const tag = match[0], slot = match[1], asset = manifestBySlot.get(slot);
+    const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+    if (!asset || !src || asset.file_url !== src)
+      throw new Error('OCCASION_ICON_ASSET_MISMATCH:' + slot);
+    if (!/\.(png|webp|jpe?g)(?:[?#].*)?$/i.test(asset.file_url) ||
+        /(?:^|\/)(?:placeholder|fallback|default|mock-icon)(?:[-_.\/]|$)/i.test(asset.file_url))
+      throw new Error('OCCASION_ICON_NOT_GENERATED_RASTER:' + slot);
+  }
+  for (const asset of input.asset_manifest.filter(a => /^occasion_icon_\d+$/.test(a.slot))) {
+    if (!iconTags.some(m => m[1] === asset.slot))
+      throw new Error('OCCASION_ICON_NOT_RENDERED:' + asset.slot);
+  }
   if (!/<\/body\s*>/i.test(html) || /id\s*=\s*["']onepage-review-(?:manifest|styles|runtime)["']/i.test(html)) throw new Error('MISSING_BODY_OR_ALREADY_INSTRUMENTED');
   if (/\{\{[^}]+\}\}/.test(html)) throw new Error('UNBOUND_TEMPLATE_PLACEHOLDERS');
   if (/<\/script/i.test(runtime) || /<\/style/i.test(css)) throw new Error('INVALID_REVIEW_RUNTIME');
