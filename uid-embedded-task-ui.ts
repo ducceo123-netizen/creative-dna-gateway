@@ -1,7 +1,7 @@
 /** Small embedded ChatGPT controls. No materials feedback picker is embedded. */
 export const UID_EMBEDDED_UI_URI="ui://uid-brands/brief-content-v5.html";
 export const UID_EMBEDDED_UI_META={ui:{resourceUri:UID_EMBEDDED_UI_URI,visibility:["model","app"]}, "openai/outputTemplate":UID_EMBEDDED_UI_URI} as const;
-export const UID_EMBEDDED_UI_HTML=String.raw\`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+export const UID_EMBEDDED_UI_HTML=String.raw`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root{font:14px system-ui,-apple-system,sans-serif;color:#1d2423;color-scheme:light dark}*{box-sizing:border-box}body{margin:0;padding:15px;background:transparent}main{max-width:540px;margin:auto;border:1px solid #c4c9c855;border-radius:16px;padding:18px}h2{font-size:17px;margin:0 0 5px}p{color:gray;font-size:12px;line-height:1.45}label{display:block;font-size:12px;font-weight:600;margin:12px 0 5px}select,input,textarea{width:100%;padding:10px;border:1px solid #a3a3a366;background:transparent;color:inherit;border-radius:8px;font:inherit}textarea{min-height:64px}button{padding:11px 14px;border-radius:24px;border:1px solid #8a8a8a88;background:transparent;color:inherit;font:inherit;cursor:pointer}button.primary{background:#196f51;color:#fff;border:0}button:disabled{opacity:.45;cursor:not-allowed}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.hidden{display:none}#status{min-height:22px}#fallback{width:100%;min-height:84px;margin-top:8px}.version{font-size:11px;overflow-wrap:anywhere}
 </style></head><body><main><h2>UID Brands</h2><p id="intro">Chọn task và gửi vào cuộc trò chuyện này.</p>
 <section id="launcher"><label for="brand">Brand</label><select id="brand"></select><label for="material">Material</label><select id="material"></select><label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://..." maxlength="2000"><label for="theme">Yêu cầu thêm (không bắt buộc)</label><textarea id="theme" maxlength="2000"></textarea><div class="actions"><button class="primary" id="start">Tạo task trong ChatGPT</button></div></section>
@@ -82,4 +82,4 @@ $("package").onclick=()=>boundCommand("package");
 window.addEventListener("openai:set_globals",e=>{const data=e.detail?.globals?.toolOutput;if(data)use(data)});
 use(window.openai?.toolOutput||{});
 })();
-</script></body></html>\`;
+</script></body></html>`;
