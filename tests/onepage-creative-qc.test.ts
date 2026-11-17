@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { EO_ICON_DEFECTS, ONEPAGE_CREATIVE_QC_VERSION, evaluateOnepageCreativeQc } from "../supabase/functions/_shared/onepage-creative-qc.ts";
-import { ONEPAGE_PRODUCTION_QC } from "../supabase/functions/_shared/onepage-production-qc.ts";
+import { ONEPAGE_PRODUCTION_QC, ONEPAGE_PRODUCTION_QC_GUIDANCE } from "../supabase/functions/_shared/onepage-production-qc.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 
