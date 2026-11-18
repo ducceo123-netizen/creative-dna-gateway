@@ -59,7 +59,7 @@ const result = (issues:string[], input:Record<string,any>, evidence:Record<strin
   status: issues.length ? "BLOCKED" as const : "REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA" as const,
   can_release:false, pixel_inspected_by_server:false, task_id:input.task_id, content_version:input.content_version,
   scope:input.scope, issues:[...new Set(issues)], evidence,
-  next_action:issues.length ? "Fix selected slots or icons, inspect real source images and rerun on current task/version before showing overall/packaging." :
+  next_action:issues.length ? "Automatically repair ONLY failing local slots/icons in the same task with real asset bytes and current brand reference (use reversible raster recolor for icon palette drift when available); re-inspect actual images and rerun current QC. Do not ask owner for permission to fix routine generated visual defects or restart research. If no image editing tools or original files exist, preserve all completed assets and report the exact unresolved blocker; never label QC passed without real inspection." :
     "The host must still inspect actual full-size visuals and the overall desktop/mobile page; a self-report does not certify rendered quality.",
 });
 export function evaluateOnepageCreativeQc(input:unknown) {

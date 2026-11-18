@@ -161,3 +161,19 @@ test("shared workflow requires content-to-visual evidence while keeping continuo
   assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/NOT_CALLED/);
   assert.equal(ONEPAGE_PRODUCTION_QC.continuous_execution.requires_content_approval,false);
 });
+
+test("repairable Onepage QC instructs in-task correction, never owner approval",()=>{
+  const rules=ONEPAGE_PRODUCTION_QC.autonomous_qc_repair;
+  assert.equal(rules.mode,"REPAIR_IN_TASK_NOT_OWNER_APPROVAL");
+  assert.ok(rules.severity.repairable.includes("icon_palette_drift"));
+  assert.match(rules.icon_color_process.join(" "),/raster|PNG\/WebP/);
+  assert.match(rules.automatic_retry,/targeted regeneration/);
+  assert.match(ONEPAGE_PRODUCTION_QC_GUIDANCE,/AUTO-REPAIR LOOP/);
+  assert.equal(ONEPAGE_PRODUCTION_QC.continuous_execution.requires_content_approval,false);
+  const failed:any=iInput();failed.icons[0].defects.off_brand_style_or_colors=true;
+  const result=evaluateOnepageCreativeQc(failed);
+  assert.equal(result.status,"BLOCKED");
+  assert.match(result.next_action,/Automatically repair ONLY failing local slots/);
+  assert.match(result.next_action,/Do not ask owner/);
+  assert.equal(result.can_release,false);
+});

@@ -2,7 +2,7 @@
  * The upstream canonical Creative DNA and verified product/PDP facts remain authoritative.
  * This describes portable execution and evidence; it is NOT an image renderer or visual classifier.
  */
-export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-12.v2";
+export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-18.v3";
 export const ONEPAGE_QUALITY_PACK_DESC=
   "Read the portable, account-independent Onepage quality playbook BEFORE starting content, banner or asset work. It includes the real current reference readiness, content research and insight selection, product-to-image proof, PawfectHouse EO icons, integrated-final typography with feathered local blur, mobile recomposition, slot-specific QA and delivery gates. This is shared by ChatGPT and Web App through the same Gateway; never substitute chat memory for references. Missing verified banner/icon images means visual parity is UNVERIFIED, not PASS. The host must inspect actual PDP/reference/output pixels.";
 
@@ -57,10 +57,10 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
   },
   quality_stages:{
     research:"Prove source coverage, claim applicability and exact product/variant identity.",
-    content:"Audit actionable buyer value, section uniqueness and copy against evidence; content changes still require user approval.",
-    materials:"Use verified product/design pool and slot-level shot/proof plan; do not claim image QC without opening the actual output.",
-    overall:"Inspect rendered fixed-template full-page desktop+mobile and all source images; correct visual defects before presenting.",
-    packaging:"After user's explicit approval only, package required WebP assets and one exact overall PNG; preserve provenance and avoid silent replacement.",
+    content:"Audit actionable buyer value, section uniqueness and copy against evidence; direct Onepage tasks draft content internally without an intermediate approval pause; preserve existing approved copy during visual repairs.",
+    materials:"Use verified product/design pool and slot-level shot/proof plan; repair failed generated assets in-task without another owner approval request; do not claim image QC without opening the actual output.",
+    overall:"Inspect rendered fixed-template full-page desktop+mobile and all source images; automatically repair localized QC defects within the same task before presenting.",
+    packaging:"Package when authorized by the current user request and actual verified deliverables are present; preserve provenance, never silently replace approved content and never auto-publish.",
   },
   prohibitions:["fabricated_verified_references","self_attested_pixel_qa_as_pass","memory_only_brand_rules","camera_facing_design_over_real_use","industrial_typography_backdrop","repeated_same_artwork_for_different_story_slots","invented_personalization_or_product_parts","checkboxes_in_new_onepage_mapping"],
 } as const;
@@ -94,11 +94,12 @@ export function getOnepagePortableQualityPack(brand:string,quality?:any){
     reference_readiness:live,
     source_rule_ids:["banner.moment.v1","banner.responsive.v1","banner.type.v1","content.research.v1","content.gtk-adaptive.v1","content.product-led.v1","content.section-semantics.v1","proof.slot-brief.v1","proof.physical-truth.v1","proof.diversity.v1","proof.icon-clean.v1","proof.ui-mask.v1","workflow.approval.v1"],
     execution: {
-      steps:["resolve_creative_dna_or_compile_onepage_job","read_portable_quality_pack_and_reference_status","inspect_live_product_and_actual_reference_images","map_sources_claims_designs_and_proof_slots","get_content_approval","create_and_inspect_desktop_mobile_images","bind_to_fixed_onepage_template","host_inspect_overall_and_record_qc","get_packaging_approval"],
+      steps:["resolve_creative_dna_or_compile_onepage_job","read_portable_quality_pack_and_reference_status","inspect_live_product_and_actual_reference_images","map_sources_claims_designs_and_proof_slots","internal_content_decision_no_approval_pause","create_and_inspect_desktop_mobile_images","bind_to_fixed_onepage_template","host_inspect_overall_and_repair_failed_slots","package_when_authorized"],
       per_slot_evidence:["verified_source_url","product_id","design_id","claim_id","image_asset_id","role","scene_action","camera_angle","reference_id_if_verified","actual_visual_inspection_note"],
       output_provenance:["quality_pack_schema_version","upstream_quality_revision_or_hash","template_version","selected_reference_ids_and_approval_evidence","per_asset_inspection_receipts","desktop_mobile_overall_visual_review"],
       fail_closed_visual_certification: !checked || selectedCount===0,
-      safe_progress:"Continue evidence-based content planning and research when verified visual exemplars are missing. Mark style parity not verified and do not claim production-ready visual quality. No speculative borrowing of reference styles.",
+      safe_progress:"Continue the same Onepage task through all supported generation and mapping; repair local asset color and composition defects reversibly, without requesting QC permission already granted. Mark unverified style parity honestly. Do not claim completed assets without inspected pixels.",
+      self_repair:"Four Occasion icons with mismatched colors are an in-task asset repair, not an owner approval gate: use actual generated PNG/WebP sources and active verified brand palette, preserve originals, edit/re-export corrected raster files, update binding/manifest and inspect desktop/mobile. Do not substitute generic SVG or claim edited pixels without real files.",
     },
     rules:{
       ...ONEPAGE_PORTABLE_QUALITY_RULES,

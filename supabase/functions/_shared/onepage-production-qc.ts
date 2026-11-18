@@ -5,7 +5,7 @@
 import { ONEPAGE_BANNER_QC_VERSION, ONEPAGE_BANNER_QC_FLAGS } from "./onepage-banner-qc.ts";
 import { ONEPAGE_CREATIVE_QC_VERSION, EO_ICON_DEFECTS } from "./onepage-creative-qc.ts";
 import { ONEPAGE_PHYSICAL_QC_VERSION, ONEPAGE_PHYSICAL_DEFECTS } from "./onepage-physical-qc.ts";
-export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-17.v10";
+export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-18.v11";
 export const ONEPAGE_PRODUCTION_QC = {
   schema_version: ONEPAGE_PRODUCTION_QC_VERSION,
   scope: "onepage-system",
@@ -14,6 +14,24 @@ export const ONEPAGE_PRODUCTION_QC = {
   // A client may retain an older MCP tool signature after gateway deploy.
   // Missing optional reporting scopes must never strand a research-complete
   // Onepage task before materials. Host visual review remains mandatory.
+  autonomous_qc_repair: {
+    mode: "REPAIR_IN_TASK_NOT_OWNER_APPROVAL",
+    owner_permission: "The owner has authorized reversible local image color edits to complete Onepage materials. Do not ask again before harmless adjustments to generated icon files. This does NOT authorize publish, payments, changing canonical rules or altering the verified physical product.",
+    severity: {
+      repairable: ["icon_palette_drift","icon_optical_weight","intra_section_repeated_angle","generic_visual_proof","minor_typography_contrast","asset_crop_and_spacing"],
+      blocking: ["missing_required_asset_generator","missing_actual_source_pdp","unrecoverable_product_fidelity","unrenderable_html","unsafe_or_unlicensed_materials"]
+    },
+    icon_color_process: [
+      "Use verified active-brand palette and one visually inspected approved icon source as an anchor; do not inherit PFH tokens for GiftSoul/SoulPrise.",
+      "If generated PNG/WebP icon colors drift after regeneration, prefer deterministic local recoloring of the existing raster file (palette substitution on actual source pixels), retaining original silhouette, alpha, interior whites and anti-aliased edge; never replace the original with a system SVG.",
+      "Save source unchanged and edited image as a new versioned asset, inspect all four full-size and rendered badge icons together, then bind the corrected raster paths in the actual mapping manifest.",
+      "Re-render the SAME Onepage desktop/mobile HTML and compare icon appearance against the palette reference. Correct mismatch in the same task without requesting owner's approval.",
+      "If pixels/source images cannot be accessed, do not claim recolored; continue producing independent materials and return actual files with exact remaining blocked slots."
+    ],
+    automatic_retry: "On each repairable QC issue identify affected slots, make a reversible local edit or targeted regeneration, compare actual pixels, re-run appropriate QC, and keep proceeding. Avoid full task reset or repeated collection research. Do not silently submit Train, publish, spend credits or overwrite canonical files.",
+    progress: "Report useful verified milestones; do not pause to ask permission or frame repairable QC as an unresolved owner decision. Only ask the user for genuinely missing, noninferable input after attempting supported repairs.",
+    release: "No false QA PASS: final HTML and packaged assets require actual image review, correct references/hashes and valid mapping. If hard tool failure remains, return genuine partial artifacts and disclose only that blocker rather than claiming completion."
+  },
   continuous_execution: {
     stages: ["research", "internal_content_decision", "materials", "html_overall_desktop_mobile", "feedback_ready"],
     requires_content_approval: false,
@@ -72,13 +90,15 @@ export const ONEPAGE_PRODUCTION_QC = {
     stages: ["brief", "content_approval", "asset_review", "packaging", "complete"],
     always_show: "At every genuine outcome, show the correct stage, the usable next action, and the actual task or Feedback panel link with one-sentence instructions. At asset review, include verified overall desktop and mobile previews, exact inventory, feedback route, and packaging action. Never imply that a link automatically opens or executes.",
     navigation: "Preserve branch, task_id, content_version and verified asset inventory. Feedback uses the current version-bound index and never silently resets to a new task.",
-    retries: "Correct failed QC before showing an output, without pretending image generation is deterministic. No automatic publishing, Train submission, or write retry.",
+    retries: "Perform authorized reversible local asset repair automatically in this task and reinspect before output; do not pretend generation is deterministic. No automatic publish, Train submission or external service write retry.",
   },
   enforcement: "HOST_VISUAL_AND_EVIDENCE_REVIEW_REQUIRED",
 } as const;
 
+export const ONEPAGE_AUTONOMOUS_REPAIR_GUIDANCE = "AUTO-REPAIR LOOP (NO OWNER QC WAIT): For repairable visual differences such as the four Occasion icon colors, DO NOT stop at QA or ask the owner to grant permission already given. Prefer deterministic, reversible palette correction on actual generated raster source files using verified active-brand tokens; preserve alpha/white interiors and original assets, never substitute SVG icons. Then bind corrected assets, visually inspect desktop/mobile rendered outputs, and continue the same Onepage flow. When a generation attempt drifts, do not keep regenerating identical prompts without change: edit the actual generated file locally when possible. Retry only failing slots, preserve prior research and copy, report verified results not promises. Missing actual files/tools or unverified final pixels must be stated accurately and never marked PASS. No automatic publish, training/canonical mutation or paid actions.";
+
 export const ONEPAGE_PRODUCTION_QC_GUIDANCE =
-  "SHARED ONEPAGE QUALITY GATES (" + ONEPAGE_PRODUCTION_QC_VERSION + "): " +
+  "SHARED ONEPAGE QUALITY GATES (" + ONEPAGE_PRODUCTION_QC_VERSION + "): " + ONEPAGE_AUTONOMOUS_REPAIR_GUIDANCE + " " +
   "Before output inspect the exact product and every relevant full-resolution PDP/variant asset, its mechanisms and actual use. " +
   "CONTINUOUS ONEPAGE EXECUTION: Research -> internal content choice -> generate real materials -> map/render genuine desktop and mobile HTML overall -> feedback-ready handoff, no content approval pause. If this chat client exposes only old evaluate_onepage_creative_qc scopes (design_diversity/eo_icons), DO NOT stop or claim new GTK/FAQ and shot-angle functions are missing from the gateway. Instead conduct their evidence checks in the host using real PDP/review data and observed actual pixels, record that the new scope was NOT_CALLED/NOT_VERIFIED where appropriate, and continue creating real materials. Do not claim a gate passed without proof, fabricate images/links or publish. Choose FAQs only for >=2 real supported distinct buyer questions; otherwise Good To Know for >=2 actionable nonduplicative PDP-backed tips. If neither supported, disclose the shortcoming and continue other production steps rather than waiting for tool synchronization or another brief. " +
   "Before generating Onepage image assets, scan the COMPLETE authorized collection/PDP family including pagination; record catalog_scan.complete, has_more_pages, discovered_product_ids and inspected_product_ids, and flag uninspected discoveries. Use compatible evaluate_onepage_creative_qc scope=design_diversity for the product/design mapping; if the caller schema omits catalog_scan, record full catalog coverage in the current task evidence and DO NOT claim the tool checked catalog completeness. For each multi-image section pre-allocate distinct believable angle/framing/composition; use scope=shot_diversity only when exposed in the actual tool schema, otherwise inspect each resulting full-resolution image in the host and report the missing machine check honestly. Reject same-angle repetition while continuing to revise affected slots in the same task. Missing optional reporting scopes are NOT a hard stop on generating imagery. Then enumerate real PDP items and their distinct artwork IDs and assign those designs across banner, occasions, why-you-love-it and UGC slots in a single cross-section plan. Do not claim diversity by changing crop, model, angle, name or room of the same print, or by changing artwork on a single SKU while other verified SKU families are available. Prioritize believable product-focused American-market scenes and natural interactions rather than unnecessary model shots; never apply race-based exclusion criteria. Keep one anchor SKU for Product Details but distinct factual closeups. Use evaluate_onepage_creative_qc scope=design_diversity to block weak coverage, dominant repeats and adjacent duplicates before review/overall/packaging; inventory claims require real inspected PDPs. FIRST-PASS EO ICON QC: derive one approved EO icon reference, maintain consistent stroke, thickness, optical weight, silhouette and line simplicity. Inspect every icon at full and mobile display size and call evaluate_onepage_creative_qc scope=eo_icons; redo failed slots before first delivery. The evaluator never sees pixels, so a clean report is not automatic visual proof. " +
