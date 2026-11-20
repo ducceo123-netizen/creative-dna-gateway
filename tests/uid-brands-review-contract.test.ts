@@ -42,7 +42,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
     list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
   };
-  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
   const sync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_result");
   assert.ok(sync, "one-time task-scoped return channel is additive");
   const imageSync = TOOL_DEFINITIONS.find(tool => tool.name === "sync_uid_studio_image");
@@ -62,9 +62,14 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     show_uid_brands_review: "9db38ec8e305cbd00f560a94c2236022df67fe45cbace0530c786ac9954a865b",
     get_uid_brands_native_workflow: "0de4fcab2c97245442a7743c427f77f7657f22a3299bc8f720bf408f6335ea3d",
   };
-  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook")) {
+  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook")) {
     const schema: any = structuredClone(tool.inputSchema);
-    if (tool.name === 'get_onepage_ui_template') {
+    if (tool.name === "compile_onepage_job") {
+      assert.ok(schema.properties.product_line);
+      assert.ok(!schema.required?.includes("product_line"));
+      delete schema.properties.product_line;
+      assert.equal(createHash("sha256").update(JSON.stringify(schema)).digest("hex"), baseline[tool.name], "original compile schema remains intact");
+    } else     if (tool.name === 'get_onepage_ui_template') {
       assert.ok(schema.properties.bindings);
       assert.ok(!schema.required?.includes('bindings'));
       assert.equal(schema.properties.bindings.additionalProperties, false);
