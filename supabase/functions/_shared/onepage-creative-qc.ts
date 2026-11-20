@@ -1,7 +1,7 @@
 /** Evidence-bound, deterministic Onepage collection diversity & EO icon reporting gates.
  * No image pixels are inspected here. False self-attestation is not proof of actual QA.
  */
-export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-17.v3";
+export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-20.v4";
 export const EO_ICON_DEFECTS = [
   "inconsistent_stroke_weight", "fragmented_or_noisy_details", "distorted_anatomy_or_geometry",
   "inconsistent_perspective_or_proportions", "unclear_small_size_silhouette",
@@ -54,11 +54,37 @@ export const ONEPAGE_CREATIVE_QC_INPUT_SCHEMA = {
     }}}
   }
 } as const;
+export function onepageQcRecoveryPlan(issues:readonly string[],scope:string){
+  const targets=[...new Set(issues.map(issue=>{
+    const m=issue.match(/^EO_ICON_DEFECT:([^:]+):/);
+    if(m)return m[1];
+    const n=issue.match(/^(?:UNVERIFIED_EO_ICON|REUSED_ICON_ASSET|DUPLICATE_ICON_SLOT)$/);
+    if(n)return "occasion_icons";
+    const v=issue.match(/^(?:CONTENT_KEY_NOT_VISUALLY_PROVEN|GENERIC_LIFESTYLE_NOT_PROOF|REPEATED_COMPOSITION):([^:]+)/);
+    return v?.[1]||"affected_slots";
+  }))];
+  return {
+    state:issues.length?"NEEDS_IN_TASK_REPAIR":"HOST_VISUAL_QA_REQUIRED",
+    owner_approval_required:false,
+    terminal:false,
+    defer_owner_review_until_qc_ready:issues.length>0,
+    affected_slots:issues.length?targets:[],
+    next_steps:issues.length?
+      ["Keep existing task_id, source research, copy and passing assets unchanged",
+       "For each affected slot use existing actual PNG/WebP and verified brand reference; correct palette/shape locally or regenerate only the failing icon",
+       "Inspect corrected source pixels and desktop/mobile mapping, update manifest and re-run QC",
+       "Proceed with remaining genuine Onepage work and packaging when all required visuals pass; no owner approval request for routine repairs"]:
+      ["Inspect actual full-resolution assets and mapped desktop/mobile overall before declaring outcome complete"],
+    hard_blocker_policy:"If asset bytes or a capable repair/render tool truly do not exist, name that exact unavailable dependency and return genuine partial files. Never claim correction or final QC pass.",
+    scope,
+  };
+}
 const result = (issues:string[], input:Record<string,any>, evidence:Record<string,unknown>={})=>({
   schema_version:ONEPAGE_CREATIVE_QC_VERSION,
   status: issues.length ? "BLOCKED" as const : "REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA" as const,
   can_release:false, pixel_inspected_by_server:false, task_id:input.task_id, content_version:input.content_version,
   scope:input.scope, issues:[...new Set(issues)], evidence,
+  recovery:onepageQcRecoveryPlan([...new Set(issues)],String(input.scope||"unknown")),
   next_action:issues.length ? "Automatically repair ONLY failing local slots/icons in the same task with real asset bytes and current brand reference (use reversible raster recolor for icon palette drift when available); re-inspect actual images and rerun current QC. Do not ask owner for permission to fix routine generated visual defects or restart research. If no image editing tools or original files exist, preserve all completed assets and report the exact unresolved blocker; never label QC passed without real inspection." :
     "The host must still inspect actual full-size visuals and the overall desktop/mobile page; a self-report does not certify rendered quality.",
 });
