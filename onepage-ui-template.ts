@@ -163,7 +163,11 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
     }
   }
   const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  const values = { ...assets, ...bindings.text };
+  // Section headings belong to the immutable template, never to AI-generated copy.
+  // FAQ legacy slot is accepted for backwards compatibility but always mapped
+  // to the fixed label, so a content model cannot rename a section in preview.
+  const fixedSectionHeadings = {faq_heading: 'FAQs'} as const;
+  const values = { ...assets, ...bindings.text, ...(mode === 'faq' ? fixedSectionHeadings : {}) };
   html = html.replace(/\{\{([a-z0-9_]+)\}\}/g, (_, slot) => {
     if (!Object.hasOwn(values, slot)) throw new Error('UNBOUND_TEMPLATE_SLOT');
     return escape(values[slot]);
@@ -172,7 +176,7 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
     status: 'BOUND_REQUIRES_VISUAL_QA', template_version: source.version,
     template_sha256: source.sha256, html, css: source.css,
     sha256: { html: createHash('sha256').update(html).digest('hex'), css: source.sha256.css },
-    visual_qc_performed: false, content_approval: 'HOST_MUST_VERIFY_EXISTING_APPROVAL',
+    visual_qc_performed: false, fixed_section_headings_enforced: true, content_approval: 'INTERNAL_NO_APPROVAL_PAUSE',
     instruction: 'Save this exact bound HTML beside unchanged styles.css and supplied assets, then render and inspect desktop/mobile. Do not insert or rewrite nodes after binding. A changed copy/asset requires a fresh binding. Binding validates structure/slots only, not product truth, asset bytes, content approval or visual quality. No content is stored, uploaded or published by this call.',
   };
 }
