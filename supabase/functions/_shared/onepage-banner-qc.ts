@@ -2,7 +2,7 @@
  * The model generates ONE complete image including typeset title and local soft blur per viewport.
  * This server validates supplied evidence/consistency and does NOT inspect image pixels.
  */
-export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-20.v5";
+export const ONEPAGE_BANNER_QC_VERSION = "uid-onepage-banner-typography-qc/2026-11-20.v6";
 export const ONEPAGE_BANNER_QC_FLAGS = [
   "visible_solid_text_slab",
   "hard_rectangular_headline_background",
@@ -15,6 +15,13 @@ export const ONEPAGE_BANNER_QC_FLAGS = [
   "texture_or_light_discontinuity",
   "staged_empty_wall_for_typography",
   "generic_or_unbalanced_typography",
+  "flat_single_weight_generic_headline",
+  "unintentional_orphan_or_monotonous_line_breaks",
+  "brand_inconsistent_display_font_or_decoration",
+  "headline_and_support_optically_misaligned",
+  "weak_display_personality_despite_legibility",
+  "title_typography_disconnected_from_scene",
+
   "mobile_headline_shrunk_to_accommodate_photo",
   "mobile_headline_lacks_visual_priority",
   "mobile_text_product_human_composition_imbalanced",
@@ -52,7 +59,7 @@ const id = (v: unknown) => typeof v === "string" && v.trim().length >= 1 && v.le
 const hash = (v: unknown) => typeof v === "string" && /^sha256:[0-9a-f]{64}$/.test(v);
 const safeObj = (v: unknown): v is Record<string, any> => !!v && typeof v === "object" && !Array.isArray(v);
 export const ONEPAGE_BANNER_QC_DESCRIPTION =
-  "PawfectHouse EO integrated banner QC (desktop AND mobile). Generate each final banner as ONE complete image with typography typeset in-image, not a separate text-layer/compositing flow. Keep one coherent campaign story and approved copy, but independently compose for each viewport. On MOBILE the headline's scale and visual priority must survive alongside the human/product moment: rebalance camera/crop/negative space before adjusting type size. A smaller legible title with weak overall visual hierarchy FAILS. Require a separate mobile_balance review of the complete layout, not isolated text legibility. Under type use localized feathered SOFT BLUR for natural contrast, no flat slab or visible patch. Submit exact final asset/hash, story ID, approved headline, genuine full-resolution inspection and explicit findings about type hierarchy, semantic breaks, legibility, natural product interaction and localized blur. The evaluator checks reports, not pixels. Incomplete or flagged reports BLOCK the final assets; a reported-clear result still REQUIRES independent host visual QA. Never invent approval or image inspection.";
+  "PawfectHouse EO integrated banner QC (desktop AND mobile). Generate each final banner as ONE complete image with typography typeset in-image, not a separate text-layer/compositing flow. Keep one coherent campaign story and approved copy, but independently compose for each viewport. On MOBILE the headline's scale and visual priority must survive alongside the human/product moment: rebalance camera/crop/negative space before adjusting type size. A smaller legible title with weak overall visual hierarchy FAILS. Independently inspect editorial display quality: avoid same-weight generic headline, flat line rhythm, arbitrary script/font mixing, awkward orphan words, tiny/light support, and type disconnected from product moment. Reference only genuinely inspected approved SAME-brand EO banners; missing references means style parity unverified, not permission to invent historical font identity. Require a separate mobile_balance review of the complete layout, not isolated text legibility. Under type use localized feathered SOFT BLUR for natural contrast, no flat slab or visible patch. Submit exact final asset/hash, story ID, approved headline, genuine full-resolution inspection and explicit findings about type hierarchy, semantic breaks, legibility, natural product interaction and localized blur. The evaluator checks reports, not pixels. Incomplete or flagged reports BLOCK the final assets; a reported-clear result still REQUIRES independent host visual QA. Never invent approval or image inspection.";
 export const ONEPAGE_BANNER_QC_INPUT_SCHEMA = {
   type:"object",additionalProperties:false,required:["task_id","content_version","inspections"],
   properties:{
@@ -87,7 +94,7 @@ export function evaluateOnepageBannerQc(input: unknown) {
     schema_version:ONEPAGE_BANNER_QC_VERSION,status:"BLOCKED" as const,
     reasons:[...new Set(reasons)],can_release:false,pixel_inspected_by_server:false,
     applies_to:["banner_asset_review","overall_desktop_mobile","packaging"],
-    next_action:"Recompose only the failed viewport as one balanced scene+headline+product image. For mobile, restore large expressive title and intentionally rebalance framing/negative space instead of shrinking text to fit the photograph; do not extract typography into a separate layer. Inspect the actual final pixels, product physics and on-page readability before submitting new version-bound QC evidence.",
+    next_action:"Recompose only the failed viewport as one balanced scene+headline+product image. For desktop OR mobile, fix only failing typographic composition by choosing a reference-grounded display hierarchy, meaningful emphasis and line rhythm, aligned supportive copy and coherent scene. On mobile, restore expressive title and rebalance framing/negative space rather than shrinking to fit; do not extract typography into a separate layer. Inspect the actual final pixels, product physics and on-page readability before submitting new version-bound QC evidence.",
   });
   if(!safeObj(input)||!id(input.task_id)||!id(input.content_version)||!Array.isArray(input.inspections)||input.inspections.length!==2)
     return blocked(["MISSING_OR_INVALID_VERSION_BOUND_INSPECTIONS"]);
