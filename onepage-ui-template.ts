@@ -167,7 +167,7 @@ export function bindOnepageUiTemplate(version: string | undefined, bindings: One
   // FAQ legacy slot is accepted for backwards compatibility but always mapped
   // to the fixed label, so a content model cannot rename a section in preview.
   const fixedSectionHeadings = {faq_heading: 'FAQs'} as const;
-  const values = { ...assets, ...bindings.text, ...(mode === 'faq' ? fixedSectionHeadings : {}) };
+  const values: Record<string,string> = { ...assets, ...bindings.text, ...(mode === 'faq' ? fixedSectionHeadings : {}) };
   html = html.replace(/\{\{([a-z0-9_]+)\}\}/g, (_, slot) => {
     if (!Object.hasOwn(values, slot)) throw new Error('UNBOUND_TEMPLATE_SLOT');
     return escape(values[slot]);
