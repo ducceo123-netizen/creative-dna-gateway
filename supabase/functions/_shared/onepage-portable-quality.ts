@@ -2,7 +2,7 @@
  * The upstream canonical Creative DNA and verified product/PDP facts remain authoritative.
  * This describes portable execution and evidence; it is NOT an image renderer or visual classifier.
  */
-export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-20.v4";
+export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-20.v5";
 export const ONEPAGE_QUALITY_PACK_DESC=
   "Read the portable, account-independent Onepage quality playbook BEFORE starting content, banner or asset work. It includes the real current reference readiness, content research and insight selection, product-to-image proof, PawfectHouse EO icons, integrated-final typography with feathered local blur, mobile recomposition, slot-specific QA and delivery gates. This is shared by ChatGPT and Web App through the same Gateway; never substitute chat memory for references. Missing verified banner/icon images means visual parity is UNVERIFIED, not PASS. The host must inspect actual PDP/reference/output pixels.";
 
@@ -48,8 +48,8 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
     composition:"Create a motivated real-life scene and a natural text-safe region; do not flatten a wall or push all people to one side mechanically.",
     type:"GEN INTEGRATED FINAL IMAGE with designed PawfectHouse EO typography already rendered: correct approved title, expressive hierarchy, natural brand/occasion personality, semantic line breaks, professionally composed scale/kerning and optional approved concise support. No separate typography output, generic PowerPoint title, or mechanical one-font-for-all product lines.",
     contrast:"Typography must be legible; retain a gentle localized feathered SOFT BLUR behind text as part of the integrated generated banner. Preserve photographic texture outside focal blur. Never allow obvious solid panels, gradients with cut edges, synthetic empty walls or unreadable pale text.",
-    responsive:"Create complete DESKTOP and MOBILE banners separately, each with embedded final typo/blur, both sharing approved product/design, human moment, title, emotional tone and scene identity. Recompose type hierarchy and framing; never merely resize/crop a desktop banner.",
-    required_visual_checks:["final_image_contains_all_typography","approved_title_spelling_exact","expressive_eo_title_scale_and_semantic_linebreak","subtle_feathered_blur_under_text","text_background_local_contrast","no_visible_solid_panel_or_fake_flat_wall","type_zone_not_over_face_or_product","natural_relationship_and_product_physics","desktop_mobile_story_parity","mobile_specific_legibility"],
+    responsive:"Create complete DESKTOP and MOBILE banners separately, each with embedded final typo/blur and the same approved product/title/story. Mobile: balance headline, human/product moment and natural negative space as ONE composition, not by shrinking type to accommodate photography. Recompose scene/crop/subject positioning BEFORE reducing title scale. Judge global visual weight, expressive headline prominence and legibility at actual mobile render, not only technical text fit.",
+    required_visual_checks:["mobile_headline_remains_prominent","mobile_whole_banner_composition_balanced","mobile_not_shrunk_to_fit_photo","final_image_contains_all_typography","approved_title_spelling_exact","expressive_eo_title_scale_and_semantic_linebreak","subtle_feathered_blur_under_text","text_background_local_contrast","no_visible_solid_panel_or_fake_flat_wall","type_zone_not_over_face_or_product","natural_relationship_and_product_physics","desktop_mobile_story_parity","mobile_specific_legibility"],
   },
   icons:{
     context:"PawfectHouse Onepage Occasion glyphs; not a blanket visual rule for other brands or asset families.",
@@ -65,6 +65,7 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
     overall:"Inspect rendered fixed-template full-page desktop+mobile and all source images; automatically repair localized QC defects within the same task before presenting.",
     packaging:"Package when authorized by the current user request and actual verified deliverables are present; preserve provenance, never silently replace approved content and never auto-publish.",
   },
+  fixed_section_headings:{labels:["Why You'll Love It","Product Details","Good to know","FAQs"],owner:"canonical_backend_template",rule:"Generated section headings are forbidden. Fill card/story copy slots only; faq_heading input always maps to fixed FAQs. Preserve exact original responsive DOM/CSS and section order. A changed title_01..title_13 is card content, not permission to change section header."},
   prohibitions:["fabricated_verified_references","self_attested_pixel_qa_as_pass","memory_only_brand_rules","camera_facing_design_over_real_use","industrial_typography_backdrop","repeated_same_artwork_for_different_story_slots","invented_personalization_or_product_parts","checkboxes_in_new_onepage_mapping"],
 } as const;
 

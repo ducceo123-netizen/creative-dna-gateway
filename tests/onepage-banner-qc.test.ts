@@ -15,6 +15,10 @@ const inspection=(viewport:"desktop"|"mobile")=>({
   content_version:"content-v3",approved_title:"Personalized Plastic Cups",title_text_verified:true as const,
   method:"full_resolution_image_view" as const,
   evidence_note:"Reviewed final full image at target viewport: heading legible, expressive PFH scale, correct approved title, localized soft blur has no hard edges, real plastic cup product interaction verified.",
+  ...(viewport==="mobile"?{mobile_balance:{
+    headline_is_primary:true,scene_and_product_support_copy:true,negative_space_balanced:true,
+    visual_hierarchy_preserved:true,recomposed_not_downscaled:true,
+    inspection_note:"Inspected mobile full banner: headline remains dominant and expressive; people, product and negative space contribute to a balanced composition."}}:{}),
   findings:Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k=>[k,false])),
 });
 const reasons=(result:ReturnType<typeof evaluateOnepageBannerQc>)=>result.status==="BLOCKED"?result.reasons:[];
@@ -72,4 +76,15 @@ test("shared production gate and native workflow use new banner mode",()=>{
   assert.equal(ONEPAGE_PRODUCTION_QC.image_gates.banner_workflow.soft_support.required,true);
   assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc,ONEPAGE_PRODUCTION_QC);
   assert.deepEqual(getOnepageUiTemplate().production_qc_contract,ONEPAGE_PRODUCTION_QC);
+});
+
+test("mobile headline may remain readable but fail holistic composition if shrunk to fit image",()=>{
+  const x:any=input();x.inspections[1].findings.mobile_headline_shrunk_to_accommodate_photo=true;
+  assert.ok(reasons(evaluateOnepageBannerQc(x)).includes("BANNER_DEFECT:mobile:mobile_headline_shrunk_to_accommodate_photo"));
+  const y:any=input();y.inspections[1].mobile_balance.headline_is_primary=false;
+  assert.ok(reasons(evaluateOnepageBannerQc(y)).includes("MOBILE_OVERALL_TYPE_COMPOSITION_NOT_VERIFIED"));
+  const z:any=input();delete z.inspections[1].mobile_balance;
+  assert.ok(reasons(evaluateOnepageBannerQc(z)).includes("MOBILE_OVERALL_TYPE_COMPOSITION_NOT_VERIFIED"));
+  const w:any=input();w.inspections[1].mobile_balance.negative_space_balanced=false;
+  assert.ok(reasons(evaluateOnepageBannerQc(w)).includes("MOBILE_OVERALL_TYPE_COMPOSITION_NOT_VERIFIED"));
 });
