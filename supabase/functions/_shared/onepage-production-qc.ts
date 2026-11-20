@@ -5,7 +5,7 @@
 import { ONEPAGE_BANNER_QC_VERSION, ONEPAGE_BANNER_QC_FLAGS } from "./onepage-banner-qc.ts";
 import { ONEPAGE_CREATIVE_QC_VERSION, EO_ICON_DEFECTS } from "./onepage-creative-qc.ts";
 import { ONEPAGE_PHYSICAL_QC_VERSION, ONEPAGE_PHYSICAL_DEFECTS } from "./onepage-physical-qc.ts";
-export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-20.v14";
+export const ONEPAGE_PRODUCTION_QC_VERSION = "uid-onepage-production-qc/2026-11-20.v15";
 export const ONEPAGE_PRODUCTION_QC = {
   schema_version: ONEPAGE_PRODUCTION_QC_VERSION,
   scope: "onepage-system",
@@ -29,6 +29,7 @@ export const ONEPAGE_PRODUCTION_QC = {
       "If pixels/source images cannot be accessed, do not claim recolored; continue producing independent materials and return actual files with exact remaining blocked slots."
     ],
     automatic_retry: "On each repairable QC issue identify affected slots, make a reversible local edit or targeted regeneration, compare actual pixels, re-run appropriate QC, and keep proceeding. Avoid full task reset or repeated collection research. Do not silently submit Train, publish, spend credits or overwrite canonical files.",
+    task_exit_policy: "Do NOT end with a draft and a request for owner approval of repairable icon QC. Use in-task pixel repair, rebind and render whenever original files/tools are available. If unavailable, disclose concrete dependency; never say completed.",
     progress: "Report useful verified milestones; do not pause to ask permission or frame repairable QC as an unresolved owner decision. Only ask the user for genuinely missing, noninferable input after attempting supported repairs.",
     release: "No false QA PASS: final HTML and packaged assets require actual image review, correct references/hashes and valid mapping. If hard tool failure remains, return genuine partial artifacts and disclose only that blocker rather than claiming completion."
   },
@@ -116,7 +117,11 @@ export const ONEPAGE_PRODUCTION_QC = {
     overall: "Render the real version-bound desktop and mobile Onepage mapping, inspect text/asset placements and confirm all required slots. A template URL or file ID is not proof of rendering.",
   },
   handoff: {
-    stages: ["brief", "content_approval", "asset_review", "packaging", "complete"],
+    stages: ["brief", "research", "materials", "qc_self_repair", "html_overall_desktop_mobile", "packaging", "complete"],
+    do_not_surface_repairable_issues_as_owner_review: true,
+    pending_work_display: "If icon palette/style QC fails, task is IN_PROGRESS, not ready for owner review. A web preview link is draft evidence, not final handoff. Repair original assets and verify desktop/mobile before packaging.",
+    execution_limit: "Gateway does not itself edit images or run background jobs. Do not promise deferred autonomous progress. When a real tool/file blocker exists, disclose it with genuine partial artifacts.",
+
     always_show: "At every genuine outcome, show the correct stage, the usable next action, and the actual task or Feedback panel link with one-sentence instructions. At asset review, include verified overall desktop and mobile previews, exact inventory, feedback route, and packaging action. Never imply that a link automatically opens or executes.",
     navigation: "Preserve branch, task_id, content_version and verified asset inventory. Feedback uses the current version-bound index and never silently resets to a new task.",
     retries: "Perform authorized reversible local asset repair automatically in this task and reinspect before output; do not pretend generation is deterministic. No automatic publish, Train submission or external service write retry.",
@@ -124,7 +129,7 @@ export const ONEPAGE_PRODUCTION_QC = {
   enforcement: "HOST_VISUAL_AND_EVIDENCE_REVIEW_REQUIRED",
 } as const;
 
-export const ONEPAGE_AUTONOMOUS_REPAIR_GUIDANCE = "AUTO-REPAIR LOOP (NO OWNER QC WAIT): For repairable visual differences such as the four Occasion icon colors, DO NOT stop at QA or ask the owner to grant permission already given. Prefer deterministic, reversible palette correction on actual generated raster source files using verified active-brand tokens; preserve alpha/white interiors and original assets, never substitute SVG icons. Then bind corrected assets, visually inspect desktop/mobile rendered outputs, and continue the same Onepage flow. When a generation attempt drifts, do not keep regenerating identical prompts without change: edit the actual generated file locally when possible. Retry only failing slots, preserve prior research and copy, report verified results not promises. Missing actual files/tools or unverified final pixels must be stated accurately and never marked PASS. No automatic publish, training/canonical mutation or paid actions.";
+export const ONEPAGE_AUTONOMOUS_REPAIR_GUIDANCE = "PREMATURE HANDOFF GUARD: An interactive preview or screenshot does NOT mean the Onepage is done. If four Occasion icons fail EO colors or stroke, do not present an incomplete page as a ready-to-approve result. Keep the same task in repair, fix actual generated raster assets, remap the corrected files, reinspect both desktop/mobile and package only after real QA. No owner permission request for reversible cosmetic repairs. The Gateway cannot perform image editing independently and no background work is promised; if actual files or tools are missing, return truthful partial files and name the precise blocker. " + "AUTO-REPAIR LOOP (NO OWNER QC WAIT): For repairable visual differences such as the four Occasion icon colors, DO NOT stop at QA or ask the owner to grant permission already given. Prefer deterministic, reversible palette correction on actual generated raster source files using verified active-brand tokens; preserve alpha/white interiors and original assets, never substitute SVG icons. Then bind corrected assets, visually inspect desktop/mobile rendered outputs, and continue the same Onepage flow. When a generation attempt drifts, do not keep regenerating identical prompts without change: edit the actual generated file locally when possible. Retry only failing slots, preserve prior research and copy, report verified results not promises. Missing actual files/tools or unverified final pixels must be stated accurately and never marked PASS. No automatic publish, training/canonical mutation or paid actions.";
 
 export const ONEPAGE_PRODUCTION_QC_GUIDANCE =
   "SHARED ONEPAGE QUALITY GATES (" + ONEPAGE_PRODUCTION_QC_VERSION + "): " + ONEPAGE_AUTONOMOUS_REPAIR_GUIDANCE + " " +
