@@ -24,6 +24,8 @@ export const UID_TOOL_INVOCATION_LABELS = {
   get_onepage_ui_template: ["Reading Onepage template…", "Template call ended"],
   evaluate_onepage_banner_qc: ["Checking Onepage banner QC report…", "Banner QC call ended"],
   evaluate_onepage_creative_qc: ["Checking Onepage design and EO icon QA…", "Creative QC call ended"],
+  evaluate_onepage_product_type_scope: ["Checking exact Shopify product type scope…", "Product type scope call ended"],
+  evaluate_onepage_eo_store_references: ["Checking store icon references…", "EO reference call ended"],
   evaluate_onepage_physical_qc: ["Checking actual product use, camera and physical realism…", "Physical QC call ended"],
   resolve_creative_dna: ["Reading canonical creative rules…", "Creative rules call ended"],
   compile_onepage_job: ["Compiling Onepage task packet…", "Task packet call ended"],
