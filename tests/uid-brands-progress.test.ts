@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createApp, TOOL_DEFINITIONS } from "../server.ts";
+import { createApp, TOOL_DEFINITIONS, UID_STUDIO_SYNC_ENABLED } from "../server.ts";
 import { UID_PROGRESS_GUIDANCE, UID_PROGRESS_REMINDER, UID_PROGRESS_DESCRIPTION, UID_TOOL_INVOCATION_LABELS, uidProgressTool, withUidProgress } from "../uid-brands-progress.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { RESEARCH_GUIDANCE } from "../supabase/functions/_shared/product-research.ts";
@@ -42,8 +42,8 @@ test("all discovered and registered tools share supported bounded labels and pre
     assert.match(initialized.instructions.slice(0, 512), /Research-before-output gates creative deliverables, not progress updates/);
     assert.equal(initialized.instructions.split(RESEARCH_GUIDANCE).length - 1, 1, "canonical research guidance appears exactly once");
     const { tools } = await rpc("tools/list", {});
-    assert.equal(tools.length, 19, 'Studio text/image sync and Onepage QC tools are additive');
-    assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).sort());
+    assert.equal(tools.length, 17, 'Studio sync is disabled; canonical Gateway and Onepage QC remain available');
+    assert.deepEqual(tools.map((t: any) => t.name).sort(), Object.keys(UID_TOOL_INVOCATION_LABELS).filter(name=>!name.startsWith("sync_uid_studio_")).sort());
     for (const tool of tools) {
       const discovery = TOOL_DEFINITIONS.find(t => t.name === tool.name)!;
       assert.deepEqual(tool._meta, discovery._meta, tool.name);
@@ -58,7 +58,7 @@ test("all discovered and registered tools share supported bounded labels and pre
       assert.deepEqual(tool.annotations, discovery.annotations);
     }
     assert.deepEqual(tools.find((t: any) => t.name === "ingest_uid_brands_attachment")._meta["openai/fileParams"], ["file"]);
-    assert.deepEqual(tools.find((t: any) => t.name === "sync_uid_studio_image")._meta["openai/fileParams"], ["file"]);
+    assert.equal(tools.some((t: any) => t.name.startsWith("sync_uid_studio_")), false);
     assert.equal(tools.find((t: any) => t.name === "launch_creative_dna")._meta["openai/widgetAccessible"], undefined);
     assert.equal(tools.find((t: any) => t.name === "submit_training_feedback").annotations.readOnlyHint, false);
   });
@@ -190,3 +190,12 @@ test("research and market work retain natural chat updates before the final arti
  assert.match(UID_PROGRESS_REMINDER,/distinguish planned work from checked sources/);
 });
 
+
+test("owner's temporary gateway-only mode hides both Studio tool entrypoints",()=>{
+  assert.equal(UID_STUDIO_SYNC_ENABLED,false);
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="compile_onepage_job"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="get_onepage_ui_template"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="show_uid_brands_review"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="evaluate_onepage_banner_qc"));
+  assert.ok(!TOOL_DEFINITIONS.some(t=>t.name.startsWith("sync_uid_studio_")));
+});
