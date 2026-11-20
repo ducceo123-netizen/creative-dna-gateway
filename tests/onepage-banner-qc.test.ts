@@ -4,6 +4,7 @@ import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_FLAGS, ONEPAGE_BANNER_QC_VER
 import { ONEPAGE_PRODUCTION_QC } from "../supabase/functions/_shared/onepage-production-qc.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
+import {compileInvisibleBannerDirection} from "../uid-invisible-banner-direction.ts";
 
 const inspection=(viewport:"desktop"|"mobile")=>({
   viewport,asset_id:"pfh-final-"+viewport,
@@ -87,4 +88,27 @@ test("mobile headline may remain readable but fail holistic composition if shrun
   assert.ok(reasons(evaluateOnepageBannerQc(z)).includes("MOBILE_OVERALL_TYPE_COMPOSITION_NOT_VERIFIED"));
   const w:any=input();w.inspections[1].mobile_balance.negative_space_balanced=false;
   assert.ok(reasons(evaluateOnepageBannerQc(w)).includes("MOBILE_OVERALL_TYPE_COMPOSITION_NOT_VERIFIED"));
+});
+
+test("uninspired flat EO headline fails even if readable and technically well aligned",()=>{
+  const x:any=input();x.inspections[0].findings.flat_single_weight_generic_headline=true;
+  assert.ok(reasons(evaluateOnepageBannerQc(x)).includes("BANNER_DEFECT:desktop:flat_single_weight_generic_headline"));
+  const y:any=input();y.inspections[1].findings.weak_display_personality_despite_legibility=true;
+  assert.ok(reasons(evaluateOnepageBannerQc(y)).includes("BANNER_DEFECT:mobile:weak_display_personality_despite_legibility"));
+  const z:any=input();z.inspections[0].findings.brand_inconsistent_display_font_or_decoration=true;
+  assert.equal(evaluateOnepageBannerQc(z).status,"BLOCKED");
+});
+test("banner art direction uses only verified same-brand refs, never guessed brand font",()=>{
+  const brief={brand:"pawfecthouse" as const,product:"Oven Skirt",audience:"gift shoppers",occasion:"birthday",headline:"Personalized Oven Skirt",references:[
+    {brand:"pawfecthouse",status:"approved" as const,observation:"Sampled expressive headline with balanced support from inspected pixel reference",verified_pixels:true},
+    {brand:"giftsoul",status:"approved" as const,observation:"Different-brand type",verified_pixels:true},
+    {brand:"pawfecthouse",status:"approved" as const,observation:"Uninspected banner",verified_pixels:false}
+  ]};
+  const approved=compileInvisibleBannerDirection(brief);
+  assert.equal(approved.references.length,1);
+  assert.equal(approved.typography_direction.evidence_status,"APPROVED_SAME_BRAND_REFERENCES_REPORTED");
+  assert.match(approved.typography_direction.art_direction,/editorial element/);
+  const unverified=compileInvisibleBannerDirection({...brief,references:[]});
+  assert.equal(unverified.typography_direction.evidence_status,"REFERENCE_STYLE_NOT_VISUALLY_VERIFIED");
+  assert.match(unverified.typography_direction.reference_boundary,/do not invent exact EO font/);
 });
