@@ -2,7 +2,7 @@
  * The upstream canonical Creative DNA and verified product/PDP facts remain authoritative.
  * This describes portable execution and evidence; it is NOT an image renderer or visual classifier.
  */
-export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-18.v3";
+export const ONEPAGE_QUALITY_PACK_VERSION="uid-onepage-portable-quality/2026-11-20.v4";
 export const ONEPAGE_QUALITY_PACK_DESC=
   "Read the portable, account-independent Onepage quality playbook BEFORE starting content, banner or asset work. It includes the real current reference readiness, content research and insight selection, product-to-image proof, PawfectHouse EO icons, integrated-final typography with feathered local blur, mobile recomposition, slot-specific QA and delivery gates. This is shared by ChatGPT and Web App through the same Gateway; never substitute chat memory for references. Missing verified banner/icon images means visual parity is UNVERIFIED, not PASS. The host must inspect actual PDP/reference/output pixels.";
 
@@ -11,6 +11,7 @@ const ONEPAGE_SCOPED_ROLES=["banner","why_you_love_it","product_details","occasi
 export const ONEPAGE_PORTABLE_QUALITY_RULES={
   content:{
     evidence_before_copy:["matching_live_pdp","full_gallery_and_variants","product_physical_specifications","personalization_and_included_items","real_customer_questions_and_accessible_reviews"],
+    name_only_scope:"When given ONLY a line name, resolve exact Shopify product_type on the target store from actual catalog rows, not title/handle/tag substring search. Enumerate all pages; do not silently expand. Keep line name and matched product_type in receipts.",
     research_decision:"For collections enumerate a verified product/design pool and document uncovered SKUs; no guessed family-wide specs. Match claims to original source and exact applicable variant.",
     decision_order:["product_truth","customer_use_case","incremental_buying_value","brand_tone","short_eo_copy"],
     section_roles:{
@@ -53,6 +54,8 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
   icons:{
     context:"PawfectHouse Onepage Occasion glyphs; not a blanket visual rule for other brands or asset families.",
     style:{badge_shape:"simple circular badge",badge_fill:"#FBDEBE",stroke:"#924A3B",enclosed_interiors:"#FFFFFF",outside:"transparent",badge_outline:"none",gradient:"none",visual_language:"clean consistent minimal semantic glyphs"},
+    store_reference:"Before four Occasion icons, inspect at least two ACTUAL corresponding icon images from existing Onepage on the target brand store; compare visible badge geometry, stroke weight, optical balance, interiors, margins and palette. Text rules or a generic system SVG are not enough. Store page/image evidence and mobile/full-size review required to claim EO parity.",
+    source_isolation:"Never transfer PawfectHouse icon styling to GiftSoul/SoulPrise without that brand's own actual references.",
     first_pass_qa:["unified_optical_stroke_weight","recognizable_silhouette_at_mobile_size","plausible_anatomy_or_object_geometry","correct_white_interior_details","no_fragments_or_unnecessary_lines","no_extra_palette_or_background","each_icon_distinct_correct_semantics"],
   },
   quality_stages:{
