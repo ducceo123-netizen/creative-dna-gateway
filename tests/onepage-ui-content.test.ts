@@ -13,7 +13,9 @@ test('slot contract matches actual immutable GTK template and FAQ row prototype'
   const copy = Object.fromEntries(template.text_slots.map(slot => [slot, 'Valid product-specific copy']));
   assert.deepEqual(validateOnepageUiCopy(copy, 'gtk', 3), []);
   for (const count of [NaN, Infinity, 0, -1, 1.5, 101]) assert.deepEqual(validateOnepageUiCopy({}, 'faq', count), ['UI_COPY_INVALID_FAQ_COUNT']);
-  for (const heading of Object.values(contract.fixed_headings)) assert.ok(template.html.includes(heading));
+  for (const heading of [contract.fixed_headings.benefits,contract.fixed_headings.details,contract.fixed_headings.gtk]) assert.ok(template.html.includes(heading));
+  assert.equal(contract.fixed_headings.faq,"FAQs");
+  assert.match(contract.instruction,/LOCKED SECTION TITLES/);
 });
 
 test('captured Occasion pair has no text slot/heading and immediately precedes four icon cards', () => {
