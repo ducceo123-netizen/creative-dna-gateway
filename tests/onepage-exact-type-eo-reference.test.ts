@@ -14,7 +14,7 @@ test("name-only line chooses EXACT Shopify product_type and rejects keyword-in-t
   const o=evaluateOnepageProductTypeScope(input);
   assert.equal(o.status,"MATCHED_REQUIRES_HOST_PDP_REVIEW");
   assert.deepEqual(o.product_ids,["1","2"]);
-  assert.equal(o.matched_count,2);
+  assert.equal("matched_count" in o ? o.matched_count : 0,2);
   assert.equal(o.title_contains_fallback,false);
 });
 test("missing exact Shopify type never broadens to fuzzy title matches or synonyms",()=>{
