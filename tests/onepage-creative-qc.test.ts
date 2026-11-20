@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { EO_ICON_DEFECTS, ONEPAGE_CREATIVE_QC_VERSION, evaluateOnepageCreativeQc } from "../supabase/functions/_shared/onepage-creative-qc.ts";
+import { EO_ICON_DEFECTS, ONEPAGE_CREATIVE_QC_VERSION, evaluateOnepageCreativeQc, onepageQcRecoveryPlan } from "../supabase/functions/_shared/onepage-creative-qc.ts";
 import { ONEPAGE_PRODUCTION_QC, ONEPAGE_PRODUCTION_QC_GUIDANCE } from "../supabase/functions/_shared/onepage-production-qc.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
@@ -176,4 +176,25 @@ test("repairable Onepage QC instructs in-task correction, never owner approval",
   assert.match(result.next_action,/Automatically repair ONLY failing local slots/);
   assert.match(result.next_action,/Do not ask owner/);
   assert.equal(result.can_release,false);
+});
+
+test("failed icon palette QC provides in-task repair, not owner review or fake final delivery",()=>{
+  const input:any=iInput();
+  input.icons[0].defects.off_brand_style_or_colors=true;
+  const r=evaluateOnepageCreativeQc(input);
+  assert.equal(r.status,"BLOCKED");
+  assert.equal(r.recovery.owner_approval_required,false);
+  assert.equal(r.recovery.terminal,false);
+  assert.equal(r.recovery.defer_owner_review_until_qc_ready,true);
+  assert.ok(r.recovery.affected_slots.includes(input.icons[0].slot));
+  assert.equal(r.can_release,false);
+  assert.equal(ONEPAGE_PRODUCTION_QC.handoff.do_not_surface_repairable_issues_as_owner_review,true);
+  assert.ok(!ONEPAGE_PRODUCTION_QC.handoff.stages.includes("content_approval" as any));
+});
+test("passing creative report still needs real pixel and overall inspection",()=>{
+  const p=onepageQcRecoveryPlan([],"eo_icons");
+  assert.equal(p.state,"HOST_VISUAL_QA_REQUIRED");
+  assert.equal(p.owner_approval_required,false);
+  assert.equal(p.terminal,false);
+  assert.equal(p.defer_owner_review_until_qc_ready,false);
 });
