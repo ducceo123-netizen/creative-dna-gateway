@@ -243,11 +243,11 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   return response;
 }
 
-export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown) {
+export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown, product_line?:string) {
  const validated=validateResolveInput(brand,"onepage-system");
  const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
  const data = response.data;
- return {status:response.status,ok:response.ok,data:response.ok ? attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}) : data};
+ return {status:response.status,ok:response.ok,data:response.ok ? {...attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}),...(product_line&&!source_url?{named_product_scope:{requested_product_type:product_line,match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT",requires_store_catalog_scan:true,evaluator:"evaluate_onepage_product_type_scope",no_title_or_handle_contains_fallback:true}}:{})} : data};
 }
 
 // Core gateway functions
@@ -573,7 +573,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name:"compile_onepage_job", title:"Compile Onepage Job", description:COMPILE_ONEPAGE_DESC, annotations:READ_ONLY_TOOL_ANNOTATIONS,
-    inputSchema:{type:"object",properties:{brand:{type:"string"},source_url:{type:"string"},source_type:{type:"string",enum:["auto","product","collection"]},theme:{type:"string"},research:RESEARCH_INPUT_SCHEMA},required:["brand"]},
+    inputSchema:{type:"object",properties:{brand:{type:"string"},source_url:{type:"string"},source_type:{type:"string",enum:["auto","product","collection"]},theme:{type:"string"},product_line:{type:"string"},research:RESEARCH_INPUT_SCHEMA},required:["brand"]},
   },
   {
     name: "submit_training_feedback",
@@ -939,8 +939,8 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   // Preferred Onepage compiler: compact execution contract, no canonical mutation
   server.registerTool("compile_onepage_job",uidProgressTool("compile_onepage_job", {
     title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
-    inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
-  }),async({brand,source_url,source_type,theme,research})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
+    inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),product_line:z.string().trim().max(160).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
+  }),async({brand,source_url,source_type,theme,research,product_line})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research,product_line);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
 
   // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
   server.registerTool(
