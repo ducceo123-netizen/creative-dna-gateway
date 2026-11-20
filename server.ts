@@ -813,6 +813,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
         title_text_verified: z.literal(true),
         method: z.literal("full_resolution_image_view"),
         evidence_note: z.string().trim().min(40).max(2000),
+        mobile_balance: z.object({headline_is_primary:z.boolean(),scene_and_product_support_copy:z.boolean(),negative_space_balanced:z.boolean(),visual_hierarchy_preserved:z.boolean(),recomposed_not_downscaled:z.boolean(),inspection_note:z.string().trim().min(40).max(1200)}).strict().optional(),
         findings: z.object(Object.fromEntries(ONEPAGE_BANNER_QC_FLAGS.map(k => [k, z.boolean()])) as Record<typeof ONEPAGE_BANNER_QC_FLAGS[number], z.ZodBoolean>).strict(),
       }).strict()).length(2),
     },
