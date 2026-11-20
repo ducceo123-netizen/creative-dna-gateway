@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createApp, TOOL_DEFINITIONS } from "../server.ts";
+import { createApp, TOOL_DEFINITIONS, UID_STUDIO_SYNC_ENABLED } from "../server.ts";
 import { UID_PROGRESS_GUIDANCE, UID_PROGRESS_REMINDER, UID_PROGRESS_DESCRIPTION, UID_TOOL_INVOCATION_LABELS, uidProgressTool, withUidProgress } from "../uid-brands-progress.ts";
 import { UID_NATIVE_WORKFLOW } from "../uid-brands-actions.ts";
 import { RESEARCH_GUIDANCE } from "../supabase/functions/_shared/product-research.ts";
@@ -190,3 +190,12 @@ test("research and market work retain natural chat updates before the final arti
  assert.match(UID_PROGRESS_REMINDER,/distinguish planned work from checked sources/);
 });
 
+
+test("owner's temporary gateway-only mode hides both Studio tool entrypoints",()=>{
+  assert.equal(UID_STUDIO_SYNC_ENABLED,false);
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="compile_onepage_job"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="get_onepage_ui_template"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="show_uid_brands_review"));
+  assert.ok(TOOL_DEFINITIONS.some(t=>t.name==="evaluate_onepage_banner_qc"));
+  assert.ok(!TOOL_DEFINITIONS.some(t=>t.name.startsWith("sync_uid_studio_")));
+});
