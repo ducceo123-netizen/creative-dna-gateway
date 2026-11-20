@@ -1,4 +1,5 @@
 import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_DESC } from "./supabase/functions/_shared/onepage-portable-quality.ts";
+import {evaluateOnepageProductTypeScope,PRODUCT_TYPE_SCOPE_DESCRIPTION,PRODUCT_TYPE_SCOPE_INPUT_SCHEMA} from "./supabase/functions/_shared/onepage-product-type-scope.ts";
 import { evaluateOnepagePhysicalQc, ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA, ONEPAGE_PHYSICAL_QC_DESCRIPTION, ONEPAGE_PHYSICAL_DEFECTS } from "./supabase/functions/_shared/onepage-physical-qc.ts";
 import { evaluateOnepageCreativeQc, ONEPAGE_CREATIVE_QC_INPUT_SCHEMA, ONEPAGE_CREATIVE_QC_DESCRIPTION, EO_ICON_DEFECTS } from "./supabase/functions/_shared/onepage-creative-qc.ts";
 import { evaluateOnepageBannerQc, ONEPAGE_BANNER_QC_DESCRIPTION, ONEPAGE_BANNER_QC_INPUT_SCHEMA, ONEPAGE_BANNER_QC_FLAGS } from "./supabase/functions/_shared/onepage-banner-qc.ts";
@@ -542,6 +543,7 @@ export const TOOL_DEFINITIONS = [
     description: ONEPAGE_PHYSICAL_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA,
   },
+  { name:"evaluate_onepage_product_type_scope", title:"Evaluate Exact Product Type Scope", description:PRODUCT_TYPE_SCOPE_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS, inputSchema:PRODUCT_TYPE_SCOPE_INPUT_SCHEMA },
   {
     name: "evaluate_onepage_creative_qc", title: "Evaluate Onepage Creative QC", description: ONEPAGE_CREATIVE_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: ONEPAGE_CREATIVE_QC_INPUT_SCHEMA,
@@ -822,6 +824,18 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   });
 
   const eoFlags = z.object(Object.fromEntries(EO_ICON_DEFECTS.map(k=>[k,z.boolean()])) as Record<typeof EO_ICON_DEFECTS[number],z.ZodBoolean>).strict();
+  server.registerTool("evaluate_onepage_product_type_scope",uidProgressTool("evaluate_onepage_product_type_scope",{
+    title:"Evaluate Exact Product Type Scope",description:PRODUCT_TYPE_SCOPE_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{brand:z.string().trim().min(1).max(100),requested_product_type:z.string().trim().min(1).max(160),
+      scan_complete:z.boolean(),has_more_pages:z.boolean(),
+      products:z.array(z.object({id:z.string().trim().min(1),title:z.string().trim().min(1),
+        product_type:z.string(),url:z.string().url()}).strict()).max(2000)}
+  }),async(input)=>{
+    const result=evaluateOnepageProductTypeScope(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],
+      structuredContent:result,isError:result.status==="BLOCKED"},"research");
+  });
+
   server.registerTool("evaluate_onepage_creative_qc", uidProgressTool("evaluate_onepage_creative_qc", {
     title:"Evaluate Onepage Creative QC", description:ONEPAGE_CREATIVE_QC_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: {
