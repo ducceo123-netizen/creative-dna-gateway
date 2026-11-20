@@ -6,7 +6,7 @@ export const ONEPAGE_UI_CONTENT_CONTRACT = {
   schema_version: 'uid-onepage-ui-content/1',
   authority: 'SELECTED_BACKEND_UI_TEMPLATE',
   approval_scope: 'COPY_AND_ASSETS_IN_EXISTING_SLOTS_ONLY_NOT_LAYOUT_PERMISSION',
-  fixed_headings: { benefits: "Why You'll Love It", details: 'Product Details', gtk: 'Good to know' },
+  fixed_headings: { benefits: "Why You'll Love It", details: 'Product Details', gtk: 'Good to know', faq: 'FAQs' },
   sections: [
     { id: 'banner', text_slots: [], note: 'Copy is inside banner assets, governed by banner content rules; no extra HTML title/support.' },
     { id: 'benefits', text_slots: pairs(1, 3), count: 3 },
@@ -15,7 +15,7 @@ export const ONEPAGE_UI_CONTENT_CONTRACT = {
     { id: 'occasion_icons', text_slots: pairs(7, 10), count: 4 },
     { id: 'post_story', text_slots_by_mode: { gtk: pairs(11, 13), faq: ['faq_heading', 'faq_question_NN', 'faq_answer_NN'] }, note: 'Select exactly one approved mode. Only FAQ rows may repeat, as defined by faq_binding.' },
   ],
-  instruction: 'Read the selected backend template and its text_slots BEFORE drafting content. The template owns layout, fixed UI headings, section order, counts and responsive behavior. Draft only exact declared data-text-slot keys, never invent UI copy or insert a block to accommodate an approved draft. Product Details is followed directly by two text-free Occasion images and then four icon cards; titles/descriptions 07–10 belong to the four cards, not the image pair. Brand style/mood may vary within approved assets and product copy within declared slots; it does not authorize changing DOM, CSS, fixed headings, counts or section order. Content approval is not layout approval. If approved copy has no destination slot, stop mapping and correct the content map instead of injecting it, silently dropping it or repurposing a different slot. Bind as textContent, never HTML. Keep existing evidence, approval and desktop/mobile visual-QC gates.',
+  instruction: 'LOCKED SECTION TITLES: Why You\'ll Love It, Product Details, Good to know and FAQs are UI constants, not AI copy. For FAQ, any legacy faq_heading value is ignored and the template displays FAQs. Never create, rename, translate, reorder or place a section heading via copy or generated imagery; do not add heading nodes. Read the selected backend template and its text_slots BEFORE drafting content. The template owns layout, fixed UI headings, section order, counts and responsive behavior. Draft only exact declared data-text-slot keys, never invent UI copy or insert a block to accommodate an approved draft. Product Details is followed directly by two text-free Occasion images and then four icon cards; titles/descriptions 07–10 belong to the four cards, not the image pair. Brand style/mood may vary within approved assets and product copy within declared slots; it does not authorize changing DOM, CSS, fixed headings, counts or section order. Content approval is not layout approval. If approved copy has no destination slot, stop mapping and correct the content map instead of injecting it, silently dropping it or repurposing a different slot. Bind as textContent, never HTML. Keep existing evidence, approval and desktop/mobile visual-QC gates.',
 };
 
 /** Optional full copy draft, separate from research notes and raster banner copy. */
