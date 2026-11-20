@@ -62,6 +62,14 @@ test('FAQ repeats native details rows without any checkbox and keeps all answers
   assert.doesNotMatch(r.html, /<input\\b|type="checkbox"|<label\\b/i);
   for(const n of ['01','02','03']) {assert.ok(r.html.includes(`data-text-slot="faq_question_${n}"`));assert.ok(r.html.includes(`data-text-slot="faq_answer_${n}"`));}
   assert.doesNotMatch(r.html,/data-asset-slot="gtk_|uid-product-good-to-know|\{\{/);
+  assert.ok(r.html.includes('data-text-slot="faq_heading">FAQs</div>'));
+  assert.ok(!r.html.includes('Approved faq_heading'));
+  assert.equal(r.fixed_section_headings_enforced,true);
+  const renamed=fixture(3);renamed.bindings.text.faq_heading="AI invented section heading";
+  const mapped=bindOnepageUiTemplate(renamed.version,renamed.bindings);
+  assert.ok(mapped.html.includes('data-text-slot="faq_heading">FAQs</div>'));
+  assert.ok(!mapped.html.includes("AI invented section heading"));
+
   const marker='<div class="uid-product-content-faqs"';
   const values={...f.bindings.assets,...f.bindings.text};
   assert.equal(r.html.slice(0,r.html.indexOf(marker)),f.template.html.slice(0,f.template.html.indexOf(marker)).replace(/\{\{([a-z0-9_]+)\}\}/g,(_:string,s:string)=>values[s]));
