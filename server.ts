@@ -964,7 +964,14 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
         product_factually_correct:z.boolean(),notes:z.string().min(24)}).strict()).min(1).max(80)}
   }),async(input)=>{
     const result=evaluateOnepageEoOutcome(input);
-    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
+    const pixelAudit=await auditOnepageEoPixels(input.inspections.slice(0,12).map(x=>
+      ({slot:x.slot,image_url:x.source_image_url})));
+    const output={...result,pixel_audit:pixelAudit,
+      gateway_measured_pixels:pixelAudit.images_measured>0,
+      status:result.status==="REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA"&&pixelAudit.images_measured===0?
+        "SOURCE_PIXEL_AUDIT_UNAVAILABLE_REVIEW_REQUIRED":result.status,
+      independent_visual_limit:"Raster pixel metrics detect technical defects and duplicates; aesthetic EO quality, storytelling, exact physical product, and originality still require semantic visual review."};
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},"research");
   });
 
   server.registerTool("evaluate_onepage_eo_store_references",uidProgressTool("evaluate_onepage_eo_store_references",{
