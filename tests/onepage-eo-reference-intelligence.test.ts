@@ -12,7 +12,7 @@ const candidate=(id:string,product_type:string,extra:Record<string,unknown>={})=
 });
 const base=(candidates:any[])=>({brief,store_origin:"https://pawfecthouse.com",scan_complete:true,candidates});
 test("ranking favors exact Product Type first, then functional/material related Onepages",()=>{
- const p=buildOnepageEoReferencePack(base([
+ const p:any=buildOnepageEoReferencePack(base([
   candidate("same","Solar Fan Hat",{use_cases:[],materials:[],recipients:[],occasions:[]}),
   candidate("related","Gardening Sun Hat",{use_cases:["gardening","outdoor cooling"],materials:["fabric"],recipients:["gardener"],occasions:["birthday"]}),
   candidate("unrelated","Ornament",{use_cases:[],materials:[],recipients:[],occasions:[]})
@@ -25,7 +25,7 @@ test("ranking favors exact Product Type first, then functional/material related 
  assert.match(p.independence_rules.join(" "),/NOT as a composition/);
 });
 test("a live page, uninspected page and cross-brand page are not approved references",()=>{
- const p=buildOnepageEoReferencePack(base([
+ const p:any=buildOnepageEoReferencePack(base([
   candidate("unapproved","Solar Fan Hat",{approved:false}),
   candidate("unseen","Solar Fan Hat",{inspection:{desktop:true,mobile:false}}),
   candidate("other-brand","Solar Fan Hat",{brand:"GiftSoul",page_url:"https://giftsoul.co/products/other-brand"}),
@@ -37,7 +37,7 @@ test("a live page, uninspected page and cross-brand page are not approved refere
  assert.equal(p.server_pixel_inspected,false);
 });
 test("no reference does NOT stall Onepage research/creative workflow",()=>{
- const p=buildOnepageEoReferencePack(base([]));
+ const p:any=buildOnepageEoReferencePack(base([]));
  assert.equal(p.status,"REFERENCE_UNAVAILABLE_CONTINUE_CANONICAL_DNA");
  assert.match(p.fallback,/continue the task/);
  assert.equal(ONEPAGE_PRODUCTION_QC.eo_reference_intelligence.require_owner_approval_pause,false);
@@ -58,7 +58,7 @@ test("outcome fails copied execution even if declared high quality; repair one s
  inspected_full_size:true,quality_meets_reference:true,distinct_from_reference_execution:true,product_factually_correct:true,
  notes:"Responsive headline and subject composition inspected against the quality bar"}
  ]};
- const bad=evaluateOnepageEoOutcome(input);
+ const bad:any=evaluateOnepageEoOutcome(input);
  assert.equal(bad.status,"NEEDS_IN_TASK_REPAIR");
  assert.deepEqual(bad.affected_slots,["banner_desktop"]);
  assert.ok(bad.issues.includes("OVER_COPIED_REFERENCE:banner_desktop"));
