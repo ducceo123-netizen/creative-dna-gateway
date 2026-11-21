@@ -1,3 +1,6 @@
+import {scanOnepageEoStore,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
+import {auditOnepageEoPixels,EO_PIXEL_AUDIT_DESCRIPTION} from "./uid-eo-pixel-audit.ts";
+import {listEoLibrary,submitEoCandidate,approveEoReference,EO_LIBRARY_DESCRIPTION,EO_REFERENCE_SUBMIT_DESCRIPTION,EO_REFERENCE_APPROVE_DESCRIPTION} from "./uid-eo-reference-library.ts";
 import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_DESC } from "./supabase/functions/_shared/onepage-portable-quality.ts";
 import {buildOnepageEoReferencePack,evaluateOnepageEoOutcome,EO_REFERENCE_INTELLIGENCE_DESCRIPTION,EO_OUTCOME_COMPARISON_DESCRIPTION,EO_REF_CATEGORIES} from "./supabase/functions/_shared/onepage-eo-reference-intelligence.ts";
 import {evaluateOnepageEoStoreReferences,ONEPAGE_EO_STORE_REF_DESCRIPTION,ONEPAGE_EO_STORE_REF_SCHEMA} from "./supabase/functions/_shared/onepage-eo-store-reference.ts";
@@ -548,6 +551,11 @@ export const TOOL_DEFINITIONS = [
     description: ONEPAGE_PHYSICAL_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA,
   },
+  {name:"scan_onepage_eo_store",title:"Scan Real Store Onepages",description:EO_STORE_SCAN_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{brand:{type:"string",enum:["pawfecthouse","giftsoul","soulprise"]},product_type:{type:"string"},related_terms:{type:"array"},seed_product_urls:{type:"array"},limit:{type:"integer"},inspect_pixels:{type:"boolean"}},required:["brand","product_type","related_terms"]}},
+  {name:"audit_onepage_eo_pixels",title:"Audit Actual Onepage Image Pixels",description:EO_PIXEL_AUDIT_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{images:{type:"array"}},required:["images"]}},
+  {name:"list_onepage_eo_reference_library",title:"Read Approved EO Reference Library",description:EO_LIBRARY_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{brand:{type:"string",enum:["pawfecthouse","giftsoul","soulprise"]}},required:["brand"]}},
+  {name:"submit_onepage_eo_candidate",title:"Save Discovered EO Reference Candidate",description:EO_REFERENCE_SUBMIT_DESCRIPTION,annotations:PENDING_WRITE_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{brand:{type:"string"},page_url:{type:"string"},product_type:{type:"string"},image_urls:{type:"array"},match_terms:{type:"object"},quality_notes:{type:"object"},inspection:{type:"object"}},required:["brand","page_url","product_type","image_urls"]}},
+  {name:"approve_onepage_eo_reference",title:"Approve Inspected EO Reference",description:EO_REFERENCE_APPROVE_DESCRIPTION,annotations:PENDING_WRITE_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{reference_id:{type:"string"},expected_version:{type:"integer"},justification:{type:"string"},quality_notes:{type:"object"},desktop_inspected:{type:"boolean"},mobile_inspected:{type:"boolean"},explicit_admin_approval:{type:"boolean"}},required:["reference_id","expected_version","justification","quality_notes","desktop_inspected","mobile_inspected","explicit_admin_approval"]}},
   {name:"build_onepage_eo_reference_pack",title:"Build Onepage EO Reference Pack",description:EO_REFERENCE_INTELLIGENCE_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{brief:{type:"object"},store_origin:{type:"string"},scan_complete:{type:"boolean"},candidates:{type:"array"}},required:["brief","store_origin","scan_complete","candidates"]}},
   {name:"evaluate_onepage_eo_outcome",title:"Compare Onepage EO Outcome Quality",description:EO_OUTCOME_COMPARISON_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{task_id:{type:"string"},content_version:{type:"string"},reference_ids:{type:"array"},desktop_overall_url:{type:"string"},mobile_overall_url:{type:"string"},inspections:{type:"array"}},required:["task_id","content_version","reference_ids","desktop_overall_url","mobile_overall_url","inspections"]}},
   { name:"evaluate_onepage_eo_store_references", title:"Evaluate EO Store References", description:ONEPAGE_EO_STORE_REF_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS, inputSchema:ONEPAGE_EO_STORE_REF_SCHEMA },
@@ -839,17 +847,113 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   const eoFlags = z.object(Object.fromEntries(EO_ICON_DEFECTS.map(k=>[k,z.boolean()])) as Record<typeof EO_ICON_DEFECTS[number],z.ZodBoolean>).strict();
   const eoNotes=z.record(z.enum(EO_REF_CATEGORIES),z.string().trim().min(1)).optional();
   const eoStrings=z.array(z.string().trim().min(1)).max(30);
+  const eoBrand=z.enum(["pawfecthouse","giftsoul","soulprise"]);
+  server.registerTool("scan_onepage_eo_store",uidProgressTool("scan_onepage_eo_store",{
+    title:"Scan Real Store Onepages",description:EO_STORE_SCAN_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{brand:eoBrand,product_type:z.string().trim().min(1).max(160),
+      related_terms:z.array(z.string().trim().min(1).max(80)).max(4),
+      seed_product_urls:z.array(z.string().url()).max(12).optional(),limit:z.number().int().min(1).max(12).optional(),
+      inspect_pixels:z.boolean().optional()}
+  }),async(input)=>{
+    const result=await scanOnepageEoStore(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
+      isError:result.status==="INVALID_INPUT"},"research");
+  });
+  server.registerTool("audit_onepage_eo_pixels",uidProgressTool("audit_onepage_eo_pixels",{
+    title:"Audit Actual Onepage Image Pixels",description:EO_PIXEL_AUDIT_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{images:z.array(z.object({slot:z.string().trim().min(1).max(80),
+      image_url:z.string().url()}).strict()).min(1).max(12)}
+  }),async(input)=>{
+    const result=await auditOnepageEoPixels(input.images);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
+      isError:result.status==="INVALID_INPUT"},"research");
+  });
+  server.registerTool("list_onepage_eo_reference_library",uidProgressTool("list_onepage_eo_reference_library",{
+    title:"Read Approved EO Reference Library",description:EO_LIBRARY_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{brand:eoBrand}
+  }),async({brand})=>{
+    const result=await listEoLibrary(brand,requestAuthorization);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
+      isError:false},"research");
+  });
+  server.registerTool("submit_onepage_eo_candidate",uidProgressTool("submit_onepage_eo_candidate",{
+    title:"Save Discovered EO Reference Candidate",description:EO_REFERENCE_SUBMIT_DESCRIPTION,annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
+    inputSchema:{brand:eoBrand,page_url:z.string().url(),product_type:z.string().min(1).max(160),
+      image_urls:z.array(z.string().url()).max(16),match_terms:z.record(z.string(),z.unknown()).optional(),
+      quality_notes:z.record(z.string(),z.unknown()).optional(),inspection:z.record(z.string(),z.unknown()).optional()}
+  }),async(input)=>{
+    const result=await submitEoCandidate(input,requestAuthorization);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
+      isError:result.status==="INVALID_REFERENCE_SOURCE"},"research");
+  });
+  server.registerTool("approve_onepage_eo_reference",uidProgressTool("approve_onepage_eo_reference",{
+    title:"Approve Inspected EO Reference",description:EO_REFERENCE_APPROVE_DESCRIPTION,annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
+    inputSchema:{reference_id:z.string().uuid(),expected_version:z.number().int().min(1),
+      justification:z.string().trim().min(12).max(2000),quality_notes:z.record(z.string(),z.unknown()),
+      desktop_inspected:z.boolean(),mobile_inspected:z.boolean(),explicit_admin_approval:z.boolean()}
+  }),async(input)=>{
+    const result=await approveEoReference(input,requestAuthorization);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
+      isError:result.status!=="ADMIN_APPROVAL_COMMITTED"},"research");
+  });
+
   server.registerTool("build_onepage_eo_reference_pack",uidProgressTool("build_onepage_eo_reference_pack",{
     title:"Build Onepage EO Reference Pack",description:EO_REFERENCE_INTELLIGENCE_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema:{brief:z.object({brand:z.string().min(1),product_type:z.string().min(1),use_cases:eoStrings,materials:eoStrings,recipients:eoStrings,occasions:eoStrings}).strict(),
-      store_origin:z.string().url(),scan_complete:z.boolean(),
+      store_origin:z.string().url(),scan_complete:z.boolean(),auto_discover:z.boolean().optional(),
+      persist_discovered:z.boolean().optional(),
       candidates:z.array(z.object({id:z.string().min(1),brand:z.string().min(1),page_url:z.string().url(),product_type:z.string().min(1),
         use_cases:eoStrings,materials:eoStrings,recipients:eoStrings,occasions:eoStrings,approved:z.boolean(),
         inspection:z.object({desktop:z.boolean(),mobile:z.boolean()}).strict(),image_urls:z.array(z.string().url()).min(1).max(16),
         quality_notes:z.record(z.enum(EO_REF_CATEGORIES),z.string().min(1))}).strict()).max(100)}
   }),async(input)=>{
-    const result=buildOnepageEoReferencePack(input);
-    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
+    let sources:any[]=[...input.candidates];
+    let scanStatus="NOT_REQUESTED",libraryStatus="NOT_REQUESTED",pixelInspected=false;
+    let persisted=0,discovered=0;
+    const brand=String(input.brief.brand).toLowerCase().replace(/[^a-z]/g,"");
+    const auto=input.auto_discover===true||(input.auto_discover!==false&&sources.length===0);
+    if(auto&&["pawfecthouse","giftsoul","soulprise"].includes(brand)){
+      const scan:any=await scanOnepageEoStore({brand:brand as "pawfecthouse"|"giftsoul"|"soulprise",
+        product_type:input.brief.product_type,related_terms:[...input.brief.use_cases,...input.brief.materials].slice(0,4),
+        limit:5,inspect_pixels:true});
+      scanStatus=scan.status;discovered=scan.candidates.length;
+      pixelInspected=Boolean(scan.pixel_receipts?.pixel_checked_by_gateway&&scan.pixel_receipts.images_measured>0);
+      const library=await listEoLibrary(brand,requestAuthorization);
+      libraryStatus=library.status;
+      if(library.status==="APPROVED_LIBRARY_READ"){
+        for(const row of library.references){
+          const tags=row.match_terms||{};
+          const notes=Object.fromEntries(Object.entries(row.quality_notes||{}).filter(([k,v])=>
+            (EO_REF_CATEGORIES as readonly string[]).includes(k)&&typeof v==="string"&&v.trim().length>0));
+          if(!row.page_url||!row.product_type||!row.image_urls?.length||!Object.keys(notes).length)continue;
+          sources.push({id:row.id,brand:input.brief.brand,page_url:row.page_url,product_type:row.product_type,
+            use_cases:Array.isArray(tags.use_cases)?tags.use_cases:[],
+            materials:Array.isArray(tags.materials)?tags.materials:[],
+            recipients:Array.isArray(tags.recipients)?tags.recipients:[],
+            occasions:Array.isArray(tags.occasions)?tags.occasions:[],
+            approved:true,inspection:{desktop:row.inspection?.desktop===true,mobile:row.inspection?.mobile===true},
+            image_urls:row.image_urls,quality_notes:notes});
+        }
+      }
+      if(input.persist_discovered===true&&requestAuthorization){
+        for(const page of scan.candidates.slice(0,5)){
+          if(!page.product_type||!page.image_urls?.length)continue;
+          const write=await submitEoCandidate({brand,page_url:page.page_url,
+            product_type:page.product_type,image_urls:page.image_urls,
+            match_terms:{use_cases:input.brief.use_cases,materials:input.brief.materials,
+              recipients:input.brief.recipients,occasions:input.brief.occasions},
+            inspection:{source_pixels_measured:pixelInspected,desktop:false,mobile:false}},
+            requestAuthorization);
+          if(write.status==="CANDIDATE_SAVED_NOT_APPROVED")persisted++;
+        }
+      }
+    }
+    const result=buildOnepageEoReferencePack({...input,candidates:sources});
+    const output={...result,live_scan_status:scanStatus,live_candidates_found:discovered,
+      source_pixels_independently_measured:pixelInspected,shared_library_status:libraryStatus,
+      discovered_candidates_persisted_unapproved:persisted,
+      note:"Gateway fetched source PDP/images only when auto-discover ran. Only explicitly admin-approved references contribute to EO Quality Bar. No scan is owner approval or visual similarity target."};
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},"research");
   });
   server.registerTool("evaluate_onepage_eo_outcome",uidProgressTool("evaluate_onepage_eo_outcome",{
     title:"Compare Onepage EO Outcome Quality",description:EO_OUTCOME_COMPARISON_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
@@ -860,7 +964,14 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
         product_factually_correct:z.boolean(),notes:z.string().min(24)}).strict()).min(1).max(80)}
   }),async(input)=>{
     const result=evaluateOnepageEoOutcome(input);
-    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
+    const pixelAudit=await auditOnepageEoPixels(input.inspections.slice(0,12).map(x=>
+      ({slot:x.slot,image_url:x.source_image_url})));
+    const output={...result,pixel_audit:pixelAudit,
+      gateway_measured_pixels:Number(pixelAudit.images_measured||0)>0,
+      status:result.status==="REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA"&&Number(pixelAudit.images_measured||0)===0?
+        "SOURCE_PIXEL_AUDIT_UNAVAILABLE_REVIEW_REQUIRED":result.status,
+      independent_visual_limit:"Raster pixel metrics detect technical defects and duplicates; aesthetic EO quality, storytelling, exact physical product, and originality still require semantic visual review."};
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},"research");
   });
 
   server.registerTool("evaluate_onepage_eo_store_references",uidProgressTool("evaluate_onepage_eo_store_references",{
