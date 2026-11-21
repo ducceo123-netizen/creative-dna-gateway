@@ -907,13 +907,13 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
         inspection:z.object({desktop:z.boolean(),mobile:z.boolean()}).strict(),image_urls:z.array(z.string().url()).min(1).max(16),
         quality_notes:z.record(z.enum(EO_REF_CATEGORIES),z.string().min(1))}).strict()).max(100)}
   }),async(input)=>{
-    let sources=[...input.candidates];
+    let sources:any[]=[...input.candidates];
     let scanStatus="NOT_REQUESTED",libraryStatus="NOT_REQUESTED",pixelInspected=false;
     let persisted=0,discovered=0;
     const brand=String(input.brief.brand).toLowerCase().replace(/[^a-z]/g,"");
     const auto=input.auto_discover===true||(input.auto_discover!==false&&sources.length===0);
     if(auto&&["pawfecthouse","giftsoul","soulprise"].includes(brand)){
-      const scan=await scanOnepageEoStore({brand:brand as "pawfecthouse"|"giftsoul"|"soulprise",
+      const scan:any=await scanOnepageEoStore({brand:brand as "pawfecthouse"|"giftsoul"|"soulprise",
         product_type:input.brief.product_type,related_terms:[...input.brief.use_cases,...input.brief.materials].slice(0,4),
         limit:5,inspect_pixels:true});
       scanStatus=scan.status;discovered=scan.candidates.length;
@@ -967,8 +967,8 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     const pixelAudit=await auditOnepageEoPixels(input.inspections.slice(0,12).map(x=>
       ({slot:x.slot,image_url:x.source_image_url})));
     const output={...result,pixel_audit:pixelAudit,
-      gateway_measured_pixels:pixelAudit.images_measured>0,
-      status:result.status==="REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA"&&pixelAudit.images_measured===0?
+      gateway_measured_pixels:Number(pixelAudit.images_measured||0)>0,
+      status:result.status==="REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA"&&Number(pixelAudit.images_measured||0)===0?
         "SOURCE_PIXEL_AUDIT_UNAVAILABLE_REVIEW_REQUIRED":result.status,
       independent_visual_limit:"Raster pixel metrics detect technical defects and duplicates; aesthetic EO quality, storytelling, exact physical product, and originality still require semantic visual review."};
     return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},"research");
