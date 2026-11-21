@@ -1,6 +1,6 @@
 import {readBoundedReferenceBytes} from "./supabase/functions/_shared/private-reference-access.ts";
 import {auditOnepageEoPixels,trustedEoImageUrl} from "./uid-eo-pixel-audit.ts";
-export const EO_STORE_SCAN_VERSION="uid-eo-store-scan/2026-11-21.v1";
+export const EO_STORE_SCAN_VERSION="uid-eo-store-scan/2026-11-21.v2";
 export const EO_STORE_SCAN_DESCRIPTION="Gateway performs a bounded LIVE scan of public product pages on one of the three verified UID brands, obtains Shopify product_type and real PDP section/image evidence, and decodes selected source image pixels. NEVER mark live pages EO-approved automatically. Does not replace the exact-product-type SKU inventory scan, and does not require Studio.";
 const domains={pawfecthouse:"pawfecthouse.com",giftsoul:"giftsoul.co",soulprise:"soulprise.co"} as const;
 type Brand=keyof typeof domains;
@@ -77,9 +77,12 @@ export async function scanOnepageEoStore(raw:unknown,fetcher:typeof fetch=fetch)
  const candidates:any[]=[];
  for(const page_url of urls.slice(0,max)){
    const handle=new URL(page_url).pathname.split("/")[2];
-   let type="",title="";
+   let type="",title="",galleryImages:string[]=[];
    try{const json=JSON.parse(await fetchStore("https://"+host+"/products/"+handle+".js",host,500000,fetcher));
      type=String(json.type||json.product_type||"").trim().slice(0,160);title=String(json.title||"").slice(0,160);
+     const raw=[...(Array.isArray(json.images)?json.images:[]),json.featured_image];
+     galleryImages=[...new Set(raw.map((x:any)=>typeof x==="string"?x:typeof x?.src==="string"?x.src:"")
+       .map((x:string)=>safeImage(host,x)).filter((x:string|null):x is string=>!!x))].slice(0,12);
    }catch(e){errors.push("PDP_TYPE_ERROR:"+handle);}
    try{
      const html=await fetchStore(page_url,host,1500000,fetcher);
@@ -90,9 +93,15 @@ export async function scanOnepageEoStore(raw:unknown,fetcher:typeof fetch=fetch)
        faqs:/\bFAQs\b/i.test(html),
        occasion:/\bOccasion\b/i.test(html)};
      if(!title)title=(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||"").replace(/<[^>]+>/g," ").slice(0,160);
+     const onepageImages=imagesFromHtml(html,host);
+     const sourceImageUrls=onepageImages.length?onepageImages:galleryImages;
      candidates.push({brand:q.brand,page_url,product_type:type,title,markers,
        onepage_evidence:markers.benefits&&markers.details?"SECTION_MARKERS_FOUND":"ONEPAGE_NOT_VERIFIED",
-       image_urls:imagesFromHtml(html,host),approval_status:"DISCOVERED_NOT_APPROVED",
+       image_urls:sourceImageUrls,
+       image_provenance:onepageImages.length?"PUBLIC_PAGE_HTML_IMG_TAGS":
+         galleryImages.length?"SHOPIFY_PRODUCT_GALLERY_FALLBACK_NOT_ONEPAGE_PROOF":"NO_VERIFIED_IMAGES",
+       onepage_image_urls:onepageImages,product_gallery_image_urls:galleryImages,
+       approval_status:"DISCOVERED_NOT_APPROVED",
        source:"LIVE_PUBLIC_PDP_AND_SHOPIFY_JSON"});
    }catch(e){errors.push("PDP_FETCH_ERROR:"+handle);}
  }
@@ -104,5 +113,5 @@ export async function scanOnepageEoStore(raw:unknown,fetcher:typeof fetch=fetch)
  return {...b,status:candidates.length?"LIVE_BOUNDED_SCAN":"NO_STORE_CANDIDATES",brand:q.brand,
     store_origin:"https://"+host,query_type:q.product_type,candidates,pixel_receipts,
     scanned_pages:candidates.length,discovered_pages:urls.length,scan_complete:false,errors,
-    note:"Actual store HTML and PDP metadata fetched. Source pixels inspected only for pixel_receipts. No full-store crawl, native mobile screenshot, confirmed owner approval or subjective EO certification."};
+    note:"Actual store HTML and PDP metadata fetched. Source pixels inspected only for pixel_receipts. When HTML does not expose Onepage assets, product gallery images are labeled as fallback, not Onepage proof. No full-store crawl, native mobile screenshot, confirmed owner approval or subjective EO certification."};
 }
