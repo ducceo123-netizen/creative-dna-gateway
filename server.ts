@@ -285,7 +285,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
        scan_complete:false,candidates});
      output.eo_reference_intelligence={schema_version:"uid-onepage-eo-reference-intelligence/2026-11-21.v1",
        scan_status:scan.status,scan_candidates:scan.candidates.map(x=>({page_url:x.page_url,product_type:x.product_type,
-         onepage_evidence:x.onepage_evidence,image_urls:x.image_urls.slice(0,4),approval_status:x.approval_status})),
+         onepage_evidence:x.onepage_evidence,image_provenance:x.image_provenance,image_urls:x.image_urls.slice(0,4),approval_status:x.approval_status})),
        shared_library_status:library.status,ranked_references:"ranked_references" in pack?pack.ranked_references:[],
        quality_bar:"quality_bar" in pack?pack.quality_bar:{},
        copying_allowed:false,reference_is_quality_bar_not_creative_template:true,
