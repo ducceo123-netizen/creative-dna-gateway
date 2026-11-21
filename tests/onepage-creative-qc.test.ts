@@ -198,3 +198,26 @@ test("passing creative report still needs real pixel and overall inspection",()=
   assert.equal(p.terminal,false);
   assert.equal(p.defer_owner_review_until_qc_ready,false);
 });
+
+test("GTK has priority even when meaningful FAQ questions also exist",()=>{
+  const base:any={task_id:"gtk-priority",content_version:"v1",scope:"post_story_choice",post_story:{
+    selected:"faqs",pdp_evidence_urls:["https://pawfecthouse.com/products/sample"],
+    buyer_questions:[{question:"Which size fits?",evidence_url:"https://pawfecthouse.com/products/sample",answer_supported:true},{question:"Is customization available?",evidence_url:"https://pawfecthouse.com/products/sample",answer_supported:true}],
+    gtk_insights:[{insight:"See size chart before ordering",evidence_url:"https://pawfecthouse.com/products/sample",nonduplicative:true},{insight:"Personalized text can be reviewed before checkout",evidence_url:"https://pawfecthouse.com/products/sample",nonduplicative:true}],
+    faq_questions:["Which size fits?","Is customization available?"],page_overlap_check:true,
+    selection_reason:"Two genuine buyer uncertainties, but actionable GTK insights exist and should take priority."}};
+  const faq=evaluateOnepageCreativeQc(base);
+  assert.ok(faq.issues.includes("FAQ_SELECTED_WHEN_GTK_IS_SUITABLE"));
+  base.post_story.selected="good_to_know";
+  assert.equal(evaluateOnepageCreativeQc(base).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+});
+test("FAQ is allowed only as a documented exception when GTK is unsupported",()=>{
+  const input:any={task_id:"gtk-fallback",content_version:"v1",scope:"post_story_choice",post_story:{
+    selected:"faqs",pdp_evidence_urls:["https://pawfecthouse.com/products/sample"],
+    buyer_questions:[{question:"Does it need assembly?",evidence_url:"https://pawfecthouse.com/products/sample",answer_supported:true},{question:"What is included?",evidence_url:"https://pawfecthouse.com/products/sample",answer_supported:true}],
+    gtk_insights:[],faq_questions:["Does it need assembly?","What is included?"],page_overlap_check:true,
+    selection_reason:"No two nonduplicated product tips are supported, while specific buying uncertainties have documented answers."}};
+  assert.equal(evaluateOnepageCreativeQc(input).status,"REPORTED_CLEAR_REQUIRES_HOST_VISUAL_QA");
+  assert.equal(ONEPAGE_PRODUCTION_QC.content_choice.default,"good_to_know");
+  assert.match(ONEPAGE_PRODUCTION_QC.content_choice.faq_exception_condition,/FAQ ONLY/);
+});
