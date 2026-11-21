@@ -22,7 +22,7 @@ const scoreCandidate=(b:Brief,c:Candidate)=>{
  const exact=clean(b.product_type)===clean(c.product_type);
  const functions=overlap(b.use_cases,c.use_cases),materials=overlap(b.materials,c.materials);
  const audience=overlap(b.recipients,c.recipients),occasion=overlap(b.occasions,c.occasions);
- const score=(exact?100:0)+Math.min(2,functions)*24+Math.min(2,materials)*15+Math.min(2,audience)*8+Math.min(2,occasion)*5;
+ const score=(exact?200:0)+Math.min(2,functions)*24+Math.min(2,materials)*15+Math.min(2,audience)*8+Math.min(2,occasion)*5;
  return {score,reasons:[exact?"EXACT_PRODUCT_TYPE":null,functions?"SHARED_FUNCTION":null,materials?"SHARED_MATERIAL":null,audience?"SHARED_RECIPIENT":null,occasion?"SHARED_OCCASION":null].filter(Boolean)};
 };
 export function buildOnepageEoReferencePack(input:unknown){
