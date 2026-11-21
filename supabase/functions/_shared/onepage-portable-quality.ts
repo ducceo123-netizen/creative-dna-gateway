@@ -21,7 +21,7 @@ export const ONEPAGE_PORTABLE_QUALITY_RULES={
       good_to_know:"Three concise, genuinely distinct visual/practical buying insights when supported.",
       faqs:"Choose instead of GTK only for conditional questions (inclusions, variants, ordering, compatibility), no invented answers.",
     },
-    post_story_choice:"GTK versus FAQs only after source review; do not default or include both. Omit unsupported ideas rather than invent filler.",
+    post_story_choice:"DEFAULT PRIORITY = GOOD TO KNOW. Investigate real specs, customer pain points, use/care/personalization facts; choose GTK if at least two nonduplicated actionable PDP-backed insights exist (prefer three). FAQs are allowed ONLY when GTK is genuinely unhelpful or fewer than two distinct supported GTK insights exist AND >=2 specific unresolved buyer questions have verified answers. Document why GTK was unsuitable. If both could work, choose GTK. Never fabricate insights or select FAQ because a generic FAQ template is easiest.",
     avoid:["repeated_gifting_praise_across_sections","generic_benefits","unverified_care_and_materials","unsupported_customization_options","promotional_prices_without_verified_source"],
     copy_rule:"Use concise naturally written US English. Product/line keyword is banner title per current Onepage content contract, with verified short support in desktop only; mobile no unsupported subtitle. Never overwrite owner-approved wording.",
   },
