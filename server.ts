@@ -860,7 +860,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
         product_factually_correct:z.boolean(),notes:z.string().min(24)}).strict()).min(1).max(80)}
   }),async(input)=>{
     const result=evaluateOnepageEoOutcome(input);
-    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"review");
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
   });
 
   server.registerTool("evaluate_onepage_eo_store_references",uidProgressTool("evaluate_onepage_eo_store_references",{
