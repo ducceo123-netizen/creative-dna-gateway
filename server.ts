@@ -1,4 +1,5 @@
 import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_DESC } from "./supabase/functions/_shared/onepage-portable-quality.ts";
+import {buildOnepageEoReferencePack,evaluateOnepageEoOutcome,EO_REFERENCE_INTELLIGENCE_DESCRIPTION,EO_OUTCOME_COMPARISON_DESCRIPTION,EO_REF_CATEGORIES} from "./supabase/functions/_shared/onepage-eo-reference-intelligence.ts";
 import {evaluateOnepageEoStoreReferences,ONEPAGE_EO_STORE_REF_DESCRIPTION,ONEPAGE_EO_STORE_REF_SCHEMA} from "./supabase/functions/_shared/onepage-eo-store-reference.ts";
 import {evaluateOnepageProductTypeScope,PRODUCT_TYPE_SCOPE_DESCRIPTION,PRODUCT_TYPE_SCOPE_INPUT_SCHEMA} from "./supabase/functions/_shared/onepage-product-type-scope.ts";
 import { evaluateOnepagePhysicalQc, ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA, ONEPAGE_PHYSICAL_QC_DESCRIPTION, ONEPAGE_PHYSICAL_DEFECTS } from "./supabase/functions/_shared/onepage-physical-qc.ts";
@@ -547,6 +548,8 @@ export const TOOL_DEFINITIONS = [
     description: ONEPAGE_PHYSICAL_QC_DESCRIPTION, annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: ONEPAGE_PHYSICAL_QC_INPUT_SCHEMA,
   },
+  {name:"build_onepage_eo_reference_pack",title:"Build Onepage EO Reference Pack",description:EO_REFERENCE_INTELLIGENCE_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{brief:{type:"object"},store_origin:{type:"string"},scan_complete:{type:"boolean"},candidates:{type:"array"}},required:["brief","store_origin","scan_complete","candidates"]}},
+  {name:"evaluate_onepage_eo_outcome",title:"Compare Onepage EO Outcome Quality",description:EO_OUTCOME_COMPARISON_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,inputSchema:{type:"object",properties:{task_id:{type:"string"},content_version:{type:"string"},reference_ids:{type:"array"},desktop_overall_url:{type:"string"},mobile_overall_url:{type:"string"},inspections:{type:"array"}},required:["task_id","content_version","reference_ids","desktop_overall_url","mobile_overall_url","inspections"]}},
   { name:"evaluate_onepage_eo_store_references", title:"Evaluate EO Store References", description:ONEPAGE_EO_STORE_REF_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS, inputSchema:ONEPAGE_EO_STORE_REF_SCHEMA },
   { name:"evaluate_onepage_product_type_scope", title:"Evaluate Exact Product Type Scope", description:PRODUCT_TYPE_SCOPE_DESCRIPTION, annotations:READ_ONLY_TOOL_ANNOTATIONS, inputSchema:PRODUCT_TYPE_SCOPE_INPUT_SCHEMA },
   {
@@ -834,6 +837,32 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   });
 
   const eoFlags = z.object(Object.fromEntries(EO_ICON_DEFECTS.map(k=>[k,z.boolean()])) as Record<typeof EO_ICON_DEFECTS[number],z.ZodBoolean>).strict();
+  const eoNotes=z.record(z.enum(EO_REF_CATEGORIES),z.string().trim().min(1)).optional();
+  const eoStrings=z.array(z.string().trim().min(1)).max(30);
+  server.registerTool("build_onepage_eo_reference_pack",uidProgressTool("build_onepage_eo_reference_pack",{
+    title:"Build Onepage EO Reference Pack",description:EO_REFERENCE_INTELLIGENCE_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{brief:z.object({brand:z.string().min(1),product_type:z.string().min(1),use_cases:eoStrings,materials:eoStrings,recipients:eoStrings,occasions:eoStrings}).strict(),
+      store_origin:z.string().url(),scan_complete:z.boolean(),
+      candidates:z.array(z.object({id:z.string().min(1),brand:z.string().min(1),page_url:z.string().url(),product_type:z.string().min(1),
+        use_cases:eoStrings,materials:eoStrings,recipients:eoStrings,occasions:eoStrings,approved:z.boolean(),
+        inspection:z.object({desktop:z.boolean(),mobile:z.boolean()}).strict(),image_urls:z.array(z.string().url()).min(1).max(16),
+        quality_notes:z.record(z.enum(EO_REF_CATEGORIES),z.string().min(1))}).strict()).max(100)}
+  }),async(input)=>{
+    const result=buildOnepageEoReferencePack(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
+  });
+  server.registerTool("evaluate_onepage_eo_outcome",uidProgressTool("evaluate_onepage_eo_outcome",{
+    title:"Compare Onepage EO Outcome Quality",description:EO_OUTCOME_COMPARISON_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{task_id:z.string().min(1),content_version:z.string().min(1),
+      reference_ids:z.array(z.string().min(1)).max(12),desktop_overall_url:z.string().url(),mobile_overall_url:z.string().url(),
+      inspections:z.array(z.object({section:z.enum(EO_REF_CATEGORIES),slot:z.string().min(1),source_image_url:z.string().url(),
+        inspected_full_size:z.boolean(),quality_meets_reference:z.boolean(),distinct_from_reference_execution:z.boolean(),
+        product_factually_correct:z.boolean(),notes:z.string().min(24)}).strict()).min(1).max(80)}
+  }),async(input)=>{
+    const result=evaluateOnepageEoOutcome(input);
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,isError:result.status==="INVALID_INPUT"},"research");
+  });
+
   server.registerTool("evaluate_onepage_eo_store_references",uidProgressTool("evaluate_onepage_eo_store_references",{
     title:"Evaluate EO Store References",description:ONEPAGE_EO_STORE_REF_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema:{brand:z.string().trim().min(1).max(100),store_origin:z.string().url(),
