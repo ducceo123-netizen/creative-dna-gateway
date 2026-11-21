@@ -247,11 +247,53 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   return response;
 }
 
-export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown, product_line?:string) {
+export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown, product_line?:string, memberAuthorization?:string|null) {
  const validated=validateResolveInput(brand,"onepage-system");
  const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
  const data = response.data;
- return {status:response.status,ok:response.ok,data:response.ok ? {...attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}),...(product_line&&!source_url?{named_product_scope:{requested_product_type:product_line,match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT",requires_store_catalog_scan:true,evaluator:"evaluate_onepage_product_type_scope",no_title_or_handle_contains_fallback:true}}:{})} : data};
+ if(!response.ok)return {status:response.status,ok:response.ok,data};
+ const output:any={...attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}),
+   ...(product_line&&!source_url?{named_product_scope:{requested_product_type:product_line,match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT",requires_store_catalog_scan:true,evaluator:"evaluate_onepage_product_type_scope",no_title_or_handle_contains_fallback:true}}:{})};
+ // Backward-compatible automatic reference discovery. Old ChatGPT tool schemas
+ // still see this field on the EXISTING compile_onepage_job response.
+ const slug=String(validated.brand).toLowerCase().replace(/[^a-z]/g,"");
+ const supplied=research&&typeof research==="object"&&!Array.isArray(research)?research as Record<string,unknown>:{};
+ const line=(product_line||String(supplied.product_type||"")).trim();
+ if(line&&["pawfecthouse","giftsoul","soulprise"].includes(slug)){
+   try{
+     const scan=await scanOnepageEoStore({brand:slug as "pawfecthouse"|"giftsoul"|"soulprise",
+       product_type:line,related_terms:[],seed_product_urls:source_url?[source_url]:[],
+       limit:2,inspect_pixels:false});
+     const library=await listEoLibrary(slug,memberAuthorization);
+     const candidates:any[]=[];
+     if(library.status==="APPROVED_LIBRARY_READ")for(const row of library.references){
+       const tags=row.match_terms||{};
+       const notes=Object.fromEntries(Object.entries(row.quality_notes||{}).filter(([k,v])=>
+         (EO_REF_CATEGORIES as readonly string[]).includes(k)&&typeof v==="string"&&v.trim()));
+       if(!row.page_url||!row.product_type||!Array.isArray(row.image_urls)||!row.image_urls.length||!Object.keys(notes).length)continue;
+       candidates.push({id:row.id,brand:validated.brand,page_url:row.page_url,product_type:row.product_type,
+         use_cases:Array.isArray(tags.use_cases)?tags.use_cases:[],
+         materials:Array.isArray(tags.materials)?tags.materials:[],
+         recipients:Array.isArray(tags.recipients)?tags.recipients:[],
+         occasions:Array.isArray(tags.occasions)?tags.occasions:[],
+         approved:true,inspection:{desktop:row.inspection?.desktop===true,mobile:row.inspection?.mobile===true},
+         image_urls:row.image_urls,quality_notes:notes});
+     }
+     const pack=buildOnepageEoReferencePack({brief:{brand:validated.brand,product_type:line,
+       use_cases:[],materials:[],recipients:[],occasions:[]},
+       store_origin:"https://"+(slug==="pawfecthouse"?"pawfecthouse.com":slug==="giftsoul"?"giftsoul.co":"soulprise.co"),
+       scan_complete:false,candidates});
+     output.eo_reference_intelligence={schema_version:"uid-onepage-eo-reference-intelligence/2026-11-21.v1",
+       scan_status:scan.status,scan_candidates:scan.candidates.map(x=>({page_url:x.page_url,product_type:x.product_type,
+         onepage_evidence:x.onepage_evidence,image_urls:x.image_urls.slice(0,4),approval_status:x.approval_status})),
+       shared_library_status:library.status,ranked_references:"ranked_references" in pack?pack.ranked_references:[],
+       quality_bar:"quality_bar" in pack?pack.quality_bar:{},
+       copying_allowed:false,reference_is_quality_bar_not_creative_template:true,
+       note:"Source pages are unapproved candidates. Only explicit inspected admin-approved library rows define EO quality. Absence of access is not a hard stop."};
+   }catch(e){output.eo_reference_intelligence={status:"DISCOVERY_UNAVAILABLE_CONTINUE_CANONICAL_DNA",
+       reason:e instanceof Error?e.message:"source unavailable",no_approval_pause:true};}
+ }
+ return {status:response.status,ok:response.ok,data:output};
 }
 
 // Core gateway functions
@@ -1088,7 +1130,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   server.registerTool("compile_onepage_job",uidProgressTool("compile_onepage_job", {
     title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
     inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),product_line:z.string().trim().max(160).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
-  }),async({brand,source_url,source_type,theme,research,product_line})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research,product_line);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
+  }),async({brand,source_url,source_type,theme,research,product_line})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research,product_line,requestAuthorization);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
 
   // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
   server.registerTool(
