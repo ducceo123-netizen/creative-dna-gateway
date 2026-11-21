@@ -5,7 +5,7 @@ create role authenticated;
 create role service_role bypassrls;
 -- Minimal local Supabase Auth mock for exercising policy migration SQL in disposable Postgres.
 create schema auth;
-create function auth.uid() returns uuid language sql stable as $ select null::uuid $;
+create function auth.uid() returns uuid language sql stable as 'select null::uuid';
 
 create table public.brands(id uuid primary key default gen_random_uuid(),slug text not null,name text not null,
  description text,current_version text not null default '0.1',created_at timestamptz not null default now(),updated_at timestamptz not null default now());
