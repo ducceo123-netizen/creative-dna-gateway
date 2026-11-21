@@ -1,7 +1,7 @@
 /** Evidence-bound, deterministic Onepage collection diversity & EO icon reporting gates.
  * No image pixels are inspected here. False self-attestation is not proof of actual QA.
  */
-export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-20.v4";
+export const ONEPAGE_CREATIVE_QC_VERSION = "uid-onepage-creative-assets/2026-11-21.v5";
 export const EO_ICON_DEFECTS = [
   "inconsistent_stroke_weight", "fragmented_or_noisy_details", "distorted_anatomy_or_geometry",
   "inconsistent_perspective_or_proportions", "unclear_small_size_silhouette",
@@ -103,13 +103,19 @@ export function evaluateOnepageCreativeQc(input:unknown) {
       issues.push("UNSUPPORTED_BUYER_QUESTION");
     for(const insight of p.gtk_insights)if(!record(insight)||!nonempty(insight.insight)||!sourceUrl(insight.evidence_url)||insight.nonduplicative!==true)
       issues.push("UNSUPPORTED_OR_DUPLICATE_GTK_INSIGHT");
+    const eligibleGtkInsights = p.gtk_insights.filter((x:any)=>record(x)&&nonempty(x.insight)&&sourceUrl(x.evidence_url)&&x.nonduplicative===true);
+    const gtkCanServeBuyer = eligibleGtkInsights.length>=2;
+    // GTK is the first choice whenever two distinct PDP-backed and genuinely
+    // useful insights can be presented; FAQs are a documented exception only.
     if(p.selected==="faqs") {
+      if(gtkCanServeBuyer)issues.push("FAQ_SELECTED_WHEN_GTK_IS_SUITABLE");
       if(p.faq_questions.length<2||p.buyer_questions.length<2)issues.push("FAQ_WITHOUT_REAL_BUYER_QUESTIONS");
       for(const question of p.faq_questions)if(!p.buyer_questions.some(q=>q.question===question&&q.answer_supported===true))
         issues.push("FAQ_QUESTION_NOT_EVIDENCE_BACKED");
     } else if(p.gtk_insights.length<2) issues.push("GTK_WITHOUT_ACTIONABLE_INSIGHTS");
     return result(issues,input,{selected:p.selected,verified_buyer_question_count:p.buyer_questions.length,
-      gtk_insight_count:p.gtk_insights.length,decision_is_not_a_default:true,
+      gtk_insight_count:p.gtk_insights.length,gtk_priority:"FIRST_WHEN_EVIDENCE_SUPPORTS_TWO_DISTINCT_INSIGHTS",
+      faq_only_when_gtk_not_suitable:true,faq_exception_eligible:!gtkCanServeBuyer,
       note:"URLs and supplied notes are not independent verification; the host must inspect the underlying sources."});
   }
   if(input.scope==="content_visual_match") {
