@@ -74,3 +74,25 @@ test("private shared library requires member JWT; candidate saves remain unappro
    assert.equal(approval.status,"EXPLICIT_INSPECTED_ADMIN_APPROVAL_REQUIRED");
  }finally{if(original===undefined)delete process.env.SUPABASE_PUBLISHABLE_KEY;else process.env.SUPABASE_PUBLISHABLE_KEY=original;}
 });
+
+test("dynamic Onepage markup uses real Shopify product gallery as explicitly unverified fallback",async()=>{
+  const fetcher:typeof fetch=async(raw)=>{
+    const url=String(raw);
+    if(url.includes("/search/suggest.json"))return Response.json({resources:{results:{products:[{handle:"solar-fan-hat"}]}}});
+    if(url.endsWith("/products/solar-fan-hat.js"))return Response.json({
+      type:"Solar Fan Hat",title:"Verified Hat",images:["//cdn.shopify.com/s/files/1/gallery-hat.webp"],
+      featured_image:"//cdn.shopify.com/s/files/1/gallery-hat.webp"});
+    if(url.endsWith("/products/solar-fan-hat"))return new Response("<html><title>Solar Fan Hat</title><div>Customer photo gallery mounted client-side</div></html>",
+      {headers:{"content-type":"text/html"}});
+    throw Error("Unexpected URL "+url);
+  };
+  const r:any=await scanOnepageEoStore({brand:"pawfecthouse",product_type:"Solar Fan Hat",related_terms:[],limit:2,inspect_pixels:false},fetcher);
+  assert.equal(r.status,"LIVE_BOUNDED_SCAN");
+  assert.equal(r.candidates.length,1);
+  assert.equal(r.candidates[0].approval_status,"DISCOVERED_NOT_APPROVED");
+  assert.equal(r.candidates[0].onepage_evidence,"ONEPAGE_NOT_VERIFIED");
+  assert.equal(r.candidates[0].image_provenance,"SHOPIFY_PRODUCT_GALLERY_FALLBACK_NOT_ONEPAGE_PROOF");
+  assert.equal(r.candidates[0].image_urls.length,1);
+  assert.ok(r.candidates[0].image_urls[0].startsWith("https://cdn.shopify.com/"));
+  assert.equal(r.candidates[0].onepage_image_urls.length,0);
+});
