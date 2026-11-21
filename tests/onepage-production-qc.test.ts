@@ -6,7 +6,8 @@ import { getOnepageUiTemplate } from "../onepage-ui-template.ts";
 
 test("Onepage production QC is shared by ChatGPT workflow and UI template", () => {
   assert.deepEqual(ONEPAGE_PRODUCTION_QC.clients, ["chatgpt", "webapp"]);
-  assert.equal(ONEPAGE_PRODUCTION_QC.content_choice.default, null);
+  assert.equal(ONEPAGE_PRODUCTION_QC.content_choice.default, "good_to_know");
+  assert.match(ONEPAGE_PRODUCTION_QC.content_choice.faq_exception_condition,/FAQ ONLY/);
   assert.deepEqual(UID_NATIVE_WORKFLOW.onepageProductionQc, ONEPAGE_PRODUCTION_QC);
   const manifest = getOnepageUiTemplate();
   assert.deepEqual(manifest.production_qc_contract, ONEPAGE_PRODUCTION_QC);

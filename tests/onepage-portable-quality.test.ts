@@ -9,7 +9,7 @@ test("portable quality is independent of personal ChatGPT account and covers con
   assert.equal(pack.schema_version,ONEPAGE_QUALITY_PACK_VERSION);
   assert.equal(pack.account_memory_required,false);
   assert.deepEqual(pack.applies_to_clients,["chatgpt_mcp","web_app","external_mcp_client"]);
-  assert.equal(pack.rules.content.post_story_choice.includes("only after source review"),true);
+  assert.equal(pack.rules.content.post_story_choice.includes("DEFAULT PRIORITY = GOOD TO KNOW"),true);
   assert.equal(pack.rules.banner.dimensions.desktop,"2560x960");
   assert.equal(pack.rules.banner.dimensions.mobile,"720x700");
   assert.ok(pack.rules.imagery.production_sequence.length>=5);
