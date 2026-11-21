@@ -1,12 +1,11 @@
 import test from "node:test";
 import {strict as assert} from "node:assert";
-import sharp from "sharp";
 import {scanOnepageEoStore} from "../uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,trustedEoImageUrl,analyzeEoImageBytes} from "../uid-eo-pixel-audit.ts";
 import {listEoLibrary,submitEoCandidate,approveEoReference,validEoReferencePage} from "../uid-eo-reference-library.ts";
 
 test("live bounded scanner uses real product type, HTML section markers, actual image bytes and never approves",async()=>{
- const png=await sharp({create:{width:720,height:720,channels:3,background:{r:120,g:88,b:55}}}).png().toBuffer();
+ const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAHUlEQVR4nGOsiDBnIBcwka1zVPOo5lHNo5qpohkAR+4BL9gQjwEAAAAASUVORK5CYII=","base64");
  const fetcher:typeof fetch=async(raw)=>{
   const url=String(raw);
   if(url.includes("/search/suggest.json"))return new Response(JSON.stringify({resources:{results:{products:[{url:"/products/solar-fan-hat"}]}}}),{headers:{"content-type":"application/json"}});
@@ -22,14 +21,14 @@ test("live bounded scanner uses real product type, HTML section markers, actual 
  assert.equal(result.candidates[0].onepage_evidence,"SECTION_MARKERS_FOUND");
  assert.equal(result.candidates[0].approval_status,"DISCOVERED_NOT_APPROVED");
  assert.equal(result.pixel_receipts.pixel_checked_by_gateway,true);
- assert.equal(result.pixel_receipts.results[0].width,720);
+ assert.equal(result.pixel_receipts.results[0].width,20);
  assert.equal(result.scan_complete,false);
 });
 test("image whitelist rejects SSRF sources, pixel decoder measures and detects duplicates",async()=>{
  assert.equal(trustedEoImageUrl("http://127.0.0.1/secret"),false);
  assert.equal(trustedEoImageUrl("https://evil.example.com/image.png"),false);
  assert.equal(trustedEoImageUrl("https://cdn.shopify.com/test.png"),true);
- const png=await sharp({create:{width:500,height:500,channels:3,background:{r:140,g:95,b:45}}}).png().toBuffer();
+ const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAHUlEQVR4nGOsiDBnIBcwka1zVPOo5lHNo5qpohkAR+4BL9gQjwEAAAAASUVORK5CYII=","base64");
  const receipt=await analyzeEoImageBytes(png,"icon_1","https://cdn.shopify.com/a.png");
  assert.equal(receipt.measurement,"GATEWAY_DECODED_PIXELS");
  assert.equal(receipt.sha256.length,64);
