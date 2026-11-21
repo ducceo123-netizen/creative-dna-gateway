@@ -1,3 +1,4 @@
+import {trustedEoImageUrl} from "./uid-eo-pixel-audit.ts";
 /** Authenticated Supabase-backed, shared EO reference library.
  * Server never accepts owner-supplied service-role credentials and never
  * promotes scanned public pages automatically.
@@ -54,7 +55,7 @@ export async function submitEoCandidate(input:{
 },auth:string|undefined|null,fetcher:typeof fetch=fetch){
  if(!jwt(auth))return {status:"AUTHENTICATED_UID_MEMBER_REQUIRED"};
  if(!validEoReferencePage(input.brand,input.page_url)||!Array.isArray(input.image_urls)||input.image_urls.length>16||
-    input.image_urls.some(u=>typeof u!=="string"||!u.startsWith("https://"))||
+    input.image_urls.some(u=>typeof u!=="string"||!trustedEoImageUrl(u))||
     !nonempty(input.product_type)||input.product_type.length>160)
     return {status:"INVALID_REFERENCE_SOURCE"};
  try{
