@@ -1,6 +1,6 @@
 import test from "node:test";
 import {strict as assert} from "node:assert";
-import {scanOnepageEoStore} from "../uid-eo-store-scanner.ts";
+import {scanOnepageEoStore,resolveOnepagePdpProductType} from "../uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,trustedEoImageUrl,analyzeEoImageBytes} from "../uid-eo-pixel-audit.ts";
 import {listEoLibrary,submitEoCandidate,approveEoReference,validEoReferencePage} from "../uid-eo-reference-library.ts";
 
@@ -73,4 +73,33 @@ test("private shared library requires member JWT; candidate saves remain unappro
      quality_notes:{},desktop_inspected:true,mobile_inspected:true,explicit_admin_approval:false},auth,fetcher);
    assert.equal(approval.status,"EXPLICIT_INSPECTED_ADMIN_APPROVAL_REQUIRED");
  }finally{if(original===undefined)delete process.env.SUPABASE_PUBLISHABLE_KEY;else process.env.SUPABASE_PUBLISHABLE_KEY=original;}
+});
+
+test("PDP-only Onepage briefs resolve exact Shopify product type with trusted source",async()=>{
+ const calls:string[]=[];
+ const fetcher:typeof fetch=async(raw)=>{
+  const url=String(raw);calls.push(url);
+  return new Response(JSON.stringify({type:"Book Vase",title:"Personalized Book Vase"}),{
+   headers:{"content-type":"text/javascript"}});
+ };
+ const resolved:any=await resolveOnepagePdpProductType("pawfecthouse",
+   "https://pawfecthouse.com/products/personalized-book-vase?variant=123",fetcher);
+ assert.equal(resolved.status,"EXACT_SHOPIFY_PRODUCT_TYPE");
+ assert.equal(resolved.product_type,"Book Vase");
+ assert.deepEqual(calls,["https://pawfecthouse.com/products/personalized-book-vase.js"]);
+ const collection:any=await resolveOnepagePdpProductType("pawfecthouse",
+   "https://pawfecthouse.com/collections/book-vase",fetcher);
+ assert.equal(collection.status,"NOT_A_TRUSTED_PRODUCT_URL");
+ assert.equal(calls.length,1);
+ const foreign:any=await resolveOnepagePdpProductType("pawfecthouse",
+   "https://giftsoul.co/products/personalized-book-vase",fetcher);
+ assert.equal(foreign.status,"NOT_A_TRUSTED_PRODUCT_URL");
+ assert.equal(calls.length,1);
+});
+test("EO PDP product type resolver returns explicit partial status when Shopify lookup fails",async()=>{
+ const fetcher:typeof fetch=async()=>new Response("nope",{status:404,headers:{"content-type":"text/plain"}});
+ const resolved:any=await resolveOnepagePdpProductType("soulprise",
+   "https://soulprise.co/products/unknown-product",fetcher);
+ assert.equal(resolved.status,"PRODUCT_TYPE_FETCH_UNAVAILABLE");
+ assert.equal(resolved.product_type,null);
 });
