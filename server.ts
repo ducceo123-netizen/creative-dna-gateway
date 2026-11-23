@@ -1,4 +1,4 @@
-import {scanOnepageEoStore,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
+import {scanOnepageEoStore,resolveOnepagePdpProductType,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,EO_PIXEL_AUDIT_DESCRIPTION} from "./uid-eo-pixel-audit.ts";
 import {listEoLibrary,submitEoCandidate,approveEoReference,EO_LIBRARY_DESCRIPTION,EO_REFERENCE_SUBMIT_DESCRIPTION,EO_REFERENCE_APPROVE_DESCRIPTION} from "./uid-eo-reference-library.ts";
 import { getOnepagePortableQualityPack, ONEPAGE_QUALITY_PACK_DESC } from "./supabase/functions/_shared/onepage-portable-quality.ts";
@@ -258,7 +258,16 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  // still see this field on the EXISTING compile_onepage_job response.
  const slug=String(validated.brand).toLowerCase().replace(/[^a-z]/g,"");
  const supplied=research&&typeof research==="object"&&!Array.isArray(research)?research as Record<string,unknown>:{};
- const line=(product_line||String(supplied.product_type||"")).trim();
+ // Resolve the exact Shopify product type for PDP-only briefs, including
+ // clients whose compile_onepage_job tool schema does not expose product_line.
+ // Collection URLs are not inferred from one product.
+ let line=(product_line||String(supplied.product_type||"")).trim();
+ let sourceTypeResolution:any={status:line?"EXPLICIT_PRODUCT_TYPE":"NO_PRODUCT_TYPE"};
+ if(!line&&source_url&&["pawfecthouse","giftsoul","soulprise"].includes(slug)){
+   sourceTypeResolution=await resolveOnepagePdpProductType(
+     slug as "pawfecthouse"|"giftsoul"|"soulprise",source_url);
+   if(sourceTypeResolution.product_type)line=sourceTypeResolution.product_type;
+ }
  if(line&&["pawfecthouse","giftsoul","soulprise"].includes(slug)){
    try{
      const scan=await scanOnepageEoStore({brand:slug as "pawfecthouse"|"giftsoul"|"soulprise",
@@ -284,7 +293,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
        store_origin:"https://"+(slug==="pawfecthouse"?"pawfecthouse.com":slug==="giftsoul"?"giftsoul.co":"soulprise.co"),
        scan_complete:false,candidates});
      output.eo_reference_intelligence={schema_version:"uid-onepage-eo-reference-intelligence/2026-11-21.v1",
-       scan_status:scan.status,scan_candidates:scan.candidates.map(x=>({page_url:x.page_url,product_type:x.product_type,
+       product_type_resolution:sourceTypeResolution,scan_status:scan.status,scan_candidates:scan.candidates.map(x=>({page_url:x.page_url,product_type:x.product_type,
          onepage_evidence:x.onepage_evidence,image_urls:x.image_urls.slice(0,4),approval_status:x.approval_status})),
        shared_library_status:library.status,ranked_references:"ranked_references" in pack?pack.ranked_references:[],
        quality_bar:"quality_bar" in pack?pack.quality_bar:{},
@@ -292,6 +301,15 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
        note:"Source pages are unapproved candidates. Only explicit inspected admin-approved library rows define EO quality. Absence of access is not a hard stop."};
    }catch(e){output.eo_reference_intelligence={status:"DISCOVERY_UNAVAILABLE_CONTINUE_CANONICAL_DNA",
        reason:e instanceof Error?e.message:"source unavailable",no_approval_pause:true};}
+ }
+ if(!line&&source_url&&["pawfecthouse","giftsoul","soulprise"].includes(slug)){
+   output.eo_reference_intelligence={
+     status:"PRODUCT_TYPE_REQUIRED_FOR_SAME_LINE_MATCH",
+     product_type_resolution:sourceTypeResolution,
+     reference_is_quality_bar_not_creative_template:true,
+     no_approval_pause:true,
+     next_action:"For collections, inspect the exact product pool and its Shopify product types before selecting same-line EO examples. Continue canonical creative research."
+   };
  }
  return {status:response.status,ok:response.ok,data:output};
 }

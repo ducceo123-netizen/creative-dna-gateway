@@ -28,6 +28,28 @@ async function fetchStore(url:string,host:string,max:number,fetcher:typeof fetch
  if(!b)throw new Error("STORE_RESPONSE_TOO_LARGE");
  return new TextDecoder().decode(b);
 }
+/**
+ * Resolve the exact Shopify product type from a user-supplied PDP URL.
+ * A collection is intentionally not inferred from one item: collection tasks
+ * need a verified multi-product inventory.
+ */
+export async function resolveOnepagePdpProductType(brand:Brand,sourceUrl:string,fetcher:typeof fetch=fetch){
+ const host=domains[brand];
+ if(!host||typeof sourceUrl!=="string")return {status:"INVALID_SOURCE",product_type:null};
+ const page=safeProduct(host,sourceUrl);
+ if(!page)return {status:"NOT_A_TRUSTED_PRODUCT_URL",product_type:null};
+ const handle=new URL(page).pathname.split("/")[2];
+ try{
+  const body=await fetchStore("https://"+host+"/products/"+handle+".js",host,500000,fetcher);
+  const data=JSON.parse(body);
+  const type=typeof data.type==="string"?data.type.trim():"";
+  if(!type||type.length>160)return {status:"PRODUCT_TYPE_MISSING",product_type:null};
+  return {status:"EXACT_SHOPIFY_PRODUCT_TYPE",product_type:type,source_page:page};
+ }catch(e){
+  return {status:"PRODUCT_TYPE_FETCH_UNAVAILABLE",product_type:null,
+   reason:String(e instanceof Error?e.message:e).slice(0,120)};
+ }
+}
 const found=(text:string,host:string)=>{
  const links:string[]=[];
  try{const json=JSON.parse(text);const products=json?.resources?.results?.products||json?.products||[];
