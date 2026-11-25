@@ -328,7 +328,14 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
    attribution_required:["pack","ref_id","source","use_for"],
    interpretation:"Storefront-final examples are technique references. EO approval requires separate proof.",
    fallback:"Continue task using canonical DNA if Clipo missing, access-denied or no_match.",
-   member_authentication:clipo.access==="team"?"MEMBER_TOKEN_VALIDATED_BY_CLIPO_MCP":"PUBLIC_ONLY_NO_TEAM_REFERENCE"
+   member_authentication:clipo.access!=="team"?"PUBLIC_ONLY_NO_TEAM_REFERENCE":
+     clipo.status==="authorization_required"?"MEMBER_CREDENTIAL_REJECTED":
+     clipo.status==="unavailable"?"MEMBER_CREDENTIAL_NOT_VERIFIED":
+     "MEMBER_READ_AUTHORIZED_BY_CLIPO_MCP",
+   auth_diagnostics:{mcp_authorization_forwarded:hasMemberToken,
+     read_scope:clipo.access,reason:hasMemberToken?"member_reader_requested":
+       "UID_MCP_REQUEST_HAS_NO_MEMBER_BEARER_TOKEN"},
+   note:"PUBLIC_ONLY means UID Brands has no member bearer from the invoking MCP client; it is not evidence that the user is outside UID Brands team."
  };
  if(Array.isArray(output.execution)){
    // The upstream Edge Function already inserts this stage. Normalize old and new
