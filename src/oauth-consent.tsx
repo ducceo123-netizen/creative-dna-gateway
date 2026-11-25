@@ -27,7 +27,7 @@ export default function UidOAuthConsent(){
  }
  useEffect(()=>{void refresh();const {data:{subscription}}=client.auth.onAuthStateChange(()=>{
    // Supabase auth events can occur while refresh is in flight; schedule a fresh read.
-   void refresh();
+   setTimeout(()=>{void refresh();},0);
  });return ()=>subscription.unsubscribe();},[]);
  async function login(event:React.FormEvent){
   event.preventDefault();setLoading(true);setError("");setNotice("");
