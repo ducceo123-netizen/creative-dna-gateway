@@ -9,7 +9,7 @@ const key=modern||legacy; const admin=key?createClient(url,key,{auth:{persistSes
 
 async function discoverPublicClipo(brand:string) {
  const discovery:any={stage:"CLIPO_REFERENCE_DISCOVERY",attempted:true,access:"public",
-   status:"unavailable",matches:[],opened:[],visual_inspection_required:true,continue_task:true};
+   status:"unavailable",matches:[],opened:[],mcp_trace:[],visual_inspection_required:true,continue_task:true};
  const origin="https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/clipo-research-refs/mcp";
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6000);
  let id=0;
@@ -27,6 +27,8 @@ async function discoverPublicClipo(brand:string) {
    for(const slot of ["banner mobile","banner desktop","overall","product details"]){
      const response=await rpc("search_reference_packs",{brand,task:"Onepage",slot,limit:3});
      const body=response.structuredContent||JSON.parse(response.content?.find((v:any)=>v.type==="text")?.text||"{}");
+     discovery.mcp_trace.push({operation:"search_reference_packs",slot,
+       rpc_confirmed:true,status:body.status,match_count:Array.isArray(body.matches)?body.matches.length:0});
      for(const ref of (Array.isArray(body.matches)?body.matches:[])){
        if(typeof ref.pack!=="string"||typeof ref.ref_id!=="string")continue;
        discovery.matches.push({slot,pack:ref.pack,ref_id:ref.ref_id,source:ref.source,
@@ -38,14 +40,20 @@ async function discoverPublicClipo(brand:string) {
        const response=await rpc("open_reference_image",{brand,pack:ref.pack,ref_id:ref.ref_id});
        const meta=JSON.parse(response.content?.find((v:any)=>v.type==="text")?.text||"{}");
        const media=response.content?.find((v:any)=>v.type==="image");
-       if(meta.status==="ok"&&typeof media?.data==="string"&&media.data.length>32)
+       const success=meta.status==="ok"&&typeof media?.data==="string"&&media.data.length>32;
+       discovery.mcp_trace.push({operation:"open_reference_image",rpc_confirmed:true,
+         slot:ref.slot,pack:ref.pack,ref_id:ref.ref_id,status:success?"image_payload_received":"image_unavailable",
+         mime_type:success?media.mimeType:null});
+       if(success)
          discovery.opened.push({slot:ref.slot,pack:ref.pack,ref_id:ref.ref_id,
            source:ref.source,status:"opened",mime_type:media.mimeType});
-     }catch{/* Recordable search succeeded but image-open did not; do not claim visual inspection. */}
+     }catch{discovery.mcp_trace.push({operation:"open_reference_image",rpc_confirmed:false,
+         slot:ref.slot,pack:ref.pack,ref_id:ref.ref_id,status:"open_failed"});}
    }
    discovery.status=discovery.opened.length?"references_opened":discovery.matches.length?"matches_unopened":"no_match";
  }catch(e){
    discovery.status="unavailable";
+   discovery.mcp_trace.push({operation:"discovery",rpc_confirmed:false,status:"reader_unavailable"});
    discovery.error=e instanceof Error&&e.name==="AbortError"?"timeout":"reader_unavailable";
  }finally{clearTimeout(timer);}
  return discovery;
