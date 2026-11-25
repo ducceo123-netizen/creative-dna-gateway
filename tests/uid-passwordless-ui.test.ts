@@ -12,3 +12,11 @@ test("happyuid OAuth entry only accepts the corporate email domain",()=>{
  assert.doesNotMatch(source,/signInWithPassword/);
  assert.doesNotMatch(source,/type="password"/);
 });
+
+test("Supabase email quota is reported, and repeated login requests are disabled",()=>{
+ assert.match(source,/over_email_send_rate_limit/);
+ assert.match(source,/err\.status===429/);
+ assert.match(source,/emailRequested\|\|rateLimited\|\|loading/);
+ assert.match(source,/disabled=\{loading\|\|emailRequested\|\|rateLimited\}/);
+ assert.match(source,/Custom SMTP/);
+});
