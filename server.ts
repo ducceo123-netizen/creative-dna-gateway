@@ -1,4 +1,4 @@
-import { verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_OAUTH_METADATA } from "./uid-member-oauth.ts";
+import { verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_OAUTH_METADATA,oauthIssuerReadiness } from "./uid-member-oauth.ts";
 import { discoverClipoReferences } from "./clipo-discovery.ts";
 import {scanOnepageEoStore,resolveOnepagePdpProductType,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,EO_PIXEL_AUDIT_DESCRIPTION} from "./uid-eo-pixel-audit.ts";
@@ -2230,6 +2230,17 @@ export function createApp(): express.Application {
     res.setHeader("Cache-Control","public, max-age=300");
     return res.json(memberResourceMetadata());
   });
+  app.get("/api/member-oauth-status", async(_req:Request,res:Response)=>{
+    const issuer=await oauthIssuerReadiness();
+    res.setHeader("Cache-Control","no-store");
+    return res.status(issuer.status==="ready"?200:503).json({
+      member_mcp_resource:"/api/mcp-member",
+      oauth_issuer:issuer.status,
+      diagnostic:issuer.reason,
+      team_access_requires:"Supabase OAuth client authorization and active UID Brands membership",
+      public_route_unchanged:true,
+    });
+  });
   app.all("/api/mcp-member", async(req:Request,res:Response)=>{
     const check=await verifyMemberBearer(req.headers.authorization);
     if(check.status!=="authorized"){
@@ -2289,6 +2300,7 @@ export function startServer() {
   return app.listen(PORT, "0.0.0.0", () => {
     console.log(`Creative DNA Gateway server running on http://0.0.0.0:${PORT}`);
     console.log(`Production MCP endpoint configured at: ${CANONICAL_PRODUCTION_MCP_URL}`);
+    void oauthIssuerReadiness().then(x=>console.log(`[uid-oauth] issuer_status=${x.status}; reason=${x.reason}`));
   });
 }
 
