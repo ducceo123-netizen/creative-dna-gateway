@@ -1,0 +1,27 @@
+name: UID Brands OAuth member gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - uid-member-oauth.ts
+      - clipo-discovery.ts
+      - src/oauth-consent.tsx
+      - src/main.tsx
+      - server.ts
+      - package.json
+      - tests/uid-member-oauth.test.ts
+      - tests/clipo-discovery.test.ts
+      - .github/workflows/uid-member-oauth.yml
+  workflow_dispatch:
+jobs:
+  auth-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --import tsx --test tests/uid-member-oauth.test.ts tests/clipo-discovery.test.ts
+      - run: npm run build
