@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_MCP_RESOURCE} from "../uid-member-oauth.ts";
+import {verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_MCP_RESOURCE,oauthIssuerReadiness} from "../uid-member-oauth.ts";
 
 test("MCP resource metadata links to Supabase Auth and exact protected resource",()=>{
  const v=memberResourceMetadata();
@@ -38,4 +38,15 @@ test("bad upstream responses fail closed",async()=>{
 test("membership provider outages do not fall back to public",async()=>{
  const result=await verifyMemberBearer("Bearer token",async()=>{throw Error("offline")});
  assert.equal(result.code,503);
+});
+
+test("OAuth issuer readiness validates exact issuer and PKCE S256",async()=>{
+ const valid=await oauthIssuerReadiness(async()=>({
+   status:200,ok:true,json:async()=>({issuer:"https://wuonwttmkadwsmefjukv.supabase.co/auth/v1",
+     authorization_endpoint:"https://wuonwttmkadwsmefjukv.supabase.co/auth/v1/oauth/authorize",
+     token_endpoint:"https://wuonwttmkadwsmefjukv.supabase.co/auth/v1/oauth/token",
+     code_challenge_methods_supported:["S256"]})} as Response));
+ assert.equal(valid.status,"ready");
+ const disabled=await oauthIssuerReadiness(async()=>({status:404,ok:false} as Response));
+ assert.equal(disabled.status,"not_configured");
 });
