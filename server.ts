@@ -2301,6 +2301,18 @@ export function startServer() {
     console.log(`Creative DNA Gateway server running on http://0.0.0.0:${PORT}`);
     console.log(`Production MCP endpoint configured at: ${CANONICAL_PRODUCTION_MCP_URL}`);
     void oauthIssuerReadiness().then(x=>console.log(`[uid-oauth] issuer_status=${x.status}; reason=${x.reason}`));
+    void (async()=>{
+      try{
+        const endpoint="http://127.0.0.1:"+PORT;
+        const metadata=await fetch(endpoint+"/.well-known/oauth-protected-resource/api/mcp-member",
+          {signal:AbortSignal.timeout(4000)});
+        const meta:any=await metadata.json();
+        const denied=await fetch(endpoint+"/api/mcp-member",{method:"POST",
+          headers:{"Content-Type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"ping"}),
+          signal:AbortSignal.timeout(4000)});
+        console.log(`[uid-oauth] local_smoke metadata_http=${metadata.status}; correct_resource=${meta.resource===endpoint.replace("127.0.0.1:"+PORT,"uid-brands-gateway-preview.onrender.com")+"/api/mcp-member"}; anonymous_http=${denied.status}; challenge=${denied.headers.has("www-authenticate")}`);
+      }catch{console.log("[uid-oauth] local_smoke unavailable");}
+    })();
   });
 }
 
