@@ -331,9 +331,12 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
    member_authentication:clipo.access==="team"?"MEMBER_TOKEN_VALIDATED_BY_CLIPO_MCP":"PUBLIC_ONLY_NO_TEAM_REFERENCE"
  };
  if(Array.isArray(output.execution)){
+   // The upstream Edge Function already inserts this stage. Normalize old and new
+   // packets so the stage occurs exactly once in the correct relative order.
+   output.execution=output.execution.filter((stage:string)=>stage!=="CLIPO_REFERENCE_DISCOVERY");
    const i=output.execution.indexOf("VALIDATE_RESEARCH_BEFORE_CONTENT");
    const at=i>=0?i+1:output.execution.indexOf("BUILD_CONTENT_MAP");
-   if(at>=0)output.execution.splice(at,0,"CLIPO_REFERENCE_DISCOVERY");
+   output.execution.splice(at>=0?at:0,0,"CLIPO_REFERENCE_DISCOVERY");
  }
  return {status:response.status,ok:response.ok,data:output};
 }
