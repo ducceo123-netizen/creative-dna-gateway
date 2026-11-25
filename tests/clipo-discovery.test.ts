@@ -59,3 +59,19 @@ test("exact Onepage product family is passed as a ranking hint",async()=>{
  const search=calls.find(c=>JSON.parse(c.opts.body).params.name==="search_reference_packs");
  assert.equal(JSON.parse(search.opts.body).params.arguments.product_family,"Doormat");
 });
+
+test("explicit no_match continues the Onepage workflow without images",async()=>{
+ const calls:any[]=[];
+ const fetcher:any=async (url:string,opts:any)=>{
+   const body=JSON.parse(opts.body);calls.push(body.params.name);
+   return {ok:true,json:async()=>({result:{structuredContent:{status:"no_match",matches:[]}}})};
+ };
+ const data=await discoverClipoReferences("PawfectHouse",null,fetcher);
+ assert.equal(data.status,"no_match");
+ assert.equal(data.continue_task,true);
+ assert.equal(data.matches.length,0);
+ assert.equal(data.opened.length,0);
+ assert.equal(calls.filter(x=>x==="search_reference_packs").length,5);
+ assert.equal(calls.filter(x=>x==="open_reference_image").length,0);
+ assert.equal(data.mcp_trace.filter(x=>x.operation==="search_reference_packs"&&x.rpc_confirmed).length,5);
+});
