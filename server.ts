@@ -317,7 +317,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  const upstreamClipo=data?.clipo_reference_discovery;
  // The upstream compiler already searches public Clipo; avoid a duplicate read.
  // A real member session upgrades discovery to the protected team catalog.
- const hasMemberToken=/^Bearer ([^\\s]{1,8192})$/i.test(memberAuthorization||"");
+ const hasMemberToken=/^Bearer ([^\s]{1,8192})$/i.test(memberAuthorization||"");
  const clipo=hasMemberToken
    ? await discoverClipoReferences(validated.brand,memberAuthorization)
    : (upstreamClipo?.attempted?upstreamClipo:await discoverClipoReferences(validated.brand));
