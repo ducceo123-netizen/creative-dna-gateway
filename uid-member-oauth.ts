@@ -33,3 +33,21 @@ export async function verifyMemberBearer(authorization:string|undefined,
    return {status:"authorized",code:200};
  }catch{return {status:"provider_unavailable",code:503};}
 }
+
+/** Detect whether the external OAuth 2.1 issuer is configured, without secrets. */
+export async function oauthIssuerReadiness(fetcher:typeof fetch=fetch):Promise<{status:"ready"|"not_configured"|"unavailable";reason:string}>{
+ const endpoint="https://wuonwttmkadwsmefjukv.supabase.co/.well-known/oauth-authorization-server/auth/v1";
+ try{
+  const res=await fetcher(endpoint,{method:"GET",redirect:"error",
+    headers:{Accept:"application/json"},signal:AbortSignal.timeout(6500)});
+  if(res.status===404||res.status===501)return {status:"not_configured",reason:"issuer_discovery_not_enabled"};
+  if(!res.ok)return {status:"unavailable",reason:"issuer_http_"+res.status};
+  const meta=await res.json();
+  const valid=meta?.issuer===UID_MEMBER_OAUTH_ISSUER &&
+    typeof meta?.authorization_endpoint==="string"&&
+    typeof meta?.token_endpoint==="string"&&
+    (Array.isArray(meta?.code_challenge_methods_supported)?meta.code_challenge_methods_supported.includes("S256"):false);
+  return valid?{status:"ready",reason:"issuer_discovery_valid"}:
+    {status:"not_configured",reason:"issuer_metadata_incomplete"};
+ }catch{return {status:"unavailable",reason:"issuer_check_unavailable"};}
+}
