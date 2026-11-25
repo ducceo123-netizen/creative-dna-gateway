@@ -2242,6 +2242,14 @@ export function createApp(): express.Application {
     });
   });
   app.all("/api/mcp-member", async(req:Request,res:Response)=>{
+    // Explicitly approved public Onepage reference access: existing clients
+    // using the former member URL can continue without an OAuth login.
+    // Clipo's independent public reader only exposes packs marked public.
+    if(!req.headers.authorization){
+      res.setHeader("Cache-Control","private, no-store");
+      return void mcpNodeHandler(req,res,req.body);
+    }
+    // Authenticated member sessions still require real active membership.
     const check=await verifyMemberBearer(req.headers.authorization);
     if(check.status!=="authorized"){
       res.setHeader("Cache-Control","no-store");
