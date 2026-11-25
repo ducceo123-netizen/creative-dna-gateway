@@ -1,3 +1,4 @@
+import { discoverClipoReferences } from "./clipo-discovery.ts";
 import {scanOnepageEoStore,resolveOnepagePdpProductType,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,EO_PIXEL_AUDIT_DESCRIPTION} from "./uid-eo-pixel-audit.ts";
 import {listEoLibrary,submitEoCandidate,approveEoReference,EO_LIBRARY_DESCRIPTION,EO_REFERENCE_SUBMIT_DESCRIPTION,EO_REFERENCE_APPROVE_DESCRIPTION} from "./uid-eo-reference-library.ts";
@@ -310,6 +311,23 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
      no_approval_pause:true,
      next_action:"For collections, inspect the exact product pool and its Shopify product types before selecting same-line EO examples. Continue canonical creative research."
    };
+ }
+ // Automatic, real Clipo MCP search + image-open before image generation.
+ // Member-only images remain protected by the member's UID bearer.
+ const clipo=await discoverClipoReferences(validated.brand,memberAuthorization);
+ output.clipo_reference_discovery=clipo;
+ output.clipo_reference_contract={
+   mandatory_attempt:true,required_before:"BUILD_CONTENT_MAP",
+   image_inspection:"HOST_MUST_VISUALLY_INSPECT_REFERENCES_VIA_AUTHORIZED_MCP_BEFORE_APPLYING_DESIGN_LEARNINGS",
+   attribution_required:["pack","ref_id","source","use_for"],
+   interpretation:"Storefront-final examples are technique references. EO approval requires separate proof.",
+   fallback:"Continue task using canonical DNA if Clipo missing, access-denied or no_match.",
+   member_authentication:clipo.access==="team"?"MEMBER_TOKEN_VALIDATED_BY_CLIPO_MCP":"PUBLIC_ONLY_NO_TEAM_REFERENCE"
+ };
+ if(Array.isArray(output.execution)){
+   const i=output.execution.indexOf("VALIDATE_RESEARCH_BEFORE_CONTENT");
+   const at=i>=0?i+1:output.execution.indexOf("BUILD_CONTENT_MAP");
+   if(at>=0)output.execution.splice(at,0,"CLIPO_REFERENCE_DISCOVERY");
  }
  return {status:response.status,ok:response.ok,data:output};
 }
