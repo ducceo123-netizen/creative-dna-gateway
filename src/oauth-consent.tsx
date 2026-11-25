@@ -10,7 +10,7 @@ type OAuthDetails={client?:{name?:string,client_name?:string},client_name?:strin
 const authId=new URLSearchParams(location.search).get("authorization_id")||"";
 export default function UidOAuthConsent(){
  const [email,setEmail]=useState(""),[userId,setUserId]=useState<string|null>(null);
- const [loading,setLoading]=useState(false),[details,setDetails]=useState<OAuthDetails|null>(null);
+ const [loading,setLoading]=useState(false),[emailRequested,setEmailRequested]=useState(false),[rateLimited,setRateLimited]=useState(false),[details,setDetails]=useState<OAuthDetails|null>(null);
  const [allowed,setAllowed]=useState(false),[notice,setNotice]=useState(""),[error,setError]=useState("");
  async function refresh(){
    setError("");const {data:{user},error:authError}=await client.auth.getUser();
@@ -32,7 +32,8 @@ export default function UidOAuthConsent(){
    setTimeout(()=>{void refresh();},0);
  });return ()=>subscription.unsubscribe();},[]);
  async function login(event:React.FormEvent){
-  event.preventDefault();setLoading(true);setError("");setNotice("");
+  event.preventDefault();if(emailRequested||rateLimited||loading)return;
+  setLoading(true);setError("");setNotice("");
   const address=email.trim().toLowerCase();
   if(!/^[a-z0-9._%+\-]+@happyuid\.com$/.test(address)){
     setLoading(false);setError("Chỉ hỗ trợ email công ty @happyuid.com.");return;
@@ -43,8 +44,15 @@ export default function UidOAuthConsent(){
    const result=await client.auth.signInWithOtp({email:address,
      options:{emailRedirectTo:returnTo.toString(),shouldCreateUser:true}});
    if(result.error)throw result.error;
-   setNotice("Đã gửi link xác minh. Mở email công ty và bấm link để tiếp tục kết nối ChatGPT.");
-  }catch(e){setError(e instanceof Error?e.message:"Không gửi được email xác minh.");}
+   setEmailRequested(true);
+   setNotice("Đã gửi yêu cầu xác minh. Kiểm tra hộp thư công ty (kể cả Spam) và bấm link để tiếp tục kết nối ChatGPT.");
+  }catch(e){
+   const err=e as {status?:number;code?:string;message?:string};
+   if(err.status===429||err.code==="over_email_send_rate_limit"||/email rate limit exceeded/i.test(err.message||"")){
+    setRateLimited(true);
+    setError("Supabase đã đạt giới hạn email của project. Không bấm gửi lại liên tục. Quản trị viên cần cấu hình Custom SMTP trong Supabase Authentication → SMTP Settings (hoặc thử lại sau khi quota gửi email được làm mới).");
+   }else setError(err.message||"Không gửi được email xác minh.");
+  }
   finally{setLoading(false);}
  }
  async function decide(approve:boolean){
@@ -70,11 +78,12 @@ export default function UidOAuthConsent(){
       <label>Email @happyuid.com<input type="email" autoComplete="email" required
        placeholder="ten@happyuid.com" value={email} onChange={e=>setEmail(e.target.value)}
        style={{width:"100%",padding:12,boxSizing:"border-box"}}/></label>
-      <button disabled={loading} type="submit"
+      <button disabled={loading||emailRequested||rateLimited} type="submit"
        style={{padding:12,cursor:"pointer",background:"#172d5a",border:0,borderRadius:6,color:"white"}}>
-       {loading?"Đang gửi...":"Gửi link đăng nhập"}
+       {loading?"Đang gửi...":emailRequested?"Đã gửi yêu cầu":rateLimited?"Đã chạm giới hạn gửi email":"Gửi link đăng nhập"}
       </button>
       <p style={{fontSize:12,color:"#596271"}}>Không cần mật khẩu. Chỉ email công ty đã xác minh mới được cấp quyền.</p>
+      {rateLimited&&<p style={{fontSize:12,color:"#8a4f12"}}>Nếu quản trị viên đã cấu hình SMTP hoặc quota đã được làm mới, tải lại trang kết nối từ ChatGPT rồi yêu cầu link một lần.</p>}
      </form>:!allowed?<div>
       <strong>Không được cấp quyền</strong><p>Tài khoản này không nằm trong danh sách member active.</p>
       <button onClick={()=>void client.auth.signOut()}>Đăng xuất</button>
