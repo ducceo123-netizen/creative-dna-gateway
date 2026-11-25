@@ -1,3 +1,4 @@
+import { verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_OAUTH_METADATA } from "./uid-member-oauth.ts";
 import { discoverClipoReferences } from "./clipo-discovery.ts";
 import {scanOnepageEoStore,resolveOnepagePdpProductType,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
 import {auditOnepageEoPixels,EO_PIXEL_AUDIT_DESCRIPTION} from "./uid-eo-pixel-audit.ts";
@@ -2219,6 +2220,28 @@ export function createApp(): express.Application {
   app.all("/api/mcp", (req: Request, res: Response) => {
     void mcpNodeHandler(req, res, req.body);
   });
+  // OAuth-protected resource metadata for an *isolated* authenticated member MCP.
+  // The existing public endpoint stays usable while members migrate to OAuth.
+  app.get("/.well-known/oauth-protected-resource/api/mcp-member", (_req:Request,res:Response)=>{
+    res.setHeader("Cache-Control","public, max-age=300");
+    return res.json(memberResourceMetadata());
+  });
+  app.get("/.well-known/oauth-protected-resource", (_req:Request,res:Response)=>{
+    res.setHeader("Cache-Control","public, max-age=300");
+    return res.json(memberResourceMetadata());
+  });
+  app.all("/api/mcp-member", async(req:Request,res:Response)=>{
+    const check=await verifyMemberBearer(req.headers.authorization);
+    if(check.status!=="authorized"){
+      res.setHeader("Cache-Control","no-store");
+      res.setHeader("Vary","Authorization");
+      if(check.code===401)res.setHeader("WWW-Authenticate",memberAuthChallenge());
+      return res.status(check.code).json({error:check.status,
+        ...(check.code===401?{resource_metadata:UID_MEMBER_OAUTH_METADATA}:{})});
+    }
+    return void mcpNodeHandler(req,res,req.body);
+  });
+
 
   // Optional human-readable discovery lives on a separate URL so it cannot shadow MCP.
   app.get("/api/mcp-info", (_req: Request, res: Response) => {
