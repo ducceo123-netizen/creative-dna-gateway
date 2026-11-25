@@ -319,8 +319,8 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  // A real member session upgrades discovery to the protected team catalog.
  const hasMemberToken=/^Bearer ([^\s]{1,8192})$/i.test(memberAuthorization||"");
  const clipo=hasMemberToken
-   ? await discoverClipoReferences(validated.brand,memberAuthorization)
-   : (upstreamClipo?.attempted?upstreamClipo:await discoverClipoReferences(validated.brand));
+   ? await discoverClipoReferences(validated.brand,memberAuthorization,fetch,6500,line||undefined)
+   : (upstreamClipo?.attempted?upstreamClipo:await discoverClipoReferences(validated.brand,undefined,fetch,6500,line||undefined));
  output.clipo_reference_discovery=clipo;
  output.clipo_reference_contract={
    mandatory_attempt:true,required_before:"BUILD_CONTENT_MAP",
