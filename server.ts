@@ -2315,10 +2315,11 @@ export function startServer() {
         const metadata=await fetch(endpoint+"/.well-known/oauth-protected-resource/api/mcp-member",
           {signal:AbortSignal.timeout(4000)});
         const meta:any=await metadata.json();
-        const denied=await fetch(endpoint+"/api/mcp-member",{method:"POST",
-          headers:{"Content-Type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"ping"}),
+        const anonymous=await fetch(endpoint+"/api/mcp-member",{method:"POST",
+          headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream","MCP-Protocol-Version":"2025-06-18"},
+          body:JSON.stringify({jsonrpc:"2.0",id:1,method:"ping"}),
           signal:AbortSignal.timeout(4000)});
-        console.log(`[uid-oauth] local_smoke metadata_http=${metadata.status}; correct_resource=${meta.resource==="https://uid-brands-gateway-preview.onrender.com/api/mcp-member"}; anonymous_http=${denied.status}; challenge=${denied.headers.has("www-authenticate")}`);
+        console.log(`[uid-public] local_smoke metadata_http=${metadata.status}; correct_resource=${meta.resource==="https://uid-brands-gateway-preview.onrender.com/api/mcp-member"}; anonymous_http=${anonymous.status}; login_required=${anonymous.headers.has("www-authenticate")}`);
       }catch{console.log("[uid-oauth] local_smoke unavailable");}
     })();
   });
