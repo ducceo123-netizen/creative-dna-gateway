@@ -10,7 +10,7 @@ export type ClipoDiscovery={
   diagnostics:Array<{slot?:string;status:string}>;visual_inspection_required:true;continue_task:true;
 };
 export async function discoverClipoReferences(brand:string,memberAuthorization?:string|null,
- fetcher:typeof fetch=fetch, timeoutMs=6500):Promise<ClipoDiscovery>{
+ fetcher:typeof fetch=fetch, timeoutMs=6500, productFamily?:string):Promise<ClipoDiscovery>{
  const bearer=/^Bearer ([^\s]{1,8192})$/i.exec(memberAuthorization||"");
  const access=bearer?"team":"public";
  const state:ClipoDiscovery={stage:"CLIPO_REFERENCE_DISCOVERY",attempted:true,status:"unavailable",access,
@@ -31,7 +31,7 @@ export async function discoverClipoReferences(brand:string,memberAuthorization?:
  }
  try{
    for(const slot of SLOTS){
-     const response=await call("search_reference_packs",{brand,task:"Onepage",slot,limit:4});
+     const response=await call("search_reference_packs",{brand,task:"Onepage",slot,limit:4,...(productFamily?{product_family:productFamily}:{})});
      const json=response.structuredContent||JSON.parse(response.content?.find((x:any)=>x.type==="text")?.text||"{}");
      if(!["matched","partial","no_match"].includes(json.status)) {
        state.diagnostics.push({slot,status:"unexpected_search_status"});continue;
