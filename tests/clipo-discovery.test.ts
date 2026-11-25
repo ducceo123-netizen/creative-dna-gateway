@@ -51,3 +51,11 @@ test("MCP offline continues canonical Onepage work",async()=>{
  const data=await discoverClipoReferences("PawfectHouse",null,async()=>{throw Error("offline");});
  assert.equal(data.status,"unavailable");assert.equal(data.continue_task,true);
 });
+
+test("exact Onepage product family is passed as a ranking hint",async()=>{
+ const {calls,fetcher}=fake();
+ const data=await discoverClipoReferences("PawfectHouse",null,fetcher,6500,"Doormat");
+ assert.equal(data.status,"references_opened");
+ const search=calls.find(c=>JSON.parse(c.opts.body).params.name==="search_reference_packs");
+ assert.equal(JSON.parse(search.opts.body).params.arguments.product_family,"Doormat");
+});
