@@ -4,7 +4,7 @@
  * not identity templates, training consent, approved product mocks or proof of ethnicity.
  */
 const CLIPO="https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/clipo-research-refs/mcp";
-type HumanRef={ref_id:string;title:string;source_url:string;license_url:string;
+type HumanRef={ref_id:string;title:string;source_url:string;license_url:string;clipo_image_url?:string;
  action:string;camera_angle:string;frame_type:string;body_focus:string;
  setting:string;interaction:string;lighting:string;study_notes:string;
  failure_checks:string[];tags:string[]};
@@ -56,7 +56,9 @@ export async function discoverHumanRealism(brief:string,
    JSON.parse(searchResult.content?.find((x:any)=>x.type==="text")?.text||"{}");
   state.mcp_trace.push({operation:"search_human_realism_refs",status:data.status||"invalid_response"});
   if(!Array.isArray(data.matches))throw Error("search_matches_missing");
-  state.matches=data.matches.slice(0,8).filter((r:any)=>typeof r.ref_id==="string") as HumanRef[];
+  state.matches=data.matches.slice(0,8).filter((r:any)=>typeof r.ref_id==="string")
+    .map((r:any)=>({...r,clipo_image_url:
+      "https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/clipo-research-refs/human/image?ref_id="+encodeURIComponent(r.ref_id)})) as HumanRef[];
   // Open real pixels. Do not claim the AI has visually inspected them:
   // the creative agent must inspect the selected source image URLs before generation.
   for(const ref of state.matches.slice(0,5)){
