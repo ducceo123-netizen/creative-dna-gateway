@@ -11,6 +11,7 @@ test("product-led action routing remains grounded",()=>{
  assert.equal(actionForHumanScene("two 25yo besties laughing"),"friends_laughing");
  assert.equal(actionForHumanScene("grandmother cooking with granddaughter"),"grandparent_cooking");
  assert.equal(actionForHumanScene("woman cuddling her dog on sofa"),"pet_cuddling");
+ assert.equal(actionForHumanScene("Woman cuddling her dog on a couch"),"pet_cuddling");
  assert.equal(actionForHumanScene("senior holding photo frame memorial"),"memorial_holding");
 });
 test("search + actual image payload receipt are recorded, never equated to visual QC",async()=>{
