@@ -1,3 +1,4 @@
+import {discoverHumanRealism,HUMAN_REALISM_QC} from "./clipo-human-realism.ts";
 import { verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_OAUTH_METADATA,oauthIssuerReadiness } from "./uid-member-oauth.ts";
 import { discoverClipoReferences } from "./clipo-discovery.ts";
 import {scanOnepageEoStore,resolveOnepagePdpProductType,EO_STORE_SCAN_DESCRIPTION} from "./uid-eo-store-scanner.ts";
@@ -338,13 +339,32 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
        "UID_MCP_REQUEST_HAS_NO_MEMBER_BEARER_TOKEN"},
    note:"PUBLIC_ONLY means UID Brands has no member bearer from the invoking MCP client; it is not evidence that the user is outside UID Brands team."
  };
+ // Independent physical-reference lane: people detail is checked before creative generation.
+ // Never change product geometry or canonical brand DNA based on generic photographs.
+ const humanBrief=[validated.brand,theme||"",source_url||"",line||"",
+   typeof research==="string"?research:JSON.stringify(research||{}).slice(0,1200)].join(" ");
+ const human=await discoverHumanRealism(humanBrief);
+ output.human_realism_reference_discovery=human;
+ output.human_realism_qc=HUMAN_REALISM_QC;
+ output.human_realism_execution_contract={
+   required_before:"GENERATE_SLOT_BY_SLOT",
+   independent_from_creative_dna:true,
+   required_when:"human_subject_in_output",
+   reference_pixels_must_be_visually_inspected:true,
+   opened_image_receipt_is_not_visual_inspection:true,
+   reference_source:"Clipo Human Realism Cloud / Pexels",
+   sort_by:["action","camera_angle","body_focus","interaction","setting","lighting","life_stage"],
+   failure_action:"RERENDER_FAILED_HUMAN_DETAIL_BEFORE_DELIVERY",
+   fallback:"If library is empty/unavailable, continue using canonical rules plus explicit anatomical and physics QC"
+ };
  if(Array.isArray(output.execution)){
    // The upstream Edge Function already inserts this stage. Normalize old and new
    // packets so the stage occurs exactly once in the correct relative order.
-   output.execution=output.execution.filter((stage:string)=>stage!=="CLIPO_REFERENCE_DISCOVERY");
+   output.execution=output.execution.filter((stage:string)=>
+     stage!=="CLIPO_REFERENCE_DISCOVERY"&&stage!=="HUMAN_REALISM_REFERENCE_DISCOVERY");
    const i=output.execution.indexOf("VALIDATE_RESEARCH_BEFORE_CONTENT");
    const at=i>=0?i+1:output.execution.indexOf("BUILD_CONTENT_MAP");
-   output.execution.splice(at>=0?at:0,0,"CLIPO_REFERENCE_DISCOVERY");
+   output.execution.splice(at>=0?at:0,0,"CLIPO_REFERENCE_DISCOVERY","HUMAN_REALISM_REFERENCE_DISCOVERY");
  }
  return {status:response.status,ok:response.ok,data:output};
 }
