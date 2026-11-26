@@ -341,7 +341,7 @@ export async function compileOnepageJob(brand:string, source_url?:string, source
  };
  // Independent physical-reference lane: people detail is checked before creative generation.
  // Never change product geometry or canonical brand DNA based on generic photographs.
- const humanBrief=[validated.brand,theme||"",source_url||"",line||"",
+ const humanBrief=[theme||"",source_url||"",line||"",
    typeof research==="string"?research:JSON.stringify(research||{}).slice(0,1200)].join(" ");
  const human=await discoverHumanRealism(humanBrief);
  output.human_realism_reference_discovery=human;
@@ -489,7 +489,7 @@ export async function withHumanRealism(reference: {ok:boolean,data:any},brand:st
   if(!reference.ok||!reference.data)return reference;
   const visual=/onepage|ldp|hero|banner|ugc|recipient|shop.by|product.combo|creative/i.test(branch);
   // Non-visual routes retain the policy, without unnecessary external image reads.
-  const hint=[brand,branch,JSON.stringify(context||{}).slice(0,1500)].join(" ");
+  const hint=[branch,JSON.stringify(context||{}).slice(0,1500)].join(" ");
   const human=visual?await discoverHumanRealism(hint):null;
   return {...reference,data:{...reference.data,
     human_realism_reference_contract:{
