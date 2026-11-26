@@ -485,7 +485,32 @@ function applyNicheProductComboOverlay(data: any, requestedBrand: string, reques
   };
 }
 
-export async function resolveCreativeDna(brand: string, branch: string, researchContext: ResearchContext = {}) {
+export async function withHumanRealism(reference: {ok:boolean,data:any},brand:string,branch:string,context:ResearchContext) {
+  if(!reference.ok||!reference.data)return reference;
+  const visual=/onepage|ldp|hero|banner|ugc|recipient|shop.by|product.combo|creative/i.test(branch);
+  // Non-visual routes retain the policy, without unnecessary external image reads.
+  const hint=[brand,branch,JSON.stringify(context||{}).slice(0,1500)].join(" ");
+  const human=visual?await discoverHumanRealism(hint):null;
+  return {...reference,data:{...reference.data,
+    human_realism_reference_contract:{
+      mandatory_when:"Generating or reviewing any human-subject image",
+      external_catalog:"Clipo Human Realism Cloud",
+      independent_creative_dna:true,
+      search_tool:"search_human_realism_refs",
+      open_tool:"open_human_realism_ref",
+      query_dimensions:["action","camera_angle","body_focus","interaction","setting","lighting","life_stage","tags"],
+      visual_inspection_required:true,
+      physical_qc_required:true,
+      image_open_is_not_visual_inspection:true,
+      fallback:"Continue canonical creative work with explicit hand, limb, facial and physical-contact QC",
+      original_subject_nationality_unverified:true
+    },
+    human_realism_qc:HUMAN_REALISM_QC,
+    ...(human?{human_realism_reference_discovery:human}:{})
+  }};
+}
+
+async function resolveCreativeDna(brand: string, branch: string, researchContext: ResearchContext = {}) {
   const validated = validateResolveInput(brand, branch);
 
   if (isPawfectHouseNicheProductCombo(validated.brand, validated.branch)) {
@@ -494,12 +519,12 @@ export async function resolveCreativeDna(brand: string, branch: string, research
       brand: "PawfectHouse",
       branch: "LDP",
     });
-    return {
+    return withHumanRealism({
       ...parent,
       data: parent.ok
         ? attachResearch(applyNicheProductComboOverlay(parent.data, validated.brand, validated.branch),researchContext)
         : parent.data,
-    };
+    },validated.brand,validated.branch,researchContext);
   }
 
   const result = await fetchUpstream({
@@ -507,8 +532,8 @@ export async function resolveCreativeDna(brand: string, branch: string, research
     brand: validated.brand,
     branch: validated.branch,
   });
-  if (result.ok && result.data?.brand?.slug === "pawfecthouse" && result.data?.branch?.slug === "home-icon") return { ...result, data: attachHomeIconContract(result.data) };
-  return { ...result, data: result.ok ? attachLdpDesignDraft(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data };
+  if (result.ok && result.data?.brand?.slug === "pawfecthouse" && result.data?.branch?.slug === "home-icon") return withHumanRealism({ ...result, data: attachHomeIconContract(result.data) },validated.brand,validated.branch,researchContext);
+  return withHumanRealism({ ...result, data: result.ok ? attachLdpDesignDraft(attachLdpWorkflow(attachResearch(attachOnepageUiTemplate(result.data, validated.brand, validated.branch),{...researchContext,require_pdp_coverage:result.data?.branch?.slug==="onepage-system" || result.data?.resolved?.branch==="onepage-system"}),researchContext),researchContext) : result.data },validated.brand,validated.branch,researchContext);
 }
 
 export async function listCreativeDnaRoutes() {
