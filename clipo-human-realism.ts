@@ -27,8 +27,8 @@ export function actionForHumanScene(brief:string):string|null{
  return null;
 }
 export async function discoverHumanRealism(brief:string,
- fetcher:typeof fetch=fetch,timeoutMs=19000):Promise<HumanRealismResult>{
- const action=actionForHumanScene(brief);
+ fetcher:typeof fetch=fetch,timeoutMs=19000,filters:Partial<Record<"action"|"camera_angle"|"body_focus"|"interaction"|"setting",string>>={}):Promise<HumanRealismResult>{
+ const action=filters.action||actionForHumanScene(brief);
  const state:HumanRealismResult={
   stage:"HUMAN_REALISM_REFERENCE_DISCOVERY",attempted:true,
   status:"unavailable",mode:"public_clipo",context_action:action,
@@ -51,7 +51,7 @@ export async function discoverHumanRealism(brief:string,
  }
  try{
   const searchResult=await rpc("search_human_realism_refs",{
-   ...(action?{action}:{}),limit:8});
+   ...(action?{action}:{}),...Object.fromEntries(Object.entries(filters).filter(([k,v])=>k!=="action"&&typeof v==="string"&&v.length>0&&v.length<150)),limit:8});
   const data=searchResult.structuredContent||
    JSON.parse(searchResult.content?.find((x:any)=>x.type==="text")?.text||"{}");
   state.mcp_trace.push({operation:"search_human_realism_refs",status:data.status||"invalid_response"});
