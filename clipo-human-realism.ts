@@ -22,7 +22,7 @@ export function actionForHumanScene(brief:string):string|null{
  if(/grandma|grandmother|grandpa|grandfather|grandparent|elderly.*cook|senior.*bak/.test(text))return "grandparent_cooking";
  if(/friends|bestie|best.friends|girls.*laugh|girls.*hug/.test(text))return "friends_laughing";
  if(/memorial.*frame|picture.frame|photo.frame|frame.*memory|photo.*memorial/.test(text))return "memorial_holding";
- if(/cuddle.*(dog|cat|pet)|(dog|cat|pet).*cuddle|hug.*(dog|cat|pet)|(dog|cat|pet).*hug/.test(text))return "pet_cuddling";
+ if(/cuddl|snuggl|hugg?/.test(text)&&/dog|cat|pet/.test(text))return "pet_cuddling";
  if(/decorate.*(tree|ornament)|hang.*(bauble|ornament)|tree.*decorat|christmas.tree/.test(text))return "decorating_tree";
  if(/elderly.*gift|senior.*gift|grandparent.*gift/.test(text))return "elder_gifting";
  if(/apron|kitchen|cook|baking|bake|recipe|cutting.board|table.runner/.test(text))return "cooking";
