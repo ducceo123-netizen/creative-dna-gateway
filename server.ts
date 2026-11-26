@@ -726,6 +726,15 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name:"get_human_realism_references",title:"Get Clipo Human Realism References",
+    description:"Search and open photographed human anatomy, gestures, physical interaction and camera-angle reference images from the public Clipo Human Realism Library. For Onepage, UGC, LDP and banners depicting people. Sort by action, camera angle, body focus, interaction and setting. The result does not prove model nationality or identity and does not modify Creative DNA.",
+    annotations:READ_ONLY_TOOL_ANNOTATIONS,
+    inputSchema:{type:"object",properties:{
+      brief:{type:"string"},action:{type:"string"},camera_angle:{type:"string"},
+      body_focus:{type:"string"},interaction:{type:"string"},setting:{type:"string"}
+    },required:["brief"]}
+  },
+  {
     name:"compile_onepage_job", title:"Compile Onepage Job", description:COMPILE_ONEPAGE_DESC, annotations:READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema:{type:"object",properties:{brand:{type:"string"},source_url:{type:"string"},source_type:{type:"string",enum:["auto","product","collection"]},theme:{type:"string"},product_line:{type:"string"},research:RESEARCH_INPUT_SCHEMA},required:["brand"]},
   },
@@ -1229,6 +1238,26 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
     inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),product_line:z.string().trim().max(160).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
   }),async({brand,source_url,source_type,theme,research,product_line})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research,product_line,requestAuthorization);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
+
+  // Global image-quality lane, independent of brand DNA and usable by all UID visual tasks.
+  server.registerTool("get_human_realism_references",uidProgressTool("get_human_realism_references",{
+    title:"Clipo Human Realism References",
+    description:"Public Clipo Cloud human pose and physics photo references sorted by action, camera, body focus, interaction and setting. Use before any image generation featuring people; visually inspect source photos. No login required.",
+    inputSchema:{brief:z.string().trim().min(3).max(1200),action:z.string().max(100).optional(),
+      camera_angle:z.string().max(100).optional(),body_focus:z.string().max(100).optional(),
+      interaction:z.string().max(100).optional(),setting:z.string().max(100).optional()},
+    annotations:READ_ONLY_TOOL_ANNOTATIONS
+  }),async({brief,action,camera_angle,body_focus,interaction,setting})=>{
+    try{
+      const selected=await discoverHumanRealism(brief,fetch,19000,{
+        ...(action?{action}:{}),...(camera_angle?{camera_angle}:{}),
+        ...(body_focus?{body_focus}:{}),...(interaction?{interaction}:{}),
+        ...(setting?{setting}:{})});
+      return withUidProgress({content:[{type:"text",text:JSON.stringify({discovery:selected,qc:HUMAN_REALISM_QC})}],isError:false},"research");
+    }catch(e){
+      return withUidProgress({content:[{type:"text",text:JSON.stringify({status:"unavailable",continue_task:true})}],isError:false},"research");
+    }
+  });
 
   // Tool 3: submit_training_feedback — pending proposal only; never canonical mutation
   server.registerTool(
