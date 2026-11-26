@@ -36,6 +36,7 @@ export const UID_TOOL_INVOCATION_LABELS = {
   evaluate_onepage_physical_qc: ["Checking actual product use, camera and physical realism…", "Physical QC call ended"],
   resolve_creative_dna: ["Reading canonical creative rules…", "Creative rules call ended"],
   compile_onepage_job: ["Compiling Onepage task packet…", "Task packet call ended"],
+  get_human_realism_references: ["Searching photographic human pose references…", "Human realism reference call ended"],
   submit_training_feedback: ["Submitting pending training proposal…", "Training submission call ended"],
   list_creative_dna_routes: ["Looking up creative routes…", "Route lookup call ended"],
 } as const;
