@@ -110,3 +110,40 @@ The [branching guide](https://supabase.com/docs/guides/deployment/branching) sta
 PASS: authenticated metadata discovery, all required metadata SELECTs, full function-source download/comparison, migration history, schema/primitive inventory, public OAuth discovery, secret-name-only inventory.
 
 BLOCKED: a separately provisioned V2 authenticated durable backend; actual V2 credential negative integration testing; full GPT OAuth connection. Full private Auth settings and production policy effectiveness remain deliberately unverified. Production credential reuse is not an acceptable substitute.
+
+## Isolated V2 Free project provisioning (2026-11-27)
+
+The parent authorized exactly one new, separate Free test project after the mandatory read-only review; existing projects remain forbidden write targets. Live Management API `GET /v1/organizations/nwjevadsrduexjodnbdh` returned `plan: free` immediately before and after creation. Entitlements deny paid compute changes, high availability, disk modifications, IPv4 and persistent branching. Before creation there was one active project and two inactive projects in the only visible organization, with one organization member.
+
+Official [Free pricing](https://supabase.com/pricing) is $0/month, two active projects, 500 MB database and 1 GB file storage. [Billing rules](https://supabase.com/docs/guides/platform/billing-on-supabase) apply the plan at organization level; paused projects do not count toward the active Free-project limit. The [billing FAQ](https://supabase.com/docs/guides/platform/billing-faq) also counts Owner/Admin members' project quotas. The API accepted creation, establishing available capacity. Free projects can pause after a week of inactivity; this is a test environment, with no paid upgrade authorized.
+
+The CLI `projects create --help` has no free-plan flag. The official API's deprecated `plan` field is ignored; organization subscription determines cost. `desired_instance_size` was omitted (the documented smallest default), and no HA, addon, upgrade, billing or production branch fields were supplied. One `POST /v1/projects` returned HTTP 201.
+
+- New project: `uid-brands-architecture-v2-test`
+- New ref: `muyyitsvkkjzjojetynr`
+- Region: `ap-southeast-1`
+- Observed status: `ACTIVE_HEALTHY`
+- Verified organization plan after creation: `free`
+- Redacted evidence: `work/supabase-preflight/v2-project-redacted.json`
+- Independent generated password: held only in local `work/v2-cloud-secrets/` files, directory mode 0700 and files 0600; no value is included in this report or repository.
+
+No existing project, production database, auth config, Render service, organization membership or payment settings were modified. No invitations, signup or email requests were sent. Subsequent schema/role/auth setup is a separate operation limited to this exact new ref.
+
+Supabase's [OAuth server documentation](https://supabase.com/docs/guides/auth/oauth-server) explicitly states no separate OAuth 2.1 charge; users count toward the plan's MAU allowance. The [pooler metadata API](https://supabase.com/docs/reference/api/v1-get-pooler-config) and [connection guidance](https://supabase.com/docs/guides/database/connecting-to-postgres) are being used to prepare isolated PostgreSQL access.
+
+
+### New-project schema and strict TLS verification
+
+After explicit root authorization and the source agent's migration freeze, applied only `v2/migrations/001_isolated_v2_store.sql` to the new ref `muyyitsvkkjzjojetynr`, in one transaction. The script requires the exact new pooler user/ref/host, verified TLS, an empty existing V2 namespace, no public application tables and no legacy `uid_task_private` schema. Applied SQL SHA-256: `c503fa22a4e5cffc7898114f20cebd443ec0554c3700685a1308c969944e50ab`.
+
+Created independent runtime login `uid_brands_v2_app`, with no superuser, BYPASSRLS, database creation, role creation, replication, inheritance, public-schema CREATE or V2-schema CREATE permissions. Runtime connection limit is eight. The four immutable tables deny UPDATE; the runtime role has no broad admin credentials. The schema is unavailable to anonymous, authenticated and service-role API users. Empty expiry cleanup returned zero through the narrowly scoped admin-owned function. No production or unrelated schema was touched.
+
+Initial strict TLS probe correctly rejected the missing CA with `SELF_SIGNED_CERT_IN_CHAIN`. The CA was located from Supabase's official [dashboard custom content source](https://github.com/supabase/supabase/blob/23424bec35831d88f4ddff689945774e61de5f26/apps/studio/hooks/custom-content/custom-content.json) and fetched over HTTPS from its official download URL. Certificate SHA-256 is `700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7`, subject Supabase Root 2021 CA, expires 2031-04-26. The subsequent admin SELECT and app-role verification both passed with certificate and hostname verification enabled (`rejectUnauthorized: true`). No TLS bypass was used.
+
+Redacted migration receipt: `work/supabase-preflight/v2-migration-redacted.json`. Runtime credential/config files are local-only mode 0600 under `work/v2-cloud-secrets/`. Environment variable names only: `V2_MODE`, `V2_STORE`, `V2_DATABASE_URL`, `V2_DATABASE_HOST`, `V2_DATABASE_PROJECT_REF`, `V2_DATABASE_CA_PEM`.
+
+### OAuth readiness of the new isolated project
+
+Read-only auth metadata confirms OAuth server and dynamic registration disabled by default, signup enabled by default, email login enabled, default site URL localhost. OIDC discovery and JWKS return HTTP 200 even while OAuth is disabled; these alone do not establish readiness. OAuth authorization-server discovery returns `feature_disabled`. Issuer is `https://muyyitsvkkjzjojetynr.supabase.co/auth/v1`. The standard discovery path is `/.well-known/oauth-authorization-server/auth/v1` on the project origin.
+
+The official [OAuth setup guide](https://supabase.com/docs/guides/auth/oauth-server/getting-started) says the beta is available on all plans with no separate charge. It requires enablement, authorization UI path, a login/consent interface and OAuth client registration; [MCP guidance](https://supabase.com/docs/guides/auth/oauth-server/mcp-authentication) covers discovery and PKCE. No auth settings, test users, signup, invitations or email requests have been changed or issued in this operation.

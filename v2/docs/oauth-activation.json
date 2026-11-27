@@ -1,0 +1,181 @@
+{
+  "schemaVersion": "uid.v2.oauth-activation-plan/1",
+  "status": "BLOCKED_REAL_IDENTITY_AND_EXACT_CHATGPT_CALLBACK",
+  "applied": false,
+  "projectRef": "muyyitsvkkjzjojetynr",
+  "productionProjectRefForbidden": "wuonwttmkadwsmefjukv",
+  "intendedServiceOrigin": "https://uid-brands-architecture-v2-test.onrender.com",
+  "serviceOriginMustMatchObservedDeployment": true,
+  "issuer": "https://muyyitsvkkjzjojetynr.supabase.co/auth/v1",
+  "discoveryUrl": "https://muyyitsvkkjzjojetynr.supabase.co/.well-known/oauth-authorization-server/auth/v1",
+  "jwksUrl": "https://muyyitsvkkjzjojetynr.supabase.co/auth/v1/.well-known/jwks.json",
+  "currentReadOnlyObservations": {
+    "organizationPlan": "free",
+    "oauthServerEnabled": false,
+    "dynamicRegistrationEnabled": false,
+    "asymmetricSigningAlgorithm": "ES256",
+    "publicJwksKeyCount": 1,
+    "openidMetadataPresent": true,
+    "openidMetadataDoesNotProveOAuthEnabled": true,
+    "advertisedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "phone",
+      "offline_access"
+    ],
+    "advertisedPkceMethods": [
+      "S256",
+      "plain"
+    ],
+    "rfc9207IssuerResponseSupportObserved": false,
+    "cimdSupportObserved": false,
+    "publishableKeySavedLocalOnly": "work/v2-cloud-secrets/supabase-v2-publishable.json",
+    "publishableKeyFileMode": "0600",
+    "retrievalMethod": "GET /v1/projects/muyyitsvkkjzjojetynr/api-keys?reveal=false; retained only type=publishable",
+    "authMutationsPerformed": false,
+    "usersCreated": false,
+    "emailsOrInvitationsSent": false
+  },
+  "minimumOwnerInput": [
+    {
+      "id": "isolated_user_identity",
+      "needed": "An actual user account in this isolated project, established through the user's authentication or separately authorized provisioning; then the verified issuer/sub and explicit operator/reviewer mapping. A dashboard administrator identity, production user, or supplied email alone is not a verified project Auth subject.",
+      "passwordInChatRequired": false
+    },
+    {
+      "id": "exact_chatgpt_callback",
+      "needed": "The exact redirect URI shown for the specific ChatGPT custom MCP connection. Never infer a callback ID or register a wildcard."
+    }
+  ],
+  "supabaseActivationRequest": {
+    "method": "PATCH",
+    "url": "https://api.supabase.com/v1/projects/muyyitsvkkjzjojetynr/config/auth",
+    "bodyAfterIdentityCallbackAndUiVerified": {
+      "site_url": "https://uid-brands-architecture-v2-test.onrender.com",
+      "oauth_server_enabled": true,
+      "oauth_server_authorization_path": "/oauth/consent",
+      "oauth_server_allow_dynamic_registration": false
+    },
+    "registrationDefault": "Pre-register one client with the exact observed ChatGPT callback. Enable DCR only if selected host workflow needs it; new clients still receive no V2 membership automatically.",
+    "uriAllowListNote": "Supabase site redirect uri_allow_list is separate from OAuth client redirect_uris. This password-only consent UI needs no magic-link redirect entry. Do not add broad ChatGPT domains or wildcards.",
+    "notIncluded": [
+      "signup",
+      "user creation",
+      "email",
+      "invitation",
+      "organization membership",
+      "production authentication",
+      "paid options"
+    ]
+  },
+  "consentUi": {
+    "routes": [
+      "/oauth/consent",
+      "/oauth/details",
+      "/oauth/decision"
+    ],
+    "environmentNames": [
+      "V2_OAUTH_UI_ENABLED",
+      "V2_OAUTH_PROJECT_REF",
+      "V2_SUPABASE_PUBLISHABLE_KEY",
+      "V2_OAUTH_REDIRECT_URIS_JSON",
+      "V2_JWT_ISSUER",
+      "V2_JWKS_URL",
+      "V2_MEMBERS_JSON"
+    ],
+    "loginAudience": "authenticated",
+    "loginAndMcpVerifiersMustBeSeparate": true,
+    "rules": [
+      "Existing-account login goes directly to the isolated issuer.",
+      "No signup, OTP, email, invitation, password logging, browser persistence or auto-consent.",
+      "Verify issuer, ES256/RS256 signature, authenticated login audience, expiry and explicit subject membership before consent.",
+      "Show actual client/scopes and require explicit approve or deny.",
+      "Validate returned redirect against the exact configured callback list."
+    ]
+  },
+  "mcpAudienceAndScopes": {
+    "resource": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+    "requiredAudience": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+    "requiredChecks": [
+      "isolated issuer",
+      "signature",
+      "exp/iat",
+      "verified member subject",
+      "exact resource audience",
+      "allowlisted OAuth client_id",
+      "agreed granted scope"
+    ],
+    "suggestedStandardScopes": [
+      "openid",
+      "offline_access"
+    ],
+    "doNotAssumeCustomScopesSupported": true,
+    "defaultSupabaseAccessAudience": "authenticated",
+    "officialSourceInspection": {
+      "commit": "0725a1d90cd9fbbb2a26f3baf18afd400a436f66",
+      "authorize": "internal/api/oauthserver/authorize.go parses/stores resource and validates URI shape.",
+      "tokenExchange": "internal/api/oauthserver/handlers.go rejects supplied token resource differing from authorization resource.",
+      "accessToken": "internal/tokens/service.go sets Audience to user.Aud; resource is not assigned to the access-token audience.",
+      "confidence": "Source-supported inference, not a verified hosted OAuth token. Real hosted flow remains required."
+    },
+    "candidateHookPlan": {
+      "status": "DESIGN_ONLY_NOT_INSTALLED",
+      "schema": "uid_brands_v2_oauth",
+      "function": "custom_access_token_hook(event jsonb) returns jsonb",
+      "permissions": "Admin-owned private schema; SECURITY INVOKER function. Only supabase_auth_admin gets schema USAGE, mapping-table SELECT and function EXECUTE. Revoke PUBLIC, anon, authenticated and runtime app access.",
+      "clientMapping": "Explicit approved client_id -> exact V2 MCP resource, inserted only after real client registration; never accept client-controlled audience or arbitrary mapping.",
+      "behavior": [
+        "Preserve every existing claim.",
+        "If claims.client_id is absent, return unchanged login claims (aud authenticated).",
+        "If client_id is present but not approved, return a supported authorization failure.",
+        "For the explicitly approved OAuth client, replace only aud with the exact V2 MCP resource; preserve client_id and granted scope.",
+        "Refresh issuance must follow the same client mapping. Do not rely only on authentication_method."
+      ],
+      "managementApiFields": {
+        "hook_custom_access_token_enabled": true,
+        "hook_custom_access_token_uri": "pg-functions://postgres/uid_brands_v2_oauth/custom_access_token_hook"
+      },
+      "resourceLimitation": "The documented/current hook input and authorization-details response do not expose raw resource. This hook pins a registered client to one resource; it does not independently validate the raw requested resource. Do not invent event fields or claim echo validation. Upstream authorization/token resource matching plus exact audience verification must be tested. If strict request-resource allowlisting is required, use a supported provider feature or reviewed authorization-server design before activation."
+    }
+  },
+  "chatgptRegistration": {
+    "surface": "Current ChatGPT Plugins > plus > Add custom MCP server; availability depends on account/workspace permissions.",
+    "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+    "callback": "UNKNOWN_COPY_EXACT_CONNECTION_VALUE",
+    "stableCallbackCandidate": "https://chatgpt.com/connector_platform_oauth_redirect",
+    "stableCallbackRequires": "Matching issuer in protected-resource and AS metadata, authorization_response_iss_parameter_supported=true, and exact iss in every successful/error authorization response.",
+    "fallbackPatternOnly": "https://chatgpt.com/connector/oauth/{callback_id}",
+    "patternIsNotAnAllowlistEntry": true,
+    "registrationOptions": [
+      "Explicit client registration with observed callback and host-compatible token endpoint authentication method.",
+      "DCR if needed: enable only in this project, let ChatGPT register; capture actual client_id and bind it before granting V2 access."
+    ],
+    "offlineAccess": "Current issuer advertises offline_access. Request it and verify refresh issuance and renewal before claiming persistent ChatGPT connectivity.",
+    "publishing": "Private testing only; no workspace publication or sharing is implied."
+  },
+  "acceptanceBeforeClaimingOAuthReady": [
+    "Observed Render origin equals configured resource/site URL.",
+    "AS discovery enabled with exact issuer and S256.",
+    "Verified actual isolated user is explicitly mapped; unknown users denied.",
+    "Login audience remains authenticated and login token is rejected at MCP.",
+    "OAuth token audience equals V2 resource; missing/wrong audience, scope and client_id denied.",
+    "Exact ChatGPT redirect registered and consent UI rejects other redirects.",
+    "Actual authorization-code plus S256 exchange, deny flow, state and redirect handling pass.",
+    "Refresh token renews with the same audience/client/subject restrictions.",
+    "Actual ChatGPT tool discovery and authenticated tool call pass.",
+    "Production remains unchanged; secrets remain excluded from repository and logs."
+  ],
+  "sources": {
+    "supabaseConfig": "https://supabase.com/docs/reference/api/v1-update-auth-service-config",
+    "supabaseSetup": "https://supabase.com/docs/guides/auth/oauth-server/getting-started",
+    "supabaseFlows": "https://supabase.com/docs/guides/auth/oauth-server/oauth-flows",
+    "supabaseTokenSecurity": "https://supabase.com/docs/guides/auth/oauth-server/token-security",
+    "supabaseHook": "https://supabase.com/docs/guides/auth/auth-hooks/custom-access-token-hook",
+    "supabaseAuthSource": "https://github.com/supabase/auth/tree/0725a1d90cd9fbbb2a26f3baf18afd400a436f66",
+    "openaiAuth": "https://developers.openai.com/plugins/build/auth",
+    "openaiCallbackChange": "https://developers.openai.com/plugins/changelog",
+    "chatgptSetup": "https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt",
+    "chatgptControls": "https://learn.chatgpt.com/docs/enterprise/apps-and-connectors"
+  }
+}

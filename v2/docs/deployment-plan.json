@@ -1,5 +1,5 @@
 {
-  "status": "READY_FOR_ISOLATED_FREE_SERVICE_CREATION",
+  "status": "PENDING_BROWSER_CREDENTIAL_UPLOAD_CONFIRMATION",
   "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
   "branch": "experiment/uid-brands-architecture-v2",
   "serviceName": "uid-brands-architecture-v2-test",
@@ -53,5 +53,7 @@
   "liveEndpoint": null,
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
-  "productionWritesPerformed": false
+  "productionWritesPerformed": false,
+  "blockingAction": "Upload new V2-only database credentials into the prepared new Render service, then launch Free compute.",
+  "confirmationSource": "Browser tool requires confirmation before saving credentials at the new destination."
 }
