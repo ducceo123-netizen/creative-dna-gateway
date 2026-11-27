@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash } from './core.ts';
-import { testTokenVerifier, jwtVerifier } from './auth.ts';
+import { testTokenVerifier, jwtVerifier, verifierFromEnv } from './auth.ts';
 import { readConfig } from './config.ts';
 
 test('authentication binds provisioned identity; rejects missing, wrong and V1-style JWT credentials',async()=>{
@@ -23,6 +23,16 @@ test('startup is fail-closed for production writes, origins and ephemeral Render
  assert.throws(()=>readConfig({...base,SUPABASE_SERVICE_ROLE_KEY:'not-a-real-key'}),/Remove/);
  assert.throws(()=>readConfig({...base,V2_PUBLIC_ORIGIN:'https://uid-brands-gateway-preview.onrender.com'}),/distinct/);
  assert.throws(()=>readConfig({...base,RENDER:'true'}),/persistent/); rmSync(dir,{recursive:true});
+});
+test('cloud configuration needs explicit hashed principals and isolated Postgres selection',async()=>{
+ const token='uidv2_'+randomBytes(32).toString('base64url');
+ const env={V2_AUTH_MODE:'test-token',V2_TEST_PRINCIPALS_JSON:JSON.stringify([{tokenSha256:hash(token),owner:'v2-cloud-test',subject:'reviewer',role:'reviewer'}])};
+ assert.equal((await verifierFromEnv(env)('Bearer '+token)).owner,'v2-cloud-test');
+ assert.throws(()=>verifierFromEnv({...env,V2_TEST_PRINCIPALS_FILE:'/unused'}),/exactly one/);
+ assert.throws(()=>verifierFromEnv({V2_AUTH_MODE:'test-token'}),/exactly one/);
+ const config=readConfig({V2_MODE:'isolated-test',V2_STORE:'postgres',V2_PUBLIC_ORIGIN:'https://v2-test.example.com',RENDER:'true'});
+ assert.equal(config.store,'postgres');assert.equal(config.database,undefined);
+ assert.throws(()=>readConfig({V2_MODE:'isolated-test',V2_STORE:'unknown'}),/sqlite or postgres/);
 });
 test('origin aliases, non-HTTP loopback schemes, root data paths and plural secret bundles fail isolation',()=>{
  const dir=realpathSync(mkdtempSync(join(tmpdir(),'uid-v2-config-')));const base={V2_MODE:'isolated-test',V2_DATA_DIR:dir};

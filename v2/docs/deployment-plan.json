@@ -1,0 +1,57 @@
+{
+  "status": "READY_FOR_ISOLATED_FREE_SERVICE_CREATION",
+  "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
+  "branch": "experiment/uid-brands-architecture-v2",
+  "serviceName": "uid-brands-architecture-v2-test",
+  "serviceId": null,
+  "existingServiceToModify": null,
+  "autoDeploy": false,
+  "healthCheckPath": "/healthz",
+  "mcpPath": "/api/mcp",
+  "runtime": "Docker Node24.14.1",
+  "dockerfilePath": "v2/Dockerfile",
+  "dockerContext": ".",
+  "renderPlan": "free",
+  "renderRegion": "singapore",
+  "store": "isolated Supabase PostgreSQL, FORCE RLS, least-privilege app role",
+  "supabaseProject": "muyyitsvkkjzjojetynr",
+  "supabasePlan": "free",
+  "requiredEnvironmentNames": [
+    "V2_MODE",
+    "V2_STORE",
+    "V2_DATABASE_URL",
+    "V2_DATABASE_HOST",
+    "V2_DATABASE_PROJECT_REF",
+    "V2_DATABASE_CA_PEM",
+    "V2_PUBLIC_ORIGIN",
+    "V2_AUTH_MODE"
+  ],
+  "jwtEnvironmentNames": [
+    "V2_JWT_ISSUER",
+    "V2_JWT_AUDIENCE",
+    "V2_JWKS_URL",
+    "V2_MEMBERS_JSON"
+  ],
+  "opaqueTestCredentialEnvironmentNames": [
+    "V2_TEST_PRINCIPALS_JSON"
+  ],
+  "constraints": [
+    "No production credentials",
+    "No existing service mutation",
+    "No paid resource without explicit approval",
+    "No ephemeral state masquerading as durable storage"
+  ],
+  "renderUsageAtPredeploy": {
+    "freeHours": 143.87,
+    "freeHoursIncluded": 750,
+    "pipelineMinutes": 31,
+    "pipelineMinutesIncluded": 500,
+    "bandwidthGB": 1.09,
+    "bandwidthIncludedGB": 5,
+    "paymentCardOnFile": false
+  },
+  "liveEndpoint": null,
+  "gptConnectionVerified": false,
+  "paidResourcesCreated": false,
+  "productionWritesPerformed": false
+}

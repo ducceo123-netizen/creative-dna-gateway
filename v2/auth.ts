@@ -57,8 +57,10 @@ export function jwtVerifier(config: { issuer: string; audience: string; jwksUrl:
   };
 }
 export function verifierFromEnv(env: NodeJS.ProcessEnv): VerifyPrincipal {
-  if (env.V2_AUTH_MODE === 'test-token' && env.V2_TEST_PRINCIPALS_FILE) {
-    return testTokenVerifier(safeJson(JSON.parse(readFileSync(env.V2_TEST_PRINCIPALS_FILE, 'utf8')), 32_000));
+  if (env.V2_AUTH_MODE === 'test-token') {
+    if (!!env.V2_TEST_PRINCIPALS_FILE === !!env.V2_TEST_PRINCIPALS_JSON) throw new V2Error('AUTH_CONFIG', 'Configure exactly one isolated test-principal source.');
+    const input = env.V2_TEST_PRINCIPALS_JSON || readFileSync(env.V2_TEST_PRINCIPALS_FILE!, 'utf8');
+    return testTokenVerifier(safeJson(JSON.parse(input), 32_000));
   }
   if (env.V2_AUTH_MODE === 'jwt') return jwtVerifier({ issuer: env.V2_JWT_ISSUER || '', audience: env.V2_JWT_AUDIENCE || '', jwksUrl: env.V2_JWKS_URL || '', members: JSON.parse(env.V2_MEMBERS_JSON || '{}') });
   throw new V2Error('AUTH_CONFIG', 'Configure isolated V2 authentication; public mode is disabled.');
