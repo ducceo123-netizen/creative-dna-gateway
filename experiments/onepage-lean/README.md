@@ -22,3 +22,12 @@ All three restored structurally identical; 23 execution steps, 19 asset slot def
 
 ## Next gate
 Keep the legacy compiler unchanged. Add a read-only stage retrieval adapter with pinned revision and full-packet fallback before testing model behavior. Do not send restored full packets to the model and claim savings. Verify aliases are understood or fetched, retain unknown/conflicting rules, and test real PDP/collection inputs plus research resubmission. Only then perform blinded A/B creative review and compare actual input/output tokens and tool calls. No merge or deployment without owner approval.
+
+## Offline comparison lab
+```sh
+node --import tsx --test experiments/onepage-lean/*.test.ts
+node --import tsx experiments/onepage-lean/lab.ts /path/to/compiled-job.json
+```
+Open http://127.0.0.1:8789. The lab binds to localhost only and accepts no writes. It compares original and staged payloads, not generated creatives. No production imports or credentials needed.
+
+Four unit tests passed in an isolated Node 22.16 runtime on manually copied experiment sources (GitHub DNS unavailable in the execution container). Full repository build and lab browser smoke test are not attested. Model token and creative A/B remain unverified. No production deployment or merge.
