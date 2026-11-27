@@ -1,0 +1,69 @@
+{
+  "observed_at": "2026-11-27T09:51:14.450282+00:00",
+  "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
+  "main": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+  "lean": "8367c7cf45c330bdd044ba0f83b3af2b483228e5",
+  "new_branch_unused": true,
+  "existing_render": [
+    {
+      "id": "srv-db4iti2j9qps73cnf6qg",
+      "name": "uid-brands-gateway-preview",
+      "branch": "main",
+      "commit": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+      "plan": "free",
+      "region": "singapore",
+      "build": "npm install && npm run build",
+      "start": "npm start",
+      "auto_deploy": "off",
+      "health_check": "unset",
+      "env_names": [
+        "CREATIVE_DNA_ADMIN_UPSTREAM_URL",
+        "NODE_ENV",
+        "NPM_CONFIG_PRODUCTION",
+        "OPENAI_API_KEY",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "UID_UI_RELEASE"
+      ]
+    },
+    {
+      "id": "srv-dc4klirl550s739mqjg0",
+      "name": "uid-brands-lean-v2",
+      "branch": "experiment/onepage-lean-v2",
+      "commit": "8367c7cf45c330bdd044ba0f83b3af2b483228e5",
+      "plan": "free",
+      "region": "singapore",
+      "start": "node --experimental-strip-types experiments/onepage-lean/mcp-server.ts",
+      "health_check": "unset",
+      "auto_deploy": "handoff off; disabled UI value not exposed"
+    },
+    {
+      "id": "srv-dbpdhmgm7kps73akequg",
+      "name": "uid-brands-studio-webapp",
+      "branch": "webapp/uid-brands-studio-mvp",
+      "commit": "d596ed89756586cb5d6073c5578bcfdfb3a016b1",
+      "plan": "free",
+      "region": "singapore",
+      "build": "echo Studio is dependency-free",
+      "start": "node studio/server.mjs",
+      "env_names": [
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_URL"
+      ],
+      "health_check": "unset",
+      "auto_deploy": "handoff on; disabled UI value not exposed"
+    }
+  ],
+  "render_access": "MCP disconnected USER_NOT_LOGGED_IN; authenticated Dashboard read-only fallback",
+  "ci": "four workflows inspected; pushes main only; PR tests no deploy commands",
+  "handoff_hashes": {
+    "08_PREFLIGHT.md": "942496a14fbded8961f356af1a4793b94595467c6b02d3715a2c8e3a3295abaf",
+    "03_IMPLEMENTATION_AND_ISOLATION.md": "8d0c576eaa70e22d697057a7aff0c18e76ddf5bb312d50284389e9eeaf6de700",
+    "02_EO_INVARIANTS.md": "f0f4f78d3274efff5489f76711f3b15548a469685bf8bdc51dc55d6e1721584a",
+    "04_ACCEPTANCE_AND_BENCHMARK.md": "e8ebf883a431a25791613cd72c17c2655fe2218ee2b9307d9a7773733bd47e07",
+    "01_ARCHITECTURE.md": "2d15b96948f141cb5fe9d6d80911e5e111d16624ff5d5b8d1bb8fbbc3daec937",
+    "06_CODEX_PROMPT.md": "273899a6cc496415893f96a615e1a8ae2559def0c73cc1f87426f6e12b6a714f",
+    "07_INFRASTRUCTURE_INVENTORY.md": "5212f843a8f54a01807869d1652982ac763095fd5b4a85e2080059f3733ed55b",
+    "05_BASELINE_EVIDENCE.md": "e7dfa678abc506a558b188376505b13cdbdf9e6226ab3f4ba43f6a734f2a2144",
+    "00_START_HERE.md": "605fb41656cd5e84213f192063f3ba787c39d8e9b3704ac5e7e899d65eac3ce5"
+  }
+}
