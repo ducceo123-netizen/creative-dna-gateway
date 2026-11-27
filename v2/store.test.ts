@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SqliteStore } from './store.ts';
 import { hash } from './core.ts';
+import { readStoredZip, writeStoredZip } from './delivery-zip.ts';
 
 test('durable owner-bound CAS, immutable operation receipts and restart', () => {
  const dir=realpathSync(mkdtempSync(join(tmpdir(),'uid-v2-'))); const path=join(dir,'state.sqlite');
@@ -33,6 +34,16 @@ test('artifacts are actual hashed bytes, scoped to job and owner; leases fence o
  store.assertLease('owner',a.jobId,one); store.releaseLease('owner',a.jobId,one);
  const two=store.acquireLease('owner',a.jobId,'worker-2'); assert.ok(two.fence>one.fence);
  assert.throws(()=>store.assertLease('owner',a.jobId,one),/expired/); store.close();
+});
+test('verified ZIP bytes above 32 MiB roundtrip while non-archive artifact limits stay unchanged',()=>{
+ const store=new SqliteStore(':memory:'),job=store.create('owner','large-archive','large-archive',{});
+ try{
+  const zip=writeStoredZip([{name:'mechanical-fixture-a.bin',bytes:Buffer.alloc(16*1024*1024,1)},{name:'mechanical-fixture-b.bin',bytes:Buffer.alloc(16*1024*1024,2)}]);
+  assert.ok(zip.length>32*1024*1024);
+  const receipt=store.putArtifact('owner',job.jobId,zip,'application/zip'),restored=store.getArtifact('owner',job.jobId,receipt.sha256);
+  assert.equal(receipt.sha256,hash(zip));assert.ok(restored.equals(zip));assert.equal(readStoredZip(restored).length,2);
+  for(const mime of ['image/png','image/webp','image/jpeg','text/html','text/css','application/json'])assert.throws(()=>store.putArtifact('owner',job.jobId,zip,mime),/format-specific byte limit/);
+ }finally{store.close();}
 });
 test('database and parent-directory symlinks are rejected',()=>{
  const dir=realpathSync(mkdtempSync(join(tmpdir(),'uid-v2-links-'))),database=join(dir,'state.sqlite');

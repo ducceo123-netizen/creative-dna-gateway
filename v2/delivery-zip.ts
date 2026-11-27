@@ -4,6 +4,7 @@
  */
 export type ZipEntry = { name: string; bytes: Buffer };
 const MAX_BYTES = 128 * 1024 * 1024;
+export const MAX_ZIP_ARCHIVE_BYTES = MAX_BYTES + 64 * 1024;
 const MAX_ENTRY = 32 * 1024 * 1024;
 const crcTable = new Uint32Array(256);
 for (let i = 0; i < 256; i++) {
@@ -49,7 +50,7 @@ export function writeStoredZip(entries: ZipEntry[]): Buffer {
 }
 /** Reopens actual bytes, checking both directories, names, sizes and every CRC. */
 export function readStoredZip(bytes: Buffer): ZipEntry[] {
-  if (!Buffer.isBuffer(bytes) || bytes.length < 22 || bytes.length > MAX_BYTES + 64 * 1024) throw Error('ZIP_BYTE_LIMIT');
+  if (!Buffer.isBuffer(bytes) || bytes.length < 22 || bytes.length > MAX_ZIP_ARCHIVE_BYTES) throw Error('ZIP_BYTE_LIMIT');
   const end = bytes.length - 22;
   if (bytes.readUInt32LE(end) !== 0x06054b50 || bytes.readUInt16LE(end + 4) || bytes.readUInt16LE(end + 6) || bytes.readUInt16LE(end + 20)) throw Error('ZIP_FOOTER');
   const count = bytes.readUInt16LE(end + 10), centralSize = bytes.readUInt32LE(end + 12), centralStart = bytes.readUInt32LE(end + 16);

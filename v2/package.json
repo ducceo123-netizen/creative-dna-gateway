@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24.14.0" },
+  "engines": {
+    "node": ">=24.14.0"
+  },
   "scripts": {
     "test": "node --import tsx --test *.test.ts",
     "lint": "tsc --noEmit -p tsconfig.json",
@@ -12,16 +14,20 @@
     "benchmark": "node --import tsx benchmark.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.0.0",
     "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "express": "^4.21.2",
     "jose": "^6.1.0",
+    "pg": "^8.23.1",
     "playwright": "^1.55.0",
+    "sharp": "0.35.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@types/express": "^4.17.21",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
     "esbuild": "^0.25.0",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"

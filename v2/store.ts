@@ -3,6 +3,7 @@ import { mkdirSync, chmodSync, lstatSync, realpathSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { boundedId, hash, safeJson, V2Error } from './core.ts';
+import { MAX_ZIP_ARCHIVE_BYTES } from './delivery-zip.ts';
 
 export type StoredJob = Record<string, any> & { jobId: string; owner: string; storageRevision: number; createdAt: string; updatedAt: string; expiresAt: string };
 export type OperationKey = { key: string; requestHash: string };
@@ -113,7 +114,8 @@ export class SqliteStore {
     this.db.prepare('UPDATE leases SET expires=0 WHERE job=? AND holder=? AND fence=?').run(id, lease.holder, lease.fence);
   }
   putArtifact(owner: string, id: string, bytes: Buffer, mime: string): ArtifactReceipt {
-    if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 32 * 1024 * 1024) throw new V2Error('ASSET_SIZE_LIMIT', 'Artifact must contain 1 byte to 32 MiB.', 413);
+    const limit = mime === 'application/zip' ? MAX_ZIP_ARCHIVE_BYTES : 32 * 1024 * 1024;
+    if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > limit) throw new V2Error('ASSET_SIZE_LIMIT', 'Artifact exceeds its format-specific byte limit.', 413);
     if (!['image/png', 'image/webp', 'image/jpeg', 'text/html', 'text/css', 'application/zip', 'application/json'].includes(mime)) throw new V2Error('ASSET_TYPE', 'Unsupported artifact type.');
     return this.transaction(() => {
       this.read(owner, id); const sha256 = hash(bytes);
