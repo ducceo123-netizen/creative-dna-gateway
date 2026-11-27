@@ -127,6 +127,14 @@ test('compiler rejects invalid route, body size, JSON and upstream failures',asy
   await assert.rejects(()=>compileCanonical({brand:'pawfecthouse'},async()=>new Response('private backend detail',{status:500})),/^Error: CANONICAL_READ_HTTP_500$/);
   await assert.rejects(()=>compileCanonical({brand:'pawfecthouse'},async()=>{throw new Error('sensitive backend detail');}),/^Error: CANONICAL_READ_UNAVAILABLE$/);
 });
+test('compiler preserves exact name-only product line and rejects missing canonical exact-type requirements',async()=>{
+  const product_line='Travel Case';let calls=0;
+  const packet={...fixture(),named_product_scope:{requested_product_type:product_line,match_policy:'SHOPIFY_PRODUCT_TYPE_EXACT',requires_store_catalog_scan:true,evaluator:'evaluate_onepage_product_type_scope',no_title_or_handle_contains_fallback:true}};
+  const fetcher:typeof fetch=async(url,init)=>{calls++;assert.equal(url,CANONICAL_COMPILER_URL);assert.deepEqual(JSON.parse(String(init?.body)),{brand:'pawfecthouse',product_line});assert.equal(new Headers(init?.headers).has('authorization'),false);return Response.json(packet);};
+  assert.equal((await compileCanonical({brand:'pawfecthouse',product_line},fetcher)).named_product_scope.requested_product_type,product_line);assert.equal(calls,1);
+  await assert.rejects(compileCanonical({brand:'pawfecthouse',product_line},async()=>Response.json(fixture())),/CANONICAL_NAMED_SCOPE_MISMATCH/);
+  await assert.rejects(compileCanonical({brand:'pawfecthouse',product_line},async()=>Response.json({...packet,named_product_scope:{...packet.named_product_scope,no_title_or_handle_contains_fallback:false}})),/CANONICAL_NAMED_SCOPE_MISMATCH/);
+});
 test('public compiler never forwards private research, binary media or credentials',async()=>{
   let called=false;
   const fetcher:typeof fetch=async()=>{called=true;return Response.json(fixture());};

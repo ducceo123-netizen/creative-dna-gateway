@@ -9,6 +9,7 @@ export const compileInputSchema=z.object({
   brand:z.enum(['pawfecthouse','giftsoul','soulprise']),
   source_url:z.string().max(2000).optional(),
   source_type:z.enum(['auto','product','collection']).optional(),
+  product_line:z.string().trim().min(1).max(160).optional(),
   theme:z.string().max(120).optional(),
   research:z.unknown().optional(),
 }).strict();
@@ -78,6 +79,7 @@ export async function compileCanonical(rawInput:CompileInput, fetcher:typeof fet
   const packet=await boundedJson(response);
   if(packet.resolved?.brand!==input.brand||packet.resolved?.branch!=='onepage-system')throw new Error('CANONICAL_ROUTE_MISMATCH');
   if(packet.dynamic_job?.source_url!==(input.source_url||null))throw new Error('CANONICAL_SOURCE_MISMATCH');
+  if(input.product_line&&!input.source_url){const scope=packet.named_product_scope;if(!scope||scope.requested_product_type!==input.product_line||scope.match_policy!=='SHOPIFY_PRODUCT_TYPE_EXACT'||scope.requires_store_catalog_scan!==true||scope.no_title_or_handle_contains_fallback!==true||scope.evaluator!=='evaluate_onepage_product_type_scope')throw new Error('CANONICAL_NAMED_SCOPE_MISMATCH');}
   if(!Array.isArray(packet.execution)||!Array.isArray(packet.assets)||!packet.hard_gates)throw new Error('CANONICAL_RESPONSE_INVALID');
   return packet;
 }
