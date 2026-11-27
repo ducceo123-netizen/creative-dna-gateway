@@ -1,0 +1,7 @@
+state/
+*.sqlite*
+*.db*
+private/
+artifacts/
+dist/
+node_modules/
