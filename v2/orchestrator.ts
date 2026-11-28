@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { hash, safeJson, V2Error } from './core.ts';
 import type { StoredJob, ArtifactReceipt, OperationKey } from './store.ts';
 import { createSnapshot, stageContext, assertCoverage, fullContext, readContextPath, contextStage, contentHash,
@@ -99,6 +100,30 @@ function namedProductScope(input:z.infer<typeof StartSchema>,research?:Record<st
 /** Backend state and deterministic gates. The host still supplies research, creative work and real visual review. */
 export class OnepageOrchestrator {
   constructor(private options:OrchestratorOptions){}
+  // Cache only independently verified receipts, never bundles or caller claims.
+  // The complete stored snapshot is fingerprinted, so a changed packet, registry,
+  // conflict or provenance cannot reuse a receipt merely by retaining snapshot.hash.
+  private contextReceipts=new Map<string,CoverageReceipt>();
+  private contextKey(j:OnepageJob,stage:string){return `${hash(j.snapshot)}:${stage}:${j.plan?.mode??'none'}`;}
+  private rememberContext(key:string,receipt:CoverageReceipt){
+    if(!this.contextReceipts.has(key)&&this.contextReceipts.size>=32)this.contextReceipts.delete(this.contextReceipts.keys().next().value!);
+    this.contextReceipts.set(key,structuredClone(receipt));
+  }
+  private contextMetadata(j:OnepageJob){
+    const step=currentStep(j),templateMode=j.plan?.mode??null;
+    let stage:ReturnType<typeof contextStage>|null=null;
+    try{stage=contextStage(step);}catch{/* Unknown future steps remain visible and blocked. */}
+    const metadata={stage,snapshotHash:j.snapshot.hash,templateMode,bundleHash:null as string|null,loaded:false};
+    const persisted=j.coverage[step];
+    if(!stage||!persisted||persisted.snapshotHash!==j.snapshot.hash||persisted.stage!==stage||persisted.templateMode!==templateMode)return metadata;
+    try{
+      const key=this.contextKey(j,stage);
+      let expected=this.contextReceipts.get(key);
+      if(!expected){expected=stageContext(j.snapshot,step,{templateMode:j.plan?.mode}).receipt;this.rememberContext(key,expected);}
+      if(isDeepStrictEqual(persisted,expected)){metadata.bundleHash=expected.bundleHash;metadata.loaded=true;}
+    }catch{/* Invalid snapshots/templates never advertise valid loaded context. */}
+    return metadata;
+  }
   private async read(owner:string,id:string){return await this.options.store.read(owner,id) as OnepageJob;}
   private async update(owner:string,id:string,revision:number,mutate:(j:OnepageJob)=>void,operation?:OperationKey){
     return await this.options.store.update(owner,id,revision,current=>{const j=current as OnepageJob;notCancelled(j);mutate(j);return j;},operation) as OnepageJob;
@@ -115,11 +140,14 @@ export class OnepageOrchestrator {
     return this.summary(j);
   }
   async state(owner:string,id:string){return this.summary(await this.read(owner,id));}
-  summary(j:OnepageJob){const named=namedProductScope(j.input,j.research,j.productTypeScope);return {jobId:j.jobId,storageRevision:j.storageRevision,contentRevision:j.contentRevision,state:j.state,stage:currentStep(j),completedSteps:j.completed,canonicalSteps:j.snapshot.packet.execution,canonicalHash:j.snapshot.hash,canonicalRevision:j.snapshot.packet.resolved,blockers:j.blockers,conflicts:j.snapshot.conflicts,mode:j.plan?.mode??null,productLine:j.input.productLine??null,sourceUrl:named.sourceUrl??null,namedScopeRequired:!j.input.sourceUrl&&!!j.input.productLine,namedScopeIssues:named.issues,planHash:j.planHash??null,expectedSlots:j.plan?requiredSlots(j).map((a:any)=>a.slot):[],assets:Object.fromEntries(Object.entries(j.assets).map(([k,a])=>[k,{sha256:a.sha256,width:a.width,height:a.height,format:a.format}])),render:j.render?{inputHash:j.render.inputHash,desktop:j.render.desktop,mobile:j.render.mobile,htmlArtifact:j.render.htmlArtifact,cssArtifact:j.render.cssArtifact,previewBundle:j.render.previewBundle,visualQcPerformed:false}:null,delivery:j.delivery??null,approvals:j.approvals,evidenceIds:(j.research?.sources??[]).map((r:any)=>r.id),referenceIds:j.references.map(r=>r.id),qcScopes:Object.keys(j.qc),expiresAt:j.expiresAt,nextAction:j.state==='BLOCKED'?j.blockers[0]??'Resolve blocker':`Load stage context and complete ${currentStep(j)}`,testMode:true,semanticInspection:'HOST_OR_HUMAN_REPORTED_NOT_SERVER_VISION'};}
+  summary(j:OnepageJob){const named=namedProductScope(j.input,j.research,j.productTypeScope),context=this.contextMetadata(j),action=j.state==='BLOCKED'?j.blockers[0]??'Resolve blocker':`Complete ${currentStep(j)}`;return {jobId:j.jobId,storageRevision:j.storageRevision,contentRevision:j.contentRevision,state:j.state,stage:currentStep(j),context,completedSteps:j.completed,canonicalSteps:j.snapshot.packet.execution,canonicalHash:j.snapshot.hash,canonicalRevision:j.snapshot.packet.resolved,blockers:j.blockers,conflicts:j.snapshot.conflicts,mode:j.plan?.mode??null,productLine:j.input.productLine??null,sourceUrl:named.sourceUrl??null,namedScopeRequired:!j.input.sourceUrl&&!!j.input.productLine,namedScopeIssues:named.issues,planHash:j.planHash??null,expectedSlots:j.plan?requiredSlots(j).map((a:any)=>a.slot):[],assets:Object.fromEntries(Object.entries(j.assets).map(([k,a])=>[k,{sha256:a.sha256,width:a.width,height:a.height,format:a.format}])),render:j.render?{inputHash:j.render.inputHash,desktop:j.render.desktop,mobile:j.render.mobile,htmlArtifact:j.render.htmlArtifact,cssArtifact:j.render.cssArtifact,previewBundle:j.render.previewBundle,visualQcPerformed:false}:null,delivery:j.delivery??null,approvals:j.approvals,evidenceIds:(j.research?.sources??[]).map((r:any)=>r.id),referenceIds:j.references.map(r=>r.id),qcScopes:Object.keys(j.qc),expiresAt:j.expiresAt,nextAction:j.state==='CANCELLED'?'This job is cancelled; start a new job to continue.':j.state==='COMPLETE'?'Delivery is complete; retrieve the validated artifacts.':context.loaded?`${action}. Use the issued stage context; reload it if lost or starting a new session.`:j.state==='BLOCKED'?action:`Load stage context and complete ${currentStep(j)}`,testMode:true,semanticInspection:'HOST_OR_HUMAN_REPORTED_NOT_SERVER_VISION'};}
   async getStageContext(owner:string,id:string){
     const j=await this.read(owner,id);notCancelled(j);
     const step=currentStep(j),bundle=stageContext(j.snapshot,step,{templateMode:j.plan?.mode});
-    const updated=await this.update(owner,id,j.storageRevision,current=>{for(const candidate of [...current.snapshot.packet.execution,...EXTRAS])if(contextStage(candidate)===contextStage(step))current.coverage[candidate]=bundle.receipt;});
+    const candidates=[...j.snapshot.packet.execution,...EXTRAS].filter(candidate=>contextStage(candidate)===bundle.stage);
+    const unchanged=candidates.every(candidate=>isDeepStrictEqual(j.coverage[candidate],bundle.receipt));
+    const updated=unchanged?j:await this.update(owner,id,j.storageRevision,current=>{for(const candidate of candidates)current.coverage[candidate]=bundle.receipt;});
+    this.rememberContext(this.contextKey(j,bundle.stage),bundle.receipt);
     return {...bundle,jobId:id,storageRevision:updated.storageRevision,contentRevision:j.contentRevision,step,artifacts:Object.fromEntries(Object.entries(j.assets).map(([slot,a])=>[slot,a.sha256])),researchHash:j.researchHash??null,jobLookups:['job:plan','job:research','job:inspections','job:references','job:productTypeScope','qc-requirements:research','qc-requirements:content','qc-requirements:asset:<slot>','qc-requirements:overall'],approvalPolicy:{contentReviewRequired:j.input.contentReviewRequired,finalAndPackageApprovalRequired:true}};
   }
   async getFullContext(owner:string,id:string){const j=await this.read(owner,id);return {jobId:id,snapshotHash:j.snapshot.hash,packet:fullContext(j.snapshot)};}

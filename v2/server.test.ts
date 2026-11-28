@@ -39,11 +39,17 @@ test('real SDK HTTP initialize/discovery/notifications/reconnect and isolated ta
    assert.equal(new Set(names).size,names.length);assert.equal(names.length,17);assert.equal(list.packet.result.nextCursor,undefined);
    assert.ok(names.every((name:string)=>name.startsWith('onepage_')));assert.ok(!names.some((n:string)=>/feedback|train|publish|admin/.test(n)));
    const args={brand:'pawfecthouse',brief:'Synthetic MCP test only',sourceUrl:'https://pawfecthouse.com/products/synthetic-test',idempotencyKey:'mcp-1',capabilities:{artifactTransfer:true,imageInspection:true}};
-   const first=payload(await f.rpc('tools/call',{name:'onepage_start',arguments:args}));assert.ok(first.jobId);assert.equal(first.testMode,true);assert.equal(first.state,'READY');
+   const first=payload(await f.rpc('tools/call',{name:'onepage_start',arguments:args}));assert.ok(first.jobId);assert.equal(first.testMode,true);assert.equal(first.state,'READY');assert.equal(first.canonicalSteps,undefined);assert.equal(first.fullStateAvailable,true);
    const resumed=payload(await f.rpc('tools/call',{name:'onepage_start',arguments:args}));assert.equal(first.jobId,resumed.jobId);assert.equal(f.calls(),1);
    const denied=await f.rpc('tools/call',{name:'onepage_get_state',arguments:{jobId:first.jobId}},f.tokens.b);assert.equal(denied.packet.result.isError,true);assert.equal(payload(denied).error.code,'NOT_FOUND');
    const blocked=payload(await f.rpc('tools/call',{name:'onepage_advance',arguments:{jobId:first.jobId,revision:0}}));assert.equal(blocked.state,'BLOCKED');
    const context=payload(await f.rpc('tools/call',{name:'onepage_get_stage_context',arguments:{jobId:first.jobId}}));assert.ok(context.receipt.bundleHash);
+   assert.equal(context.receipt.coverageRef,'#/coverage');assert.equal(context.receipt.requiredRuleIds,undefined);assert.equal(context.coverage.requiredRuleIds.length,1);
+   const fullStage=payload(await f.rpc('tools/call',{name:'onepage_get_stage_context',arguments:{jobId:first.jobId,detail:'full'}}));
+   const {coverageRef,...receipt}=context.receipt;
+   assert.deepEqual({...context,receipt:{...receipt,requiredRuleIds:context.coverage.requiredRuleIds,ruleHashes:context.coverage.ruleHashes}},fullStage);
+   assert.equal(fullStage.storageRevision,context.storageRevision);
+   const auditState=payload(await f.rpc('tools/call',{name:'onepage_get_state',arguments:{jobId:first.jobId,detail:'full'}}));assert.deepEqual(auditState.canonicalSteps,[...OBSERVED_EXECUTION]);assert.equal(auditState.context.bundleHash,context.receipt.bundleHash);assert.equal(auditState.context.loaded,true);
    const fallback=payload(await f.rpc('tools/call',{name:'onepage_get_full_context',arguments:{jobId:first.jobId}}));assert.deepEqual(fallback.packet.execution,[...OBSERVED_EXECUTION]);
    const approval=await f.rpc('tools/call',{name:'onepage_approve',arguments:{jobId:first.jobId,revision:context.storageRevision,kind:'final',expectedHash:'a'.repeat(64)}});assert.equal(payload(approval).error.code,'REVIEWER_REQUIRED');
    const unlock=await f.rpc('tools/call',{name:'onepage_revision',arguments:{jobId:first.jobId,revision:context.storageRevision,scope:'content',unlockApprovedCopy:true,reason:'Synthetic unauthorized operator unlock attempt'}});assert.equal(payload(unlock).error.code,'REVIEWER_REQUIRED');

@@ -18,6 +18,7 @@ function fixture(input: any) {
     hard_gates: { product_physical_truth: 'HARD' },
     creative_quality_contract: { status: 'COMPILED', errors: [], rules: [{ id: 'synthetic:public-transport', instruction: 'Synthetic transport fixture, never creative evidence.', sources: [], scope: { brands: [input.brand] } }] },
     research_validation: { status: 'AWAITING_RESEARCH' },
+    synthetic_lookup_fixture: { access: { meaning: 'Canonical fixture data, not runtime access metadata.' }, instruction: 'Preserve this exact object.' },
   };
 }
 const privateOwner = 'synthetic:private-owner';
@@ -72,7 +73,7 @@ test('anonymous SDK HTTP discovery, job context and actual artifact bytes work i
     assert.equal(f.store.read(PUBLIC_TEST_OWNER, started.jobId).owner, PUBLIC_TEST_OWNER);
     const context = payload(await f.call('onepage_get_stage_context', { jobId: started.jobId }));
     assert.ok(context.receipt.bundleHash); assert.equal(context.receipt.snapshotHash, started.canonicalHash);
-    const current = payload(await f.call('onepage_get_state', { jobId: started.jobId }));
+    const current = payload(await f.call('onepage_get_state', { jobId: started.jobId, detail: 'full' }));
     assert.equal(current.storageRevision, context.storageRevision);
     assert.deepEqual(current.canonicalSteps, OBSERVED_EXECUTION);
     const bytes = await pixels();
@@ -94,6 +95,26 @@ test('anonymous SDK HTTP discovery, job context and actual artifact bytes work i
     assert.match(JSON.parse(link.packet.result.content[1].text).authentication, /No authentication required/);
     const resource = await f.rpc('resources/read', { uri: link.packet.result.content[0].uri });
     assert.deepEqual(Buffer.from(resource.packet.result.contents[0].blob, 'base64'), html);
+  } finally { await f.close(); }
+});
+
+test('public rule and evidence lookups preserve exact arrays, null, scalars and canonical access fields', async () => {
+  const f = await setup();
+  try {
+    const started = payload(await f.call('onepage_start', startArgs('public-evidence-shapes')));
+    assert.deepEqual(started.access, { mode: 'public-test', sharedSandbox: true, actor: PUBLIC_TEST_SUBJECT, identityVerified: false });
+    const canonicalObject = { access: { meaning: 'Canonical fixture data, not runtime access metadata.' }, instruction: 'Preserve this exact object.' };
+    for (const [path, expected] of [
+      ['job:references', []], ['job:inspections', []], ['job:plan', null],
+      ['/resolved/brand', 'pawfecthouse'], ['/synthetic_lookup_fixture', canonicalObject],
+    ] as const) {
+      const result = await f.call('onepage_get_rule_or_evidence', { jobId: started.jobId, path });
+      assert.equal(result.response.status, 200); assert.equal(result.packet.result.isError, false);
+      assert.deepEqual(payload(result), expected);
+      assert.equal(result.packet.result.content[0].text, JSON.stringify(expected));
+    }
+    const state = payload(await f.call('onepage_get_state', { jobId: started.jobId }));
+    assert.deepEqual(state.access, started.access);
   } finally { await f.close(); }
 });
 
@@ -156,7 +177,7 @@ test('public approvals require exact current hashes and QC, and record an anonym
     const job = payload(await f.call('onepage_start', startArgs('public-approval-gates')));
     denied(await f.call('onepage_approve', { jobId: job.jobId, revision: 0, kind: 'final', expectedHash: 'a'.repeat(64) }), 'STALE_APPROVAL');
     const blocked = payload(await f.call('onepage_advance', { jobId: job.jobId, revision: 0 }));
-    assert.equal(blocked.state, 'BLOCKED'); assert.ok(blocked.blockers.length); assert.deepEqual(blocked.completedSteps, []);
+    assert.equal(blocked.state, 'BLOCKED'); assert.ok(blocked.blockers.length); assert.equal(blocked.progress.canonicalCompleted, 0); assert.equal(blocked.progress.additionalCompleted, 0);
     // Seed a synthetic plan boundary to isolate approval transport from full creative workflow tests.
     const plan = { mode: 'gtk', copy: { title_01: 'Synthetic copy' }, allocation: {} };
     const planHash = hash(plan), researchHash = hash('synthetic research');

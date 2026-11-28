@@ -27,7 +27,14 @@ async function main(){
   const start={brand:'pawfecthouse',sourceUrl:'https://pawfecthouse.com/collections/all',sourceType:'collection',brief:'Standalone V2 transport test; synthetic fixture only. No creative research or completion claimed.',idempotencyKey:smokeIdempotencyKey(authMode,args['source-commit']),capabilities:{artifactTransfer:true,imageInspection:false}};
   const job=await tool('onepage_start',start);assert.ok(job.jobId);assert.equal(job.testMode,true);report.jobId=job.jobId;report.idempotencyKey=start.idempotencyKey;
   const context=await tool('onepage_get_stage_context',{jobId:job.jobId});assert.ok(context.receipt?.bundleHash);
-  const full=await tool('onepage_get_full_context',{jobId:job.jobId});assert.equal(full.snapshotHash,job.canonicalHash);assert.equal(full.packet.execution.length,23);assert.deepEqual(full.packet.execution,job.canonicalSteps);checks.canonical={executionSteps:23,snapshotHash:full.snapshotHash,receiptIssued:true,fullFallback:true};
+  const auditState=await tool('onepage_get_state',{jobId:job.jobId,detail:'full'});
+  const full=await tool('onepage_get_full_context',{jobId:job.jobId});assert.equal(full.snapshotHash,job.canonicalHash);assert.equal(full.packet.execution.length,23);assert.deepEqual(full.packet.execution,auditState.canonicalSteps);checks.canonical={executionSteps:23,snapshotHash:full.snapshotHash,receiptIssued:true,fullFallback:true};
+  const fullStage=await tool('onepage_get_stage_context',{jobId:job.jobId,detail:'full'});
+  assert.equal(fullStage.storageRevision,context.storageRevision);assert.equal(context.receipt.coverageRef,'#/coverage');
+  const {coverageRef,...receipt}=context.receipt;
+  assert.deepEqual({...context,receipt:{...receipt,requiredRuleIds:context.coverage.requiredRuleIds,ruleHashes:context.coverage.ruleHashes}},fullStage);
+  assert.equal(auditState.context.loaded,true);assert.equal(auditState.context.bundleHash,context.receipt.bundleHash);
+  checks.optimization={sameResponseCoverageRoundtrip:true,repeatedContextNoWrite:true,compactStageBytes:Buffer.byteLength(JSON.stringify(context)),fullStageBytes:Buffer.byteLength(JSON.stringify(fullStage)),fullStateFallback:true,allRulesVisible:true};
   await rpc('initialize',{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'uid-v2-test-kit-reconnect',version:'1'}});const resumed=await tool('onepage_start',start);assert.equal(resumed.jobId,job.jobId);assert.equal(resumed.canonicalHash,job.canonicalHash);const state=await tool('onepage_get_state',{jobId:job.jobId});assert.equal(state.jobId,job.jobId);checks.resume={sameJob:true,state:state.state,storageRevision:state.storageRevision};
   const bytes=readFileSync(new URL('./fixtures/synthetic-transport.png',import.meta.url)),sha=sha256(bytes);
   const upload=await tool('onepage_upload_artifact',{jobId:job.jobId,mime:'image/png',base64:bytes.toString('base64')});assert.equal(upload.sha256,sha);assert.equal(upload.byteLength,bytes.length);

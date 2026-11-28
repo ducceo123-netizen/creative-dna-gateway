@@ -14,12 +14,14 @@ import { readConfig } from './config.ts';
 import { oauthRouterFromEnv } from './oauth.ts';
 import { safeJson, V2Error } from './core.ts';
 import { preflightAsset } from '../uid-asset-preflight.ts';
+import { projectToolResult } from './wire-response.ts';
 
 export const BASELINE_COMMIT='87bf39d1f38eb1d0baee159b921efbd7e3aaf923';
 export type RuntimeStore={ [K in keyof SqliteStore]: SqliteStore[K] extends (...args:infer A)=>infer R ? (...args:A)=>R|Promise<R> : SqliteStore[K] };
 export type AppDependencies={orchestrator:OnepageOrchestrator;store:RuntimeStore;verify:VerifyPrincipal;origin:string;publicTest?:boolean;issuer?:string;resourceScopes?:string[];oauthRouter?:express.Router};
 const id=z.string().uuid(),sha=z.string().regex(/^[a-f0-9]{64}$/),revision=z.number().int().min(0);
 const job={jobId:id},change={...job,revision};
+const detail=z.enum(['compact','full']).optional().describe('Default compact; full restores the original response fields.');
 const artifactExtension=(mime:string)=>({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','application/zip':'zip','text/html':'html','text/css':'css','application/json':'json'}[mime]||'bin');
 function safeError(error:unknown) {
   if(error instanceof V2Error)return {code:error.code,message:error.message,status:error.status};
@@ -31,22 +33,24 @@ function safeError(error:unknown) {
 export function createV2Server(principal:Principal,deps:AppDependencies) {
   const o=deps.orchestrator;
   const publicSandbox=principal.auth==='public-test';
-  const server=new McpServer({name:'uid-brands-architecture-v2-test',version:'0.1.0'},{instructions:'Isolated experimental Onepage backend. Load stage context before creative work. Preserve its pinned canonical rules, research and actual visual inspection. Tool status never proves pixels inspected. Only explicit user review or package authorization permits approvals. No production writes, publishing or training tools exist.'+(publicSandbox?' Public test sandbox: no authentication. Jobs and artifacts in this namespace are shared test data, not private user data. Use a fresh unique idempotency key per task. Review records identify an anonymous test actor, not a verified person.':'')});
+  const server=new McpServer({name:'uid-brands-architecture-v2-test',version:'0.2.0'},{instructions:'Isolated experimental Onepage backend. Load full pinned stage rules before creative work. Reuse them only while still available in your context and state.context identity is unchanged; reload after context loss, reconnect or identity change. State responses are compact; onepage_get_state detail=full restores audit fields. Context receipt.coverageRef points to complete coverage in the same response. Preserve research and actual visual inspection. Status never proves pixels inspected. Only explicit user review or package authorization permits approvals. No production writes, publishing or training tools exist.'+(publicSandbox?' Public test sandbox: no authentication. Jobs and artifacts in this namespace are shared test data, not private user data. Use a fresh unique idempotency key per task. Review records identify an anonymous test actor, not a verified person.':'')});
   function register(name:string,description:string,schema:Record<string,z.ZodType<any,any>>,readOnly:boolean,run:(args:any)=>unknown|Promise<unknown>,reviewer=false) {
     server.registerTool(name,{description,inputSchema:schema,annotations:{readOnlyHint:readOnly,destructiveHint:false,openWorldHint:name==='onepage_start'||name==='onepage_submit_research'}},async (args:any)=>{
       const started=performance.now();
       try{
         safeJson(args,2_000_000);
         if(reviewer&&principal.role!=='reviewer')throw new V2Error('REVIEWER_REQUIRED','A separately provisioned reviewer credential is required for approval.',403);
-        const result=await run(args);const text=JSON.stringify(publicSandbox?{...result as object,access:{mode:'public-test',sharedSandbox:true,actor:principal.subject,identityVerified:false}}:result);
+        // Rule/evidence values can be arrays, scalars, null, or canonical objects
+        // with their own access field. Preserve their exact JSON shape and data.
+        const result=projectToolResult(name,await run(args),args.detail);const text=JSON.stringify(publicSandbox&&name!=='onepage_get_rule_or_evidence'?{...result as object,access:{mode:'public-test',sharedSandbox:true,actor:principal.subject,identityVerified:false}}:result);
         if((args as any).jobId)try{await deps.store.recordTelemetry(principal.owner,(args as any).jobId,{operation:name,durationMs:performance.now()-started,requestBytes:Buffer.byteLength(JSON.stringify(args)),responseBytes:Buffer.byteLength(text),fallback:name==='onepage_get_full_context',measurementSource:'server_wire_payload',inputTokens:null,outputTokens:null,reasoningTokens:null,cachedTokens:null,model:null,effort:null,cost:null});}catch{/* Telemetry cannot reverse a committed task action. */}
         return {content:[{type:'text' as const,text}],isError:false};
       }catch(error){const e=safeError(error);return {content:[{type:'text' as const,text:JSON.stringify({testMode:true,error:e})}],isError:true};}
     });
   }
   register('onepage_start','Create or resume an isolated Onepage job by idempotency key. Declare actual host capabilities. Public-source canonical read only.',StartSchema.shape,false,a=>o.start(principal.owner,a));
-  register('onepage_get_state','Read compact current state, blockers and exact asset hashes.',job,true,a=>o.state(principal.owner,a.jobId));
-  register('onepage_get_stage_context','Load complete pinned rules for the current stage and record coverage; required before stage work.',job,false,a=>o.getStageContext(principal.owner,a.jobId));
+  register('onepage_get_state','Read current state, blockers, exact asset hashes and context identity. detail=full includes all audit lists.',{...job,detail},true,a=>o.state(principal.owner,a.jobId));
+  register('onepage_get_stage_context','Load all pinned stage rules. Unchanged coverage is not rewritten. Compact receipt references coverage in this response; detail=full restores duplicate receipt fields.',{...job,detail},false,a=>o.getStageContext(principal.owner,a.jobId));
   register('onepage_get_rule_or_evidence','Retrieve exact pinned rule, JSON-pointer path or evidence:<sourceId> without a new compile.',{...job,path:z.string().min(1).max(2048)},true,a=>o.getRuleOrEvidence(principal.owner,a.jobId,a.path));
   register('onepage_get_full_context','Lossless full-context fallback from the same pinned revision. Large response; use only when needed.',job,true,a=>o.getFullContext(principal.owner,a.jobId));
   register('onepage_submit_research','Submit public-source research and actual uploaded inspection evidence. Recompile read-only and atomically pin a revision; stale writes rejected.',{...change,...ResearchSchema.shape},false,a=>{const {jobId,revision,...data}=a;return o.submitResearch(principal.owner,jobId,revision,data);});

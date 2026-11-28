@@ -61,6 +61,9 @@ Coverage: 17 tools, MCP 2025/2026 envelopes, public discovery, invalid/empty
 credential rejection, Origin/method rejection, 23 canonical steps, stage receipt,
 full fallback, idempotent recovery, MCP image/resource bytes, REST upload/download,
 MIME checks and mode-appropriate anonymous artifact access.
+The current optimized endpoint also verifies compact/full state fallback,
+lossless same-response coverage references, and unchanged context reads without
+an additional job revision. It never omits canonical rule text across requests.
 Only the isolated endpoint is contacted; production endpoints are never called.
 This kit does not establish a real GPT connection, visual inspection, complete
 creative workflow, EO parity, billed token savings or all cross-owner boundaries.
