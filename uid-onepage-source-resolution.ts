@@ -1,5 +1,6 @@
 import {createHash, randomBytes} from "node:crypto";
 import {evaluateOnepageProductTypeScope, PRODUCT_TYPE_SCOPE_VERSION} from "./supabase/functions/_shared/onepage-product-type-scope.ts";
+import {onepageStorefrontSourceUrl, resolveOnepageStorefrontSource} from "./uid-onepage-storefront-source.ts";
 
 export const NAMED_PRODUCT_SOURCE_VERSION = "uid-onepage-named-source/2026-11-28.v1";
 // Exact same verified public origins as uid-eo-store-scanner.ts. No caller URL,
@@ -20,13 +21,15 @@ export type NamedProductSourceResolution = {
   source_url:string|null; source_type:"collection"; requested_product_type:string;
   match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT"; title_contains_fallback:false;
   catalog_complete:boolean; scan_complete:boolean; has_more_pages:boolean;
+  whole_store_scan_complete:boolean; visibility_scope:string; publication_note:string;
   source_verified_by_server:boolean; pdp_review_required:true; pixels_inspected:false;
   matched_count:number; matched_product_type:string|null; products:NamedProduct[];
   product_ids:string[]; available_product_types:string[]; issues:string[]; retryable:boolean;
   retry_after_ms:number|null;
   evidence:{catalog_url:string|null; page_count:number; requested_pages:number; scanned_count:number;
     bytes:number; call_bytes:number; observed_at:string; elapsed_ms:number; pages:PageReceipt[]; evaluator_version:string;
-    pagination:"SEQUENTIAL_PAGE_NUMBERS_UNTIL_EMPTY"; transactional_snapshot:false};
+    pagination:"SEQUENTIAL_PAGE_NUMBERS_UNTIL_EMPTY"|"STOREFRONT_CURSOR_UNTIL_HAS_NEXT_FALSE"; transactional_snapshot:false;
+    authority:"PUBLIC_SHOPIFY_JSON_CATALOG"|"TOKENLESS_STOREFRONT_EXACT_TYPE_QUERY"; query_filter?:string; api_version?:string};
   recovery:{action:"CONTINUE_PDP_RESEARCH"|"CONTINUE_CATALOG_SCAN"|"RETRY_CATALOG_SCAN"|"RESTART_CATALOG_SCAN"|"CLARIFY_EXACT_PRODUCT_TYPE"|"CORRECT_INPUT"|"REVIEW_CATALOG_LIMIT";
     note:string};
 };
@@ -39,6 +42,9 @@ const own = (object:object,key:string) => Object.prototype.hasOwnProperty.call(o
 export function onepageCatalogSourceUrl(brand:string):string|null {
   const key=typeof brand==="string"?brand.normalize("NFKC").trim().toLowerCase():"";
   return own(BRAND_DOMAINS,key)?`https://${BRAND_DOMAINS[key as keyof typeof BRAND_DOMAINS]}/products.json`:null;
+}
+export function onepageNamedSourceUrls(brand:string):string[] {
+  return [onepageCatalogSourceUrl(brand),onepageStorefrontSourceUrl(brand)].filter((url):url is string=>!!url);
 }
 
 function productRow(value:unknown, host:string):NamedProduct {
@@ -131,7 +137,7 @@ type ScanSession={
   inFlight?:Promise<NamedProductSourceResolution>;
 };
 export type NamedProductSourceInput={brand:string;product_line:string;scan_id?:string};
-type ResolverOptions={now?:()=>number;sessionTtlMs?:number;maxSessions?:number;maxSessionBytes?:number;requestStartIntervalMs?:number};
+type ResolverOptions={now?:()=>number;sessionTtlMs?:number;maxSessions?:number;maxSessionBytes?:number;requestStartIntervalMs?:number;preferStorefront?:boolean};
 const isBudgetPause=(code?:string)=>code==="CATALOG_CALL_BUDGET_EXHAUSTED" || code==="CATALOG_TOTAL_BYTE_LIMIT";
 const requiresRestart=(code?:string)=>["DUPLICATE_CATALOG_PRODUCT","INCONSISTENT_CATALOG_PAGINATION","CATALOG_SCOPE_EVALUATOR_REJECTED"].includes(code||"");
 
@@ -146,13 +152,15 @@ function resultFor(s:ScanSession,failure:CatalogFailure|undefined,callBytes:numb
     next_action:resolved?"CONTINUE_PDP_RESEARCH":paused?"CONTINUE_CATALOG_SCAN":"RESOLVE_CATALOG_BLOCKER",
     source_url:s.catalog,source_type:"collection",requested_product_type:s.line,match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT",
     title_contains_fallback:false,catalog_complete:s.complete,scan_complete:s.complete,has_more_pages:!s.complete,
+    whole_store_scan_complete:s.complete,visibility_scope:"PUBLIC_SHOPIFY_JSON_CATALOG",
+    publication_note:"Observed public JSON catalog pagination only; no admin inventory or transactional snapshot is claimed.",
     source_verified_by_server:resolved,pdp_review_required:true,pixels_inspected:false,
     matched_count:s.products.length,matched_product_type:s.products[0]?.product_type||null,products:s.products,
     product_ids:s.products.map(p=>p.id),available_product_types:[...s.types.values()],issues:issue?[issue]:[],retryable:paused||failure?.retryable||false,
     retry_after_ms:failure?.retryAfterMs??null,
     evidence:{catalog_url:s.catalog,page_count:s.pages.length,requested_pages:s.requestedPages,scanned_count:s.ids.size,
       bytes:s.bytes,call_bytes:callBytes,observed_at:s.observedAt,elapsed_ms:Math.round(elapsedMs),pages:s.pages,evaluator_version:PRODUCT_TYPE_SCOPE_VERSION,
-      pagination:"SEQUENTIAL_PAGE_NUMBERS_UNTIL_EMPTY",transactional_snapshot:false},
+      pagination:"SEQUENTIAL_PAGE_NUMBERS_UNTIL_EMPTY",transactional_snapshot:false,authority:"PUBLIC_SHOPIFY_JSON_CATALOG"},
     recovery:{action,note:resolved?"Inspect every matched PDP and its actual material/media before creative work; catalog metadata is not visual research."
       :paused?"Continue this server-owned scan automatically with the same brand, product_line and scan_id. Do not ask the member to continue and do not treat the partial pool as complete."
       :requiresRestart(issue)?"The observed catalog pages are inconsistent. This cursor was invalidated; start a fresh scan with the same brief and no scan_id. Never certify this partial snapshot."
@@ -226,6 +234,14 @@ export function createOnepageNamedProductSourceResolver(options:ResolverOptions=
       s=found;
       if(s.inFlight)return structuredClone(await s.inFlight);
     } else {
+      if(options.preferStorefront!==false) {
+        const fast=await resolveOnepageStorefrontSource({brand,product_line:line},fetcher,{
+          timeoutMs:limits.timeoutMs,requestTimeoutMs:limits.requestTimeoutMs,maxProducts:Math.min(2000,limits.maxProducts),
+          maxMatches:limits.maxMatches,maxPages:Math.min(21,limits.maxPages),maxPageBytes:Math.min(2*1024*1024,limits.maxPageBytes),
+          maxTotalBytes:Math.min(10*1024*1024,limits.maxTotalBytes),
+        },withFetchSlot);
+        if(!fast.fallback_allowed)return fast.result;
+      }
       // Completed cache entries may yield to new work. Never evict an in-flight
       // or unfinished scan: an evicted completion cursor honestly restarts.
       if(sessions.size>=capacity)for(const [id,old] of sessions)if(old.complete&&!old.inFlight){sessions.delete(id);break;}

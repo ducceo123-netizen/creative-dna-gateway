@@ -15,7 +15,7 @@ const canonical = {
 };
 const product=(id:number,type:string)=>({id,title:'Oven Skirt '+id,handle:'fixture-'+id,product_type:type});
 
-test('MCP, HTTP and resumed research preserve exact family, policy and nonterminal content semantics',async()=>{
+test('MCP, HTTP and resumed research preserve exact family, policy and nonterminal content semantics',{timeout:20000},async()=>{
   const app=createApp().listen(0,'127.0.0.1');
   await new Promise<void>(r=>app.once('listening',r));
   const origin=`http://127.0.0.1:${(app.address() as any).port}`;
@@ -28,6 +28,7 @@ test('MCP, HTTP and resumed research preserve exact family, policy and nontermin
       requests.push(JSON.parse(String(init?.body)));
       return Response.json(structuredClone(canonical));
     }
+    if(address.endsWith('/api/2026-10/graphql.json')) return new Response('Tokenless unavailable',{status:401});
     if(address.startsWith('https://pawfecthouse.com/products.json?')) {
       catalogCalls++;
       if(catalogMode==='unavailable') return new Response('Unavailable',{status:503});
@@ -97,7 +98,7 @@ test('compiler supplies executable existing-tool continuation, strips cursor fro
     if(String(url).includes('/creative-dna-compile-onepage')) { requests.push(JSON.parse(String(init?.body)));if(unavailable)return Response.json({error:'fixture unavailable'},{status:503});return Response.json(structuredClone(canonical)); }
     return Response.json({result:{content:[{type:'text',text:'{"status":"no_match","matches":[]}'}]}});
   };
-  const scanner=createOnepageNamedProductSourceResolver();
+  const scanner=createOnepageNamedProductSourceResolver({preferStorefront:false,requestStartIntervalMs:0});
   const catalogFetch:typeof fetch=async url=>{
     const page=Number(new URL(String(url)).searchParams.get('page'));
     return Response.json({products:page<=2?[{...product(page,'Oven Skirt'),title:'x'.repeat(450)}]:[]});
@@ -123,7 +124,7 @@ test('compiler supplies executable existing-tool continuation, strips cursor fro
     const replay=await compileOnepageJob(a.brand,a.source_url,a.source_type,a.theme,{product_type:a.product_line,catalog_scan_id:final.data.named_product_scope.scan_id},undefined,undefined,resolver);
     assert.equal(replay.data.named_product_scope.status,'RESOLVED');
     assert.equal(requests.length,before+1,'canonical rules still refresh on completed catalog reuse');
-    const independent=createOnepageNamedProductSourceResolver();
+    const independent=createOnepageNamedProductSourceResolver({preferStorefront:false,requestStartIntervalMs:0});
     const recoveryResolver:typeof independent=input=>independent(input,catalogFetch,{concurrency:1,maxTotalBytes:800});
     unavailable=true;
     const failed=await compileOnepageJob('PawfectHouse',undefined,undefined,undefined,undefined,'Oven Skirt',undefined,recoveryResolver);
@@ -134,4 +135,46 @@ test('compiler supplies executable existing-tool continuation, strips cursor fro
     assert.equal(recovered.data.named_product_scope.status,'RESOLVED','upstream failure must not orphan the source scan');
 
   } finally {globalThis.fetch=original;}
+});
+
+test('legacy HTTP name-only intake uses the actual complete public Storefront source without a fabricated collection',async()=>{
+  const original=globalThis.fetch, upstream:any[]=[];
+  const app=createApp().listen(0,'127.0.0.1');
+  await new Promise<void>(r=>app.once('listening',r));
+  const origin=`http://127.0.0.1:${(app.address() as any).port}`;
+  const endpoint='https://pawfecthouse.com/api/2026-10/graphql.json';
+  let apiCalls=0;
+  globalThis.fetch=async(url,init)=>{
+    const address=String(url);
+    if(address.startsWith(origin))return original(url,init);
+    if(address.includes('/creative-dna-compile-onepage')) {upstream.push(JSON.parse(String(init?.body)));return Response.json(structuredClone(canonical));}
+    if(address===endpoint){
+      apiCalls++;
+      assert.equal(init?.method,'POST');
+      const q=JSON.parse(String(init?.body));
+      assert.equal(q.variables.filter,'product_type:"Oven Skirt"');
+      assert.doesNotMatch(q.query,/\bmutation\b/i);
+      return Response.json({data:{products:{nodes:[1,2].map(id=>({id:`gid://shopify/Product/${id}`,handle:'fixture-'+id,title:'Real-type fixture',productType:'Oven Skirt'})),pageInfo:{hasNextPage:false,endCursor:'last-cursor'}}}});
+    }
+    assert.ok(!address.includes('/products.json?'),'successful typed listing must not download the unfiltered JSON catalog');
+    return Response.json({result:{content:[{type:'text',text:'{"status":"no_match","matches":[]}'}]}});
+  };
+  try {
+    const response=await original(origin+'/api/tools/compile_onepage_job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand:'PawfectHouse',research:{product_type:'Oven Skirt'}})});
+    assert.equal(response.status,200);
+    const packet=await response.json(),scope=packet.named_product_scope;
+    assert.equal(scope.status,'RESOLVED');
+    assert.equal(scope.source_url,endpoint);
+    assert.equal(scope.visibility_scope,'PUBLIC_TOKENLESS_STOREFRONT_QUERY');
+    assert.equal(scope.whole_store_scan_complete,false);
+    assert.equal(scope.has_more_pages,false);
+    assert.deepEqual(scope.product_ids,['1','2']);
+    assert.equal(apiCalls,1);
+    assert.equal(upstream[0].source_url,endpoint);
+    assert.equal(upstream[0].source_type,'collection');
+    assert.match(packet.source_intake_contract.name_only_input,/research.product_type/);
+    const repeated=await compileOnepageJob('PawfectHouse',endpoint,'collection',undefined,{product_type:'Oven Skirt'});
+    assert.equal(repeated.data.named_product_scope.status,'RESOLVED');
+    assert.equal(apiCalls,2,'a fresh Storefront lookup revalidates the declared family');
+  } finally {globalThis.fetch=original;await new Promise<void>((r,j)=>app.close(e=>e?j(e):r()));}
 });

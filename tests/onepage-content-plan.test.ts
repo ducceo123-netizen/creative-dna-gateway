@@ -44,6 +44,71 @@ function addNamedVariant(r:any,suffix:string){
   r.analysis.content_plan.post_story.source_ids.push(source.id);
 }
 
+function storefrontFixture(brand='pawfecthouse',host='pawfecthouse.com'){
+  const f=namedFixture(),origin='https://'+host;
+  f.named.source_url=origin+'/api/2026-10/graphql.json';
+  Object.assign(f.named,{scan_complete:true,has_more_pages:false,whole_store_scan_complete:false,
+    visibility_scope:'PUBLIC_TOKENLESS_STOREFRONT_QUERY',
+    publication_note:'Synthetic complete public query only; no unfiltered, private or cross-channel catalog parity claim.',
+    evidence:{authority:'TOKENLESS_STOREFRONT_EXACT_TYPE_QUERY'}});
+  f.ctx.source_url=f.r.scope.source_url=f.named.source_url;f.ctx.resolved_brand=f.data.resolved.brand=brand;
+  for(const p of [...f.r.scope.products,...f.named.products])p.url=origin+'/products/'+p.id;
+  for(const s of f.r.sources)s.url=origin+'/products/'+s.id;
+  return f;
+}
+
+test('fixed Storefront sources bind exact products and variant evidence for all three brands without whole-store claims',()=>{
+  for(const [brand,host] of [['pawfecthouse','pawfecthouse.com'],['giftsoul','giftsoul.co'],['soulprise','soulprise.co']]){
+    const f=storefrontFixture(brand,host);addNamedVariant(f.r,'red');
+    const before=structuredClone(f);
+    assert.deepEqual(evaluateResearch(f.ctx).issues,[]);
+    assert.equal(evaluateResearch(f.ctx).status,'READY_WITH_LIMITATIONS');
+    assert.equal(attachResearch(f.data,f.ctx).content_plan_assessment?.status,'READY_FOR_HOST_REVIEW');
+    assert.equal(f.named.whole_store_scan_complete,false);
+    assert.equal(f.r.scope.products[2].catalog_product_id,'a');
+    assert.deepEqual(f,before,'structural assessment must preserve source limits and caller evidence');
+  }
+});
+
+test('Storefront scope rejects wrong brand, unpinned API version and arbitrary endpoint variants',()=>{
+  for(const source of [
+    'https://giftsoul.co/api/2026-10/graphql.json',
+    'https://pawfecthouse.com/api/2026-07/graphql.json',
+    'https://pawfecthouse.com/api/latest/graphql.json',
+    'https://pawfecthouse.com/admin/api/2026-10/graphql.json',
+    'https://pawfecthouse.com/api/2026-10/graphql.json?query=anything',
+    'https://pawfecthouse.com/api/2026-10/graphql.json#scope',
+    'https://pawfecthouse.com:443/api/2026-10/graphql.json',
+    'https://user:password@pawfecthouse.com/api/2026-10/graphql.json',
+    'https://pawfecthouse.com.evil.example/api/2026-10/graphql.json',
+    'https://www.pawfecthouse.com/api/2026-10/graphql.json',
+    'http://pawfecthouse.com/api/2026-10/graphql.json',
+    'https://pawfecthouse.com/products.json',
+  ]){
+    const f=storefrontFixture();f.ctx.source_url=f.r.scope.source_url=f.named.source_url=source;
+    assert.ok(evaluateResearch(f.ctx).issues.includes('INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'),source);
+  }
+});
+
+test('Storefront authority, complete-query flags and exact product membership fail closed',()=>{
+  const mutations:Array<[string,(f:ReturnType<typeof storefrontFixture>)=>void,string]>=[
+    ['missing authority',f=>{delete f.named.evidence;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['wrong authority',f=>{f.named.evidence!.authority='TITLE_SEARCH';},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['incomplete query',f=>{f.named.scan_complete=false;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['more pages',f=>{f.named.has_more_pages=true;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['whole-store overclaim',f=>{f.named.whole_store_scan_complete=true;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['missing visibility',f=>{delete f.named.visibility_scope;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['missing limit note',f=>{delete f.named.publication_note;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['missing product field',f=>{delete f.named.products[0].product_type;},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['fuzzy product field',f=>{f.named.products[0].product_type='Travel Cases';},'INVALID_VERIFIED_NAMED_PRODUCT_SCOPE'],
+    ['foreign catalog ID',f=>{f.r.scope.products[0].catalog_product_id='not-returned';},'PRODUCT_OUTSIDE_VERIFIED_NAMED_SCOPE'],
+    ['wrong matched PDP',f=>{f.r.scope.products[0].url=f.r.scope.products[1].url;},'PRODUCT_OUTSIDE_VERIFIED_NAMED_SCOPE'],
+    ['missing matched product',f=>{f.named.products.push({id:'c',url:'https://pawfecthouse.com/products/c',product_type:'Travel Case'});},'NAMED_PRODUCT_TYPE_INVENTORY_INCOMPLETE'],
+  ];
+  for(const [name,mutate,issue] of mutations){const f=storefrontFixture();mutate(f);const result=evaluateResearch(f.ctx);
+    assert.equal(result.status,'NEEDS_EVIDENCE',name);assert.ok(result.issues.includes(issue),name+': '+result.issues.join(','));}
+});
+
 test('trusted named-family source binds exact catalog identities and URLs while retaining variant evidence IDs',()=>{
   const f=namedFixture();addNamedVariant(f.r,'red');
   assert.equal(evaluateResearch(f.ctx).status,'READY_WITH_LIMITATIONS');assert.deepEqual(evaluateResearch(f.ctx).issues,[]);

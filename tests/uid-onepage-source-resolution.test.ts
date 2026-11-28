@@ -1,7 +1,7 @@
 import test from "node:test";
 import {strict as assert} from "node:assert";
 import {createOnepageNamedProductSourceResolver as createResolver, onepageCatalogSourceUrl, NAMED_PRODUCT_SCAN_LIMITS} from "../uid-onepage-source-resolution.ts";
-const createOnepageNamedProductSourceResolver=(options:Parameters<typeof createResolver>[0]={})=>createResolver({requestStartIntervalMs:0,...options});
+const createOnepageNamedProductSourceResolver=(options:Parameters<typeof createResolver>[0]={})=>createResolver({requestStartIntervalMs:0,preferStorefront:false,...options});
 const resolveOnepageNamedProductSource:(ReturnType<typeof createOnepageNamedProductSourceResolver>)=(...args)=>createOnepageNamedProductSourceResolver()(...args);
 
 const input={brand:"PawfectHouse",product_line:"Oven Skirt"};
