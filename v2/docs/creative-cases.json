@@ -1,0 +1,2656 @@
+{
+  "schemaVersion": "uid-brands-v2.creative-case-evidence/1",
+  "observedDate": "2026-11-28",
+  "mode": "READ_ONLY_PUBLIC_METADATA_NO_GENERATION",
+  "cases": [
+    {
+      "caseId": "pawfecthouse-simple-ornament",
+      "brand": "pawfecthouse",
+      "kind": "simple-ornament",
+      "sourceUrl": "https://pawfecthouse.com/products/custom-acrylic-ornament-personalized-america-250th-anniversary-christmas-gifts-for-mom-dad-brother-sister-celebrating-freedom-together",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "10442942513441",
+          "productType": "Ornament",
+          "title": "Custom Acrylic Ornament - Personalized America 250th Anniversary Christmas Gifts For Family - Celebrating Freedom Together",
+          "pdpUrl": "https://pawfecthouse.com/products/custom-acrylic-ornament-personalized-america-250th-anniversary-christmas-gifts-for-mom-dad-brother-sister-celebrating-freedom-together",
+          "metadataUrl": "https://pawfecthouse.com/products/custom-acrylic-ornament-personalized-america-250th-anniversary-christmas-gifts-for-mom-dad-brother-sister-celebrating-freedom-together.js",
+          "metadataResponseSha256": "8ca54ae30ee5fd56c540afc8ac61c40975d1563d9957488dcf5b19cf37857fb7",
+          "observedAt": "2026-11-28T02:18:34.001440+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/pawfecthouse-ornament.json",
+          "variants": [
+            {
+              "id": "53047708942625",
+              "title": "Acrylic Ornament / As Preview / 3.7 IN",
+              "sku": "_UPOCP/10CM",
+              "available": true,
+              "featuredImage": null,
+              "options": [
+                "Acrylic Ornament",
+                "As Preview",
+                "3.7 IN"
+              ]
+            },
+            {
+              "id": "53047708975393",
+              "title": "Acrylic Ornament / As Preview / 4.5 IN",
+              "sku": "_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": null,
+              "options": [
+                "Acrylic Ornament",
+                "As Preview",
+                "4.5 IN"
+              ]
+            },
+            {
+              "id": "53047709008161",
+              "title": "Acrylic Ornament / As Preview / 5.5 IN",
+              "sku": "_UPOCP/14CM",
+              "available": true,
+              "featuredImage": null,
+              "options": [
+                "Acrylic Ornament",
+                "As Preview",
+                "5.5 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "47395873751329",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e0383eefa.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873784097",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03f726a6.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873816865",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03f990ef.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873849633",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04008d79.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873882401",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03fb8b93.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873915169",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04034f15.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "47395873947937",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04078428.webp?v=1784799306",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e0383eefa.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03f726a6.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03f990ef.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04008d79.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e03fb8b93.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04034f15.webp?v=1784799306",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a61e04078428.webp?v=1784799306"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "d134587759fb2b9c7fe8719c3552e8c0eab74226c7eb17c02599cca2ee6c232c"
+        }
+      ],
+      "mechanismEquivalent": null,
+      "warnings": []
+    },
+    {
+      "caseId": "pawfecthouse-complex-mechanism",
+      "brand": "pawfecthouse",
+      "kind": "complex-mechanism",
+      "sourceUrl": "https://pawfecthouse.com/products/custom-clip-led-reading-lamp-personalized-bookish-gifts-for-book-lovers-bookworms-readers-just-one-more-chapter",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "10368119439649",
+          "productType": "Clip LED Reading Lamp",
+          "title": "Custom Clip LED Reading Lamp - Personalized Bookish Gifts For Book Lovers, Kids, Girls - Just One More Chapter",
+          "pdpUrl": "https://pawfecthouse.com/products/custom-clip-led-reading-lamp-personalized-bookish-gifts-for-book-lovers-bookworms-readers-just-one-more-chapter",
+          "metadataUrl": "https://pawfecthouse.com/products/custom-clip-led-reading-lamp-personalized-bookish-gifts-for-book-lovers-bookworms-readers-just-one-more-chapter.js",
+          "metadataResponseSha256": "1f12684b2003d1d21300ae8dfea56d0fa5f439ddbdbb763e32f6273a0a0c5cfe",
+          "observedAt": "2026-11-28T02:18:47.282785+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/pawfecthouse-mechanism.json",
+          "variants": [
+            {
+              "id": "52814133625121",
+              "title": "Clip LED Reading Lamp / As Preview / As Described",
+              "sku": "_CLRL/White",
+              "available": true,
+              "featuredImage": {
+                "id": 56396029329697,
+                "product_id": 10368119439649,
+                "position": 1,
+                "created_at": "2026-06-16T22:01:58-07:00",
+                "updated_at": "2026-06-16T22:01:59-07:00",
+                "alt": "TKN-YL0626_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f19c2e3.webp?v=1781672519",
+                "variant_ids": [
+                  52814133625121
+                ]
+              },
+              "options": [
+                "Clip LED Reading Lamp",
+                "As Preview",
+                "As Described"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "46521567936801",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f19c2e3.webp?v=1781672519",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46521567969569",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f210c77.webp?v=1781672519",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46521568002337",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f22864d.webp?v=1781672519",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46521568035105",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f1ede02.webp?v=1781672520",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46521568067873",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f2134f9.webp?v=1781672520",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46521568100641",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f23e5f6.webp?v=1781672519",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f19c2e3.webp?v=1781672519",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f210c77.webp?v=1781672519",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f22864d.webp?v=1781672519",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f1ede02.webp?v=1781672520",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f2134f9.webp?v=1781672520",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6a3229f23e5f6.webp?v=1781672519"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "aaefbbb45860ac5070799e4eed3738e6eaa5e1451df40e6c5452de42009b5f6d"
+        }
+      ],
+      "mechanismEquivalent": null,
+      "warnings": []
+    },
+    {
+      "caseId": "pawfecthouse-collection",
+      "brand": "pawfecthouse",
+      "kind": "collection",
+      "sourceUrl": "https://pawfecthouse.com/collections/candlelight-lantern-ornament",
+      "status": "LIVE_COLLECTION_PAGE_AND_THREE_LINKED_PRODUCT_METADATA_VERIFIED",
+      "collectionPage": {
+        "observedAt": "2026-11-28T02:19:43.904554+00:00",
+        "httpStatus": 200,
+        "rawHtmlSha256": "d0b4cea7be66b694a142cc6aaded34b5f532568ca9591481e77ac067522ba60c",
+        "selectedPdpUrls": [
+          "https://pawfecthouse.com/products/custom-pet-photo-in-loving-memory-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament",
+          "https://pawfecthouse.com/products/custom-pet-photo-vintage-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament",
+          "https://pawfecthouse.com/products/custom-pet-photo-sleeping-in-loving-memory-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament"
+        ],
+        "inventoryScope": "Three linked artwork candidates. Not a claim that all collection products or personalization designs have been researched.",
+        "completePaginationVerified": false
+      },
+      "products": [
+        {
+          "productId": "10657464385825",
+          "productType": "Candlelight Lantern Ornament",
+          "title": "Custom Pet Photo In Loving Memory Gifts For Dog And Cat Lovers - Personalized Candlelight Lantern Ornament",
+          "pdpUrl": "https://pawfecthouse.com/products/custom-pet-photo-in-loving-memory-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament",
+          "metadataUrl": "https://pawfecthouse.com/products/custom-pet-photo-in-loving-memory-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament.js",
+          "metadataResponseSha256": "eaa6cae7cebe915b06ade64cde09f77ad668b36e9de44386e31c98d7a43ac4d8",
+          "observedAt": "2026-11-28T02:19:56.909104+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/pawfecthouse-artwork-1.json",
+          "variants": [
+            {
+              "id": "54245687656737",
+              "title": "Candlelight Lantern Ornament / Bronze / 3.3x4.7 IN",
+              "sku": "_ULLWB-Bronze/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196815311137,
+                "product_id": 10657464385825,
+                "position": 1,
+                "created_at": "2026-10-30T02:33:41-07:00",
+                "updated_at": "2026-10-30T02:33:42-07:00",
+                "alt": "CLO-YL7001_thumb-2",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21b6699.webp?v=1793352822",
+                "variant_ids": [
+                  54245687656737,
+                  54245687689505,
+                  54245687722273
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Bronze",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245687689505",
+              "title": "Candlelight Lantern Ornament / White / 3.3x4.7 IN",
+              "sku": "_ULLWB-White/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196815311137,
+                "product_id": 10657464385825,
+                "position": 1,
+                "created_at": "2026-10-30T02:33:41-07:00",
+                "updated_at": "2026-10-30T02:33:42-07:00",
+                "alt": "CLO-YL7001_thumb-2",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21b6699.webp?v=1793352822",
+                "variant_ids": [
+                  54245687656737,
+                  54245687689505,
+                  54245687722273
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "White",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245687722273",
+              "title": "Candlelight Lantern Ornament / Silver / 3.3x4.7 IN",
+              "sku": "_ULLWB-Silver/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196815311137,
+                "product_id": 10657464385825,
+                "position": 1,
+                "created_at": "2026-10-30T02:33:41-07:00",
+                "updated_at": "2026-10-30T02:33:42-07:00",
+                "alt": "CLO-YL7001_thumb-2",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21b6699.webp?v=1793352822",
+                "variant_ids": [
+                  54245687656737,
+                  54245687689505,
+                  54245687722273
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Silver",
+                "3.3x4.7 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "49286642598177",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21b6699.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642630945",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21d65e7.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642663713",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21a8c8a.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642696481",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21d739b.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642729249",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21e303b.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642762017",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d214643c.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286642794785",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44c81261cf.webp?v=1793352822",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21b6699.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21d65e7.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21a8c8a.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21d739b.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d21e303b.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44d214643c.webp?v=1793352822",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44c81261cf.webp?v=1793352822"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "b78c39495969690820be40f4c203598721bd00d3c37d4efdabbf52e34caa9551"
+        },
+        {
+          "productId": "10657461993761",
+          "productType": "Candlelight Lantern Ornament",
+          "title": "Custom Pet Photo Vintage Christmas Gifts For Dog And Cat Lovers - Personalized Candlelight Lantern Ornament",
+          "pdpUrl": "https://pawfecthouse.com/products/custom-pet-photo-vintage-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament",
+          "metadataUrl": "https://pawfecthouse.com/products/custom-pet-photo-vintage-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament.js",
+          "metadataResponseSha256": "0cc781c443b1b894894f897ba26258a6529f7f1ddfd7601050200f7d93adecd6",
+          "observedAt": "2026-11-28T02:19:56.908969+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/pawfecthouse-artwork-2.json",
+          "variants": [
+            {
+              "id": "54245680054561",
+              "title": "Candlelight Lantern Ornament / Bronze / 3.3x4.7 IN",
+              "sku": "_ULLWB-Bronze/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196803645729,
+                "product_id": 10657461993761,
+                "position": 1,
+                "created_at": "2026-10-30T02:32:41-07:00",
+                "updated_at": "2026-10-30T02:32:42-07:00",
+                "alt": "CLO-YL7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449101f4a2.webp?v=1793352762",
+                "variant_ids": [
+                  54245680054561,
+                  54245680087329,
+                  54245680120097
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Bronze",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245680087329",
+              "title": "Candlelight Lantern Ornament / White / 3.3x4.7 IN",
+              "sku": "_ULLWB-White/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196803645729,
+                "product_id": 10657461993761,
+                "position": 1,
+                "created_at": "2026-10-30T02:32:41-07:00",
+                "updated_at": "2026-10-30T02:32:42-07:00",
+                "alt": "CLO-YL7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449101f4a2.webp?v=1793352762",
+                "variant_ids": [
+                  54245680054561,
+                  54245680087329,
+                  54245680120097
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "White",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245680120097",
+              "title": "Candlelight Lantern Ornament / Silver / 3.3x4.7 IN",
+              "sku": "_ULLWB-Silver/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196803645729,
+                "product_id": 10657461993761,
+                "position": 1,
+                "created_at": "2026-10-30T02:32:41-07:00",
+                "updated_at": "2026-10-30T02:32:42-07:00",
+                "alt": "CLO-YL7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449101f4a2.webp?v=1793352762",
+                "variant_ids": [
+                  54245680054561,
+                  54245680087329,
+                  54245680120097
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Silver",
+                "3.3x4.7 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "49286630965537",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449101f4a2.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286630998305",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449107dd73.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286631031073",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4491090e4d.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286631063841",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44910baae4.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286631096609",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44910c6a7b.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286631129377",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449111f9ce.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286631162145",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4490f290c1.webp?v=1793352762",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449101f4a2.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449107dd73.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4491090e4d.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44910baae4.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae44910c6a7b.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae449111f9ce.webp?v=1793352762",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4490f290c1.webp?v=1793352762"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "9b22f906713cb0a74b1ba0dc5faab027420ea79ca82da921d1653caddddc4dd0"
+        },
+        {
+          "productId": "10657466286369",
+          "productType": "Candlelight Lantern Ornament",
+          "title": "Custom Pet Photo Sleeping In Loving Memory Christmas Gifts For Dog And Cat Lovers - Personalized Candlelight Lantern Ornament",
+          "pdpUrl": "https://pawfecthouse.com/products/custom-pet-photo-sleeping-in-loving-memory-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament",
+          "metadataUrl": "https://pawfecthouse.com/products/custom-pet-photo-sleeping-in-loving-memory-christmas-gifts-for-dog-and-cat-lovers-personalized-candlelight-lantern-ornament.js",
+          "metadataResponseSha256": "7eaf8b2e0c1b80b754f1947165c5edf702a1c7edd5ae58c1cb2a89dbb2399d9f",
+          "observedAt": "2026-11-28T02:19:56.908814+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/pawfecthouse-artwork-3.json",
+          "variants": [
+            {
+              "id": "54245694603553",
+              "title": "Candlelight Lantern Ornament / Bronze / 3.3x4.7 IN",
+              "sku": "_ULLWB-Bronze/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196823208225,
+                "product_id": 10657466286369,
+                "position": 1,
+                "created_at": "2026-10-30T02:34:46-07:00",
+                "updated_at": "2026-10-30T02:34:47-07:00",
+                "alt": "CLO-YL7002_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508612901.webp?v=1793352887",
+                "variant_ids": [
+                  54245694603553,
+                  54245694636321,
+                  54245694669089
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Bronze",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245694636321",
+              "title": "Candlelight Lantern Ornament / White / 3.3x4.7 IN",
+              "sku": "_ULLWB-White/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196823208225,
+                "product_id": 10657466286369,
+                "position": 1,
+                "created_at": "2026-10-30T02:34:46-07:00",
+                "updated_at": "2026-10-30T02:34:47-07:00",
+                "alt": "CLO-YL7002_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508612901.webp?v=1793352887",
+                "variant_ids": [
+                  54245694603553,
+                  54245694636321,
+                  54245694669089
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "White",
+                "3.3x4.7 IN"
+              ]
+            },
+            {
+              "id": "54245694669089",
+              "title": "Candlelight Lantern Ornament / Silver / 3.3x4.7 IN",
+              "sku": "_ULLWB-Silver/8.5X12CM",
+              "available": true,
+              "featuredImage": {
+                "id": 59196823208225,
+                "product_id": 10657466286369,
+                "position": 1,
+                "created_at": "2026-10-30T02:34:46-07:00",
+                "updated_at": "2026-10-30T02:34:47-07:00",
+                "alt": "CLO-YL7002_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508612901.webp?v=1793352887",
+                "variant_ids": [
+                  54245694603553,
+                  54245694636321,
+                  54245694669089
+                ]
+              },
+              "options": [
+                "Candlelight Lantern Ornament",
+                "Silver",
+                "3.3x4.7 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "49286650462497",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508612901.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650495265",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508635fc5.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650528033",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508682e0b.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650560801",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae450867f8e1.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650593569",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae450864c5fb.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650626337",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508616151.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "49286650659105",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae45046afaeb.webp?v=1793352887",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508612901.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508635fc5.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508682e0b.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae450867f8e1.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae450864c5fb.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae4508616151.webp?v=1793352887",
+            "https://cdn.shopify.com/s/files/1/0936/0008/8353/files/6ae45046afaeb.webp?v=1793352887"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "ef0a7be43cd95fe094ef70186b5c422d20eadc9b112b634ee8f63d60002453bc"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "caseId": "giftsoul-simple-ornament",
+      "brand": "giftsoul",
+      "kind": "simple-ornament",
+      "sourceUrl": "https://giftsoul.co/products/custom-name-christmas-tree-lights-family-gifts-personalized-acrylic-ornament",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "15465101295716",
+          "productType": "Ornament",
+          "title": "Custom Name Christmas Tree Lights Family Gifts - Personalized Acrylic Ornament",
+          "pdpUrl": "https://giftsoul.co/products/custom-name-christmas-tree-lights-family-gifts-personalized-acrylic-ornament",
+          "metadataUrl": "https://giftsoul.co/products/custom-name-christmas-tree-lights-family-gifts-personalized-acrylic-ornament.js",
+          "metadataResponseSha256": "9d7db5e43fa7be9a2142bb6b0004d6f831e3e3f9bf95a77d348bbdd49353b21d",
+          "observedAt": "2026-11-28T02:18:34.053494+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/giftsoul-ornament.json",
+          "variants": [
+            {
+              "id": "67929176014948",
+              "title": "Acrylic Ornament / 3.7 INCHES / 1 PC",
+              "sku": "-1pc_UPOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "3.7 INCHES",
+                "1 PC"
+              ]
+            },
+            {
+              "id": "67929176047716",
+              "title": "Acrylic Ornament / 4.5 INCHES / 1 PC",
+              "sku": "-1pc_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "4.5 INCHES",
+                "1 PC"
+              ]
+            },
+            {
+              "id": "67929176080484",
+              "title": "Acrylic Ornament / 5.5 INCHES / 1 PC",
+              "sku": "-1pc_UPOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "5.5 INCHES",
+                "1 PC"
+              ]
+            },
+            {
+              "id": "67929176113252",
+              "title": "Acrylic Ornament / 3.7 INCHES / 2 PCS",
+              "sku": "-2pc_UPOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "3.7 INCHES",
+                "2 PCS"
+              ]
+            },
+            {
+              "id": "67929176146020",
+              "title": "Acrylic Ornament / 4.5 INCHES / 2 PCS",
+              "sku": "-2pc_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "4.5 INCHES",
+                "2 PCS"
+              ]
+            },
+            {
+              "id": "67929176178788",
+              "title": "Acrylic Ornament / 5.5 INCHES / 2 PCS",
+              "sku": "-2pc_UPOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "5.5 INCHES",
+                "2 PCS"
+              ]
+            },
+            {
+              "id": "67929176211556",
+              "title": "Acrylic Ornament / 3.7 INCHES / 3 PCS",
+              "sku": "-3pc_UPOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "3.7 INCHES",
+                "3 PCS"
+              ]
+            },
+            {
+              "id": "67929176244324",
+              "title": "Acrylic Ornament / 4.5 INCHES / 3 PCS",
+              "sku": "-3pc_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "4.5 INCHES",
+                "3 PCS"
+              ]
+            },
+            {
+              "id": "67929176277092",
+              "title": "Acrylic Ornament / 5.5 INCHES / 3 PCS",
+              "sku": "-3pc_UPOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "5.5 INCHES",
+                "3 PCS"
+              ]
+            },
+            {
+              "id": "67929176309860",
+              "title": "Acrylic Ornament / 3.7 INCHES / 4 PCS",
+              "sku": "-4pc_UPOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "3.7 INCHES",
+                "4 PCS"
+              ]
+            },
+            {
+              "id": "67929176342628",
+              "title": "Acrylic Ornament / 4.5 INCHES / 4 PCS",
+              "sku": "-4pc_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "4.5 INCHES",
+                "4 PCS"
+              ]
+            },
+            {
+              "id": "67929176375396",
+              "title": "Acrylic Ornament / 5.5 INCHES / 4 PCS",
+              "sku": "-4pc_UPOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "5.5 INCHES",
+                "4 PCS"
+              ]
+            },
+            {
+              "id": "67929176408164",
+              "title": "Acrylic Ornament / 3.7 INCHES / 5 PCS",
+              "sku": "-5pc_UPOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "3.7 INCHES",
+                "5 PCS"
+              ]
+            },
+            {
+              "id": "67929176440932",
+              "title": "Acrylic Ornament / 4.5 INCHES / 5 PCS",
+              "sku": "-5pc_UPOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "4.5 INCHES",
+                "5 PCS"
+              ]
+            },
+            {
+              "id": "67929176473700",
+              "title": "Acrylic Ornament / 5.5 INCHES / 5 PCS",
+              "sku": "-5pc_UPOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44924580298852,
+                "product_id": 15465101295716,
+                "position": 1,
+                "created_at": "2026-10-30T21:17:24-07:00",
+                "updated_at": "2026-10-30T21:17:25-07:00",
+                "alt": "AOP-MN7076_thumb0",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+                "variant_ids": [
+                  67929176014948,
+                  67929176047716,
+                  67929176080484,
+                  67929176113252,
+                  67929176146020,
+                  67929176178788,
+                  67929176211556,
+                  67929176244324,
+                  67929176277092,
+                  67929176309860,
+                  67929176342628,
+                  67929176375396,
+                  67929176408164,
+                  67929176440932,
+                  67929176473700
+                ]
+              },
+              "options": [
+                "Acrylic Ornament",
+                "5.5 INCHES",
+                "5 PCS"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "46666873241700",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46666873274468",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae5668938318.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46666873307236",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566892d7f9.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46666873340004",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae5668798341.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46666873372772",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae567ddb5799.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46666873405540",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae567dd2d2a7.webp?v=1793420245",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566887efe8.webp?v=1793420245",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae5668938318.webp?v=1793420245",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae566892d7f9.webp?v=1793420245",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae5668798341.webp?v=1793420245",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae567ddb5799.webp?v=1793420245",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ae567dd2d2a7.webp?v=1793420245"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "3b0c10cb30a6b64060e1ff9c047f56d55e36109decfe4add430eaf2bf64b7211"
+        }
+      ],
+      "mechanismEquivalent": null,
+      "warnings": []
+    },
+    {
+      "caseId": "giftsoul-complex-mechanism",
+      "brand": "giftsoul",
+      "kind": "complex-mechanism",
+      "sourceUrl": "https://giftsoul.co/products/personalized-photo-music-fridge-magnet-can-play-songs-anniversary-gift-for-couple-i-know-what-true-love-is-because-of-you",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "8577936654436",
+          "productType": "Music Fridge Magnet",
+          "title": "Personalized Photo Music Fridge Magnet - Can Play Songs \u2013 Anniversary Gift For Couple \u2013 I Know What True Love Is Because Of You",
+          "pdpUrl": "https://giftsoul.co/products/personalized-photo-music-fridge-magnet-can-play-songs-anniversary-gift-for-couple-i-know-what-true-love-is-because-of-you",
+          "metadataUrl": "https://giftsoul.co/products/personalized-photo-music-fridge-magnet-can-play-songs-anniversary-gift-for-couple-i-know-what-true-love-is-because-of-you.js",
+          "metadataResponseSha256": "9a2c8cc5a060b25f72286bdd3b0cd4ce4f21ec6638d1f92d03c5170c144e7ed8",
+          "observedAt": "2026-11-28T02:19:57.524131+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/giftsoul-mechanism.json",
+          "variants": [
+            {
+              "id": "48540114223204",
+              "title": "Music Fridge Magnet / As Preview / 3.9x3.9 IN",
+              "sku": "_PPFMSP/10X10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 43027239370852,
+                "product_id": 8577936654436,
+                "position": 1,
+                "created_at": "2026-06-09T02:57:06-07:00",
+                "updated_at": "2026-06-09T02:57:08-07:00",
+                "alt": "MFM-MQ0507_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36a3290f.webp?v=1780999028",
+                "variant_ids": [
+                  48540114223204
+                ]
+              },
+              "options": [
+                "Music Fridge Magnet",
+                "As Preview",
+                "3.9x3.9 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "32679324778596",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36a3290f.webp?v=1780999028",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "32679324811364",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36b503fa.webp?v=1780999028",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "32679324844132",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36bbde63.webp?v=1780999028",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "32679324876900",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36b5a34b.webp?v=1780999028",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "32679324909668",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/photoguidelines_5000x_afed7fba-16ff-4f87-b787-8bdf6839e655.jpg?v=1780999030",
+              "width": 800,
+              "height": 800
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36a3290f.webp?v=1780999028",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36b503fa.webp?v=1780999028",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36bbde63.webp?v=1780999028",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a27e36b5a34b.webp?v=1780999028",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/photoguidelines_5000x_afed7fba-16ff-4f87-b787-8bdf6839e655.jpg?v=1780999030"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "cba76ffc6ddb1d650a06d7abf8f0f71e7b515505ea4a943781bf214086e4d15d"
+        }
+      ],
+      "mechanismEquivalent": "Music Fridge Magnet: electronic playback, physical button, magnetic attachment and Type-C charging; equivalent case proposed for owner ratification.",
+      "warnings": []
+    },
+    {
+      "caseId": "giftsoul-collection",
+      "brand": "giftsoul",
+      "kind": "collection",
+      "sourceUrl": "https://giftsoul.co/collections/ornament-couple",
+      "status": "LIVE_COLLECTION_PAGE_AND_THREE_LINKED_PRODUCT_METADATA_VERIFIED",
+      "collectionPage": {
+        "observedAt": "2026-11-28T02:19:11.085636+00:00",
+        "httpStatus": 200,
+        "rawHtmlSha256": "eaab78d8c83aae1ffaa11f8b99e38030141d67f710a9e48ee1323c1b4f183843",
+        "selectedPdpUrls": [
+          "https://giftsoul.co/products/personalized-glass-ornament-christmas-anniversary-gift-for-couple-first-christmas-together",
+          "https://giftsoul.co/products/personalized-heart-round-glass-ornament-anniversary-christmas-wedding-gifts-for-couple-husband-and-wife-our-first-christmas-as-mr-mrs",
+          "https://giftsoul.co/products/personalized-wood-ornament-christmas-anniversary-gift-for-couple-santa-found-his-match"
+        ],
+        "inventoryScope": "Three linked artwork candidates. Not a claim that all collection products or personalization designs have been researched.",
+        "completePaginationVerified": false
+      },
+      "products": [
+        {
+          "productId": "8649223012452",
+          "productType": "Glass Ornament",
+          "title": "Personalized First Christmas Married Glass Ornament \u2013 Wedding Gift For Couple \u2013 First Christmas Together",
+          "pdpUrl": "https://giftsoul.co/products/personalized-glass-ornament-christmas-anniversary-gift-for-couple-first-christmas-together",
+          "metadataUrl": "https://giftsoul.co/products/personalized-glass-ornament-christmas-anniversary-gift-for-couple-first-christmas-together.js",
+          "metadataResponseSha256": "41aedc6442cf90071925f4ef97696cc01a0e61516f40439ae47a54637e8c6249",
+          "observedAt": "2026-11-28T02:19:57.165295+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/giftsoul-artwork-1.json",
+          "variants": [
+            {
+              "id": "48821602386020",
+              "title": "Glass Ornament / As Preview / 2.76 INCHES",
+              "sku": "_URGOP/7CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44728292048996,
+                "product_id": 8649223012452,
+                "position": 1,
+                "created_at": "2026-10-16T22:33:17-07:00",
+                "updated_at": "2026-10-16T22:33:19-07:00",
+                "alt": "PGO-MN7000_thumb",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305f93e4d8.webp?v=1792215199",
+                "variant_ids": [
+                  48821602386020,
+                  48821602418788
+                ]
+              },
+              "options": [
+                "Glass Ornament",
+                "As Preview",
+                "2.76 INCHES"
+              ]
+            },
+            {
+              "id": "48821602418788",
+              "title": "Glass Ornament / As Preview / 3.07 INCHES",
+              "sku": "_URGOP/7.8CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44728292048996,
+                "product_id": 8649223012452,
+                "position": 1,
+                "created_at": "2026-10-16T22:33:17-07:00",
+                "updated_at": "2026-10-16T22:33:19-07:00",
+                "alt": "PGO-MN7000_thumb",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305f93e4d8.webp?v=1792215199",
+                "variant_ids": [
+                  48821602386020,
+                  48821602418788
+                ]
+              },
+              "options": [
+                "Glass Ornament",
+                "As Preview",
+                "3.07 INCHES"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "46474270539876",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305f93e4d8.webp?v=1792215199",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46474270572644",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305fa79214.webp?v=1792215198",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46474270605412",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305fa005e0.webp?v=1792215199",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "46474270638180",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad308869aa88.webp?v=1792215199",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305f93e4d8.webp?v=1792215199",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305fa79214.webp?v=1792215198",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad305fa005e0.webp?v=1792215199",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6ad308869aa88.webp?v=1792215199"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "c93ba903b636b58f28d87e696499b6def9a976f9e361f2ffa9c11b2a99870709"
+        },
+        {
+          "productId": "8613444354148",
+          "productType": "Glass Ornament",
+          "title": "Personalized First Christmas Married Heart, Round Glass Ornament - Anniversary Wedding Gift For Couple, Husband And Wife - Our First Christmas As Mr & Mrs",
+          "pdpUrl": "https://giftsoul.co/products/personalized-heart-round-glass-ornament-anniversary-christmas-wedding-gifts-for-couple-husband-and-wife-our-first-christmas-as-mr-mrs",
+          "metadataUrl": "https://giftsoul.co/products/personalized-heart-round-glass-ornament-anniversary-christmas-wedding-gifts-for-couple-husband-and-wife-our-first-christmas-as-mr-mrs.js",
+          "metadataResponseSha256": "dd63652e58ce9b40ff15b58180d571af08f90b40d6271ca3a04ad83ec7a6c449",
+          "observedAt": "2026-11-28T02:19:57.140531+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/giftsoul-artwork-2.json",
+          "variants": [
+            {
+              "id": "48696777637988",
+              "title": "Heart / As Preview / 2.76x2.56 IN",
+              "sku": "_UHGOP/6.5x7CM",
+              "available": true,
+              "featuredImage": {
+                "id": 43590649512036,
+                "product_id": 8613444354148,
+                "position": 1,
+                "created_at": "2026-08-04T21:38:37-07:00",
+                "updated_at": "2026-08-04T21:38:39-07:00",
+                "alt": "GOP-MQ0565_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+                "variant_ids": [
+                  48696777637988,
+                  48696777670756,
+                  48696777703524,
+                  48696777736292
+                ]
+              },
+              "options": [
+                "Heart",
+                "As Preview",
+                "2.76x2.56 IN"
+              ]
+            },
+            {
+              "id": "48696777670756",
+              "title": "Heart / As Preview / 3.15x3 IN",
+              "sku": "_UHGOP/8X7.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 43590649512036,
+                "product_id": 8613444354148,
+                "position": 1,
+                "created_at": "2026-08-04T21:38:37-07:00",
+                "updated_at": "2026-08-04T21:38:39-07:00",
+                "alt": "GOP-MQ0565_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+                "variant_ids": [
+                  48696777637988,
+                  48696777670756,
+                  48696777703524,
+                  48696777736292
+                ]
+              },
+              "options": [
+                "Heart",
+                "As Preview",
+                "3.15x3 IN"
+              ]
+            },
+            {
+              "id": "48696777703524",
+              "title": "Round / As Preview / 2.76 INCHES",
+              "sku": "_URGOP/7CM",
+              "available": true,
+              "featuredImage": {
+                "id": 43590649512036,
+                "product_id": 8613444354148,
+                "position": 1,
+                "created_at": "2026-08-04T21:38:37-07:00",
+                "updated_at": "2026-08-04T21:38:39-07:00",
+                "alt": "GOP-MQ0565_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+                "variant_ids": [
+                  48696777637988,
+                  48696777670756,
+                  48696777703524,
+                  48696777736292
+                ]
+              },
+              "options": [
+                "Round",
+                "As Preview",
+                "2.76 INCHES"
+              ]
+            },
+            {
+              "id": "48696777736292",
+              "title": "Round / As Preview / 3.07 INCHES",
+              "sku": "_URGOP/7.8CM",
+              "available": true,
+              "featuredImage": {
+                "id": 43590649512036,
+                "product_id": 8613444354148,
+                "position": 1,
+                "created_at": "2026-08-04T21:38:37-07:00",
+                "updated_at": "2026-08-04T21:38:39-07:00",
+                "alt": "GOP-MQ0565_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+                "variant_ids": [
+                  48696777637988,
+                  48696777670756,
+                  48696777703524,
+                  48696777736292
+                ]
+              },
+              "options": [
+                "Round",
+                "As Preview",
+                "3.07 INCHES"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "33223096107108",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33223096139876",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da52f9e8.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33223096172644",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da5579cc.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33223096205412",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da62cfcb.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33223096238180",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da62f1ce.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33223096270948",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da64b422.webp?v=1785904719",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da4dd5e0.webp?v=1785904719",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da52f9e8.webp?v=1785904719",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da5579cc.webp?v=1785904719",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da62cfcb.webp?v=1785904719",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da62f1ce.webp?v=1785904719",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6a618da64b422.webp?v=1785904719"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "cfc40ff6ac0c507cc54e049c60426068eedf2e30b676e69e9af73174fb410b80"
+        },
+        {
+          "productId": "8742995198052",
+          "productType": "Ornament",
+          "title": "Personalized Wood Ornament \u2013 Christmas, Anniversary Gift For Couple \u2013 Santa Found His Match",
+          "pdpUrl": "https://giftsoul.co/products/personalized-wood-ornament-christmas-anniversary-gift-for-couple-santa-found-his-match",
+          "metadataUrl": "https://giftsoul.co/products/personalized-wood-ornament-christmas-anniversary-gift-for-couple-santa-found-his-match.js",
+          "metadataResponseSha256": "31c5de5ff3f330b6055ac2a70fd32e627a9d859a2d63a08e3aa709e5e6a311e4",
+          "observedAt": "2026-11-28T02:19:57.170824+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/giftsoul-artwork-3.json",
+          "variants": [
+            {
+              "id": "49263058681956",
+              "title": "Wooden Ornament / As Preview / 3.7 IN",
+              "sku": "_UWOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44265467609188,
+                "product_id": 8742995198052,
+                "position": 1,
+                "created_at": "2026-09-15T22:22:21-07:00",
+                "updated_at": "2026-09-15T22:22:22-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3ee9ac.webp?v=1789536142",
+                "variant_ids": [
+                  49263058681956,
+                  49263058714724,
+                  49263058747492
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "3.7 IN"
+              ]
+            },
+            {
+              "id": "49263058714724",
+              "title": "Wooden Ornament / As Preview / 4.5 IN",
+              "sku": "_UWOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44265467609188,
+                "product_id": 8742995198052,
+                "position": 1,
+                "created_at": "2026-09-15T22:22:21-07:00",
+                "updated_at": "2026-09-15T22:22:22-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3ee9ac.webp?v=1789536142",
+                "variant_ids": [
+                  49263058681956,
+                  49263058714724,
+                  49263058747492
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "4.5 IN"
+              ]
+            },
+            {
+              "id": "49263058747492",
+              "title": "Wooden Ornament / As Preview / 5.5 IN",
+              "sku": "_UWOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 44265467609188,
+                "product_id": 8742995198052,
+                "position": 1,
+                "created_at": "2026-09-15T22:22:21-07:00",
+                "updated_at": "2026-09-15T22:22:22-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3ee9ac.webp?v=1789536142",
+                "variant_ids": [
+                  49263058681956,
+                  49263058714724,
+                  49263058747492
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "5.5 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "33886701060196",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3ee9ac.webp?v=1789536142",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33886701092964",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d41df98.webp?v=1789536142",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33886701125732",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d4423d3.webp?v=1789536142",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33886701158500",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3efbdd.webp?v=1789536142",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "33886701191268",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d282dd4.webp?v=1789536142",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3ee9ac.webp?v=1789536142",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d41df98.webp?v=1789536142",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d4423d3.webp?v=1789536142",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d3efbdd.webp?v=1789536142",
+            "https://cdn.shopify.com/s/files/1/0776/7293/9620/files/6aaa26d282dd4.webp?v=1789536142"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "d5222e05cf5a4d33c9eab74888b3bd71ed90c729b02f1fe587f140779a4f3d50"
+        }
+      ],
+      "warnings": [
+        "This collection includes different exact Shopify product types; retain material-specific mappings. Do not collapse them into one product type."
+      ]
+    },
+    {
+      "caseId": "soulprise-simple-ornament",
+      "brand": "soulprise",
+      "kind": "simple-ornament",
+      "sourceUrl": "https://soulprise.co/products/custom-name-freshman-year-college-christmas-gifts-for-students-personalized-glass-ornament",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "16484679385169",
+          "productType": "Glass Ornament",
+          "title": "Custom Name Freshman Year College Christmas Gifts for Students - Personalized Glass Ornament",
+          "pdpUrl": "https://soulprise.co/products/custom-name-freshman-year-college-christmas-gifts-for-students-personalized-glass-ornament",
+          "metadataUrl": "https://soulprise.co/products/custom-name-freshman-year-college-christmas-gifts-for-students-personalized-glass-ornament.js",
+          "metadataResponseSha256": "119337bbdc0abda2a406e66bdca6854a034b140415818504317293abbe32bb56",
+          "observedAt": "2026-11-28T02:18:34.002043+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/soulprise-ornament.json",
+          "variants": [
+            {
+              "id": "63631699902545",
+              "title": "Glass Ornament / As Preview / 2.76 INCHES",
+              "sku": "_URGOP/7CM",
+              "available": true,
+              "featuredImage": {
+                "id": 71249749442641,
+                "product_id": 16484679385169,
+                "position": 1,
+                "created_at": "2026-11-20T19:30:42-08:00",
+                "updated_at": "2026-11-20T19:30:43-08:00",
+                "alt": "GOP-YL7027_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110355adf5.webp?v=1795231843",
+                "variant_ids": [
+                  63631699902545,
+                  63631699935313
+                ]
+              },
+              "options": [
+                "Glass Ornament",
+                "As Preview",
+                "2.76 INCHES"
+              ]
+            },
+            {
+              "id": "63631699935313",
+              "title": "Glass Ornament / As Preview / 3.07 INCHES",
+              "sku": "_URGOP/7.8CM",
+              "available": true,
+              "featuredImage": {
+                "id": 71249749442641,
+                "product_id": 16484679385169,
+                "position": 1,
+                "created_at": "2026-11-20T19:30:42-08:00",
+                "updated_at": "2026-11-20T19:30:43-08:00",
+                "alt": "GOP-YL7027_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110355adf5.webp?v=1795231843",
+                "variant_ids": [
+                  63631699902545,
+                  63631699935313
+                ]
+              },
+              "options": [
+                "Glass Ornament",
+                "As Preview",
+                "3.07 INCHES"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "74806028173393",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110355adf5.webp?v=1795231843",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74806028206161",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b011035b4174.webp?v=1795231843",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74806028238929",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b011035a8ac6.webp?v=1795231843",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74806028271697",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01103537b41.webp?v=1795231843",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74806028304465",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110240bafa.webp?v=1795231843",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110355adf5.webp?v=1795231843",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b011035b4174.webp?v=1795231843",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b011035a8ac6.webp?v=1795231843",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01103537b41.webp?v=1795231843",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0110240bafa.webp?v=1795231843"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "822b24fea6dbdd78552ac4be7d4074d438fa70067d2c5d45460180038fa3124e"
+        }
+      ],
+      "mechanismEquivalent": null,
+      "warnings": []
+    },
+    {
+      "caseId": "soulprise-complex-mechanism",
+      "brand": "soulprise",
+      "kind": "complex-mechanism",
+      "sourceUrl": "https://soulprise.co/products/custom-name-book-lover-gifts-for-women-personalized-clip-led-reading-lamp",
+      "status": "LIVE_METADATA_VERIFIED",
+      "products": [
+        {
+          "productId": "16484636000337",
+          "productType": "Clip LED Reading Lamp",
+          "title": "Custom Name Book Lover Gifts For Women - Personalized Clip LED Reading Lamp",
+          "pdpUrl": "https://soulprise.co/products/custom-name-book-lover-gifts-for-women-personalized-clip-led-reading-lamp",
+          "metadataUrl": "https://soulprise.co/products/custom-name-book-lover-gifts-for-women-personalized-clip-led-reading-lamp.js",
+          "metadataResponseSha256": "495e6f3e711bded1a1c61a5896982485779f3dc29c27244d843c5f2987c47736",
+          "observedAt": "2026-11-28T02:18:47.292721+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/soulprise-mechanism.json",
+          "variants": [
+            {
+              "id": "63631566209105",
+              "title": "Clip LED Reading Lamp / As Preview / As Described",
+              "sku": "_CLRL/White",
+              "available": true,
+              "featuredImage": {
+                "id": 71249467211857,
+                "product_id": 16484636000337,
+                "position": 1,
+                "created_at": "2026-11-20T18:45:43-08:00",
+                "updated_at": "2026-11-20T18:45:44-08:00",
+                "alt": "TKN-YL0626_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876de33.webp?v=1795229144",
+                "variant_ids": [
+                  63631566209105
+                ]
+              },
+              "options": [
+                "Clip LED Reading Lamp",
+                "As Preview",
+                "As Described"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "74805753380945",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876de33.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74805753413713",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876c2a9.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74805753446481",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058783277.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74805753479249",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876e261.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74805753512017",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058739ffd.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74805753544785",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058779aa4.webp?v=1795229144",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876de33.webp?v=1795229144",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876c2a9.webp?v=1795229144",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058783277.webp?v=1795229144",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b0105876e261.webp?v=1795229144",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058739ffd.webp?v=1795229144",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6b01058779aa4.webp?v=1795229144"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "931d36dedfc629f194838d15606971a231b4df8d968677672dcb7005ed01a25c"
+        }
+      ],
+      "mechanismEquivalent": null,
+      "warnings": [
+        "PDP prose calls this a bookmark, while exact Shopify type and product specifications describe a clip LED lamp. Resolve by source media inspection before content approval."
+      ]
+    },
+    {
+      "caseId": "soulprise-collection",
+      "brand": "soulprise",
+      "kind": "collection",
+      "sourceUrl": "https://soulprise.co/collections/wood-ornament",
+      "status": "LIVE_COLLECTION_PAGE_AND_THREE_LINKED_PRODUCT_METADATA_VERIFIED",
+      "collectionPage": {
+        "observedAt": "2026-11-28T02:18:58.722282+00:00",
+        "httpStatus": 200,
+        "rawHtmlSha256": "9074bdcd575072ccc97801b0fb301ee3d8375e154d89b91fc626fb7975e26261",
+        "selectedPdpUrls": [
+          "https://soulprise.co/products/custom-name-christmas-pregnancy-announcement-gifts-personalized-wooden-ornament",
+          "https://soulprise.co/products/cozy-xmas-with-you-anniversary-christmas-gifts-for-couples-personalized-funny-wooden-ornament",
+          "https://soulprise.co/products/custom-name-christmas-sourdough-gifts-for-bakes-personalized-wooden-ornament"
+        ],
+        "inventoryScope": "Three linked artwork candidates. Not a claim that all collection products or personalization designs have been researched.",
+        "completePaginationVerified": false
+      },
+      "products": [
+        {
+          "productId": "16463738437713",
+          "productType": "Ornament",
+          "title": "Custom Name Christmas Pregnancy Announcement Gifts - Personalized Wooden Ornament",
+          "pdpUrl": "https://soulprise.co/products/custom-name-christmas-pregnancy-announcement-gifts-personalized-wooden-ornament",
+          "metadataUrl": "https://soulprise.co/products/custom-name-christmas-pregnancy-announcement-gifts-personalized-wooden-ornament.js",
+          "metadataResponseSha256": "29c1be982ed8dee2f50b2e3ec990ab2110dd8ab2d021a379bda4b70d548b0e37",
+          "observedAt": "2026-11-28T02:19:57.306311+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/soulprise-artwork-1.json",
+          "variants": [
+            {
+              "id": "63518806999121",
+              "title": "Wooden Ornament / As Preview / 3.7 IN",
+              "sku": "_UWOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 71064296783953,
+                "product_id": 16463738437713,
+                "position": 1,
+                "created_at": "2026-11-13T02:43:07-08:00",
+                "updated_at": "2026-11-13T02:43:09-08:00",
+                "alt": "POP-KY7000_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e8a61a7b8.webp?v=1794566589",
+                "variant_ids": [
+                  63518806999121,
+                  63518807031889,
+                  63518807064657
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "3.7 IN"
+              ]
+            },
+            {
+              "id": "63518807031889",
+              "title": "Wooden Ornament / As Preview / 4.5 IN",
+              "sku": "_UWOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 71064296783953,
+                "product_id": 16463738437713,
+                "position": 1,
+                "created_at": "2026-11-13T02:43:07-08:00",
+                "updated_at": "2026-11-13T02:43:09-08:00",
+                "alt": "POP-KY7000_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e8a61a7b8.webp?v=1794566589",
+                "variant_ids": [
+                  63518806999121,
+                  63518807031889,
+                  63518807064657
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "4.5 IN"
+              ]
+            },
+            {
+              "id": "63518807064657",
+              "title": "Wooden Ornament / As Preview / 5.5 IN",
+              "sku": "_UWOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 71064296783953,
+                "product_id": 16463738437713,
+                "position": 1,
+                "created_at": "2026-11-13T02:43:07-08:00",
+                "updated_at": "2026-11-13T02:43:09-08:00",
+                "alt": "POP-KY7000_thumb1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e8a61a7b8.webp?v=1794566589",
+                "variant_ids": [
+                  63518806999121,
+                  63518807031889,
+                  63518807064657
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "5.5 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "74623390187601",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e8a61a7b8.webp?v=1794566589",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74623390220369",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e88aec656.webp?v=1794566589",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74623390253137",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e88c2ec3b.webp?v=1794566588",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74623390285905",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e889c40cc.webp?v=1794566589",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74623390318673",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e9057325b.webp?v=1794566589",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74623390351441",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e91b877d4.webp?v=1794566589",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e8a61a7b8.webp?v=1794566589",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e88aec656.webp?v=1794566589",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e88c2ec3b.webp?v=1794566588",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e889c40cc.webp?v=1794566589",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e9057325b.webp?v=1794566589",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6af6e91b877d4.webp?v=1794566589"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "6c375b41699ea123ae77ca2ca93ca11adcaf2f5a479bc5f9639f9ab11d43232b"
+        },
+        {
+          "productId": "16319133876305",
+          "productType": "Ornament",
+          "title": "Cozy Xmas With You, Anniversary Christmas Gifts For Couples - Personalized Funny Wooden Ornament",
+          "pdpUrl": "https://soulprise.co/products/cozy-xmas-with-you-anniversary-christmas-gifts-for-couples-personalized-funny-wooden-ornament",
+          "metadataUrl": "https://soulprise.co/products/cozy-xmas-with-you-anniversary-christmas-gifts-for-couples-personalized-funny-wooden-ornament.js",
+          "metadataResponseSha256": "9e1b1901be4bdcba548e785de6108bce5da405bee9a0c6c3449a3d8c5c8d63c7",
+          "observedAt": "2026-11-28T02:19:57.339732+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/soulprise-artwork-2.json",
+          "variants": [
+            {
+              "id": "62659329785937",
+              "title": "Wooden Ornament / As Preview / 3.7 IN",
+              "sku": "_UWOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70122215833681,
+                "product_id": 16319133876305,
+                "position": 1,
+                "created_at": "2026-09-17T21:44:46-07:00",
+                "updated_at": "2026-09-17T21:44:47-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1600aebf.webp?v=1789706687",
+                "variant_ids": [
+                  62659329785937,
+                  62659329818705,
+                  62659329851473
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "3.7 IN"
+              ]
+            },
+            {
+              "id": "62659329818705",
+              "title": "Wooden Ornament / As Preview / 4.5 IN",
+              "sku": "_UWOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70122215833681,
+                "product_id": 16319133876305,
+                "position": 1,
+                "created_at": "2026-09-17T21:44:46-07:00",
+                "updated_at": "2026-09-17T21:44:47-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1600aebf.webp?v=1789706687",
+                "variant_ids": [
+                  62659329785937,
+                  62659329818705,
+                  62659329851473
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "4.5 IN"
+              ]
+            },
+            {
+              "id": "62659329851473",
+              "title": "Wooden Ornament / As Preview / 5.5 IN",
+              "sku": "_UWOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70122215833681,
+                "product_id": 16319133876305,
+                "position": 1,
+                "created_at": "2026-09-17T21:44:46-07:00",
+                "updated_at": "2026-09-17T21:44:47-07:00",
+                "alt": "POP-MQ7004_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1600aebf.webp?v=1789706687",
+                "variant_ids": [
+                  62659329785937,
+                  62659329818705,
+                  62659329851473
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "5.5 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "73694229856337",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1600aebf.webp?v=1789706687",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "73694229889105",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacbfac90d35.webp?v=1789706687",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "73694229921873",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc15d141fa.webp?v=1789706687",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "73694229954641",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1a1c2dd9.webp?v=1789706687",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "73694229987409",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc147a6913.webp?v=1789706687",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1600aebf.webp?v=1789706687",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacbfac90d35.webp?v=1789706687",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc15d141fa.webp?v=1789706687",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc1a1c2dd9.webp?v=1789706687",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6aacc147a6913.webp?v=1789706687"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "248c19c7420202b234e6da88471219282272291f4d9f94b2566e7b76d215d345"
+        },
+        {
+          "productId": "16428696993873",
+          "productType": "Ornament",
+          "title": "Custom Name Christmas Sourdough Gifts For Bakes - Personalized Wooden Ornament",
+          "pdpUrl": "https://soulprise.co/products/custom-name-christmas-sourdough-gifts-for-bakes-personalized-wooden-ornament",
+          "metadataUrl": "https://soulprise.co/products/custom-name-christmas-sourdough-gifts-for-bakes-personalized-wooden-ornament.js",
+          "metadataResponseSha256": "01fd8044bb82813c989605604b9e7800966d41c5beee72b9ff2f36065b62a9e5",
+          "observedAt": "2026-11-28T02:19:57.339784+00:00",
+          "httpStatus": 200,
+          "availableAtObservation": true,
+          "sourceArtifact": "creative-case-evidence/soulprise-artwork-3.json",
+          "variants": [
+            {
+              "id": "63388900458577",
+              "title": "Wooden Ornament / As Preview / 3.7 IN",
+              "sku": "_UWOCP/10CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70823470694481,
+                "product_id": 16428696993873,
+                "position": 1,
+                "created_at": "2026-11-02T23:07:09-08:00",
+                "updated_at": "2026-11-02T23:07:11-08:00",
+                "alt": "POP-ND7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d05e5d0.webp?v=1793689631",
+                "variant_ids": [
+                  63388900458577,
+                  63388900491345,
+                  63388900524113
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "3.7 IN"
+              ]
+            },
+            {
+              "id": "63388900491345",
+              "title": "Wooden Ornament / As Preview / 4.5 IN",
+              "sku": "_UWOCP/11.5CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70823470694481,
+                "product_id": 16428696993873,
+                "position": 1,
+                "created_at": "2026-11-02T23:07:09-08:00",
+                "updated_at": "2026-11-02T23:07:11-08:00",
+                "alt": "POP-ND7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d05e5d0.webp?v=1793689631",
+                "variant_ids": [
+                  63388900458577,
+                  63388900491345,
+                  63388900524113
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "4.5 IN"
+              ]
+            },
+            {
+              "id": "63388900524113",
+              "title": "Wooden Ornament / As Preview / 5.5 IN",
+              "sku": "_UWOCP/14CM",
+              "available": true,
+              "featuredImage": {
+                "id": 70823470694481,
+                "product_id": 16428696993873,
+                "position": 1,
+                "created_at": "2026-11-02T23:07:09-08:00",
+                "updated_at": "2026-11-02T23:07:11-08:00",
+                "alt": "POP-ND7000_thumb-1",
+                "width": 2048,
+                "height": 2048,
+                "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d05e5d0.webp?v=1793689631",
+                "variant_ids": [
+                  63388900458577,
+                  63388900491345,
+                  63388900524113
+                ]
+              },
+              "options": [
+                "Wooden Ornament",
+                "As Preview",
+                "5.5 IN"
+              ]
+            }
+          ],
+          "media": [
+            {
+              "id": "74386180898897",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d05e5d0.webp?v=1793689631",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74386180931665",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d046b33.webp?v=1793689630",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74386180964433",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980cfb6189.webp?v=1793689631",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74386180997201",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d00d788.webp?v=1793689631",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74386181029969",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d009217.webp?v=1793689631",
+              "width": 2048,
+              "height": 2048
+            },
+            {
+              "id": "74386181062737",
+              "type": "image",
+              "src": "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980cfcdcb6.webp?v=1793689631",
+              "width": 2048,
+              "height": 2048
+            }
+          ],
+          "imageUrls": [
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d05e5d0.webp?v=1793689631",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d046b33.webp?v=1793689630",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980cfb6189.webp?v=1793689631",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d00d788.webp?v=1793689631",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980d009217.webp?v=1793689631",
+            "https://cdn.shopify.com/s/files/1/1066/4892/8337/files/6ae980cfcdcb6.webp?v=1793689631"
+          ],
+          "pixelInspection": "NOT_RUN",
+          "eoApproval": "NOT_APPROVED",
+          "artworkMetadataSha256": "61703693fdda2c46c48940c2569a7795e6a0b452a63ac39294c339743f202d1b"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "counts": {
+    "cases": 9,
+    "productMetadataResponses": 15,
+    "collectionPages": 3,
+    "pixelInspections": 0,
+    "approvedEoReferences": 0,
+    "paidModelOrImageCalls": 0
+  },
+  "limitations": [
+    "Exact live product metadata and available flags were checked using public Shopify product .js endpoints; these are not image-pixel inspections or EO approvals.",
+    "Bulk products.json returned HTTP429; it was not used as catalog-completeness evidence.",
+    "Search caches were used only for discovery; final IDs/types/hashes above come from direct current HTTP200 responses.",
+    "PawfectHouse /collections/wood-ornament returned current HTTP404 despite a stale search result; selected current candlelight-lantern-ornament instead.",
+    "Collection cases pin three linked products per brand. Full collection/artwork/variant visual research and pinned media bytes are still required before creative execution."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "status": "BLOCKED_WORKSPACE_PERMISSION",
+  "pluginCreated": false,
+  "attemptedAt": "2026-11-28",
+  "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+  "authentication": {
+    "type": "api_key",
+    "headerScheme": "bearer",
+    "credentialsPackaged": false
+  },
+  "archive": "uid-brands-v2-test-plugin.zip",
+  "error": {
+    "httpStatus": 403,
+    "code": "FORBIDDEN",
+    "message": "You do not have permission to use plugins with MCPs. Contact your workspace admin for access",
+    "retryable": false
+  },
+  "nextStep": "Workspace admin grants MCP plugin access; retry creation once permission changes. Do not bypass the workspace policy or alter the production plugin.",
+  "oauthRequiredForBearerConnection": false,
+  "ownerDecision": "Hand over verified endpoint and test kit first; do not retry plugin creation until permission changes."
+}

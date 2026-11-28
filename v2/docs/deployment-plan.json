@@ -1,9 +1,9 @@
 {
-  "status": "PENDING_BROWSER_CREDENTIAL_UPLOAD_CONFIRMATION",
+  "status": "LIVE_BEARER_MCP_VERIFIED",
   "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
   "branch": "experiment/uid-brands-architecture-v2",
   "serviceName": "uid-brands-architecture-v2-test",
-  "serviceId": null,
+  "serviceId": "srv-dc53i6vf3r2c73dd34ig",
   "existingServiceToModify": null,
   "autoDeploy": false,
   "healthCheckPath": "/healthz",
@@ -30,7 +30,9 @@
     "V2_JWT_ISSUER",
     "V2_JWT_AUDIENCE",
     "V2_JWKS_URL",
-    "V2_MEMBERS_JSON"
+    "V2_MEMBERS_JSON",
+    "V2_OAUTH_CLIENT_IDS_JSON",
+    "V2_OAUTH_REQUIRED_SCOPES_JSON"
   ],
   "opaqueTestCredentialEnvironmentNames": [
     "V2_TEST_PRINCIPALS_JSON"
@@ -50,10 +52,15 @@
     "bandwidthIncludedGB": 5,
     "paymentCardOnFile": false
   },
-  "liveEndpoint": null,
+  "liveEndpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
   "productionWritesPerformed": false,
-  "blockingAction": "Upload new V2-only database credentials into the prepared new Render service, then launch Free compute.",
-  "confirmationSource": "Browser tool requires confirmation before saving credentials at the new destination."
+  "deployId": "dep-dc53i7ff3r2c73dd3720",
+  "sourceCommit": "6eb6dda4383391045d073e069d1b1f6b08c54557",
+  "createdAt": "2026-11-28T09:14:53+07:00",
+  "credentialUploadAuthorized": true,
+  "liveAt": "2026-11-28T09:17:17+07:00",
+  "publicMcpSmoke": "PASS",
+  "gptConnectionBlocker": "WORKSPACE_MCP_PLUGIN_PERMISSION_DENIED_403"
 }

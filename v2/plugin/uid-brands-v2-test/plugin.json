@@ -1,0 +1,28 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "uid-brands-v2-test",
+  "version": "0.1.0",
+  "description": "Authenticated isolated UID Brands Onepage V2 tests for PawfectHouse, GiftSoul and SoulPrise.",
+  "author": {
+    "name": "UID Brands"
+  },
+  "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "UID Brands V2 Test",
+        "shortDescription": "Isolated Onepage V2 testing",
+        "longDescription": "Authenticated isolated Onepage V2 testing with pinned canonical rules, resumable jobs, actual artifacts, QC and deterministic delivery. Production remains unchanged. EO and token-cost acceptance require real runs.",
+        "developerName": "UID Brands",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": "Test the isolated UID Brands V2 Onepage workflow. Verify the connection and actual host capabilities, then load pinned stage context.",
+        "logo": "./assets/icon.svg",
+        "composerIcon": "./assets/icon.svg"
+      }
+    }
+  }
+}
