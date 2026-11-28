@@ -114,23 +114,25 @@ test('gateway pins route mode and proposal; forwards session and stale guidance 
   const realFetch = globalThis.fetch, calls: any[] = [];
   const server = createApp().listen(0, '127.0.0.1'); await once(server, 'listening');
   const base = 'http://127.0.0.1:' + (server.address() as any).port;
+  // Bun shares module-level rate counters across files; use an isolated synthetic client.
+  const clientFetch=(url:string,init?:RequestInit)=>realFetch(url,{...init,headers:{...Object.fromEntries(new Headers(init?.headers)), 'X-Forwarded-For':'192.0.2.151'}});
   globalThis.fetch = async (url, init) => { assert.equal(String(url), 'https://synthetic-admin.example.test/feedback'); assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer synthetic.admin'); calls.push(JSON.parse(String(init?.body))); return Response.json({ error: 'stale', retry_guidance: 'Refresh' }, { status: 409 }); };
   try {
-    assert.equal((await realFetch(base + '/api/admin/feedback/target/preflight')).status, 401);
-    assert.equal((await realFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST' })).status, 401);
-    assert.equal((await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST' })).status, 401);
+    assert.equal((await clientFetch(base + '/api/admin/feedback/target/preflight')).status, 401);
+    assert.equal((await clientFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST' })).status, 401);
+    assert.equal((await clientFetch(base + '/api/admin/feedback/target/process', { method: 'POST' })).status, 401);
     assert.equal(calls.length, 0);
     const headers = { Authorization: 'Bearer synthetic.admin', 'Content-Type': 'application/json' };
-    await realFetch(base + '/api/admin/feedback/target/preflight', { headers });
-    const noApproval = await realFetch(base + '/api/admin/feedback/target/process', { method: 'POST', headers, body: JSON.stringify({review_intent_hash:'current'}) });
+    await clientFetch(base + '/api/admin/feedback/target/preflight', { headers });
+    const noApproval = await clientFetch(base + '/api/admin/feedback/target/process', { method: 'POST', headers, body: JSON.stringify({review_intent_hash:'current'}) });
     assert.equal(noApproval.status,422);
-    const processed = await realFetch(base + '/api/admin/feedback/target/process', { method:'POST', headers, body:JSON.stringify({mode:'delete_all',proposal_id:'attacker',approve:true,review_intent_hash:'current',evaluation_id:'forged',review:{visual_reviewed:true},actor_user_id:'attacker'}) });
+    const processed = await clientFetch(base + '/api/admin/feedback/target/process', { method:'POST', headers, body:JSON.stringify({mode:'delete_all',proposal_id:'attacker',approve:true,review_intent_hash:'current',evaluation_id:'forged',review:{visual_reviewed:true},actor_user_id:'attacker'}) });
     assert.equal(processed.status,409);assert.equal(processed.headers.get('cache-control'),'no-store');
     assert.deepEqual(calls[1],{mode:'process_review',proposal_id:'target',approve:true,review_intent_hash:'current'});
-    const response = await realFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all', proposal_id: 'attacker', candidate_hash: 'current' }) });
+    const response = await clientFetch(base + '/api/admin/feedback/target/resolve-covered', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all', proposal_id: 'attacker', candidate_hash: 'current' }) });
     assert.equal(response.status, 409); assert.equal((await response.json()).retry_guidance, 'Refresh');
-    await realFetch(base + '/api/admin/governance/governance_list', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
-    await realFetch(base + '/api/admin/branch-guides/upsert', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
+    await clientFetch(base + '/api/admin/governance/governance_list', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
+    await clientFetch(base + '/api/admin/branch-guides/upsert', { method: 'POST', headers, body: JSON.stringify({ mode: 'delete_all' }) });
     assert.deepEqual(calls.map(x => x.mode), ['review_preflight', 'process_review', 'resolve_covered', 'governance_list', 'branch_guide_upsert']);
     assert.equal(calls[2].proposal_id, 'target');
   } finally { globalThis.fetch = realFetch; if (oldUrl === undefined) delete process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL; else process.env.CREATIVE_DNA_ADMIN_UPSTREAM_URL = oldUrl; await new Promise<void>(r => server.close(() => r())); }

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {withPinnedAgentCompilerRelease} from '../fixtures/pinned-agent-compiler.fixture.mjs';
 const {default:pg}=await import(process.env.UID_TEST_PG_MODULE || 'pg');
 const host=process.env.PGHOST||'localhost';
 if(!['localhost','127.0.0.1','::1'].includes(host)||process.env.DATABASE_URL) throw new Error('Disposable localhost PG* only');
@@ -19,7 +20,8 @@ const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='
 const clone=v=>JSON.parse(JSON.stringify(v));
 const complete=(claim,review)=>call('uid_review_complete',[claim.request_id,owner,'dot',claim.lease_token,claim.lease_version,claim.candidate_hash,review]);
 const compile=(claim,review)=>{
- const result=spawnSync(process.execPath,['scripts/compile-agent-review-plan.mjs'],{cwd:root,input:JSON.stringify({claim,review}),encoding:'utf8',maxBuffer:8_000_000});
+ const result=withPinnedAgentCompilerRelease(claim.snapshot.compiler_capability.source_manifest,release=>
+  spawnSync(process.execPath,['scripts/compile-agent-review-plan.mjs'],{cwd:release,input:JSON.stringify({claim,review}),encoding:'utf8',maxBuffer:8_000_000}));
  const output=JSON.parse(result.stdout); assert.equal(result.status,0,JSON.stringify(output)); assert.equal(output.status,'COMPILED'); return output;
 };
 try{
