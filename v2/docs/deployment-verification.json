@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-11-28T02:28:14.435252+00:00",
+  "testedApplicationCommit": "93c5038e6656e1a73c401be992ee22273a76771a",
+  "deployId": "dep-dc53n9k9v7es7392orvg",
+  "status": "PASS_MECHANICAL_ENDPOINT_HANDOVER",
+  "v2Tests": {
+    "total": 79,
+    "passed": 79,
+    "failed": 0,
+    "lint": "PASS",
+    "build": "PASS",
+    "logSha256": {
+      "v2-final-tests.log": "66748f8b172756bead74362053cdec05627baddfa1c1cd1aab3bcf11f9e15f75",
+      "v2-final-lint.log": "2cec8dd9d53ef6523cc32e84eb68fae0d2f5a3b6e13dffd4ec5062bf06c64532",
+      "v2-final-build.log": "3364695cf2de705badd0b5d2f39d10cdec1df4401c0a2ebc043d2ab5cd237709"
+    }
+  },
+  "publicMcpSmoke": "PASS",
+  "postRedeployExistingJobAndBytes": "PASS",
+  "publicSchemaBytes": 18694,
+  "fileChangesAllUnderV2": true,
+  "mainRemoteCommit": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+  "productionRenderVerification": {
+    "observedAt": "2026-11-28T02:27:40.736307+00:00",
+    "method": "Read-only authenticated Render Dashboard Settings last successfully deployed commit links",
+    "existingServices": [
+      {
+        "serviceId": "srv-db4iti2j9qps73cnf6qg",
+        "name": "uid-brands-gateway-preview",
+        "deployedCommit": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+        "unchangedFromPreflight": true
+      },
+      {
+        "serviceId": "srv-dc4klirl550s739mqjg0",
+        "name": "uid-brands-lean-v2",
+        "deployedCommit": "8367c7cf45c330bdd044ba0f83b3af2b483228e5",
+        "unchangedFromPreflight": true
+      },
+      {
+        "serviceId": "srv-dbpdhmgm7kps73akequg",
+        "name": "uid-brands-studio-webapp",
+        "deployedCommit": "d596ed89756586cb5d6073c5578bcfdfb3a016b1",
+        "unchangedFromPreflight": true
+      }
+    ],
+    "productionMutations": false,
+    "newServiceId": "srv-dc53i6vf3r2c73dd34ig",
+    "newDeploymentId": "dep-dc53n9k9v7es7392orvg",
+    "newDeployedCommit": "93c5038e6656e1a73c401be992ee22273a76771a"
+  },
+  "gptActualConnection": "NOT_VERIFIED_WORKSPACE_403",
+  "creativeEo": "NOT_RUN",
+  "actualModelTokenSavings": null,
+  "optionalOAuthHookInstalled": false,
+  "productionWrites": false
+}

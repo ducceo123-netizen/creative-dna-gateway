@@ -56,11 +56,28 @@
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
   "productionWritesPerformed": false,
-  "deployId": "dep-dc53i7ff3r2c73dd3720",
-  "sourceCommit": "6eb6dda4383391045d073e069d1b1f6b08c54557",
+  "deployId": "dep-dc53n9k9v7es7392orvg",
+  "sourceCommit": "93c5038e6656e1a73c401be992ee22273a76771a",
   "createdAt": "2026-11-28T09:14:53+07:00",
   "credentialUploadAuthorized": true,
-  "liveAt": "2026-11-28T09:17:17+07:00",
+  "liveAt": "2026-11-28T09:27:01+07:00",
   "publicMcpSmoke": "PASS",
-  "gptConnectionBlocker": "WORKSPACE_MCP_PLUGIN_PERMISSION_DENIED_403"
+  "gptConnectionBlocker": "WORKSPACE_MCP_PLUGIN_PERMISSION_DENIED_403",
+  "deploymentHistory": [
+    {
+      "deployId": "dep-dc53i7ff3r2c73dd3720",
+      "sourceCommit": "6eb6dda4383391045d073e069d1b1f6b08c54557",
+      "liveAt": "2026-11-28T09:17:17+07:00"
+    }
+  ],
+  "finalDeployStartedAt": "2026-11-28T09:25:42+07:00",
+  "finalDeployDurationSeconds": 79,
+  "finalDeployStatus": "Deploy succeeded|Live",
+  "linuxContainerBuild": "PASS",
+  "evidence": "Authenticated Render Dashboard deploy detail plus separate public MCP smoke reports",
+  "postRedeployRecovery": "PASS",
+  "standaloneTestKitLiveSmoke": "PASS",
+  "productionRenderSourcePins": "UNCHANGED_VERIFIED_2026-11-28",
+  "optionalOAuth": "DISABLED_NOT_ACTIVATED",
+  "gptHandoverDecision": "Endpoint and reusable test kit first"
 }
