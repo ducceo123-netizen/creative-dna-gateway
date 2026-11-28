@@ -1,0 +1,54 @@
+{
+  "observedAt": "2026-11-28T02:47:52.527046+00:00",
+  "ownerRequest": "Make this V2 test endpoint public/no-token for immediate testing",
+  "deployedCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+  "serviceId": "srv-dc53i6vf3r2c73dd34ig",
+  "deployId": "dep-dc540l97lnhs73ai9ls0",
+  "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+  "authentication": "none",
+  "publicSandbox": true,
+  "publicReviewIdentityVerified": false,
+  "publicDataPolicy": "Shared anonymous test namespace; anyone knowing a public job ID can access its public test data. Existing private bearer owners remain separate.",
+  "health": {
+    "status": 200,
+    "baseline": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+    "authRequired": false,
+    "publicSandbox": true,
+    "authMode": "public-test"
+  },
+  "localChecks": {
+    "v2Tests": 86,
+    "v2Passed": 86,
+    "offlineKitTests": 5,
+    "offlineKitPassed": 5,
+    "lint": "PASS",
+    "build": "PASS"
+  },
+  "livePublicMcp": {
+    "status": "PASS",
+    "tools": 17,
+    "schemaBytes": 18729,
+    "canonicalSteps": 23,
+    "artifactBytes": 106887,
+    "artifactSha256": "dd25eab4bb911529ddd74958054eaabb73325a7a1145d8f03f21ec16a9739053",
+    "anonymousArtifactRead": 200
+  },
+  "oldPrivateOwnerIsolation": {
+    "status": "PASS",
+    "checks": 9,
+    "validBearerStillWorks": true
+  },
+  "proofSha256": {
+    "v2-public-access-live-smoke.json": "06719e9b46da2919a507910c55380ca6b42eaf433af199a9ed87c426bb9881e9",
+    "v2-public-access-isolation.json": "7bb391e82f41f18c6c637e12ec58ec1694147e0ca08589eb84e7d371b8574ff3",
+    "v2-public-access-tests.log": "c8806f2693d4476b325a82d65f7bc0fa580561aca957e67c3505b21880bd3b77",
+    "v2-public-kit-tests.log": "d5c97a197f4a80b27ea06f9bcb9bb0d7c8b6a1795e62aa2a56d9a75d39bf860b",
+    "v2-public-access-lint.log": "2cec8dd9d53ef6523cc32e84eb68fae0d2f5a3b6e13dffd4ec5062bf06c64532",
+    "v2-public-access-build.log": "bf99eb53fd68f509b1c3fd2228fa657a9da59e17471cc8263eccf18a7c1ba4df"
+  },
+  "productionWrites": false,
+  "mainUnchanged": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+  "actualGptConnectionVerified": false,
+  "creativeEoVerified": false,
+  "rollback": "On only the new V2 service, set V2_AUTH_MODE=test-token and manually redeploy with the existing private principal hashes. Preserve the database; public jobs stay in their separate namespace. Never alter production."
+}

@@ -1,11 +1,10 @@
 {
-  "status": "BLOCKED_WORKSPACE_PERMISSION",
+  "status": "NOT_RETESTED_AFTER_PUBLIC_MODE_REQUEST",
   "pluginCreated": false,
   "attemptedAt": "2026-11-28",
   "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
   "authentication": {
-    "type": "api_key",
-    "headerScheme": "bearer",
+    "type": "none",
     "credentialsPackaged": false
   },
   "archive": "uid-brands-v2-test-plugin.zip",
@@ -15,7 +14,14 @@
     "message": "You do not have permission to use plugins with MCPs. Contact your workspace admin for access",
     "retryable": false
   },
-  "nextStep": "Workspace admin grants MCP plugin access; retry creation once permission changes. Do not bypass the workspace policy or alter the production plugin.",
+  "nextStep": "Connect the public V2 URL using No authentication. Prior workspace permission403 is separate from server authentication; no new plugin creation attempted.",
   "oauthRequiredForBearerConnection": false,
-  "ownerDecision": "Hand over verified endpoint and test kit first; do not retry plugin creation until permission changes."
+  "ownerDecision": "Owner explicitly requested public/no-token V2 testing. Public sandbox is separate from existing private bearer jobs.",
+  "previousAttemptAuthentication": {
+    "type": "api_key",
+    "headerScheme": "bearer",
+    "credentialsPackaged": false
+  },
+  "endpointVerification": "PASS_PUBLIC_NO_AUTH_MCP",
+  "publicNoAuthVerifiedAt": "2026-11-28T02:47:13.524Z"
 }

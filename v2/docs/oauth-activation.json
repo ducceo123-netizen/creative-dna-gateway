@@ -206,12 +206,12 @@
     "chatgptControls": "https://learn.chatgpt.com/docs/enterprise/apps-and-connectors"
   },
   "primaryGptConnection": {
-    "authentication": "Independent V2 opaque bearer via native MCP api_key authentication",
+    "authentication": "Owner-requested public test sandbox; native MCP auth none",
     "supabaseUserOrOAuthCallbackRequired": false,
-    "note": "OAuth identity/callback is not the current GPT connection blocker; enabling optional OAuth would not resolve workspace authorization.",
-    "currentStatus": "BLOCKED_WORKSPACE_PERMISSION",
+    "note": "Public/no-token access is a separate anonymous test namespace. Existing private bearer jobs remain protected. OAuth is optional and disabled.",
+    "currentStatus": "PUBLIC_NO_AUTH_MCP_VERIFIED_GPT_UNVERIFIED",
     "observedBlock": "Private MCP plugin creation returned HTTP403: workspace permission denied. No plugin created. No alternate creation path attempted.",
-    "nextAction": "Owner selected endpoint and test-kit handover first. Actual GPT connection remains pending workspace MCP permission; do not retry until permission changes."
+    "nextAction": "Owner can connect the public V2 URL with No authentication. Actual GPT connection remains unverified; OAuth is not required."
   },
   "runnableImplementation": {
     "migration": "v2/migrations/002_optional_oauth_hook.sql",

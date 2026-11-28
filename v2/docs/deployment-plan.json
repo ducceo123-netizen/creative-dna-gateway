@@ -1,5 +1,5 @@
 {
-  "status": "LIVE_BEARER_MCP_VERIFIED",
+  "status": "LIVE_PUBLIC_NO_AUTH_MCP_VERIFIED",
   "repository": "https://github.com/ducceo123-netizen/creative-dna-gateway",
   "branch": "experiment/uid-brands-architecture-v2",
   "serviceName": "uid-brands-architecture-v2-test",
@@ -56,28 +56,52 @@
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
   "productionWritesPerformed": false,
-  "deployId": "dep-dc53n9k9v7es7392orvg",
-  "sourceCommit": "93c5038e6656e1a73c401be992ee22273a76771a",
+  "deployId": "dep-dc540l97lnhs73ai9ls0",
+  "sourceCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
   "createdAt": "2026-11-28T09:14:53+07:00",
   "credentialUploadAuthorized": true,
-  "liveAt": "2026-11-28T09:27:01+07:00",
+  "liveAt": "2026-11-28T09:46:47+07:00",
   "publicMcpSmoke": "PASS",
-  "gptConnectionBlocker": "WORKSPACE_MCP_PLUGIN_PERMISSION_DENIED_403",
+  "gptConnectionBlocker": "ACTUAL_GPT_CONNECTION_NOT_RETESTED_PREVIOUS_WORKSPACE_403",
   "deploymentHistory": [
     {
       "deployId": "dep-dc53i7ff3r2c73dd3720",
       "sourceCommit": "6eb6dda4383391045d073e069d1b1f6b08c54557",
       "liveAt": "2026-11-28T09:17:17+07:00"
+    },
+    {
+      "deployId": "dep-dc53n9k9v7es7392orvg",
+      "sourceCommit": "93c5038e6656e1a73c401be992ee22273a76771a",
+      "liveAt": "2026-11-28T09:27:01+07:00",
+      "authentication": "test-token"
+    },
+    {
+      "deployId": "dep-dc53uuh7lnhs73ai3jt0",
+      "sourceCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+      "liveAt": "2026-11-28T09:43:31+07:00",
+      "authentication": "test-token",
+      "publicAccessVerification": "FAILED_CONFIGURATION_RETAINED_BEARER_MODE",
+      "resolution": "Saved public-test in the visible environment editor and redeployed."
     }
   ],
-  "finalDeployStartedAt": "2026-11-28T09:25:42+07:00",
-  "finalDeployDurationSeconds": 79,
-  "finalDeployStatus": "Deploy succeeded|Live",
+  "finalDeployStartedAt": "2026-11-28T09:45:41+07:00",
+  "finalDeployDurationSeconds": 66,
+  "finalDeployStatus": "Deploy succeeded",
   "linuxContainerBuild": "PASS",
   "evidence": "Authenticated Render Dashboard deploy detail plus separate public MCP smoke reports",
   "postRedeployRecovery": "PASS",
-  "standaloneTestKitLiveSmoke": "PASS",
+  "standaloneTestKitLiveSmoke": "PASS_PUBLIC_NO_TOKEN",
   "productionRenderSourcePins": "UNCHANGED_VERIFIED_2026-11-28",
   "optionalOAuth": "DISABLED_NOT_ACTIVATED",
-  "gptHandoverDecision": "Endpoint and reusable test kit first"
+  "gptHandoverDecision": "Owner requested public/no-token endpoint for immediate testing",
+  "authMode": "public-test",
+  "publicSandbox": true,
+  "authRequired": false,
+  "publicAccessRequestedByOwner": true,
+  "publicSandboxOwner": "public-v2-sandbox",
+  "publicActorIdentityVerified": false,
+  "existingPrivateOwnersProtected": true,
+  "publicAccessSmoke": "PASS",
+  "existingPrivateOwnerIsolation": "PASS_LIVE",
+  "publicNoAuthVerifiedAt": "2026-11-28T02:47:13.524Z"
 }
