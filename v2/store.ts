@@ -8,6 +8,13 @@ import { MAX_ZIP_ARCHIVE_BYTES } from './delivery-zip.ts';
 export type StoredJob = Record<string, any> & { jobId: string; owner: string; storageRevision: number; createdAt: string; updatedAt: string; expiresAt: string };
 export type OperationKey = { key: string; requestHash: string };
 export type ArtifactReceipt = { sha256: string; byteLength: number; mime: string };
+export type StoredArtifact = ArtifactReceipt & { bytes: Buffer };
+/** Bounded input; duplicates are returned once in their first occurrence order. */
+export function artifactBatchHashes(hashes: string[]): string[] {
+  if (!Array.isArray(hashes) || hashes.length > 24) throw new V2Error('ASSET_BATCH_LIMIT', 'Request at most 24 artifact hashes.', 413);
+  if (hashes.some(value => typeof value !== 'string' || !/^[a-f0-9]{64}$/.test(value))) throw new V2Error('ASSET_HASH', 'Invalid artifact hash.');
+  return [...new Set(hashes)];
+}
 /** Isolated durable local storage. SQLite transactions port V1 CAS/immutable receipt semantics.
  * No production DB driver, URL, token or network method exists here. Use a persistent local volume.
  */
@@ -37,8 +44,8 @@ export class SqliteStore {
       CREATE TABLE IF NOT EXISTS leases(job TEXT PRIMARY KEY,holder TEXT NOT NULL,expires INTEGER NOT NULL,fence INTEGER NOT NULL,FOREIGN KEY(job) REFERENCES jobs(id) ON DELETE CASCADE);
       CREATE TABLE IF NOT EXISTS telemetry(id INTEGER PRIMARY KEY,job TEXT NOT NULL,event TEXT NOT NULL,created INTEGER NOT NULL,FOREIGN KEY(job) REFERENCES jobs(id) ON DELETE CASCADE);`);
   }
-  private transaction<T>(run: () => T): T {
-    this.db.exec('BEGIN IMMEDIATE');
+  private transaction<T>(run: () => T, write = true): T {
+    this.db.exec(write ? 'BEGIN IMMEDIATE' : 'BEGIN');
     try { const result = run(); this.db.exec('COMMIT'); return result; }
     catch (e) { this.db.exec('ROLLBACK'); throw e; }
   }
@@ -70,6 +77,11 @@ export class SqliteStore {
     if (!row || Number(row.expires) <= Date.now()) throw new V2Error('NOT_FOUND', 'Job not found or expired.', 404);
     return JSON.parse(String(row.document));
   }
+  private assertJob(owner: string, id: string) {
+    boundedId(owner, 'principal'); boundedId(id, 'job');
+    const row = this.db.prepare('SELECT expires FROM jobs WHERE id=? AND owner=?').get(id, owner);
+    if (!row || Number(row.expires) <= Date.now()) throw new V2Error('NOT_FOUND', 'Job not found or expired.', 404);
+  }
   update(owner: string, id: string, expectedRevision: number, mutation: (job: StoredJob) => Record<string, any>, operation?: OperationKey): StoredJob {
     return this.transaction(() => {
       const current = this.read(owner, id);
@@ -96,7 +108,7 @@ export class SqliteStore {
     boundedId(holder);
     if (!Number.isSafeInteger(ttlMs) || ttlMs < 100 || ttlMs > 120_000) throw new V2Error('LEASE_LIMIT', 'Lease duration exceeds limit.');
     return this.transaction(() => {
-      this.read(owner, id);
+      this.assertJob(owner, id);
       const row = this.db.prepare('SELECT holder,expires,fence FROM leases WHERE job=?').get(id);
       if (row && Number(row.expires) > Date.now()) throw new V2Error('LEASE_BUSY', 'A task operation is already running.', 409);
       const lease = { holder, fence: Number(row?.fence ?? 0) + 1, expires: Date.now() + ttlMs };
@@ -105,12 +117,12 @@ export class SqliteStore {
     });
   }
   assertLease(owner: string, id: string, lease: { holder: string; fence: number }) {
-    this.read(owner, id);
+    this.assertJob(owner, id);
     const row = this.db.prepare('SELECT * FROM leases WHERE job=? AND holder=? AND fence=?').get(id, lease.holder, lease.fence);
     if (!row || Number(row.expires) <= Date.now()) throw new V2Error('LEASE_EXPIRED', 'Task lease expired; discard this result.', 409);
   }
   releaseLease(owner: string, id: string, lease: { holder: string; fence: number }) {
-    this.read(owner, id);
+    this.assertJob(owner, id);
     this.db.prepare('UPDATE leases SET expires=0 WHERE job=? AND holder=? AND fence=?').run(id, lease.holder, lease.fence);
   }
   putArtifact(owner: string, id: string, bytes: Buffer, mime: string): ArtifactReceipt {
@@ -118,38 +130,45 @@ export class SqliteStore {
     if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > limit) throw new V2Error('ASSET_SIZE_LIMIT', 'Artifact exceeds its format-specific byte limit.', 413);
     if (!['image/png', 'image/webp', 'image/jpeg', 'text/html', 'text/css', 'application/zip', 'application/json'].includes(mime)) throw new V2Error('ASSET_TYPE', 'Unsupported artifact type.');
     return this.transaction(() => {
-      this.read(owner, id); const sha256 = hash(bytes);
+      this.assertJob(owner, id); const sha256 = hash(bytes);
       const old = this.db.prepare('SELECT mime FROM artifacts WHERE job=? AND hash=?').get(id, sha256);
       if (old && old.mime !== mime) throw new V2Error('ASSET_TYPE', 'Existing bytes have a different type.');
       if (!old) { this.checkCapacity(bytes.length); this.db.prepare('INSERT INTO artifacts VALUES(?,?,?,?)').run(id, sha256, mime, bytes); }
       return { sha256, byteLength: bytes.length, mime };
     });
   }
-  getArtifact(owner: string, id: string, sha256: string): Buffer {
-    this.read(owner, id);
-    if (!/^[a-f0-9]{64}$/.test(sha256)) throw new V2Error('ASSET_HASH', 'Invalid artifact hash.');
-    const row = this.db.prepare('SELECT bytes FROM artifacts WHERE job=? AND hash=?').get(id, sha256);
-    if (!row) throw new V2Error('NOT_FOUND', 'Artifact not found.', 404);
-    const bytes = Buffer.from(row.bytes as Uint8Array);
-    if (hash(bytes) !== sha256) throw new V2Error('ASSET_CORRUPT', 'Artifact bytes failed integrity validation.', 409);
-    return bytes;
+  readArtifacts(owner: string, id: string, hashes: string[]): StoredArtifact[] {
+    return this.transaction(() => {
+      this.assertJob(owner, id);
+      const requested = artifactBatchHashes(hashes);
+      if (!requested.length) return [];
+      const placeholders = requested.map(() => '?').join(',');
+      const rows = this.db.prepare(`SELECT a.hash,a.bytes,a.mime FROM artifacts a JOIN jobs j ON j.id=a.job WHERE a.job=? AND a.hash IN (${placeholders}) AND j.owner=? AND j.expires>?`).all(id, ...requested, owner, Date.now());
+      const found = new Map(rows.map(row => [String(row.hash), row]));
+      if (requested.some(sha256 => !found.has(sha256))) throw new V2Error('NOT_FOUND', 'Artifact not found.', 404);
+      return requested.map(sha256 => {
+        const row = found.get(sha256)!, bytes = Buffer.from(row.bytes as Uint8Array);
+        if (hash(bytes) !== sha256) throw new V2Error('ASSET_CORRUPT', 'Artifact bytes failed integrity validation.', 409);
+        return { sha256, byteLength: bytes.length, mime: String(row.mime), bytes };
+      });
+    }, false);
   }
+  readArtifact(owner: string, id: string, sha256: string): StoredArtifact { return this.readArtifacts(owner, id, [sha256])[0]; }
+  getArtifact(owner: string, id: string, sha256: string): Buffer { return this.readArtifact(owner, id, sha256).bytes; }
   artifactInfo(owner: string, id: string, sha256: string): ArtifactReceipt {
-    // Reuse the owner/job lookup and integrity check; client-supplied MIME is never trusted.
-    const bytes = this.getArtifact(owner, id, sha256);
-    const row = this.db.prepare('SELECT mime FROM artifacts WHERE job=? AND hash=?').get(id, sha256)!;
-    return { sha256, byteLength: bytes.length, mime: String(row.mime) };
+    const { bytes: _bytes, ...receipt } = this.readArtifact(owner, id, sha256);
+    return receipt;
   }
   recordTelemetry(owner: string, id: string, event: Record<string, unknown>) {
     this.transaction(() => {
-      this.read(owner, id);
+      this.assertJob(owner, id);
       const allow = ['operation', 'durationMs', 'requestBytes', 'responseBytes', 'inputTokens', 'outputTokens', 'reasoningTokens', 'cachedTokens', 'model', 'effort', 'provider', 'measurementSource', 'cost', 'fallback', 'imageCalls', 'completion', 'eoVerdict'];
       const cleaned = Object.fromEntries(Object.entries(event).filter(([key]) => allow.includes(key)));
       const text = JSON.stringify(safeJson(cleaned, 4096)); this.checkCapacity(Buffer.byteLength(text));
       this.db.prepare('INSERT INTO telemetry(job,event,created) VALUES(?,?,?)').run(id, text, Date.now());
     });
   }
-  telemetry(owner: string, id: string): unknown[] { this.read(owner, id); return this.db.prepare('SELECT event FROM telemetry WHERE job=? ORDER BY id').all(id).map(row => JSON.parse(String(row.event))); }
+  telemetry(owner: string, id: string): unknown[] { this.assertJob(owner, id); return this.db.prepare('SELECT event FROM telemetry WHERE job=? ORDER BY id').all(id).map(row => JSON.parse(String(row.event))); }
   pruneExpired(): number { return this.transaction(() => Number(this.db.prepare('DELETE FROM jobs WHERE expires<=?').run(Date.now()).changes)); }
   close() { this.db.close(); }
 }

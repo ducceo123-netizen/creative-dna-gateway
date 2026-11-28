@@ -35,6 +35,10 @@ async function main(){
   assert.deepEqual({...context,receipt:{...receipt,requiredRuleIds:context.coverage.requiredRuleIds,ruleHashes:context.coverage.ruleHashes}},fullStage);
   assert.equal(auditState.context.loaded,true);assert.equal(auditState.context.bundleHash,context.receipt.bundleHash);
   checks.optimization={sameResponseCoverageRoundtrip:true,repeatedContextNoWrite:true,compactStageBytes:Buffer.byteLength(JSON.stringify(context)),fullStageBytes:Buffer.byteLength(JSON.stringify(fullStage)),fullStateFallback:true,allRulesVisible:true};
+  const paths=['/resolved/brand','job:plan','job:references','job:inspections'];
+  const batch=await tool('onepage_get_rule_or_evidence',{jobId:job.jobId,paths});
+  assert.deepEqual(batch.entries,[{path:paths[0],value:'pawfecthouse'},{path:paths[1],value:null},{path:paths[2],value:[]},{path:paths[3],value:[]}]);
+  checks.optimization.exactLookupBatch={lookups:paths.length,mcpCalls:1,exactJsonShapes:true};
   await rpc('initialize',{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'uid-v2-test-kit-reconnect',version:'1'}});const resumed=await tool('onepage_start',start);assert.equal(resumed.jobId,job.jobId);assert.equal(resumed.canonicalHash,job.canonicalHash);const state=await tool('onepage_get_state',{jobId:job.jobId});assert.equal(state.jobId,job.jobId);checks.resume={sameJob:true,state:state.state,storageRevision:state.storageRevision};
   const bytes=readFileSync(new URL('./fixtures/synthetic-transport.png',import.meta.url)),sha=sha256(bytes);
   const upload=await tool('onepage_upload_artifact',{jobId:job.jobId,mime:'image/png',base64:bytes.toString('base64')});assert.equal(upload.sha256,sha);assert.equal(upload.byteLength,bytes.length);

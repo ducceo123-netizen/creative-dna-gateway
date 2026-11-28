@@ -33,7 +33,7 @@ function safeError(error:unknown) {
 export function createV2Server(principal:Principal,deps:AppDependencies) {
   const o=deps.orchestrator;
   const publicSandbox=principal.auth==='public-test';
-  const server=new McpServer({name:'uid-brands-architecture-v2-test',version:'0.2.0'},{instructions:'Isolated experimental Onepage backend. Load full pinned stage rules before creative work. Reuse them only while still available in your context and state.context identity is unchanged; reload after context loss, reconnect or identity change. State responses are compact; onepage_get_state detail=full restores audit fields. Context receipt.coverageRef points to complete coverage in the same response. Preserve research and actual visual inspection. Status never proves pixels inspected. Only explicit user review or package authorization permits approvals. No production writes, publishing or training tools exist.'+(publicSandbox?' Public test sandbox: no authentication. Jobs and artifacts in this namespace are shared test data, not private user data. Use a fresh unique idempotency key per task. Review records identify an anonymous test actor, not a verified person.':'')});
+  const server=new McpServer({name:'uid-brands-architecture-v2-test',version:'0.3.0'},{instructions:'Isolated experimental Onepage backend. Load full pinned stage rules before creative work. Reuse them only while still available in your context and state.context identity is unchanged; reload after context loss, reconnect or identity change. Batch independent exact lookups with onepage_get_rule_or_evidence paths. State responses are compact; onepage_get_state detail=full restores audit fields. Context receipt.coverageRef points to complete coverage in the same response. Preserve research and actual visual inspection. Status never proves pixels inspected. Only explicit user review or package authorization permits approvals. No production writes, publishing or training tools exist.'+(publicSandbox?' Public test sandbox: no authentication. Jobs and artifacts in this namespace are shared test data, not private user data. Use a fresh unique idempotency key per task. Review records identify an anonymous test actor, not a verified person.':'')});
   function register(name:string,description:string,schema:Record<string,z.ZodType<any,any>>,readOnly:boolean,run:(args:any)=>unknown|Promise<unknown>,reviewer=false) {
     server.registerTool(name,{description,inputSchema:schema,annotations:{readOnlyHint:readOnly,destructiveHint:false,openWorldHint:name==='onepage_start'||name==='onepage_submit_research'}},async (args:any)=>{
       const started=performance.now();
@@ -51,7 +51,7 @@ export function createV2Server(principal:Principal,deps:AppDependencies) {
   register('onepage_start','Create or resume an isolated Onepage job by idempotency key. Declare actual host capabilities. Public-source canonical read only.',StartSchema.shape,false,a=>o.start(principal.owner,a));
   register('onepage_get_state','Read current state, blockers, exact asset hashes and context identity. detail=full includes all audit lists.',{...job,detail},true,a=>o.state(principal.owner,a.jobId));
   register('onepage_get_stage_context','Load all pinned stage rules. Unchanged coverage is not rewritten. Compact receipt references coverage in this response; detail=full restores duplicate receipt fields.',{...job,detail},false,a=>o.getStageContext(principal.owner,a.jobId));
-  register('onepage_get_rule_or_evidence','Retrieve exact pinned rule, JSON-pointer path or evidence:<sourceId> without a new compile.',{...job,path:z.string().min(1).max(2048)},true,a=>o.getRuleOrEvidence(principal.owner,a.jobId,a.path));
+  register('onepage_get_rule_or_evidence','Retrieve exact pinned rules/evidence without recompiling. Use path for one lookup or paths for 1–12 independent lookups from the same job snapshot; exactly one selector required.',{...job,path:z.string().min(1).max(2048).optional(),paths:z.array(z.string().min(1).max(2048)).min(1).max(12).optional()},true,async a=>{if((a.path!==undefined)===(a.paths!==undefined))throw new V2Error('LOOKUP_SELECTOR_REQUIRED','Supply exactly one of path or paths.');return a.paths?safeJson(await o.getRulesOrEvidence(principal.owner,a.jobId,a.paths),2_000_000):o.getRuleOrEvidence(principal.owner,a.jobId,a.path);});
   register('onepage_get_full_context','Lossless full-context fallback from the same pinned revision. Large response; use only when needed.',job,true,a=>o.getFullContext(principal.owner,a.jobId));
   register('onepage_submit_research','Submit public-source research and actual uploaded inspection evidence. Recompile read-only and atomically pin a revision; stale writes rejected.',{...change,...ResearchSchema.shape},false,a=>{const {jobId,revision,...data}=a;return o.submitResearch(principal.owner,jobId,revision,data);});
   register('onepage_submit_plan','Validate exact copy, evidence-based GTK/FAQ decision and all required product/artwork allocations.',{...change,...PlanSchema.shape},false,a=>{const {jobId,revision,...data}=a;return o.submitPlan(principal.owner,jobId,revision,data);});
@@ -71,16 +71,14 @@ export function createV2Server(principal:Principal,deps:AppDependencies) {
   });
   server.registerTool('onepage_read_artifact',{description:'Retrieve actual job image bytes for visual inspection or a job-scoped artifact download reference. Never treat retrieval alone as inspection.',inputSchema:{...job,sha256:sha},annotations:{readOnlyHint:true,openWorldHint:false}},async a=>{
     try{
-      const info=await deps.store.artifactInfo(principal.owner,a.jobId,a.sha256);
-      const bytes=await deps.store.getArtifact(principal.owner,a.jobId,a.sha256);
+      const {bytes,...info}=await deps.store.readArtifact(principal.owner,a.jobId,a.sha256);
       if(info.mime.startsWith('image/')&&bytes.length<=8*1024*1024)return {content:[{type:'image' as const,data:bytes.toString('base64'),mimeType:info.mime}],isError:false};
       return {content:[{type:'resource_link' as const,uri:`uid-v2://artifacts/${a.jobId}/${a.sha256}`,name:a.sha256+'.'+artifactExtension(info.mime),mimeType:info.mime,size:bytes.length,description:'Actual current artifact bytes via MCP resources/read.'},{type:'text' as const,text:JSON.stringify({sha256:a.sha256,byteLength:bytes.length,downloadUrl:`${deps.origin}/v2/jobs/${a.jobId}/artifacts/${a.sha256}`,authentication:publicSandbox?'No authentication required for this public sandbox artifact.':'Same V2 bearer required; use MCP resources/read if the host cannot authenticate downloads. This is not a public share link.'})}],isError:false};
     }catch(error){return {content:[{type:'text' as const,text:JSON.stringify({error:safeError(error)})}],isError:true};}
   });
   server.registerResource('onepage-artifact',new ResourceTemplate('uid-v2://artifacts/{jobId}/{sha256}',{list:undefined}),{description:'Owner-scoped actual artifact bytes, including canonical ZIP and HTML preview bundle.'},async(uri,variables)=>{
     const jobId=id.parse(variables.jobId),digest=sha.parse(variables.sha256);
-    const info=await deps.store.artifactInfo(principal.owner,jobId,digest);
-    const bytes=await deps.store.getArtifact(principal.owner,jobId,digest);
+    const {bytes,...info}=await deps.store.readArtifact(principal.owner,jobId,digest);
     return {contents:[{uri:uri.href,mimeType:info.mime,blob:bytes.toString('base64')}]};
   });
   return server;
@@ -106,7 +104,7 @@ export function createV2App(deps:AppDependencies) {
     try{await deps.store.read(res.locals.principal.owner,String(req.params.jobId));if(!Buffer.isBuffer(req.body))throw new V2Error('ASSET_TYPE','Only actual PNG/JPEG/WebP bytes are accepted.');const mime=req.get('content-type')!.split(';')[0];const image=await preflightAsset(req.body);if('image/'+image.format!==mime)throw new V2Error('ASSET_TYPE','Declared type does not match decoded image bytes.');const r=await deps.store.putArtifact(res.locals.principal.owner,String(req.params.jobId),req.body,mime);res.status(201).json(r);}catch(error){const e=safeError(error);res.status(e.status).json({error:e.code});}
   });
   app.get('/v2/jobs/:jobId/artifacts/:sha256',async(req,res)=>{
-    try{const info=await deps.store.artifactInfo(res.locals.principal.owner,String(req.params.jobId),String(req.params.sha256));const bytes=await deps.store.getArtifact(res.locals.principal.owner,String(req.params.jobId),String(req.params.sha256));res.set({'Content-Type':info.mime,'Content-Disposition':`attachment; filename="${req.params.sha256}.${artifactExtension(info.mime)}"`,'Content-Security-Policy':"default-src 'none'; sandbox"});res.send(bytes);}catch(error){const e=safeError(error);res.status(e.status).json({error:e.code});}
+    try{const {bytes,...info}=await deps.store.readArtifact(res.locals.principal.owner,String(req.params.jobId),String(req.params.sha256));res.set({'Content-Type':info.mime,'Content-Disposition':`attachment; filename="${req.params.sha256}.${artifactExtension(info.mime)}"`,'Content-Security-Policy':"default-src 'none'; sandbox"});res.send(bytes);}catch(error){const e=safeError(error);res.status(e.status).json({error:e.code});}
   });
   app.use(express.json({limit:'2mb',strict:true}));
   app.all('/api/mcp',async(req:Request,res:Response)=>{
@@ -129,7 +127,7 @@ export async function main(){
     store=new PgStore(pool);
   }else store=new SqliteStore(config.database!);
   await store.pruneExpired();
-  const orchestrator=new OnepageOrchestrator({store,artifacts:{get:(owner,id,sha)=>store.getArtifact(owner,id,sha),put:(owner,id,bytes,mime)=>store.putArtifact(owner,id,bytes,mime)},compile:input=>compileCanonical(validateCompileInput(input)),baselineCommit:BASELINE_COMMIT,sourceUrl:CANONICAL_COMPILER_URL});
+  const orchestrator=new OnepageOrchestrator({store,artifacts:{get:(owner,id,sha)=>store.getArtifact(owner,id,sha),getMany:(owner,id,hashes)=>store.readArtifacts(owner,id,hashes),put:(owner,id,bytes,mime)=>store.putArtifact(owner,id,bytes,mime)},compile:input=>compileCanonical(validateCompileInput(input)),baselineCommit:BASELINE_COMMIT,sourceUrl:CANONICAL_COMPILER_URL});
   const app=createV2App({orchestrator,store,verify,origin:config.origin,publicTest:process.env.V2_AUTH_MODE==='public-test',issuer:process.env.V2_AUTH_MODE==='jwt'?process.env.V2_JWT_ISSUER:undefined,resourceScopes:process.env.V2_AUTH_MODE==='jwt'?JSON.parse(process.env.V2_OAUTH_REQUIRED_SCOPES_JSON||'[]'):undefined,oauthRouter:oauthRouterFromEnv(process.env,config.origin)});
   const server=app.listen(config.port,'0.0.0.0',()=>process.stdout.write(JSON.stringify({server:'uid-brands-architecture-v2-test',port:config.port,testMode:true})+'\n'));
   const timer=setInterval(()=>{void Promise.resolve(store.pruneExpired()).catch(()=>{});},60_000);timer.unref();

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { chromium } from 'playwright';
 import { bindOnepageUiTemplate, getOnepageUiTemplate } from '../onepage-ui-template.ts';
-import { preflightAsset } from '../uid-asset-preflight.ts';
+import { cachedImagePreflight } from './image-preflight-cache.ts';
 import { ONEPAGE_DELIVERY_ROLES, onepagePackagePaths, validateOnepagePackagePaths } from '../supabase/functions/_shared/onepage-packaging.ts';
 import { readStoredZip, writeStoredZip } from './delivery-zip.ts';
 import { previewReviewHtml } from './preview-review.ts';
@@ -57,14 +57,15 @@ export function deliverySlots(packet: Record<string, any>, mode: 'gtk' | 'faq'):
 
 /** Server byte inspection. No caller-provided dimensions/format/inspection flags are trusted. */
 export async function validateAssetBytes(bytes: Buffer, spec: Pick<DeliverySlot, 'slot' | 'size'>, expectedHash?: string) {
-  const receipt = await preflightAsset(bytes, { expected_sha256: expectedHash });
-  const isOverall = spec.slot === 'ui_mapping_preview';
-  if (receipt.format !== (isOverall ? 'png' : 'webp')) throw Error('CANONICAL_ASSET_FORMAT:' + spec.slot);
-  const dimensions = /^(\d+)x(\d+)$/.exec(spec.size);
+  const { slot, size } = spec;
+  const receipt = await cachedImagePreflight(bytes, expectedHash);
+  const isOverall = slot === 'ui_mapping_preview';
+  if (receipt.format !== (isOverall ? 'png' : 'webp')) throw Error('CANONICAL_ASSET_FORMAT:' + slot);
+  const dimensions = /^(\d+)x(\d+)$/.exec(size);
   if (dimensions) {
-    if (receipt.width !== Number(dimensions[1]) || receipt.height !== Number(dimensions[2])) throw Error('CANONICAL_ASSET_DIMENSIONS:' + spec.slot);
-  } else if (!(spec.size === '3x_UI_DISPLAY_SIZE' && /^occasion_icon_0[1-4]$/.test(spec.slot)) && !(spec.size === 'full_page' && isOverall)) {
-    throw Error('UNKNOWN_CANONICAL_ASSET_SIZE:' + spec.slot);
+    if (receipt.width !== Number(dimensions[1]) || receipt.height !== Number(dimensions[2])) throw Error('CANONICAL_ASSET_DIMENSIONS:' + slot);
+  } else if (!(size === '3x_UI_DISPLAY_SIZE' && /^occasion_icon_0[1-4]$/.test(slot)) && !(size === 'full_page' && isOverall)) {
+    throw Error('UNKNOWN_CANONICAL_ASSET_SIZE:' + slot);
   }
   return receipt;
 }

@@ -22,3 +22,5 @@ Revisions preserve approved copy and unrelated assets. Reinspect affected assets
 Deliver actual canonical ZIP and separate preview through the public sandbox's artifact resources. These public job artifacts are shared; receipt IDs and filenames do not substitute for files. Do not promise inline display unsupported by the host. Distinguish mechanical tests, GPT operation and EO acceptance. Report payload/timing separately from unavailable tokens/cost.
 
 No production publishing, training, migration or paid creative benchmark is authorized merely by using this plugin. Never put credentials in prompts, packaged files, logs or URLs.
+
+For independent exact lookups, use onepage_get_rule_or_evidence with paths:[...] (1–12 paths, up to 2MB total result) instead of separate calls. It returns entries with exact path/value pairs from one job snapshot. Use path for a single lookup; never supply both. Batch reads do not waive evidence inspection, research or QC. If the result is too large, split the batch or use individual lookups.

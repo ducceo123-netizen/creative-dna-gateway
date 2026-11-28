@@ -30,6 +30,21 @@ async function setup(){
  return {store,orchestrator,tokens,origin,rpc,close,calls:()=>compilerCalls};
 }
 function payload(result:any){return JSON.parse(result.packet.result.content[0].text);}
+test('exact lookup batching preserves values, rejects ambiguous selectors and uses the existing owner boundary',async()=>{
+ const f=await setup();try{
+  const args={brand:'pawfecthouse',brief:'Synthetic batch lookup mechanics.',sourceUrl:'https://pawfecthouse.com/products/synthetic-test',idempotencyKey:'lookup-batch',capabilities:{artifactTransfer:true,imageInspection:false}};
+  const job=payload(await f.rpc('tools/call',{name:'onepage_start',arguments:args}));
+  const paths=['/resolved/brand','job:plan','job:references','job:inspections'];
+  const batch=payload(await f.rpc('tools/call',{name:'onepage_get_rule_or_evidence',arguments:{jobId:job.jobId,paths}}));
+  assert.deepEqual(batch.entries,[{path:paths[0],value:'pawfecthouse'},{path:paths[1],value:null},{path:paths[2],value:[]},{path:paths[3],value:[]}]);
+  for(const input of [{},{path:paths[0],paths}]){
+   const error=payload(await f.rpc('tools/call',{name:'onepage_get_rule_or_evidence',arguments:{jobId:job.jobId,...input}}));
+   assert.equal(error.error.code,'LOOKUP_SELECTOR_REQUIRED');
+  }
+  const denied=payload(await f.rpc('tools/call',{name:'onepage_get_rule_or_evidence',arguments:{jobId:job.jobId,paths}},f.tokens.b));assert.equal(denied.error.code,'NOT_FOUND');
+  const state=await f.orchestrator.state('tenant:a',job.jobId);assert.equal(state.storageRevision,0);
+ }finally{await f.close();}
+});
 test('real SDK HTTP initialize/discovery/notifications/reconnect and isolated task calls',async()=>{
  const f=await setup();try{
    const initialized=await f.rpc('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'uid-v2-integration',version:'1'}});

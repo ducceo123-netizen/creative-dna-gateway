@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { hash, safeJson, V2Error } from './core.ts';
 import type { StoredJob, ArtifactReceipt, OperationKey } from './store.ts';
-import { createSnapshot, stageContext, assertCoverage, fullContext, readContextPath, contextStage, contentHash,
+import { createSnapshot, fullContext, readContextPath, contextStage, contentHash,
   type CanonicalSnapshot, type CoverageReceipt, type Packet } from './rules.ts';
+import { VerifiedContextCache, type VerifiedContextOperation } from './verified-context-cache.ts';
 import { preflightAsset } from '../uid-asset-preflight.ts';
 import { evaluateOnepageBannerQc } from '../supabase/functions/_shared/onepage-banner-qc.ts';
 import { evaluateOnepagePhysicalQc } from '../supabase/functions/_shared/onepage-physical-qc.ts';
@@ -27,6 +28,7 @@ export interface JobStore {
 }
 export interface ArtifactStore {
   get(owner:string,jobId:string,sha256:string):MaybePromise<Buffer>;
+  getMany?(owner:string,jobId:string,sha256s:string[]):MaybePromise<Array<ArtifactReceipt&{bytes:Buffer}>>;
   put(owner:string,jobId:string,bytes:Buffer,mime:string):MaybePromise<ArtifactReceipt>;
 }
 export interface CompileInput {brand:string;source_url?:string;source_type?:string;product_line?:string;theme?:string;research?:unknown}
@@ -100,15 +102,9 @@ function namedProductScope(input:z.infer<typeof StartSchema>,research?:Record<st
 /** Backend state and deterministic gates. The host still supplies research, creative work and real visual review. */
 export class OnepageOrchestrator {
   constructor(private options:OrchestratorOptions){}
-  // Cache only independently verified receipts, never bundles or caller claims.
-  // The complete stored snapshot is fingerprinted, so a changed packet, registry,
-  // conflict or provenance cannot reuse a receipt merely by retaining snapshot.hash.
-  private contextReceipts=new Map<string,CoverageReceipt>();
-  private contextKey(j:OnepageJob,stage:string){return `${hash(j.snapshot)}:${stage}:${j.plan?.mode??'none'}`;}
-  private rememberContext(key:string,receipt:CoverageReceipt){
-    if(!this.contextReceipts.has(key)&&this.contextReceipts.size>=32)this.contextReceipts.delete(this.contextReceipts.keys().next().value!);
-    this.contextReceipts.set(key,structuredClone(receipt));
-  }
+  // Only pure canonical computation is reused. Every external operation still reads
+  // the current owner-scoped job and enforces expiry/revision before cache access.
+  private contexts=new VerifiedContextCache();
   private contextMetadata(j:OnepageJob){
     const step=currentStep(j),templateMode=j.plan?.mode??null;
     let stage:ReturnType<typeof contextStage>|null=null;
@@ -117,9 +113,7 @@ export class OnepageOrchestrator {
     const persisted=j.coverage[step];
     if(!stage||!persisted||persisted.snapshotHash!==j.snapshot.hash||persisted.stage!==stage||persisted.templateMode!==templateMode)return metadata;
     try{
-      const key=this.contextKey(j,stage);
-      let expected=this.contextReceipts.get(key);
-      if(!expected){expected=stageContext(j.snapshot,step,{templateMode:j.plan?.mode}).receipt;this.rememberContext(key,expected);}
+      const expected=this.contexts.proof(j.owner,j.jobId,j.snapshot,step,{templateMode:j.plan?.mode}).receipt;
       if(isDeepStrictEqual(persisted,expected)){metadata.bundleHash=expected.bundleHash;metadata.loaded=true;}
     }catch{/* Invalid snapshots/templates never advertise valid loaded context. */}
     return metadata;
@@ -143,15 +137,20 @@ export class OnepageOrchestrator {
   summary(j:OnepageJob){const named=namedProductScope(j.input,j.research,j.productTypeScope),context=this.contextMetadata(j),action=j.state==='BLOCKED'?j.blockers[0]??'Resolve blocker':`Complete ${currentStep(j)}`;return {jobId:j.jobId,storageRevision:j.storageRevision,contentRevision:j.contentRevision,state:j.state,stage:currentStep(j),context,completedSteps:j.completed,canonicalSteps:j.snapshot.packet.execution,canonicalHash:j.snapshot.hash,canonicalRevision:j.snapshot.packet.resolved,blockers:j.blockers,conflicts:j.snapshot.conflicts,mode:j.plan?.mode??null,productLine:j.input.productLine??null,sourceUrl:named.sourceUrl??null,namedScopeRequired:!j.input.sourceUrl&&!!j.input.productLine,namedScopeIssues:named.issues,planHash:j.planHash??null,expectedSlots:j.plan?requiredSlots(j).map((a:any)=>a.slot):[],assets:Object.fromEntries(Object.entries(j.assets).map(([k,a])=>[k,{sha256:a.sha256,width:a.width,height:a.height,format:a.format}])),render:j.render?{inputHash:j.render.inputHash,desktop:j.render.desktop,mobile:j.render.mobile,htmlArtifact:j.render.htmlArtifact,cssArtifact:j.render.cssArtifact,previewBundle:j.render.previewBundle,visualQcPerformed:false}:null,delivery:j.delivery??null,approvals:j.approvals,evidenceIds:(j.research?.sources??[]).map((r:any)=>r.id),referenceIds:j.references.map(r=>r.id),qcScopes:Object.keys(j.qc),expiresAt:j.expiresAt,nextAction:j.state==='CANCELLED'?'This job is cancelled; start a new job to continue.':j.state==='COMPLETE'?'Delivery is complete; retrieve the validated artifacts.':context.loaded?`${action}. Use the issued stage context; reload it if lost or starting a new session.`:j.state==='BLOCKED'?action:`Load stage context and complete ${currentStep(j)}`,testMode:true,semanticInspection:'HOST_OR_HUMAN_REPORTED_NOT_SERVER_VISION'};}
   async getStageContext(owner:string,id:string){
     const j=await this.read(owner,id);notCancelled(j);
-    const step=currentStep(j),bundle=stageContext(j.snapshot,step,{templateMode:j.plan?.mode});
+    const step=currentStep(j),bundle=this.contexts.get(owner,id,j.snapshot,step,{templateMode:j.plan?.mode});
     const candidates=[...j.snapshot.packet.execution,...EXTRAS].filter(candidate=>contextStage(candidate)===bundle.stage);
     const unchanged=candidates.every(candidate=>isDeepStrictEqual(j.coverage[candidate],bundle.receipt));
     const updated=unchanged?j:await this.update(owner,id,j.storageRevision,current=>{for(const candidate of candidates)current.coverage[candidate]=bundle.receipt;});
-    this.rememberContext(this.contextKey(j,bundle.stage),bundle.receipt);
     return {...bundle,jobId:id,storageRevision:updated.storageRevision,contentRevision:j.contentRevision,step,artifacts:Object.fromEntries(Object.entries(j.assets).map(([slot,a])=>[slot,a.sha256])),researchHash:j.researchHash??null,jobLookups:['job:plan','job:research','job:inspections','job:references','job:productTypeScope','qc-requirements:research','qc-requirements:content','qc-requirements:asset:<slot>','qc-requirements:overall'],approvalPolicy:{contentReviewRequired:j.input.contentReviewRequired,finalAndPackageApprovalRequired:true}};
   }
   async getFullContext(owner:string,id:string){const j=await this.read(owner,id);return {jobId:id,snapshotHash:j.snapshot.hash,packet:fullContext(j.snapshot)};}
-  async getRuleOrEvidence(owner:string,id:string,path:string){const j=await this.read(owner,id);if(path.startsWith('qc-requirements:')){const scope=path.slice('qc-requirements:'.length);return {scope,inputHashes:this.expectedQcHashes(j,scope),criteria:this.qcCriteria(j,scope),canonicalReportsRequired:scope==='overall',contentVersion:String(j.contentRevision),taskId:j.jobId};}if(['job:plan','job:research','job:inspections','job:references','job:productTypeScope'].includes(path)){const field=path.slice(4);return safeJson((j as any)[field]??null);}if(path.startsWith('evidence:')){const source=j.research?.sources?.find((s:any)=>s.id===path.slice(9));if(!source)throw new V2Error('EVIDENCE_NOT_FOUND','Evidence does not exist in this job.',404);return safeJson(source);}return readContextPath(j.snapshot,path);}
+  async getRuleOrEvidence(owner:string,id:string,path:string){return this.ruleOrEvidenceFromJob(await this.read(owner,id),path);}
+  async getRulesOrEvidence(owner:string,id:string,paths:string[]){
+    if(!Array.isArray(paths)||paths.length<1||paths.length>12||paths.some(path=>typeof path!=='string'||!path.length||path.length>2048)||new Set(paths).size!==paths.length)throw new V2Error('INVALID_LOOKUP_BATCH','Provide 1 to 12 unique exact lookup paths.');
+    const j=await this.read(owner,id);
+    return {entries:paths.map(path=>({path,value:this.ruleOrEvidenceFromJob(j,path)}))};
+  }
+  private ruleOrEvidenceFromJob(j:OnepageJob,path:string){if(path.startsWith('qc-requirements:')){const scope=path.slice('qc-requirements:'.length);return {scope,inputHashes:this.expectedQcHashes(j,scope),criteria:this.qcCriteria(j,scope),canonicalReportsRequired:scope==='overall',contentVersion:String(j.contentRevision),taskId:j.jobId};}if(['job:plan','job:research','job:inspections','job:references','job:productTypeScope'].includes(path)){const field=path.slice(4);return safeJson((j as any)[field]??null);}if(path.startsWith('evidence:')){const source=j.research?.sources?.find((s:any)=>s.id===path.slice(9));if(!source)throw new V2Error('EVIDENCE_NOT_FOUND','Evidence does not exist in this job.',404);return safeJson(source);}return readContextPath(j.snapshot,path);}
   private sourceInspectionBlockers(j:OnepageJob){
     const result:string[]=[...namedProductScope(j.input,j.research,j.productTypeScope).issues];
     for(const source of j.research?.sources??[]){
@@ -170,9 +169,19 @@ export class OnepageOrchestrator {
     const j=await this.read(owner,id);assertRevision(j,revision);
     const data=ResearchSchema.parse(safeJson(input));
     if(data.inspections.length&&!j.input.capabilities.artifactTransfer)throw new V2Error('HOST_ARTIFACT_TRANSFER_UNAVAILABLE','Host must transfer real inspected evidence bytes.');
+    // Reuse only successful technical byte checks within this submission. Every
+    // inspection/reference still undergoes its own identity, scope and evidence checks.
+    const verifiedArtifacts=new Set<string>();
+    const verifyArtifact=async(artifactHash:string,reference=false)=>{
+      if(verifiedArtifacts.has(artifactHash))return;
+      const bytes=await this.options.artifacts.get(owner,id,artifactHash);
+      if(!bytes.length||hash(bytes)!==artifactHash)throw new V2Error(reference?'REFERENCE_BYTES_MISMATCH':'EVIDENCE_BYTES_MISMATCH',reference?'Reference bytes mismatch.':'Evidence bytes do not match the submitted receipt.');
+      await preflightAsset(bytes,{expected_sha256:artifactHash});
+      verifiedArtifacts.add(artifactHash);
+    };
     const seen=new Set<string>();
-    for(const r of data.inspections){timestampNotFuture(r.inspectedAt);const key=r.sourceId+':'+r.itemId;if(seen.has(key))throw new V2Error('DUPLICATE_INSPECTION','Each media item needs one unambiguous receipt.');seen.add(key);if(r.method==='video_playback')throw new V2Error('VIDEO_BYTE_VALIDATION_UNAVAILABLE','This runtime cannot validate video artifacts; preserve unsupported playback evidence and block the affected step.');if(!j.input.capabilities.imageInspection)throw new V2Error('HOST_VISION_UNAVAILABLE','Host did not advertise actual image inspection.');const bytes=await this.options.artifacts.get(owner,id,r.artifactHash);if(hash(bytes)!==r.artifactHash||!bytes.length)throw new V2Error('EVIDENCE_BYTES_MISMATCH','Evidence bytes do not match the submitted receipt.');await preflightAsset(bytes,{expected_sha256:r.artifactHash});const source=(data.research.sources as any[])?.find(s=>s.id===r.sourceId);if(!source||![...(source.pdp_coverage?.gallery?.items??[]),...(source.pdp_coverage?.details?.items??[])].some((item:any)=>item.id===r.itemId))throw new V2Error('EVIDENCE_ITEM_MISMATCH','Inspection must identify an exact research media item.');}
-    for(const r of data.references){timestampNotFuture(r.observedAt);if(r.status==='inspected'){if(!r.artifactHash||!r.sourceUrl)throw new V2Error('REFERENCE_BYTES_REQUIRED','Inspected visual references require source URL and actual bytes.');const bytes=await this.options.artifacts.get(owner,id,r.artifactHash);if(!bytes.length||hash(bytes)!==r.artifactHash)throw new V2Error('REFERENCE_BYTES_MISMATCH','Reference bytes mismatch.');await preflightAsset(bytes,{expected_sha256:r.artifactHash});if(r.kind==='eo'&&!this.sameBrandEo(j,r))throw new V2Error('EO_REFERENCE_SCOPE','EO visual reference must name this brand and an actual same-brand originating page.');}}
+    for(const r of data.inspections){timestampNotFuture(r.inspectedAt);const key=r.sourceId+':'+r.itemId;if(seen.has(key))throw new V2Error('DUPLICATE_INSPECTION','Each media item needs one unambiguous receipt.');seen.add(key);if(r.method==='video_playback')throw new V2Error('VIDEO_BYTE_VALIDATION_UNAVAILABLE','This runtime cannot validate video artifacts; preserve unsupported playback evidence and block the affected step.');if(!j.input.capabilities.imageInspection)throw new V2Error('HOST_VISION_UNAVAILABLE','Host did not advertise actual image inspection.');await verifyArtifact(r.artifactHash);const source=(data.research.sources as any[])?.find(s=>s.id===r.sourceId);if(!source||![...(source.pdp_coverage?.gallery?.items??[]),...(source.pdp_coverage?.details?.items??[])].some((item:any)=>item.id===r.itemId))throw new V2Error('EVIDENCE_ITEM_MISMATCH','Inspection must identify an exact research media item.');}
+    for(const r of data.references){timestampNotFuture(r.observedAt);if(r.status==='inspected'){if(!r.artifactHash||!r.sourceUrl)throw new V2Error('REFERENCE_BYTES_REQUIRED','Inspected visual references require source URL and actual bytes.');await verifyArtifact(r.artifactHash,true);if(r.kind==='eo'&&!this.sameBrandEo(j,r))throw new V2Error('EO_REFERENCE_SCOPE','EO visual reference must name this brand and an actual same-brand originating page.');}}
     const named=namedProductScope(j.input,data.research,data.productTypeScope);
     // Preserve incomplete name-resolution evidence without compiling research against an invented URL.
     const packet=named.issues.length?j.snapshot.packet:await this.options.compile({brand:j.input.brand,source_url:named.sourceUrl,source_type:named.sourceType??j.input.sourceType,product_line:j.input.productLine,research:data.research});
@@ -205,7 +214,14 @@ export class OnepageOrchestrator {
     const issues=this.planIssues(j,plan);if(issues.length)throw new V2Error('INVALID_PLAN',issues.join('; '),422);
     const updated=await this.update(owner,id,revision,current=>{current.plan=plan;current.planHash=hash(plan);current.contentRevision++;current.assets={};current.qc=current.qc.research?{research:current.qc.research}:{};current.approvals=[];clearDelivery(current);rewind(current,'VALIDATE_ONEPAGE_CONTENT_PLAN');});return this.summary(updated);
   }
-  private assertContext(j:OnepageJob,step:string){const receipt=j.coverage[step];if(!receipt)throw new V2Error('CONTEXT_REQUIRED',`Load the pinned context for ${step}.`,409);try{assertCoverage(j.snapshot,step,receipt,{templateMode:j.plan?.mode});}catch(e){throw new V2Error('CONTEXT_BLOCKED',String((e as Error).message),409);}}
+  private assertContext(j:OnepageJob,step:string,operation?:VerifiedContextOperation){
+    const receipt=j.coverage[step];if(!receipt)throw new V2Error('CONTEXT_REQUIRED',`Load the pinned context for ${step}.`,409);
+    try{
+      const expected=operation?operation.proof(step,{templateMode:j.plan?.mode}):this.contexts.proof(j.owner,j.jobId,j.snapshot,step,{templateMode:j.plan?.mode});
+      if(!isDeepStrictEqual(expected.receipt,receipt))throw new Error('STALE_OR_INCOMPLETE_CONTEXT_COVERAGE');
+      if(expected.conflicts.length)throw new Error('CANONICAL_CONTEXT_CONFLICT:'+expected.conflicts.map(c=>c.code).join(','));
+    }catch(e){throw new V2Error('CONTEXT_BLOCKED',String((e as Error).message),409);}
+  }
   async submitAsset(owner:string,id:string,revision:number,input:{slot:string;sha256:string}){
     const j=await this.read(owner,id);assertRevision(j,revision);sha.parse(input.sha256);if(!j.plan||!j.planHash)throw new V2Error('PLAN_REQUIRED','Validated content and allocation required.',409);
     if(j.input.contentReviewRequired&&!j.approvals.some(a=>a.kind==='content'&&a.inputHash===j.planHash))throw new V2Error('CONTENT_REVIEW_REQUIRED','User requested content approval first.',409);
@@ -303,8 +319,8 @@ export class OnepageOrchestrator {
     return this.summary(await this.update(owner,id,revision,current=>{current.qc[receipt.scope]=qc;current.state='READY';current.blockers=[];}));
   }
   private qcPass(j:OnepageJob,scope:string){const q=j.qc[scope];return !!q&&q.snapshotHash===j.snapshot.hash&&equal(allHashes(q.inputHashes),this.expectedQcHashes(j,scope))&&this.qcCriteria(j,scope).every(c=>q.findings.some(f=>f.criterion===c&&f.outcome!=='BLOCKED'))&&!q.findings.some(f=>f.outcome==='BLOCKED');}
-  private stepBlockers(j:OnepageJob,step:string){
-    const blockers:string[]=[];try{this.assertContext(j,step);}catch(e){blockers.push((e as Error).message);}
+  private stepBlockers(j:OnepageJob,step:string,contextOperation?:VerifiedContextOperation){
+    const blockers:string[]=[];try{this.assertContext(j,step,contextOperation);}catch(e){blockers.push((e as Error).message);}
     const p=j.snapshot.packet,researchReady=['READY','READY_WITH_LIMITATIONS'].includes(p.research_validation?.status),researchQc=this.qcPass(j,'research');
     const researchSteps=['ACQUIRE_SOURCE','BUILD_VERIFIED_PRODUCT_POOL','CHECK_DIVERSITY_GATE','INSPECT_DESCRIPTIONS_AND_REVIEW_COVERAGE','RESEARCH_MARKETPLACE_COMPETITOR_SUPPLIER','RESEARCH_PINTEREST_PRODUCT_THEME_MARKET_REFERENCES','RESEARCH_REDDIT_CUSTOMER_CONTEXT_AND_COUNTEREVIDENCE','ANALYZE_BUYER_CONCERNS_AND_SCOPED_CLAIMS','VALIDATE_RESEARCH_BEFORE_CONTENT'];
     if(step==='VALIDATE_QUALITY_CONTRACT'&&(p.creative_quality_contract?.status!=='COMPILED'||p.quality_execution_guard?.status==='BLOCKED'))blockers.push('CANONICAL_QUALITY_CONTRACT_BLOCKED');
@@ -338,10 +354,13 @@ export class OnepageOrchestrator {
   async advance(owner:string,id:string,revision:number){
     const j=await this.read(owner,id);assertRevision(j,revision);if(j.state==='COMPLETE')return this.summary(j);
     return this.summary(await this.update(owner,id,revision,current=>{
+      // The snapshot is unchanged throughout this synchronous CAS mutation. Capture
+      // it once; mutable stage, plan, QC and approval fields are still checked per step.
+      const contexts=this.contexts.operation(owner,id,current.snapshot);
       // Execute the original ordered dependency chain, coalescing deterministic transitions.
       // A different context group, missing evidence or an approval remains a real boundary.
       for(let count=0;count<current.snapshot.packet.execution.length+EXTRAS.length;count++){
-        const step=currentStep(current),blockers=this.stepBlockers(current,step);current.blockers=blockers;
+        const step=currentStep(current),blockers=this.stepBlockers(current,step,contexts);current.blockers=blockers;
         if(blockers.length){current.state='BLOCKED';return;}
         if(step==='COMPLETE'){current.state='COMPLETE';return;}
         current.completed.push(step);current.stepIndex++;current.state='READY';
@@ -365,7 +384,22 @@ export class OnepageOrchestrator {
   }
   private async deliveryInput(j:OnepageJob):Promise<DeliveryInput>{
     if(!j.plan)throw new V2Error('PLAN_REQUIRED','Validated plan is missing.',409);
-    const assets:DeliveryInput['assets']={};for(const slot of requiredSlots(j)){const a=j.assets[slot.slot];if(!a)throw new V2Error('MISSING_ASSET',slot.slot,409);assets[slot.slot]={bytes:await this.options.artifacts.get(j.owner,j.jobId,a.sha256),sha256:a.sha256,revision:a.contentRevision};}
+    const slots=requiredSlots(j);
+    for(const slot of slots)if(!j.assets[slot.slot])throw new V2Error('MISSING_ASSET',slot.slot,409);
+    const hashes=[...new Set(slots.map((slot:any)=>j.assets[slot.slot].sha256))] as string[];
+    const bytesByHash=new Map<string,Buffer>();
+    if(this.options.artifacts.getMany){
+      // Preserve future manifests with more slots without exceeding the storage API bound.
+      for(let offset=0;offset<hashes.length;offset+=24){
+        const requested=hashes.slice(offset,offset+24),records=await this.options.artifacts.getMany(j.owner,j.jobId,requested);
+        if(records.length!==requested.length||new Set(records.map(r=>r.sha256)).size!==requested.length)throw new V2Error('ARTIFACT_BATCH_MISMATCH','Artifact batch does not cover the exact requested hashes.',409);
+        for(const record of records){
+          if(!requested.includes(record.sha256)||!Buffer.isBuffer(record.bytes)||record.byteLength!==record.bytes.length||hash(record.bytes)!==record.sha256)throw new V2Error('ARTIFACT_BATCH_MISMATCH','Artifact batch metadata or bytes do not match the requested hash.',409);
+          bytesByHash.set(record.sha256,record.bytes);
+        }
+      }
+    }else for(const sha256 of hashes)bytesByHash.set(sha256,await this.options.artifacts.get(j.owner,j.jobId,sha256));
+    const assets:DeliveryInput['assets']={};for(const slot of slots){const a=j.assets[slot.slot];assets[slot.slot]={bytes:bytesByHash.get(a.sha256)!,sha256:a.sha256,revision:a.contentRevision};}
     return {packet:j.snapshot.packet,mode:j.plan.mode,text:j.plan.copy,assets,contentRevision:j.contentRevision,...(j.plan.mode==='faq'?{faqCount:j.research?.analysis?.content_plan?.post_story?.insight_indexes?.length}:{})};
   }
   async render(owner:string,id:string,revision:number){

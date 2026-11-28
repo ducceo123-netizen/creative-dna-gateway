@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { boundedId, hash, safeJson, V2Error } from './core.ts';
 import { MAX_ZIP_ARCHIVE_BYTES } from './delivery-zip.ts';
-import type { StoredJob, OperationKey, ArtifactReceipt } from './store.ts';
+import { artifactBatchHashes, type StoredJob, type OperationKey, type ArtifactReceipt, type StoredArtifact } from './store.ts';
 
 export interface PgQueryResult { rows: Record<string, any>[]; rowCount?: number | null }
 export interface PgClientLike { query(sql: string, values?: any[]): Promise<PgQueryResult>; release(): void }
@@ -80,6 +80,10 @@ export class PgStore {
     if(!row||Number(row.expires)<=Date.now())throw new V2Error('NOT_FOUND','Job not found or expired.',404);
     return JSON.parse(row.document) as StoredJob;
   }
+  private async assertJob(c:PgClientLike,owner:string,id:string){
+    boundedId(id,'job');const row=(await c.query(`SELECT expires FROM ${SCHEMA}.jobs WHERE id=$1 AND owner=$2`,[id,owner])).rows[0];
+    if(!row||Number(row.expires)<=Date.now())throw new V2Error('NOT_FOUND','Job not found or expired.',404);
+  }
   private async findRow(c:PgClientLike,owner:string,key:string,inputHash?:string){
     boundedId(key,'idempotency key');const row=(await c.query(`SELECT id,input_hash FROM ${SCHEMA}.jobs WHERE owner=$1 AND idem=$2`,[owner,key])).rows[0];
     if(!row)return undefined;
@@ -113,25 +117,30 @@ export class PgStore {
   }
   async acquireLease(owner:string,id:string,holder:string,ttlMs=30_000){
     boundedId(holder);if(!Number.isSafeInteger(ttlMs)||ttlMs<100||ttlMs>120_000)throw new V2Error('LEASE_LIMIT','Lease duration exceeds limit.');
-    return this.transaction(owner,true,async c=>{await this.readRow(c,owner,id);const row=(await c.query(`SELECT holder,expires,fence FROM ${SCHEMA}.leases WHERE job=$1`,[id])).rows[0];if(row&&Number(row.expires)>Date.now())throw new V2Error('LEASE_BUSY','A task operation is already running.',409);const lease={holder,fence:Number(row?.fence??0)+1,expires:Date.now()+ttlMs};await c.query(`INSERT INTO ${SCHEMA}.leases(job,holder,expires,fence) VALUES($1,$2,$3,$4) ON CONFLICT(job) DO UPDATE SET holder=excluded.holder,expires=excluded.expires,fence=excluded.fence`,[id,holder,lease.expires,lease.fence]);return lease;});
+    return this.transaction(owner,true,async c=>{await this.assertJob(c,owner,id);const row=(await c.query(`SELECT holder,expires,fence FROM ${SCHEMA}.leases WHERE job=$1`,[id])).rows[0];if(row&&Number(row.expires)>Date.now())throw new V2Error('LEASE_BUSY','A task operation is already running.',409);const lease={holder,fence:Number(row?.fence??0)+1,expires:Date.now()+ttlMs};await c.query(`INSERT INTO ${SCHEMA}.leases(job,holder,expires,fence) VALUES($1,$2,$3,$4) ON CONFLICT(job) DO UPDATE SET holder=excluded.holder,expires=excluded.expires,fence=excluded.fence`,[id,holder,lease.expires,lease.fence]);return lease;});
   }
-  async assertLease(owner:string,id:string,lease:{holder:string;fence:number}){return this.transaction(owner,false,async c=>{await this.readRow(c,owner,id);const row=(await c.query(`SELECT expires FROM ${SCHEMA}.leases WHERE job=$1 AND holder=$2 AND fence=$3`,[id,lease.holder,lease.fence])).rows[0];if(!row||Number(row.expires)<=Date.now())throw new V2Error('LEASE_EXPIRED','Task lease expired; discard this result.',409);});}
-  async releaseLease(owner:string,id:string,lease:{holder:string;fence:number}){return this.transaction(owner,true,async c=>{await this.readRow(c,owner,id);await c.query(`UPDATE ${SCHEMA}.leases SET expires=0 WHERE job=$1 AND holder=$2 AND fence=$3`,[id,lease.holder,lease.fence]);});}
+  async assertLease(owner:string,id:string,lease:{holder:string;fence:number}){return this.transaction(owner,false,async c=>{await this.assertJob(c,owner,id);const row=(await c.query(`SELECT expires FROM ${SCHEMA}.leases WHERE job=$1 AND holder=$2 AND fence=$3`,[id,lease.holder,lease.fence])).rows[0];if(!row||Number(row.expires)<=Date.now())throw new V2Error('LEASE_EXPIRED','Task lease expired; discard this result.',409);});}
+  async releaseLease(owner:string,id:string,lease:{holder:string;fence:number}){return this.transaction(owner,true,async c=>{await this.assertJob(c,owner,id);await c.query(`UPDATE ${SCHEMA}.leases SET expires=0 WHERE job=$1 AND holder=$2 AND fence=$3`,[id,lease.holder,lease.fence]);});}
   async putArtifact(owner:string,id:string,bytes:Buffer,mime:string):Promise<ArtifactReceipt>{
     const maximum=mime==='application/zip'?MAX_ZIP_ARCHIVE_BYTES:32*1024*1024;
     if(!Buffer.isBuffer(bytes)||!bytes.length||bytes.length>maximum)throw new V2Error('ASSET_SIZE_LIMIT',`Artifact must contain 1 to ${maximum} bytes for its type.`,413);
     if(!MIME.includes(mime))throw new V2Error('ASSET_TYPE','Unsupported artifact type.');
-    return this.transaction(owner,true,async c=>{await this.readRow(c,owner,id);const sha256=hash(bytes),old=(await c.query(`SELECT mime FROM ${SCHEMA}.artifacts WHERE job=$1 AND hash=$2`,[id,sha256])).rows[0];if(old&&old.mime!==mime)throw new V2Error('ASSET_TYPE','Existing bytes have a different type.');if(!old){await this.allocate(c,bytes.length);await c.query(`INSERT INTO ${SCHEMA}.artifacts(job,hash,mime,bytes) VALUES($1,$2,$3,$4)`,[id,sha256,mime,bytes]);}return {sha256,byteLength:bytes.length,mime};});
+    return this.transaction(owner,true,async c=>{await this.assertJob(c,owner,id);const sha256=hash(bytes),old=(await c.query(`SELECT mime FROM ${SCHEMA}.artifacts WHERE job=$1 AND hash=$2`,[id,sha256])).rows[0];if(old&&old.mime!==mime)throw new V2Error('ASSET_TYPE','Existing bytes have a different type.');if(!old){await this.allocate(c,bytes.length);await c.query(`INSERT INTO ${SCHEMA}.artifacts(job,hash,mime,bytes) VALUES($1,$2,$3,$4)`,[id,sha256,mime,bytes]);}return {sha256,byteLength:bytes.length,mime};});
   }
-  private async artifactRow(c:PgClientLike,owner:string,id:string,sha256:string){
-    await this.readRow(c,owner,id);if(!/^[a-f0-9]{64}$/.test(sha256))throw new V2Error('ASSET_HASH','Invalid artifact hash.');
-    const row=(await c.query(`SELECT a.bytes,a.mime FROM ${SCHEMA}.artifacts a JOIN ${SCHEMA}.jobs j ON j.id=a.job WHERE a.job=$1 AND a.hash=$2 AND j.owner=$3 AND j.expires>$4`,[id,sha256,owner,Date.now()])).rows[0];
-    if(!row)throw new V2Error('NOT_FOUND','Artifact not found.',404);const bytes=Buffer.from(row.bytes);if(hash(bytes)!==sha256)throw new V2Error('ASSET_CORRUPT','Artifact bytes failed integrity validation.',409);return {bytes,mime:String(row.mime)};
+  async readArtifacts(owner:string,id:string,hashes:string[]):Promise<StoredArtifact[]>{
+    return this.transaction(owner,false,async c=>{
+      await this.assertJob(c,owner,id);const requested=artifactBatchHashes(hashes);if(!requested.length)return [];
+      const rows=(await c.query(`SELECT a.hash,a.bytes,a.mime FROM ${SCHEMA}.artifacts a JOIN ${SCHEMA}.jobs j ON j.id=a.job WHERE a.job=$1 AND a.hash=ANY($2::text[]) AND j.owner=$3 AND j.expires>$4`,[id,requested,owner,Date.now()])).rows;
+      const found=new Map(rows.map(row=>[String(row.hash),row]));
+      if(requested.some(sha256=>!found.has(sha256)))throw new V2Error('NOT_FOUND','Artifact not found.',404);
+      return requested.map(sha256=>{const row=found.get(sha256)!,bytes=Buffer.from(row.bytes);if(hash(bytes)!==sha256)throw new V2Error('ASSET_CORRUPT','Artifact bytes failed integrity validation.',409);return {sha256,byteLength:bytes.length,mime:String(row.mime),bytes};});
+    });
   }
-  async getArtifact(owner:string,id:string,sha256:string):Promise<Buffer>{return this.transaction(owner,false,async c=>(await this.artifactRow(c,owner,id,sha256)).bytes);}
-  async artifactInfo(owner:string,id:string,sha256:string):Promise<ArtifactReceipt>{return this.transaction(owner,false,async c=>{const row=await this.artifactRow(c,owner,id,sha256);return {sha256,byteLength:row.bytes.length,mime:row.mime};});}
-  async recordTelemetry(owner:string,id:string,event:Record<string,unknown>){return this.transaction(owner,true,async c=>{await this.readRow(c,owner,id);const allow=['operation','durationMs','requestBytes','responseBytes','inputTokens','outputTokens','reasoningTokens','cachedTokens','model','effort','provider','measurementSource','cost','fallback','imageCalls','completion','eoVerdict'];const doc=JSON.stringify(safeJson(Object.fromEntries(Object.entries(event).filter(([key])=>allow.includes(key))),4096));await this.allocate(c,Buffer.byteLength(doc));await c.query(`INSERT INTO ${SCHEMA}.telemetry(job,event,created) VALUES($1,$2,$3)`,[id,doc,Date.now()]);});}
-  async telemetry(owner:string,id:string):Promise<unknown[]>{return this.transaction(owner,false,async c=>{await this.readRow(c,owner,id);return (await c.query(`SELECT event FROM ${SCHEMA}.telemetry WHERE job=$1 ORDER BY id`,[id])).rows.map(row=>JSON.parse(row.event));});}
+  async readArtifact(owner:string,id:string,sha256:string):Promise<StoredArtifact>{return (await this.readArtifacts(owner,id,[sha256]))[0];}
+  async getArtifact(owner:string,id:string,sha256:string):Promise<Buffer>{return (await this.readArtifact(owner,id,sha256)).bytes;}
+  async artifactInfo(owner:string,id:string,sha256:string):Promise<ArtifactReceipt>{const {bytes:_bytes,...receipt}=await this.readArtifact(owner,id,sha256);return receipt;}
+  async recordTelemetry(owner:string,id:string,event:Record<string,unknown>){return this.transaction(owner,true,async c=>{await this.assertJob(c,owner,id);const allow=['operation','durationMs','requestBytes','responseBytes','inputTokens','outputTokens','reasoningTokens','cachedTokens','model','effort','provider','measurementSource','cost','fallback','imageCalls','completion','eoVerdict'];const doc=JSON.stringify(safeJson(Object.fromEntries(Object.entries(event).filter(([key])=>allow.includes(key))),4096));await this.allocate(c,Buffer.byteLength(doc));await c.query(`INSERT INTO ${SCHEMA}.telemetry(job,event,created) VALUES($1,$2,$3)`,[id,doc,Date.now()]);});}
+  async telemetry(owner:string,id:string):Promise<unknown[]>{return this.transaction(owner,false,async c=>{await this.assertJob(c,owner,id);return (await c.query(`SELECT event FROM ${SCHEMA}.telemetry WHERE job=$1 ORDER BY id`,[id])).rows.map(row=>JSON.parse(row.event));});}
   async pruneExpired():Promise<number>{return this.transaction(undefined,false,async c=>Number((await c.query(`SELECT ${SCHEMA}.prune_expired() AS count`)).rows[0].count));}
   async close(){await this.pool.end();}
 }
