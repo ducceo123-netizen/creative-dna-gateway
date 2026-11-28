@@ -17,7 +17,7 @@ import { preflightAsset } from '../uid-asset-preflight.ts';
 
 export const BASELINE_COMMIT='87bf39d1f38eb1d0baee159b921efbd7e3aaf923';
 export type RuntimeStore={ [K in keyof SqliteStore]: SqliteStore[K] extends (...args:infer A)=>infer R ? (...args:A)=>R|Promise<R> : SqliteStore[K] };
-export type AppDependencies={orchestrator:OnepageOrchestrator;store:RuntimeStore;verify:VerifyPrincipal;origin:string;issuer?:string;oauthRouter?:express.Router};
+export type AppDependencies={orchestrator:OnepageOrchestrator;store:RuntimeStore;verify:VerifyPrincipal;origin:string;issuer?:string;resourceScopes?:string[];oauthRouter?:express.Router};
 const id=z.string().uuid(),sha=z.string().regex(/^[a-f0-9]{64}$/),revision=z.number().int().min(0);
 const job={jobId:id},change={...job,revision};
 const artifactExtension=(mime:string)=>({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','application/zip':'zip','text/html':'html','text/css':'css','application/json':'json'}[mime]||'bin');
@@ -85,7 +85,7 @@ export function createV2App(deps:AppDependencies) {
   const limits=new Map<string,{count:number;reset:number}>();
   app.use((req,res,next)=>{res.set({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});if(req.get('host')?.toLowerCase()!==new URL(deps.origin).host.toLowerCase())return res.status(403).json({error:'HOST_NOT_ALLOWED'});const origin=req.get('origin');if(origin&&origin!==deps.origin)return res.status(403).json({error:'ORIGIN_NOT_ALLOWED'});next();});
   app.get('/healthz',(_req,res)=>res.json({status:'ok',server:'uid-brands-architecture-v2-test',testMode:true,baseline:BASELINE_COMMIT,authRequired:true,creativeParity:'NOT_VERIFIED'}));
-  if(deps.issuer){const metadata={resource:deps.origin+'/api/mcp',authorization_servers:[deps.issuer],bearer_methods_supported:['header']};app.get(['/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/api/mcp'],(_req,res)=>res.json(metadata));}
+  if(deps.issuer){const metadata={resource:deps.origin+'/api/mcp',authorization_servers:[deps.issuer],bearer_methods_supported:['header'],...(deps.resourceScopes?.length?{scopes_supported:deps.resourceScopes}:{})};app.get(['/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/api/mcp'],(_req,res)=>res.json(metadata));}
   if(deps.oauthRouter)app.use(deps.oauthRouter);
   app.use(async(req,res,next)=>{
     try{
@@ -125,7 +125,7 @@ export async function main(){
   }else store=new SqliteStore(config.database!);
   await store.pruneExpired();
   const orchestrator=new OnepageOrchestrator({store,artifacts:{get:(owner,id,sha)=>store.getArtifact(owner,id,sha),put:(owner,id,bytes,mime)=>store.putArtifact(owner,id,bytes,mime)},compile:input=>compileCanonical(validateCompileInput(input)),baselineCommit:BASELINE_COMMIT,sourceUrl:CANONICAL_COMPILER_URL});
-  const app=createV2App({orchestrator,store,verify,origin:config.origin,issuer:process.env.V2_AUTH_MODE==='jwt'?process.env.V2_JWT_ISSUER:undefined,oauthRouter:oauthRouterFromEnv(process.env,config.origin)});
+  const app=createV2App({orchestrator,store,verify,origin:config.origin,issuer:process.env.V2_AUTH_MODE==='jwt'?process.env.V2_JWT_ISSUER:undefined,resourceScopes:process.env.V2_AUTH_MODE==='jwt'?JSON.parse(process.env.V2_OAUTH_REQUIRED_SCOPES_JSON||'[]'):undefined,oauthRouter:oauthRouterFromEnv(process.env,config.origin)});
   const server=app.listen(config.port,'0.0.0.0',()=>process.stdout.write(JSON.stringify({server:'uid-brands-architecture-v2-test',port:config.port,testMode:true})+'\n'));
   const timer=setInterval(()=>{void Promise.resolve(store.pruneExpired()).catch(()=>{});},60_000);timer.unref();
   let stopping=false;const stop=()=>{if(stopping)return;stopping=true;clearInterval(timer);server.close(()=>{void Promise.resolve(store.close()).finally(()=>process.exit(0));});setTimeout(()=>process.exit(1),25_000).unref();};process.on('SIGTERM',stop);process.on('SIGINT',stop);

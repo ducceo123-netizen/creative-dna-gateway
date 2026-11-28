@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "uid.v2.oauth-activation-plan/1",
-  "status": "BLOCKED_REAL_IDENTITY_AND_EXACT_CHATGPT_CALLBACK",
+  "schemaVersion": "uid.v2.oauth-activation-plan/2",
+  "status": "OPTIONAL_OAUTH_NOT_ACTIVATED",
   "applied": false,
   "projectRef": "muyyitsvkkjzjojetynr",
   "productionProjectRefForbidden": "wuonwttmkadwsmefjukv",
@@ -35,7 +35,30 @@
     "retrievalMethod": "GET /v1/projects/muyyitsvkkjzjojetynr/api-keys?reveal=false; retained only type=publishable",
     "authMutationsPerformed": false,
     "usersCreated": false,
-    "emailsOrInvitationsSent": false
+    "emailsOrInvitationsSent": false,
+    "latestHealth": {
+      "observedAt": "2026-11-28T02:19:34.732571+00:00",
+      "projectRef": "muyyitsvkkjzjojetynr",
+      "operations": "read-only GET",
+      "project": {
+        "id": "muyyitsvkkjzjojetynr",
+        "name": "uid-brands-architecture-v2-test",
+        "status": "ACTIVE_HEALTHY",
+        "region": "ap-southeast-1"
+      },
+      "auth": {
+        "oauth_server_enabled": false,
+        "oauth_server_allow_dynamic_registration": false,
+        "oauth_server_authorization_path": null,
+        "hook_custom_access_token_enabled": false,
+        "hook_custom_access_token_uri": null
+      },
+      "organization": {
+        "plan": "free"
+      }
+    },
+    "projectAuthUserCount": 0,
+    "projectOAuthClientCount": 0
   },
   "minimumOwnerInput": [
     {
@@ -82,7 +105,10 @@
       "V2_OAUTH_REDIRECT_URIS_JSON",
       "V2_JWT_ISSUER",
       "V2_JWKS_URL",
-      "V2_MEMBERS_JSON"
+      "V2_MEMBERS_JSON",
+      "V2_JWT_AUDIENCE",
+      "V2_OAUTH_CLIENT_IDS_JSON",
+      "V2_OAUTH_REQUIRED_SCOPES_JSON"
     ],
     "loginAudience": "authenticated",
     "loginAndMcpVerifiersMustBeSeparate": true,
@@ -120,15 +146,16 @@
       "confidence": "Source-supported inference, not a verified hosted OAuth token. Real hosted flow remains required."
     },
     "candidateHookPlan": {
-      "status": "DESIGN_ONLY_NOT_INSTALLED",
+      "status": "IMPLEMENTED_LOCAL_TESTED_NOT_INSTALLED",
       "schema": "uid_brands_v2_oauth",
       "function": "custom_access_token_hook(event jsonb) returns jsonb",
-      "permissions": "Admin-owned private schema; SECURITY INVOKER function. Only supabase_auth_admin gets schema USAGE, mapping-table SELECT and function EXECUTE. Revoke PUBLIC, anon, authenticated and runtime app access.",
+      "permissions": "Admin-owned private schema and SECURITY INVOKER function. Only supabase_auth_admin gets schema USAGE, policy/client/subject SELECT and function EXECUTE; app/API roles denied.",
       "clientMapping": "Explicit approved client_id -> exact V2 MCP resource, inserted only after real client registration; never accept client-controlled audience or arbitrary mapping.",
       "behavior": [
         "Preserve every existing claim.",
         "If claims.client_id is absent, return unchanged login claims (aud authenticated).",
         "If client_id is present but not approved, return a supported authorization failure.",
+        "Require an explicitly approved subject and required granted scopes; unknown users are denied.",
         "For the explicitly approved OAuth client, replace only aud with the exact V2 MCP resource; preserve client_id and granted scope.",
         "Refresh issuance must follow the same client mapping. Do not rely only on authentication_method."
       ],
@@ -177,5 +204,55 @@
     "openaiCallbackChange": "https://developers.openai.com/plugins/changelog",
     "chatgptSetup": "https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt",
     "chatgptControls": "https://learn.chatgpt.com/docs/enterprise/apps-and-connectors"
+  },
+  "primaryGptConnection": {
+    "authentication": "Independent V2 opaque bearer via native MCP api_key authentication",
+    "supabaseUserOrOAuthCallbackRequired": false,
+    "note": "OAuth identity/callback is not the current GPT connection blocker; enabling optional OAuth would not resolve workspace authorization.",
+    "currentStatus": "BLOCKED_WORKSPACE_PERMISSION",
+    "observedBlock": "Private MCP plugin creation returned HTTP403: workspace permission denied. No plugin created. No alternate creation path attempted.",
+    "nextAction": "Owner selected endpoint and test-kit handover first. Actual GPT connection remains pending workspace MCP permission; do not retry until permission changes."
+  },
+  "runnableImplementation": {
+    "migration": "v2/migrations/002_optional_oauth_hook.sql",
+    "installer": "v2/oauth-activation.ts",
+    "policyTests": "v2/oauth-activation.test.ts",
+    "signedJwtTests": "v2/oauth-auth.test.ts",
+    "authVerifier": "v2/auth.ts",
+    "scope": "Only new project muyyitsvkkjzjojetynr and exact isolated Render origin. Does not run at startup.",
+    "inputFields": [
+      "projectRef",
+      "origin",
+      "clients[{clientId,redirectUris}]",
+      "members{verifiedSubject:{owner,role}}",
+      "requiredScopes",
+      "requireRefresh"
+    ],
+    "inputRules": "Supply actual registered OAuth client UUIDs, exact callbacks and existing confirmed password-account subject UUIDs; no synthetic or production identities. Input and admin environment files require mode0600.",
+    "adminEnvironmentNames": [
+      "V2_MODE",
+      "V2_DATABASE_PROJECT_REF",
+      "V2_DATABASE_HOST",
+      "V2_DATABASE_URL",
+      "V2_DATABASE_CA_PEM"
+    ],
+    "readOnlyCommandFromV2Directory": "node --import tsx oauth-activation.ts --input /absolute/private-input.json --admin-env /absolute/private-admin-env.json --output /absolute/private-dry-run.json",
+    "applySqlOnlyCommandFromV2Directory": "node --import tsx oauth-activation.ts --input /absolute/private-input.json --admin-env /absolute/private-admin-env.json --output /absolute/private-sql-receipt.json --apply",
+    "commandEffects": "Default uses BEGIN READ ONLY. --apply installs SQL only after existing user/client metadata checks; never changes Auth config, creates users, registers clients or sends email. Output contains intended authPatch and runtimeEnvironment for separate review.",
+    "existingPolicy": "Same input is replayable; a different policy fails instead of silently overwriting.",
+    "activation": "After real identity/callback and SQL receipt, separately review/apply the returned project Auth patch and runtime variables; perform actual login/code/refresh verification. No actual Auth activation has occurred."
+  },
+  "localValidation": {
+    "testsPassed": 18,
+    "coverage": [
+      "Real local PostgreSQL hook audience/login/refresh and permission enforcement",
+      "Existing identity/client/callback preconditions and read-only default",
+      "Production/legacy migration rejection",
+      "Signed ES256 JWT resource/client/scope/membership rejection",
+      "Consent UI regressions"
+    ],
+    "typescriptLint": "PASS",
+    "hostedOAuthFlowTested": false,
+    "independentReview": "Source-registry agent read-only review found no material defect."
   }
 }

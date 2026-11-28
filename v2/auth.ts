@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { readFileSync } from 'node:fs';
 import { boundedId, safeJson, V2Error } from './core.ts';
 
@@ -36,20 +36,40 @@ export function testTokenVerifier(config: TestPrincipalConfig[]): VerifyPrincipa
     return { owner: match.owner, subject: match.subject, role: match.role, auth: 'test-token' };
   };
 }
-export function jwtVerifier(config: { issuer: string; audience: string; jwksUrl: string; members: Record<string, { owner: string; role: 'operator' | 'reviewer' }> }): VerifyPrincipal {
+export type JwtPrincipalConfig = { issuer: string; audience: string; jwksUrl: string; members: Record<string, { owner: string; role: 'operator' | 'reviewer' }>; purpose?: 'login' | 'mcp'; clientIds?: string[]; requiredScopes?: string[] };
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const oauthScopes = new Set(['openid','email','profile','phone','offline_access']);
+export function jwtVerifier(config: JwtPrincipalConfig, dependencies: { fetcher?: typeof fetch } = {}): VerifyPrincipal {
   const issuer = isolatedHttps(config.issuer, 'V2 issuer');
   const jwks = isolatedHttps(config.jwksUrl, 'V2 JWKS');
   if (jwks.origin !== issuer.origin || !config.audience) throw new V2Error('AUTH_CONFIG', 'JWKS must belong to the isolated issuer and audience is required.');
+  const purpose = config.purpose ?? 'mcp';
+  const clientIds = new Set(config.clientIds ?? []), scopes = new Set(config.requiredScopes ?? []);
+  if (purpose === 'login') {
+    if (config.audience !== 'authenticated' || clientIds.size || scopes.size) throw new V2Error('AUTH_CONFIG', 'Login verification requires only the authenticated login audience.');
+  } else {
+    const resource = isolatedHttps(config.audience, 'V2 MCP audience');
+    if (resource.href !== config.audience || resource.pathname !== '/api/mcp' || resource.origin === issuer.origin || !clientIds.size || clientIds.size > 10 || !scopes.size || !scopes.has('openid') || [...clientIds].some(id => !uuid.test(id)) || [...scopes].some(scope => !oauthScopes.has(scope))) throw new V2Error('AUTH_CONFIG', 'MCP JWTs require the exact resource audience, approved OAuth clients and explicit scopes.');
+  }
   const members = safeJson(config.members, 32_000);
   for (const [subject, member] of Object.entries(members)) {
     boundedId(subject); boundedId(member.owner);
     if (!['operator', 'reviewer'].includes(member.role)) throw new V2Error('AUTH_CONFIG', 'Invalid V2 membership.');
   }
   if (!Object.keys(members).length) throw new V2Error('AUTH_CONFIG', 'Explicit isolated V2 membership is required.');
-  const keys = createRemoteJWKSet(jwks, { timeoutDuration: 5000, cooldownDuration: 30_000 });
+  const keys = createRemoteJWKSet(jwks, { timeoutDuration: 5000, cooldownDuration: 30_000, ...(dependencies.fetcher ? { [customFetch]: dependencies.fetcher } : {}) });
   return async authorization => {
     try {
       const { payload } = await jwtVerify(bearer(authorization), keys, { issuer: config.issuer, audience: config.audience, algorithms: ['RS256', 'ES256'], requiredClaims: ['sub', 'iat', 'exp', 'aud', 'iss'], clockTolerance: 5 });
+      const onlyExpectedAudience = payload.aud === config.audience || Array.isArray(payload.aud) && payload.aud.length === 1 && payload.aud[0] === config.audience;
+      if (!onlyExpectedAudience || payload.is_anonymous === true || typeof payload.iat !== 'number' || payload.iat > Date.now()/1000 + 5) throw new Error('Invalid token purpose');
+      if (purpose === 'login') {
+        if (payload.client_id !== undefined && payload.client_id !== '') throw new Error('OAuth token is not a login token');
+      } else {
+        if (typeof payload.client_id !== 'string' || !clientIds.has(payload.client_id) || typeof payload.scope !== 'string' || payload.scope.length > 4096) throw new Error('Unapproved OAuth client');
+        const granted = new Set(payload.scope.split(/\s+/).filter(Boolean));
+        if ([...scopes].some(scope => !granted.has(scope))) throw new Error('Missing OAuth scope');
+      }
       const member = payload.sub && Object.hasOwn(members, payload.sub) ? members[payload.sub] : undefined;
       if (!member) throw new Error('Inactive member');
       return { owner: member.owner, subject: payload.sub!, role: member.role, auth: 'jwt' };
@@ -62,6 +82,12 @@ export function verifierFromEnv(env: NodeJS.ProcessEnv): VerifyPrincipal {
     const input = env.V2_TEST_PRINCIPALS_JSON || readFileSync(env.V2_TEST_PRINCIPALS_FILE!, 'utf8');
     return testTokenVerifier(safeJson(JSON.parse(input), 32_000));
   }
-  if (env.V2_AUTH_MODE === 'jwt') return jwtVerifier({ issuer: env.V2_JWT_ISSUER || '', audience: env.V2_JWT_AUDIENCE || '', jwksUrl: env.V2_JWKS_URL || '', members: JSON.parse(env.V2_MEMBERS_JSON || '{}') });
+  if (env.V2_AUTH_MODE === 'jwt') {
+    const origin = isolatedHttps(env.V2_PUBLIC_ORIGIN || '', 'V2 origin');
+    if (origin.origin !== env.V2_PUBLIC_ORIGIN || env.V2_JWT_AUDIENCE !== origin.origin + '/api/mcp') throw new V2Error('AUTH_CONFIG', 'MCP JWT audience must match the exact V2 endpoint.');
+    const clientIds = safeJson(JSON.parse(env.V2_OAUTH_CLIENT_IDS_JSON || '[]'), 4096), requiredScopes = safeJson(JSON.parse(env.V2_OAUTH_REQUIRED_SCOPES_JSON || '[]'), 4096);
+    if (!Array.isArray(clientIds) || !Array.isArray(requiredScopes) || !clientIds.every(x=>typeof x==='string') || !requiredScopes.every(x=>typeof x==='string')) throw new V2Error('AUTH_CONFIG', 'OAuth clients and scopes must be arrays.');
+    return jwtVerifier({ issuer: env.V2_JWT_ISSUER || '', audience: env.V2_JWT_AUDIENCE, jwksUrl: env.V2_JWKS_URL || '', members: JSON.parse(env.V2_MEMBERS_JSON || '{}'), clientIds, requiredScopes });
+  }
   throw new V2Error('AUTH_CONFIG', 'Configure isolated V2 authentication; public mode is disabled.');
 }

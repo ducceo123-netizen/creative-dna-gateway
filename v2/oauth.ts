@@ -32,7 +32,7 @@ export function readOAuthUiConfig(env:NodeJS.ProcessEnv,origin:string):OAuthUiCo
  */
 export function oauthRouterFromEnv(env:NodeJS.ProcessEnv,origin:string):Router|undefined{
   const config=readOAuthUiConfig(env,origin);if(!config)return undefined;
-  const verifyLogin=jwtVerifier({issuer:config.issuer,audience:'authenticated',jwksUrl:config.jwksUrl,members:JSON.parse(env.V2_MEMBERS_JSON||'{}')});
+  const verifyLogin=jwtVerifier({purpose:'login',issuer:config.issuer,audience:'authenticated',jwksUrl:config.jwksUrl,members:JSON.parse(env.V2_MEMBERS_JSON||'{}')});
   return createOAuthRouter(config,{verifyLogin});
 }
 function callbackUrl(value:unknown,c:OAuthUiConfig,expected?:{redirectUri:string;action:'approve'|'deny'}):string{
