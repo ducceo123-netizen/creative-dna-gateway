@@ -23,8 +23,9 @@
     "credentialsPackaged": false
   },
   "endpointVerification": "PASS_PUBLIC_NO_AUTH_MCP",
-  "publicNoAuthVerifiedAt": "2026-11-28T03:32:52.459Z",
-  "localPackageVersion": "0.3.0",
-  "deployedApplicationCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
-  "optimizationContractInPackage": true
+  "publicNoAuthVerifiedAt": "2026-11-28T03:48:02.764Z",
+  "localPackageVersion": "0.4.0",
+  "deployedApplicationCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
+  "optimizationContractInPackage": true,
+  "exactLookupBatchAvailable": true
 }

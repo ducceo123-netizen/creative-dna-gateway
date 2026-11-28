@@ -56,11 +56,11 @@
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
   "productionWritesPerformed": false,
-  "deployId": "dep-dc54lmcipgvc73fhe3tg",
-  "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+  "deployId": "dep-dc54ss7f3r2c73dhmfe0",
+  "sourceCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
   "createdAt": "2026-11-28T09:14:53+07:00",
   "credentialUploadAuthorized": true,
-  "liveAt": "2026-11-28T10:32:16+07:00",
+  "liveAt": "2026-11-28T10:47:22+07:00",
   "publicMcpSmoke": "PASS",
   "gptConnectionBlocker": "ACTUAL_GPT_CONNECTION_NOT_RETESTED_PREVIOUS_WORKSPACE_403",
   "deploymentHistory": [
@@ -89,10 +89,18 @@
       "liveAt": "2026-11-28T09:46:47+07:00",
       "authentication": "public-test",
       "publicAccessVerification": "PASS"
+    },
+    {
+      "deployId": "dep-dc54lmcipgvc73fhe3tg",
+      "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+      "liveAt": "2026-11-28T10:32:16+07:00",
+      "authentication": "public-test",
+      "publicAccessVerification": "PASS",
+      "release": "wire-optimization"
     }
   ],
-  "finalDeployStartedAt": "2026-11-28T10:30:33+07:00",
-  "finalDeployDurationSeconds": 102,
+  "finalDeployStartedAt": "2026-11-28T10:45:52+07:00",
+  "finalDeployDurationSeconds": 90,
   "finalDeployStatus": "Deploy succeeded",
   "linuxContainerBuild": "PASS",
   "evidence": "Authenticated Render Dashboard exact source commit and successful deployment; separate public MCP smoke and private isolation reports",
@@ -110,17 +118,18 @@
   "existingPrivateOwnersProtected": true,
   "publicAccessSmoke": "PASS",
   "existingPrivateOwnerIsolation": "PASS_LIVE",
-  "publicNoAuthVerifiedAt": "2026-11-28T03:32:52.809Z",
+  "publicNoAuthVerifiedAt": "2026-11-28T03:48:02.764Z",
   "optimizationRelease": true,
   "optimizationDatabaseMigration": false,
   "optimizationEnvironmentChange": false,
   "localTests": {
-    "passed": 102,
+    "passed": 126,
     "failed": 0,
     "offlineKitPassed": 5,
     "lint": "PASS",
     "build": "PASS"
   },
-  "optimizationSmokeEvidence": "v2-optimization-live-smoke.json",
-  "optimizationPrivateIsolationEvidence": "v2-optimization-isolation.json"
+  "optimizationSmokeEvidence": "v2-comprehensive-live-smoke.json",
+  "optimizationPrivateIsolationEvidence": "v2-comprehensive-isolation.json",
+  "comprehensiveOptimizationRelease": true
 }

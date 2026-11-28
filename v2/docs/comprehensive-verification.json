@@ -1,0 +1,1342 @@
+{
+  "schemaVersion": "uid-brands-v2.comprehensive-verification/1",
+  "status": "PASS",
+  "sourceCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
+  "deployId": "dep-dc54ss7f3r2c73dhmfe0",
+  "liveAt": "2026-11-28T10:47:22+07:00",
+  "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+  "authentication": "none",
+  "localChecks": {
+    "schemaVersion": "uid-brands-v2.comprehensive-local-checks/1",
+    "sourceCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
+    "status": "PASS",
+    "v2Tests": {
+      "passed": 126,
+      "failed": 0
+    },
+    "testKitTests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "lint": "PASS",
+    "build": "PASS",
+    "creativeEO": "NOT_RUN",
+    "actualModelTokens": null,
+    "logs": [
+      {
+        "file": "v2-comprehensive-tests.log",
+        "sha256": "e536bf0227456e4f50d2dea9a5fa8b830cd7785851d3f4187c76b4ca57f89ae6",
+        "bytes": 15499
+      },
+      {
+        "file": "v2-comprehensive-kit-tests.log",
+        "sha256": "308a015de121edef9756e882cfb3da4feba9008c88d5902dda272167651a20f2",
+        "bytes": 599
+      },
+      {
+        "file": "v2-comprehensive-lint.log",
+        "sha256": "2cec8dd9d53ef6523cc32e84eb68fae0d2f5a3b6e13dffd4ec5062bf06c64532",
+        "bytes": 74
+      },
+      {
+        "file": "v2-comprehensive-build.log",
+        "sha256": "376b2edf342fb32172054b03f7f4df6ca6e3c7ca544589a6e2ac3d30dd56af9e",
+        "bytes": 241
+      }
+    ]
+  },
+  "livePreservation": {
+    "schemaVersion": "uid-brands-v2.comprehensive-live-comparison/1",
+    "status": "PASS",
+    "observedAt": "2026-11-28T03:47:59.621Z",
+    "origin": "https://uid-brands-architecture-v2-test.onrender.com",
+    "beforeSourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+    "sourceCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
+    "environment": "same three existing public sandbox jobs before/after isolated service deployment",
+    "wireMetric": "UTF-8 JSON tool payload bytes, excluding JSON-RPC and SSE envelope",
+    "toolSchemaBytes": {
+      "before": 19106,
+      "after": 19297
+    },
+    "initializeBytes": {
+      "before": 1057,
+      "after": 1130
+    },
+    "records": [
+      {
+        "brand": "pawfecthouse",
+        "jobId": "3532cbcc-0452-44ce-8455-93152adf7d8a",
+        "snapshotHash": "70659da9afa98039bacd3c27e9c6a0359f24ef2b4009a1636b0ad52006f35528",
+        "packetSha256": "0f5480191fdd6b1a77517b25cb1223adfa608e2004c29580c08996a2c961a90b",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1623,
+          "afterBytes": 1623,
+          "reductionPercent": 0
+        },
+        "stageContext": {
+          "beforeBytes": 134600,
+          "afterBytes": 134600,
+          "reductionPercent": 0
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 0,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "exactBatchLookup": {
+          "lookups": 4,
+          "mcpCalls": 1,
+          "sameValues": true
+        },
+        "privateSnapshotExported": false
+      },
+      {
+        "brand": "giftsoul",
+        "jobId": "de385fce-edd3-4cb4-8b0e-decf23b0c386",
+        "snapshotHash": "41cb876bca89facee98df765ff3b0c9e06323a12b87298f282d88b63f49edb74",
+        "packetSha256": "89f5f9b88664d037218fb2d06bb91e98d826a374f8ab521d8a816540440288cc",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1614,
+          "afterBytes": 1614,
+          "reductionPercent": 0
+        },
+        "stageContext": {
+          "beforeBytes": 133367,
+          "afterBytes": 133367,
+          "reductionPercent": 0
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 0,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "exactBatchLookup": {
+          "lookups": 4,
+          "mcpCalls": 1,
+          "sameValues": true
+        },
+        "privateSnapshotExported": false
+      },
+      {
+        "brand": "soulprise",
+        "jobId": "c952f28c-2cd8-4c1f-8745-06e16bff40d2",
+        "snapshotHash": "f14b0d575dcc722a5d0f83917a13ebd8514b416d8ad037250064b4d7250fe1c6",
+        "packetSha256": "93b39dfdd9c32d0fedd51fd2c83323739d95c94a459c7e231fe5012104d91978",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1616,
+          "afterBytes": 1616,
+          "reductionPercent": 0
+        },
+        "stageContext": {
+          "beforeBytes": 133904,
+          "afterBytes": 133904,
+          "reductionPercent": 0
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 0,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "exactBatchLookup": {
+          "lookups": 4,
+          "mcpCalls": 1,
+          "sameValues": true
+        },
+        "privateSnapshotExported": false
+      }
+    ],
+    "operations": [
+      {
+        "method": "initialize",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1187,
+        "durationMs": 872
+      },
+      {
+        "method": "tools/list",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 19364,
+        "durationMs": 427
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1887,
+        "durationMs": 1380
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2551,
+        "durationMs": 719
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 140024,
+        "durationMs": 1479
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 144198,
+        "durationMs": 414
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 140024,
+        "durationMs": 531
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 354929,
+        "durationMs": 1205
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 311,
+        "durationMs": 299
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 129,
+        "durationMs": 321
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 176
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 202
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1888,
+        "durationMs": 813
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1879,
+        "durationMs": 380
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2543,
+        "durationMs": 214
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 138750,
+        "durationMs": 323
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 142916,
+        "durationMs": 299
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 138750,
+        "durationMs": 1978
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 343332,
+        "durationMs": 958
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 308,
+        "durationMs": 428
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 125,
+        "durationMs": 1133
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 139
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 530
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1879,
+        "durationMs": 201
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1881,
+        "durationMs": 1069
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2545,
+        "durationMs": 222
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 139353,
+        "durationMs": 311
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 143521,
+        "durationMs": 400
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 139353,
+        "durationMs": 299
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 347632,
+        "durationMs": 1126
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 309,
+        "durationMs": 442
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 126,
+        "durationMs": 296
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 226
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 144
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1881,
+        "durationMs": 210
+      }
+    ],
+    "actualInputTokens": null,
+    "actualOutputTokens": null,
+    "reasoningTokens": null,
+    "cachedTokens": null,
+    "modelCost": null,
+    "creativeEO": "NOT_RUN",
+    "endToEndLatency": "NOT_MEASURED",
+    "productionWrites": false,
+    "limitations": [
+      "State savings include the extra context identity and fallback instructions introduced in this release.",
+      "Schema and initialization overhead increased and is reported rather than hidden.",
+      "Measurements are payload sizes, not model token/cost savings.",
+      "Three initial-stage jobs are not complete creative workflows or EO comparisons.",
+      "Context reads still return every rule; avoided host reloads depend on actual retained context.",
+      "Repeated reads avoid job/history writes; server telemetry can still write."
+    ]
+  },
+  "privateIsolation": {
+    "observedAt": "2026-11-28T03:47:39.192Z",
+    "origin": "https://uid-brands-architecture-v2-test.onrender.com",
+    "status": "PASS",
+    "privateJobId": "1abbc412-f72d-45c2-acf4-ee838cb8fa80",
+    "productionWrites": false,
+    "taskMutations": false,
+    "checks": {
+      "health": {
+        "status": "ok",
+        "server": "uid-brands-architecture-v2-test",
+        "testMode": true,
+        "baseline": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+        "authRequired": false,
+        "publicSandbox": true,
+        "publicReviewIdentityVerified": false,
+        "authMode": "public-test",
+        "creativeParity": "NOT_VERIFIED"
+      },
+      "onepage_get_state": "ANONYMOUS_NOT_FOUND",
+      "onepage_get_full_context": "ANONYMOUS_NOT_FOUND",
+      "onepage_get_telemetry": "ANONYMOUS_NOT_FOUND",
+      "onepage_read_artifact": "ANONYMOUS_NOT_FOUND",
+      "resource": "ANONYMOUS_DENIED",
+      "rest": "ANONYMOUS_404",
+      "privateState": "BEARER_UNCHANGED",
+      "privateArtifact": {
+        "bearerRead": true,
+        "bytes": 106887,
+        "sha256": "dd25eab4bb911529ddd74958054eaabb73325a7a1145d8f03f21ec16a9739053"
+      }
+    },
+    "finishedAt": "2026-11-28T03:47:44.470Z"
+  },
+  "offlineBenchmark": {
+    "schemaVersion": "uid-brands-v2.comprehensive-offline-benchmark/1",
+    "status": "PASS",
+    "sourceCommit": "cb19bd90da3046c4b31a9810fc90b0f1948fb54e",
+    "baselineApplicationCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+    "contexts": {
+      "schemaVersion": "uid-brands-v2.comprehensive-context-benchmark/1",
+      "observedAt": "2026-11-28T03:44:06.394Z",
+      "baselineApplicationCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+      "workspaceHead": "71df895245d86a7d7cf3ab5bc3be28efcf6fe50a",
+      "candidateSource": "pending-release working tree",
+      "sourceSha256": {
+        "rules": "fb8713b027585ad00a02c4a9ce933d4e95a59610017b554a4e5ed34a8adb9a3d",
+        "verifiedContextCache": "aa13bd77bb2da87e1ede52ed845e8f7871031bafbec0c7c3ca585526e91f47e8",
+        "orchestrator": "141277edfe719dd6d98baefbb06c7737d955d79cceec1202b3726d7b64787b49"
+      },
+      "status": "PASS",
+      "scope": "Offline deterministic CPU microbenchmark using3 previously authorized public compiler snapshots. Baseline functions are unchanged byte-for-byte fromc83390d. No HTTP, database latency or model execution measured.",
+      "networkCalls": 0,
+      "modelCalls": 0,
+      "rawTextExported": false,
+      "measuredTokens": null,
+      "cost": null,
+      "creativeEO": "NOT_RUN",
+      "results": [
+        {
+          "brand": "pawfecthouse",
+          "snapshotHash": "1fbc955ca2098303e238faa2f95d83a74687cbfe444f8f8b101d302ea28d4076",
+          "packetBytes": 340063,
+          "snapshotBytes": 432802,
+          "canonicalRules": 32,
+          "canonicalExecutionSteps": 23,
+          "stageChecks": [
+            {
+              "stage": "init",
+              "bytes": 137967,
+              "bundleHash": "13fe7d57721459d90463b32f11d73f1a9c3472779d50b5783ed36e402c648d4f",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "research",
+              "bytes": 172355,
+              "bundleHash": "31396838c614ded7ce9f227b8f8f571ec5f222e43dea20b1646db17cf4b22230",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "references",
+              "bytes": 155321,
+              "bundleHash": "026a780fb1c07ac4bde9d5290022602d364b206babda1b54ddc6d5ad75692855",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "content",
+              "bytes": 153379,
+              "bundleHash": "8680c070b5a7f8e87ee8e634524f21eed8cbce84c485e9a4bf4d219cc9ee5754",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "allocation",
+              "bytes": 145958,
+              "bundleHash": "1e746b30e880181a053964b753810f320463e2c7276ae813f13b344ca973b87f",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "materials",
+              "bytes": 158182,
+              "bundleHash": "89ab225f34087e896a85eba061c2cd7c9bfae0bfef2f3edfea75124a4e1d0f6a",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "qc",
+              "bytes": 145940,
+              "bundleHash": "5f076003897067a3b39a208ab8fc48307c55e3922052e15bf5c6d5528b42c990",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "mapping",
+              "bytes": 146010,
+              "bundleHash": "9c38de8e982e7e1b212c67c7cea60cdb1b26752fe92636ddb15a443af1f1e428",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "review",
+              "bytes": 148482,
+              "bundleHash": "828104fa353201cdccd483815d4efcb4807fbb02825cba03fde49382db857f76",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "packaging",
+              "bytes": 148598,
+              "bundleHash": "da8b27081dc4ba84cbaa4e3f7cc5e218d56ef2175ec9886dc7576599a645bd78",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            }
+          ],
+          "measurements": {
+            "stageContext": {
+              "baseline": {
+                "iterations": 25,
+                "meanMs": 11.73,
+                "medianMs": 11.228,
+                "p95Ms": 15.66
+              },
+              "candidateWarm": {
+                "iterations": 25,
+                "meanMs": 3.289,
+                "medianMs": 3.138,
+                "p95Ms": 3.863
+              },
+              "candidateCold": {
+                "iterations": 10,
+                "meanMs": 14.509,
+                "medianMs": 13.085,
+                "p95Ms": 22.897
+              },
+              "warmMeanReductionPercent": 71.96
+            },
+            "nineResearchCoverageChecks": {
+              "baseline": {
+                "iterations": 10,
+                "meanMs": 103.522,
+                "medianMs": 94.893,
+                "p95Ms": 149.141
+              },
+              "candidateWarmOperation": {
+                "iterations": 25,
+                "meanMs": 3.991,
+                "medianMs": 3.804,
+                "p95Ms": 5.064
+              },
+              "warmMeanReductionPercent": 96.14
+            }
+          },
+          "cacheLimits": {
+            "maxEntries": 16,
+            "maxSerializedBytes": 8388608,
+            "absoluteTtlMs": 300000
+          },
+          "cacheNumericStats": {
+            "entries": 10,
+            "bytes": 1513437,
+            "hits": 280,
+            "misses": 10,
+            "builds": 10,
+            "fingerprints": 66
+          }
+        },
+        {
+          "brand": "giftsoul",
+          "snapshotHash": "5e78abb12056908b173c16f06c9c694c37667f98d46f94ca9b022891e7295a36",
+          "packetBytes": 332646,
+          "snapshotBytes": 425589,
+          "canonicalRules": 32,
+          "canonicalExecutionSteps": 23,
+          "stageChecks": [
+            {
+              "stage": "init",
+              "bytes": 136731,
+              "bundleHash": "ad8f64dc3535681b5a272245dff0c1a686f852c4cf0d21966480edead7c2ca20",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "research",
+              "bytes": 171119,
+              "bundleHash": "11bd93925c34e7beb8fcdcc637dfcd950bc61a498cc9437d6518bbd97531c985",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "references",
+              "bytes": 147892,
+              "bundleHash": "18beb45b0db1579ee57cdb39f897f429f24ba199f406792f8676af5f6c5403db",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "content",
+              "bytes": 152143,
+              "bundleHash": "755f5880bf446b0b14f0c0426bb2ae1f4aa3562ee3051da1bec34bd37450fcc1",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "allocation",
+              "bytes": 144722,
+              "bundleHash": "f7ab22ffbbd1f319fdf0c8fdf60d48df6862a87667e87cf830035ed14f9a9fe9",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "materials",
+              "bytes": 150749,
+              "bundleHash": "05a116b81ce974d302a39e7919e0959a3f958128b3510f345b04b4a68b8220d0",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "qc",
+              "bytes": 144700,
+              "bundleHash": "42c18e5056e551a927b780bec9927c3d9243473b91e10af150baa8f633194f16",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "mapping",
+              "bytes": 144774,
+              "bundleHash": "db2281ff6ae8f1f9363e0ac5c6618f07ff642ae623977fa2303325506783b29f",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "review",
+              "bytes": 147246,
+              "bundleHash": "72977464e527329babc4a746ada9a472bcca78585fea67fab75ed78a50b2e155",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "packaging",
+              "bytes": 147362,
+              "bundleHash": "bdd6498758b6d4dcb85a586f27d7333a8e6b22373bc42c680026ec91c8c88aa3",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            }
+          ],
+          "measurements": {
+            "stageContext": {
+              "baseline": {
+                "iterations": 25,
+                "meanMs": 10.262,
+                "medianMs": 9.595,
+                "p95Ms": 14.008
+              },
+              "candidateWarm": {
+                "iterations": 25,
+                "meanMs": 4.762,
+                "medianMs": 4.23,
+                "p95Ms": 8.685
+              },
+              "candidateCold": {
+                "iterations": 10,
+                "meanMs": 18.471,
+                "medianMs": 17.691,
+                "p95Ms": 26.208
+              },
+              "warmMeanReductionPercent": 53.6
+            },
+            "nineResearchCoverageChecks": {
+              "baseline": {
+                "iterations": 10,
+                "meanMs": 96.617,
+                "medianMs": 93.104,
+                "p95Ms": 127.88
+              },
+              "candidateWarmOperation": {
+                "iterations": 25,
+                "meanMs": 4.384,
+                "medianMs": 4.228,
+                "p95Ms": 5.75
+              },
+              "warmMeanReductionPercent": 95.46
+            }
+          },
+          "cacheLimits": {
+            "maxEntries": 16,
+            "maxSerializedBytes": 8388608,
+            "absoluteTtlMs": 300000
+          },
+          "cacheNumericStats": {
+            "entries": 10,
+            "bytes": 1488643,
+            "hits": 280,
+            "misses": 10,
+            "builds": 10,
+            "fingerprints": 66
+          }
+        },
+        {
+          "brand": "soulprise",
+          "snapshotHash": "4da3d00d8dc120149de25abd673497bf20528f558482afa7d72ae7d927cfde40",
+          "packetBytes": 333181,
+          "snapshotBytes": 426017,
+          "canonicalRules": 32,
+          "canonicalExecutionSteps": 23,
+          "stageChecks": [
+            {
+              "stage": "init",
+              "bytes": 137269,
+              "bundleHash": "6d5852740d0f193aa5be4a062ee156fef39a237b75a86635c6a8a976de44e903",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "research",
+              "bytes": 171657,
+              "bundleHash": "a98f168c15217bda9b0ba364fb70095a16ea5f7c43de448b64688d5e677e5959",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "references",
+              "bytes": 148430,
+              "bundleHash": "c8e2bfb543b56950bfe823694c05c1e5cdb77b875ff8a894c289132b6f2dae1b",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "content",
+              "bytes": 152681,
+              "bundleHash": "b1e241d4fcae66feb4e02f5171ab48c5fedcf60da7ed1606edc6c783221aa914",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "allocation",
+              "bytes": 145260,
+              "bundleHash": "ae5f7a6b71d74d08f2f34106c84b3a3a12a8562baa66bf440dcf9023e663479c",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "materials",
+              "bytes": 151288,
+              "bundleHash": "64054823cba87287b349e015f647161a04434a034f233ae44a2ce797b4d5365c",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "qc",
+              "bytes": 145239,
+              "bundleHash": "b678e66d1271bfc068223cd10a332748e4119f84fb55fd261c8ab57ec86f40ed",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "mapping",
+              "bytes": 145312,
+              "bundleHash": "b33a9ff8b4e1445a5e7fc1d0596b845cb94287b92f8ee39e72dec808d6a92646",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "review",
+              "bytes": 147784,
+              "bundleHash": "0aff7a99a1bdf7ca56152ead9f9d46877f5c0f460f1d3d9f1bc5f8394ef38c34",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            },
+            {
+              "stage": "packaging",
+              "bytes": 147900,
+              "bundleHash": "2a53e5b19833094f9772b6f31fc6d5c9850572c6af46c46d94bba3f52cb0bd83",
+              "exactBundleEquality": true,
+              "canonicalHashEqual": true,
+              "allRuleTextAndUnknownFieldsEqual": true,
+              "requiredRules": 32
+            }
+          ],
+          "measurements": {
+            "stageContext": {
+              "baseline": {
+                "iterations": 25,
+                "meanMs": 12.202,
+                "medianMs": 11.246,
+                "p95Ms": 19.819
+              },
+              "candidateWarm": {
+                "iterations": 25,
+                "meanMs": 3.823,
+                "medianMs": 3.476,
+                "p95Ms": 6.057
+              },
+              "candidateCold": {
+                "iterations": 10,
+                "meanMs": 15.165,
+                "medianMs": 14.432,
+                "p95Ms": 18.537
+              },
+              "warmMeanReductionPercent": 68.67
+            },
+            "nineResearchCoverageChecks": {
+              "baseline": {
+                "iterations": 10,
+                "meanMs": 84.865,
+                "medianMs": 83.78,
+                "p95Ms": 88.654
+              },
+              "candidateWarmOperation": {
+                "iterations": 25,
+                "meanMs": 3.78,
+                "medianMs": 3.569,
+                "p95Ms": 5.183
+              },
+              "warmMeanReductionPercent": 95.55
+            }
+          },
+          "cacheLimits": {
+            "maxEntries": 16,
+            "maxSerializedBytes": 8388608,
+            "absoluteTtlMs": 300000
+          },
+          "cacheNumericStats": {
+            "entries": 10,
+            "bytes": 1494035,
+            "hits": 280,
+            "misses": 10,
+            "builds": 10,
+            "fingerprints": 66
+          }
+        }
+      ],
+      "limitations": [
+        "Warm cache improves repeated pure computation; initial cold verification remains mandatory and includes fingerprint overhead.",
+        "CPU timings are local to this machine and can vary; they are not deployed endpoint latency or model token savings.",
+        "All output fields, canonical rules, unknown fields, receipts, hashes and23 ordered steps remain unchanged.",
+        "Owner/job authorization and expiry checks still precede cache lookup; packaging compiler freshness is never cached.",
+        "Cache byte ceiling counts serialized retained bundles and keys, not exact JavaScript heap usage."
+      ]
+    },
+    "storage": {
+      "schemaVersion": "uid.v2.storage-structural-benchmark/1",
+      "measuredAt": "2026-11-28T03:41:56.026Z",
+      "baselineCommit": "71df895245d86a7d7cf3ab5bc3be28efcf6fe50a",
+      "measurement": "Instrumented actual before/after PgStore code using deterministic in-process SQL response stubs. Counts describe adapter query structure and synthetic payload volume; they are not live PostgreSQL, network latency, token, cost or creative-quality measurements.",
+      "externalDatabaseAccess": false,
+      "sourceOrSchemaMutation": false,
+      "syntheticJobDocumentBytes": 262398,
+      "syntheticDownloadBytes": 1048576,
+      "syntheticBatchItems": 18,
+      "syntheticBatchBytes": 1179648,
+      "cases": [
+        {
+          "case": "download",
+          "before": {
+            "sqlStatements": 12,
+            "transactions": 2,
+            "jobDocumentLoads": 2,
+            "jobDocumentBytes": 524796,
+            "artifactLoads": 2,
+            "artifactBytes": 2097152
+          },
+          "after": {
+            "sqlStatements": 6,
+            "transactions": 1,
+            "jobDocumentLoads": 0,
+            "jobDocumentBytes": 0,
+            "artifactLoads": 1,
+            "artifactBytes": 1048576
+          }
+        },
+        {
+          "case": "telemetry",
+          "before": {
+            "sqlStatements": 8,
+            "transactions": 1,
+            "jobDocumentLoads": 1,
+            "jobDocumentBytes": 262398,
+            "artifactLoads": 0,
+            "artifactBytes": 0
+          },
+          "after": {
+            "sqlStatements": 8,
+            "transactions": 1,
+            "jobDocumentLoads": 0,
+            "jobDocumentBytes": 0,
+            "artifactLoads": 0,
+            "artifactBytes": 0
+          }
+        },
+        {
+          "case": "batch18",
+          "before": {
+            "sqlStatements": 108,
+            "transactions": 18,
+            "jobDocumentLoads": 18,
+            "jobDocumentBytes": 4723164,
+            "artifactLoads": 18,
+            "artifactBytes": 1179648
+          },
+          "after": {
+            "sqlStatements": 6,
+            "transactions": 1,
+            "jobDocumentLoads": 0,
+            "jobDocumentBytes": 0,
+            "artifactLoads": 18,
+            "artifactBytes": 1179648
+          }
+        }
+      ],
+      "preserved": [
+        "per-transaction restricted-role verification",
+        "transaction-local owner identity",
+        "owner and expiry authorization",
+        "one SHA256 verification per returned artifact",
+        "write quota lock",
+        "CAS revisions",
+        "immutable history and receipts",
+        "lease fencing",
+        "awaited telemetry"
+      ],
+      "changes": [
+        "combined artifact bytes and receipt retrieval",
+        "bounded single-query artifact batches",
+        "metadata-only job authorization for artifact, lease and telemetry operations"
+      ]
+    },
+    "images": {
+      "schemaVersion": "uid-brands-v2.image-preflight-benchmark/1",
+      "status": "PASS",
+      "measuredAt": "2026-11-28T03:41:40.268Z",
+      "environment": {
+        "node": "v24.14.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "policy": {
+        "id": "uid-v2.full-image-decode/1",
+        "byteLimit": 33554432,
+        "pixelLimit": 32000000,
+        "formats": "png,jpeg,webp,avif",
+        "maximumPages": 1,
+        "failOn": "warning",
+        "orientation": "rotate-before-raw-full-pixel-decode"
+      },
+      "benchmarkScope": "Local process wall-clock time for real full pixel decodes and byte-hash checks; synthetic source images. No browser/database/network time is included.",
+      "order": "Three empty-cache samples per branch, alternating uncached/cached order after explicit decoder warm-up.",
+      "results": [
+        {
+          "mode": "gtk",
+          "syntheticOnly": true,
+          "artifactSource": "previous actual Chromium GTK/FAQ mechanical regression fixtures",
+          "sourceArchiveSha256": "be3e5c974b2a43d6f1d8fd94d2cf518365ff76b81fb230d5bf26d7e050f1ff08",
+          "productionAssetCount": 18,
+          "requests": 97,
+          "uniqueByteHashes": 20,
+          "exactReceiptEquality": true,
+          "samples": [
+            {
+              "uncached": {
+                "elapsedMs": 340.245041,
+                "actualDecodeCalls": 97
+              },
+              "cached": {
+                "elapsedMs": 70.27600000000007,
+                "actualDecodeCalls": 20,
+                "cache": {
+                  "requests": 97,
+                  "bytesHashed": 756259,
+                  "cacheHits": 77,
+                  "pendingHits": 0,
+                  "decodeStarts": 20,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 20,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              }
+            },
+            {
+              "cached": {
+                "elapsedMs": 69.63595799999996,
+                "actualDecodeCalls": 20,
+                "cache": {
+                  "requests": 97,
+                  "bytesHashed": 756259,
+                  "cacheHits": 77,
+                  "pendingHits": 0,
+                  "decodeStarts": 20,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 20,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              },
+              "uncached": {
+                "elapsedMs": 319.18320800000004,
+                "actualDecodeCalls": 97
+              }
+            },
+            {
+              "uncached": {
+                "elapsedMs": 353.6149580000001,
+                "actualDecodeCalls": 97
+              },
+              "cached": {
+                "elapsedMs": 77.96337500000004,
+                "actualDecodeCalls": 20,
+                "cache": {
+                  "requests": 97,
+                  "bytesHashed": 756259,
+                  "cacheHits": 77,
+                  "pendingHits": 0,
+                  "decodeStarts": 20,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 20,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              }
+            }
+          ]
+        },
+        {
+          "mode": "faq",
+          "syntheticOnly": true,
+          "artifactSource": "previous actual Chromium GTK/FAQ mechanical regression fixtures",
+          "sourceArchiveSha256": "9ff9cf111b91073017449f2da486275355f13b624781a2fd5efd403672e4ab8a",
+          "productionAssetCount": 15,
+          "requests": 82,
+          "uniqueByteHashes": 17,
+          "exactReceiptEquality": true,
+          "samples": [
+            {
+              "uncached": {
+                "elapsedMs": 326.717208,
+                "actualDecodeCalls": 82
+              },
+              "cached": {
+                "elapsedMs": 61.83891700000004,
+                "actualDecodeCalls": 17,
+                "cache": {
+                  "requests": 82,
+                  "bytesHashed": 781691,
+                  "cacheHits": 65,
+                  "pendingHits": 0,
+                  "decodeStarts": 17,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 17,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              }
+            },
+            {
+              "cached": {
+                "elapsedMs": 60.674125000000004,
+                "actualDecodeCalls": 17,
+                "cache": {
+                  "requests": 82,
+                  "bytesHashed": 781691,
+                  "cacheHits": 65,
+                  "pendingHits": 0,
+                  "decodeStarts": 17,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 17,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              },
+              "uncached": {
+                "elapsedMs": 292.4308329999999,
+                "actualDecodeCalls": 82
+              }
+            },
+            {
+              "uncached": {
+                "elapsedMs": 300.83254199999965,
+                "actualDecodeCalls": 82
+              },
+              "cached": {
+                "elapsedMs": 63.037417000000005,
+                "actualDecodeCalls": 17,
+                "cache": {
+                  "requests": 82,
+                  "bytesHashed": 781691,
+                  "cacheHits": 65,
+                  "pendingHits": 0,
+                  "decodeStarts": 17,
+                  "evictions": 0,
+                  "expirations": 0,
+                  "entries": 17,
+                  "pending": 0,
+                  "maxEntries": 128,
+                  "ttlMs": 300000
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "modelTokens": null,
+      "modelCost": null,
+      "creativeEO": "NOT_RUN",
+      "fullWorkflowLatency": "NOT_MEASURED",
+      "limitations": [
+        "Measured local CPU-work timings are not a deployed latency promise.",
+        "This benchmark replays delivery byte-verification calls; canonical format/dimension rechecks are covered by separate tests.",
+        "All bytes are freshly hashed per cache request, and failed decodes are never cached.",
+        "No canonical rules, visual QC, approvals, artifact ownership, rendering, ZIP CRC or freshness checks are cached."
+      ]
+    },
+    "actualModelTokens": null,
+    "modelCost": null,
+    "creativeEO": "NOT_RUN",
+    "fullWorkflowLatency": "NOT_MEASURED",
+    "limitations": [
+      "Local deterministic computation and SQL-access measurements only.",
+      "Synthetic image bytes do not represent creative output quality.",
+      "Context/decoder cache expiry or cold start recomputes verification.",
+      "Cold context verification has additional fingerprint overhead.",
+      "No measured total token billing, model speed or creative EO parity."
+    ]
+  },
+  "handoverAudit": {
+    "schemaVersion": "uid-brands-v2.public-handover-independent-audit/1",
+    "release": "comprehensive",
+    "observedAt": "2026-11-28T03:48:27.448371+00:00",
+    "status": "PASS",
+    "kitArchive": "uid-brands-v2-test-kit.zip",
+    "kitSha256": "80803386c988c8047b114ef5ea1890ba3598846314b7ebc20191d2dc2eba58d4",
+    "kitBytes": 131330,
+    "outerEntries": 18,
+    "nestedPluginEntries": 5,
+    "crcAndManifestHashes": "PASS",
+    "externalManifestMatchesEmbedded": true,
+    "testKitSourcesIdenticalToRepository": 6,
+    "pluginSourcesIdenticalToRepository": 5,
+    "nativePluginAuthentication": "none",
+    "anonymousLiveSmoke": "PASS",
+    "privateIsolationEvidence": "PASS",
+    "publicInvocationKeyUnique": true,
+    "optimizationChecks": {
+      "sameResponseCoverageRoundtrip": true,
+      "repeatedContextNoWrite": true,
+      "compactStageBytes": 134600,
+      "fullStageBytes": 138582,
+      "fullStateFallback": true,
+      "allRulesVisible": true,
+      "exactLookupBatch": {
+        "lookups": 4,
+        "mcpCalls": 1,
+        "exactJsonShapes": true
+      }
+    },
+    "externalOptimizationReportsVerified": 2,
+    "previousPublicKit": "previous-public-kit/1789ecb5c416b942",
+    "previousPublicKitPreserved": "PASS",
+    "oldPublicEvidenceModified": false,
+    "tests": {
+      "tests": 126,
+      "passed": 126,
+      "failed": 0,
+      "logSha256": "e536bf0227456e4f50d2dea9a5fa8b830cd7785851d3f4187c76b4ca57f89ae6"
+    },
+    "offlineKitTests": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "logSha256": "308a015de121edef9756e882cfb3da4feba9008c88d5902dda272167651a20f2"
+    },
+    "unsafeEntryCount": 0,
+    "secretPatternMatches": 0,
+    "privateAllocationFiles": 0,
+    "credentialsRead": false,
+    "productionWrites": false
+  },
+  "isolation": {
+    "allChangesUnderV2": true,
+    "mainShaUnchanged": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+    "productionWrites": false,
+    "databaseMigration": false,
+    "environmentChanges": false,
+    "paidResourcesCreated": false,
+    "existingRenderServicesModified": false
+  },
+  "rollbackApplicationCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+  "creativeEO": "NOT_RUN",
+  "actualModelTokens": null,
+  "endToEndOnepageLatency": "NOT_MEASURED",
+  "gptConnection": "NOT_VERIFIED_PREVIOUS_WORKSPACE_403"
+}
