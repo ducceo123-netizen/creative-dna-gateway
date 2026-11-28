@@ -1,5 +1,5 @@
 interface:
   display_name: "UID Brands V2 Test"
-  short_description: "Isolated Onepage V2 testing"
+  short_description: "Public Onepage V2 sandbox"
 policy:
   allow_implicit_invocation: false

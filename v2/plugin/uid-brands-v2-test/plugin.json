@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "uid-brands-v2-test",
-  "version": "0.1.0",
-  "description": "Authenticated isolated UID Brands Onepage V2 tests for PawfectHouse, GiftSoul and SoulPrise.",
+  "version": "0.2.0",
+  "description": "No-token public UID Brands Onepage V2 sandbox for PawfectHouse, GiftSoul and SoulPrise.",
   "author": {
     "name": "UID Brands"
   },
@@ -11,8 +11,8 @@
     "com.openai": {
       "interface": {
         "displayName": "UID Brands V2 Test",
-        "shortDescription": "Isolated Onepage V2 testing",
-        "longDescription": "Authenticated isolated Onepage V2 testing with pinned canonical rules, resumable jobs, actual artifacts, QC and deterministic delivery. Production remains unchanged. EO and token-cost acceptance require real runs.",
+        "shortDescription": "Public Onepage V2 sandbox",
+        "longDescription": "No-token shared public Onepage V2 sandbox with pinned canonical rules, resumable jobs, actual artifacts and QC gates. Public actions are anonymous and identity-unverified. Prior private jobs stay protected. Production remains unchanged; EO and token-cost acceptance require real runs.",
         "developerName": "UID Brands",
         "category": "Developer Tools",
         "capabilities": [
