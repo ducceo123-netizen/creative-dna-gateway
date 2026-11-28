@@ -56,11 +56,11 @@
   "gptConnectionVerified": false,
   "paidResourcesCreated": false,
   "productionWritesPerformed": false,
-  "deployId": "dep-dc540l97lnhs73ai9ls0",
-  "sourceCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+  "deployId": "dep-dc54lmcipgvc73fhe3tg",
+  "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
   "createdAt": "2026-11-28T09:14:53+07:00",
   "credentialUploadAuthorized": true,
-  "liveAt": "2026-11-28T09:46:47+07:00",
+  "liveAt": "2026-11-28T10:32:16+07:00",
   "publicMcpSmoke": "PASS",
   "gptConnectionBlocker": "ACTUAL_GPT_CONNECTION_NOT_RETESTED_PREVIOUS_WORKSPACE_403",
   "deploymentHistory": [
@@ -82,13 +82,20 @@
       "authentication": "test-token",
       "publicAccessVerification": "FAILED_CONFIGURATION_RETAINED_BEARER_MODE",
       "resolution": "Saved public-test in the visible environment editor and redeployed."
+    },
+    {
+      "deployId": "dep-dc540l97lnhs73ai9ls0",
+      "sourceCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+      "liveAt": "2026-11-28T09:46:47+07:00",
+      "authentication": "public-test",
+      "publicAccessVerification": "PASS"
     }
   ],
-  "finalDeployStartedAt": "2026-11-28T09:45:41+07:00",
-  "finalDeployDurationSeconds": 66,
+  "finalDeployStartedAt": "2026-11-28T10:30:33+07:00",
+  "finalDeployDurationSeconds": 102,
   "finalDeployStatus": "Deploy succeeded",
   "linuxContainerBuild": "PASS",
-  "evidence": "Authenticated Render Dashboard deploy detail plus separate public MCP smoke reports",
+  "evidence": "Authenticated Render Dashboard exact source commit and successful deployment; separate public MCP smoke and private isolation reports",
   "postRedeployRecovery": "PASS",
   "standaloneTestKitLiveSmoke": "PASS_PUBLIC_NO_TOKEN",
   "productionRenderSourcePins": "UNCHANGED_VERIFIED_2026-11-28",
@@ -103,5 +110,17 @@
   "existingPrivateOwnersProtected": true,
   "publicAccessSmoke": "PASS",
   "existingPrivateOwnerIsolation": "PASS_LIVE",
-  "publicNoAuthVerifiedAt": "2026-11-28T02:47:13.524Z"
+  "publicNoAuthVerifiedAt": "2026-11-28T03:32:52.809Z",
+  "optimizationRelease": true,
+  "optimizationDatabaseMigration": false,
+  "optimizationEnvironmentChange": false,
+  "localTests": {
+    "passed": 102,
+    "failed": 0,
+    "offlineKitPassed": 5,
+    "lint": "PASS",
+    "build": "PASS"
+  },
+  "optimizationSmokeEvidence": "v2-optimization-live-smoke.json",
+  "optimizationPrivateIsolationEvidence": "v2-optimization-isolation.json"
 }
