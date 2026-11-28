@@ -1,0 +1,301 @@
+{
+  "schemaVersion": "uid-brands-v2.optimization-context-verification/1",
+  "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+  "sourceBaselineCommit": "5e41003fddd1cdbb9d94e17e606b7fa114f9a180",
+  "status": "PASS",
+  "observedAt": "2026-11-28T03:26:45.512Z",
+  "verification": "30 saved brand/stage bundles reconstruct exactly including canonical bundle hash; all32 rules remain visible. Receipt dedup only; nested creative duplicate candidates not implemented.",
+  "rawTextExported": false,
+  "results": [
+    {
+      "brand": "pawfecthouse",
+      "snapshotHash": "1fbc955ca2098303e238faa2f95d83a74687cbfe444f8f8b101d302ea28d4076",
+      "contextMetrics": [
+        {
+          "stage": "init",
+          "fullBytes": 137967,
+          "wireBytes": 133985,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "research",
+          "fullBytes": 172355,
+          "wireBytes": 168373,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "references",
+          "fullBytes": 155321,
+          "wireBytes": 151339,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "content",
+          "fullBytes": 153379,
+          "wireBytes": 149397,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "allocation",
+          "fullBytes": 145958,
+          "wireBytes": 141976,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "materials",
+          "fullBytes": 158182,
+          "wireBytes": 154200,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "qc",
+          "fullBytes": 145940,
+          "wireBytes": 141958,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "mapping",
+          "fullBytes": 146010,
+          "wireBytes": 142028,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "review",
+          "fullBytes": 148482,
+          "wireBytes": 144500,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "packaging",
+          "fullBytes": 148598,
+          "wireBytes": 144616,
+          "savedBytes": 3982,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        }
+      ]
+    },
+    {
+      "brand": "giftsoul",
+      "snapshotHash": "5e78abb12056908b173c16f06c9c694c37667f98d46f94ca9b022891e7295a36",
+      "contextMetrics": [
+        {
+          "stage": "init",
+          "fullBytes": 136731,
+          "wireBytes": 132757,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "research",
+          "fullBytes": 171119,
+          "wireBytes": 167145,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "references",
+          "fullBytes": 147892,
+          "wireBytes": 143918,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "content",
+          "fullBytes": 152143,
+          "wireBytes": 148169,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "allocation",
+          "fullBytes": 144722,
+          "wireBytes": 140748,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "materials",
+          "fullBytes": 150749,
+          "wireBytes": 146775,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "qc",
+          "fullBytes": 144700,
+          "wireBytes": 140726,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "mapping",
+          "fullBytes": 144774,
+          "wireBytes": 140800,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "review",
+          "fullBytes": 147246,
+          "wireBytes": 143272,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "packaging",
+          "fullBytes": 147362,
+          "wireBytes": 143388,
+          "savedBytes": 3974,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        }
+      ]
+    },
+    {
+      "brand": "soulprise",
+      "snapshotHash": "4da3d00d8dc120149de25abd673497bf20528f558482afa7d72ae7d927cfde40",
+      "contextMetrics": [
+        {
+          "stage": "init",
+          "fullBytes": 137269,
+          "wireBytes": 133293,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "research",
+          "fullBytes": 171657,
+          "wireBytes": 167681,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "references",
+          "fullBytes": 148430,
+          "wireBytes": 144454,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "content",
+          "fullBytes": 152681,
+          "wireBytes": 148705,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "allocation",
+          "fullBytes": 145260,
+          "wireBytes": 141284,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "materials",
+          "fullBytes": 151288,
+          "wireBytes": 147312,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "qc",
+          "fullBytes": 145239,
+          "wireBytes": 141263,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "mapping",
+          "fullBytes": 145312,
+          "wireBytes": 141336,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "review",
+          "fullBytes": 147784,
+          "wireBytes": 143808,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        },
+        {
+          "stage": "packaging",
+          "fullBytes": 147900,
+          "wireBytes": 143924,
+          "savedBytes": 3976,
+          "roundtripExact": true,
+          "canonicalHashRestored": true,
+          "requiredRules": 32
+        }
+      ]
+    }
+  ],
+  "measuredTokens": null,
+  "creativeEO": "NOT_RUN"
+}

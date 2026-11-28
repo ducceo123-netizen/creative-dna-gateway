@@ -1,0 +1,518 @@
+{
+  "schemaVersion": "uid-brands-v2.optimization-verification/1",
+  "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+  "deployId": "dep-dc54lmcipgvc73fhe3tg",
+  "status": "PASS",
+  "observedAt": "2026-11-28T03:32:52.459Z",
+  "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
+  "authMode": "public-test",
+  "localChecks": {
+    "schemaVersion": "uid-brands-v2.optimization-local-checks/1",
+    "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+    "status": "PASS",
+    "v2Tests": {
+      "passed": 102,
+      "failed": 0
+    },
+    "testKitTests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "lint": "PASS",
+    "build": "PASS",
+    "node": "v24.14.1",
+    "creativeEO": "NOT_RUN",
+    "actualModelTokens": null,
+    "productionWrites": false,
+    "logs": [
+      {
+        "file": "v2-optimization-tests.log",
+        "sha256": "faa049bfd9cd34a53e38404964843d774383be60fcb77e2df894f7b811ab93a2",
+        "bytes": 12211
+      },
+      {
+        "file": "v2-optimization-kit-tests.log",
+        "sha256": "9973b8c0a010505cc134530d5f68dd5eed53a6f375a2557a915306c8d699b872",
+        "bytes": 601
+      },
+      {
+        "file": "v2-optimization-lint.log",
+        "sha256": "2cec8dd9d53ef6523cc32e84eb68fae0d2f5a3b6e13dffd4ec5062bf06c64532",
+        "bytes": 74
+      },
+      {
+        "file": "v2-optimization-build.log",
+        "sha256": "f3e45ddc0e98907e207a7cbd54384fca390ea976f658a12088bec68a1b808825",
+        "bytes": 241
+      }
+    ]
+  },
+  "liveComparison": {
+    "schemaVersion": "uid-brands-v2.optimization-live-comparison/1",
+    "status": "PASS",
+    "observedAt": "2026-11-28T03:32:52.459Z",
+    "origin": "https://uid-brands-architecture-v2-test.onrender.com",
+    "beforeSourceCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+    "sourceCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+    "environment": "same three existing public sandbox jobs before/after isolated service deployment",
+    "wireMetric": "UTF-8 JSON tool payload bytes, excluding JSON-RPC and SSE envelope",
+    "toolSchemaBytes": {
+      "before": 18729,
+      "after": 19106
+    },
+    "initializeBytes": {
+      "before": 768,
+      "after": 1057
+    },
+    "records": [
+      {
+        "brand": "pawfecthouse",
+        "jobId": "3532cbcc-0452-44ce-8455-93152adf7d8a",
+        "snapshotHash": "70659da9afa98039bacd3c27e9c6a0359f24ef2b4009a1636b0ad52006f35528",
+        "packetSha256": "0f5480191fdd6b1a77517b25cb1223adfa608e2004c29580c08996a2c961a90b",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1987,
+          "afterBytes": 1623,
+          "reductionPercent": 18.31907398087569
+        },
+        "stageContext": {
+          "beforeBytes": 138582,
+          "afterBytes": 134600,
+          "reductionPercent": 2.873389040423724
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 1,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "privateSnapshotExported": false
+      },
+      {
+        "brand": "giftsoul",
+        "jobId": "de385fce-edd3-4cb4-8b0e-decf23b0c386",
+        "snapshotHash": "41cb876bca89facee98df765ff3b0c9e06323a12b87298f282d88b63f49edb74",
+        "packetSha256": "89f5f9b88664d037218fb2d06bb91e98d826a374f8ab521d8a816540440288cc",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1978,
+          "afterBytes": 1614,
+          "reductionPercent": 18.402426693629927
+        },
+        "stageContext": {
+          "beforeBytes": 137341,
+          "afterBytes": 133367,
+          "reductionPercent": 2.893527788497241
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 1,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "privateSnapshotExported": false
+      },
+      {
+        "brand": "soulprise",
+        "jobId": "c952f28c-2cd8-4c1f-8745-06e16bff40d2",
+        "snapshotHash": "f14b0d575dcc722a5d0f83917a13ebd8514b416d8ad037250064b4d7250fe1c6",
+        "packetSha256": "93b39dfdd9c32d0fedd51fd2c83323739d95c94a459c7e231fe5012104d91978",
+        "exactCanonicalPacketPreserved": true,
+        "exactPriorStageRestored": true,
+        "allRequiredRulesVisible": true,
+        "canonicalRuleCount": 32,
+        "executionStepCount": 23,
+        "state": {
+          "beforeBytes": 1980,
+          "afterBytes": 1616,
+          "reductionPercent": 18.38383838383838
+        },
+        "stageContext": {
+          "beforeBytes": 137880,
+          "afterBytes": 133904,
+          "reductionPercent": 2.8836669567740114
+        },
+        "repeatedContextJobRevisionIncrement": {
+          "before": 1,
+          "after": 0
+        },
+        "lookupShapesPreserved": true,
+        "privateSnapshotExported": false
+      }
+    ],
+    "operations": [
+      {
+        "method": "initialize",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1114,
+        "durationMs": 1078
+      },
+      {
+        "method": "tools/list",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 19173,
+        "durationMs": 240
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1887,
+        "durationMs": 1374
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2551,
+        "durationMs": 780
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 140024,
+        "durationMs": 1698
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 144198,
+        "durationMs": 632
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 140024,
+        "durationMs": 1091
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 354929,
+        "durationMs": 453
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 128,
+        "durationMs": 322
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 178
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 149
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1888,
+        "durationMs": 173
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1879,
+        "durationMs": 874
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2543,
+        "durationMs": 191
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 138750,
+        "durationMs": 1300
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 142916,
+        "durationMs": 1420
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 138750,
+        "durationMs": 695
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 343332,
+        "durationMs": 1364
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 125,
+        "durationMs": 622
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 209
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 1086
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1879,
+        "durationMs": 302
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1881,
+        "durationMs": 488
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 2545,
+        "durationMs": 300
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 139353,
+        "durationMs": 1090
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 143521,
+        "durationMs": 720
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_stage_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 139353,
+        "durationMs": 493
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_full_context",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 347632,
+        "durationMs": 1145
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 126,
+        "durationMs": 332
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 115,
+        "durationMs": 152
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_rule_or_evidence",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 117,
+        "durationMs": 151
+      },
+      {
+        "method": "tools/call",
+        "name": "onepage_get_state",
+        "protocol": "2025-06-18",
+        "status": 200,
+        "responseBytes": 1881,
+        "durationMs": 201
+      }
+    ],
+    "actualInputTokens": null,
+    "actualOutputTokens": null,
+    "reasoningTokens": null,
+    "cachedTokens": null,
+    "modelCost": null,
+    "creativeEO": "NOT_RUN",
+    "endToEndLatency": "NOT_MEASURED",
+    "productionWrites": false,
+    "limitations": [
+      "State savings include the extra context identity and fallback instructions introduced in this release.",
+      "Schema and initialization overhead increased and is reported rather than hidden.",
+      "Measurements are payload sizes, not model token/cost savings.",
+      "Three initial-stage jobs are not complete creative workflows or EO comparisons.",
+      "Context reads still return every rule; avoided host reloads depend on actual retained context.",
+      "Repeated reads avoid job/history writes; server telemetry can still write."
+    ]
+  },
+  "privateIsolation": {
+    "observedAt": "2026-11-28T03:32:31.006Z",
+    "origin": "https://uid-brands-architecture-v2-test.onrender.com",
+    "status": "PASS",
+    "privateJobId": "1abbc412-f72d-45c2-acf4-ee838cb8fa80",
+    "productionWrites": false,
+    "taskMutations": false,
+    "checks": {
+      "health": {
+        "status": "ok",
+        "server": "uid-brands-architecture-v2-test",
+        "testMode": true,
+        "baseline": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+        "authRequired": false,
+        "publicSandbox": true,
+        "publicReviewIdentityVerified": false,
+        "authMode": "public-test",
+        "creativeParity": "NOT_VERIFIED"
+      },
+      "onepage_get_state": "ANONYMOUS_NOT_FOUND",
+      "onepage_get_full_context": "ANONYMOUS_NOT_FOUND",
+      "onepage_get_telemetry": "ANONYMOUS_NOT_FOUND",
+      "onepage_read_artifact": "ANONYMOUS_NOT_FOUND",
+      "resource": "ANONYMOUS_DENIED",
+      "rest": "ANONYMOUS_404",
+      "privateState": "BEARER_UNCHANGED",
+      "privateArtifact": {
+        "bearerRead": true,
+        "bytes": 106887,
+        "sha256": "dd25eab4bb911529ddd74958054eaabb73325a7a1145d8f03f21ec16a9739053"
+      }
+    },
+    "finishedAt": "2026-11-28T03:32:36.969Z"
+  },
+  "handoverAudit": {
+    "schemaVersion": "uid-brands-v2.public-handover-independent-audit/1",
+    "release": "optimization",
+    "observedAt": "2026-11-28T03:33:18.928968+00:00",
+    "status": "PASS",
+    "kitArchive": "uid-brands-v2-test-kit.zip",
+    "kitSha256": "1789ecb5c416b9429e16b5bf6a8bfd39a201da096877fc999eef5e9858c3f826",
+    "kitBytes": 129333,
+    "outerEntries": 18,
+    "nestedPluginEntries": 5,
+    "crcAndManifestHashes": "PASS",
+    "externalManifestMatchesEmbedded": true,
+    "testKitSourcesIdenticalToRepository": 6,
+    "pluginSourcesIdenticalToRepository": 5,
+    "nativePluginAuthentication": "none",
+    "anonymousLiveSmoke": "PASS",
+    "privateIsolationEvidence": "PASS",
+    "publicInvocationKeyUnique": true,
+    "optimizationChecks": {
+      "sameResponseCoverageRoundtrip": true,
+      "repeatedContextNoWrite": true,
+      "compactStageBytes": 134600,
+      "fullStageBytes": 138582,
+      "fullStateFallback": true,
+      "allRulesVisible": true
+    },
+    "externalOptimizationReportsVerified": 2,
+    "previousPublicKit": "previous-public-kit/9dbf5ddd65cac420",
+    "previousPublicKitPreserved": "PASS",
+    "oldPublicEvidenceModified": false,
+    "tests": {
+      "tests": 102,
+      "passed": 102,
+      "failed": 0,
+      "logSha256": "faa049bfd9cd34a53e38404964843d774383be60fcb77e2df894f7b811ab93a2"
+    },
+    "offlineKitTests": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "logSha256": "9973b8c0a010505cc134530d5f68dd5eed53a6f375a2557a915306c8d699b872"
+    },
+    "unsafeEntryCount": 0,
+    "secretPatternMatches": 0,
+    "privateAllocationFiles": 0,
+    "credentialsRead": false,
+    "productionWrites": false
+  },
+  "isolation": {
+    "mainSha": "87bf39d1f38eb1d0baee159b921efbd7e3aaf923",
+    "mainRemoteRecheckedUnchanged": true,
+    "allDiffPathsUnderV2": true,
+    "databaseMigrationsPerformed": false,
+    "environmentChangesPerformed": false,
+    "productionWritesPerformed": false,
+    "existingRenderServicesModified": false
+  },
+  "rollbackApplicationCommit": "1a51f4c61e7c4d22404410ee6528c5bba5569d93",
+  "actualGptConnection": "NOT_VERIFIED_PREVIOUS_WORKSPACE_403",
+  "actualModelTokens": null,
+  "creativeEO": "NOT_RUN"
+}

@@ -1,5 +1,5 @@
 {
-  "status": "NOT_RETESTED_AFTER_PUBLIC_MODE_REQUEST",
+  "status": "NOT_RETESTED_WORKSPACE_PERMISSION_UNCHANGED",
   "pluginCreated": false,
   "attemptedAt": "2026-11-28",
   "endpoint": "https://uid-brands-architecture-v2-test.onrender.com/api/mcp",
@@ -23,5 +23,8 @@
     "credentialsPackaged": false
   },
   "endpointVerification": "PASS_PUBLIC_NO_AUTH_MCP",
-  "publicNoAuthVerifiedAt": "2026-11-28T02:47:13.524Z"
+  "publicNoAuthVerifiedAt": "2026-11-28T03:32:52.459Z",
+  "localPackageVersion": "0.3.0",
+  "deployedApplicationCommit": "c83390d154b4c15d52f5c29dd7d9fec012ecf8e4",
+  "optimizationContractInPackage": true
 }
