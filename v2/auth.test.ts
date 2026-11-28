@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash } from './core.ts';
-import { testTokenVerifier, jwtVerifier, verifierFromEnv } from './auth.ts';
+import { testTokenVerifier, jwtVerifier, verifierFromEnv, PUBLIC_TEST_OWNER, PUBLIC_TEST_SUBJECT, PUBLIC_TEST_ORIGIN } from './auth.ts';
 import { readConfig } from './config.ts';
 
 test('authentication binds provisioned identity; rejects missing, wrong and V1-style JWT credentials',async()=>{
@@ -42,4 +42,23 @@ test('origin aliases, non-HTTP loopback schemes, root data paths and plural secr
  assert.throws(()=>readConfig({...base,SUPABASE_SECRET_KEYS:'not-real'}),/Remove/);
  assert.throws(()=>jwtVerifier({issuer:'https://auth.example.test:8443',jwksUrl:'https://auth.example.test:8443/keys',audience:'v2',members:{}}),/separately/);
  rmSync(dir,{recursive:true});
+});
+test('public testing is explicit, sandbox-scoped and never falls back for a supplied credential',async()=>{
+ const base={V2_AUTH_MODE:'public-test',V2_MODE:'isolated-test',V2_PUBLIC_ORIGIN:PUBLIC_TEST_ORIGIN};
+ const verify=verifierFromEnv(base);
+ assert.deepEqual(await verify(),{owner:PUBLIC_TEST_OWNER,subject:PUBLIC_TEST_SUBJECT,role:'reviewer',auth:'public-test'});
+ for(const header of ['', ' ', 'Bearer invalid'])await assert.rejects(verify(header),e=>(e as any).status===401);
+ for(const patch of [{V2_MODE:''},{V2_PUBLIC_ORIGIN:'https://uid-brands-gateway-preview.onrender.com'},{V2_PUBLIC_ORIGIN:PUBLIC_TEST_ORIGIN+'/'},{V2_OAUTH_UI_ENABLED:'true'}])assert.throws(()=>verifierFromEnv({...base,...patch}),/isolated/);
+ assert.throws(()=>verifierFromEnv({...base,V2_AUTH_MODE:undefined}),/explicit/);
+});
+test('public namespace cannot alias a private principal and existing private bearer access remains separate',async()=>{
+ const token='uidv2_'+randomBytes(32).toString('base64url');
+ const principal={tokenSha256:hash(token),owner:'private-existing-test',subject:'private-reviewer',role:'reviewer'};
+ const base={V2_AUTH_MODE:'public-test',V2_MODE:'isolated-test',V2_PUBLIC_ORIGIN:PUBLIC_TEST_ORIGIN,V2_TEST_PRINCIPALS_JSON:JSON.stringify([principal])};
+ const verify=verifierFromEnv(base);
+ assert.equal((await verify()).owner,PUBLIC_TEST_OWNER);
+ assert.equal((await verify('Bearer '+token)).owner,principal.owner);
+ assert.equal((await verify('Bearer '+token)).auth,'test-token');
+ for(const header of ['', ' ', 'Bearer invalid', 'Bearer uidv2_'+randomBytes(32).toString('base64url')])await assert.rejects(verify(header),e=>(e as any).status===401);
+ for(const collision of [{owner:PUBLIC_TEST_OWNER},{subject:PUBLIC_TEST_SUBJECT}])assert.throws(()=>verifierFromEnv({...base,V2_TEST_PRINCIPALS_JSON:JSON.stringify([{...principal,...collision}])}),/namespace/);
 });

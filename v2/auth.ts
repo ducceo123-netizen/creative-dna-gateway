@@ -3,9 +3,12 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { readFileSync } from 'node:fs';
 import { boundedId, safeJson, V2Error } from './core.ts';
 
-export type Principal = { owner: string; subject: string; role: 'operator' | 'reviewer'; auth: 'test-token' | 'jwt' };
+export type Principal = { owner: string; subject: string; role: 'operator' | 'reviewer'; auth: 'test-token' | 'jwt' | 'public-test' };
 export type VerifyPrincipal = (authorization?: string) => Promise<Principal>;
 export const PRODUCTION_PROJECT = 'wuonwttmkadwsmefjukv';
+export const PUBLIC_TEST_ORIGIN = 'https://uid-brands-architecture-v2-test.onrender.com';
+export const PUBLIC_TEST_OWNER = 'public-v2-sandbox';
+export const PUBLIC_TEST_SUBJECT = 'anonymous-v2-test';
 export function isolatedHttps(value: string, label: string): URL {
   const url = new URL(value);
   if (url.protocol !== 'https:' || url.port || url.username || url.password || url.hash || url.search || url.hostname.endsWith('.') || url.hostname.includes(PRODUCTION_PROJECT) || /(?:^|\.)(?:localhost|local|internal)$/.test(url.hostname) || /^\d|^\[/.test(url.hostname)) throw new V2Error('ISOLATION_REQUIRED', `${label} must be a separately configured public HTTPS origin.`);
@@ -77,6 +80,28 @@ export function jwtVerifier(config: JwtPrincipalConfig, dependencies: { fetcher?
   };
 }
 export function verifierFromEnv(env: NodeJS.ProcessEnv): VerifyPrincipal {
+  if (env.V2_AUTH_MODE === 'public-test') {
+    // Explicit owner-requested public testing is limited to this one sandbox.
+    // Anonymous callers never inherit the existing private reviewer namespace.
+    if (env.V2_MODE !== 'isolated-test' || env.V2_PUBLIC_ORIGIN !== PUBLIC_TEST_ORIGIN || env.V2_OAUTH_UI_ENABLED === 'true') throw new V2Error('ISOLATION_REQUIRED', 'Public testing is limited to the isolated V2 test origin with OAuth disabled.');
+    let privateVerify: VerifyPrincipal | undefined;
+    if (env.V2_TEST_PRINCIPALS_FILE || env.V2_TEST_PRINCIPALS_JSON) {
+      if (!!env.V2_TEST_PRINCIPALS_FILE === !!env.V2_TEST_PRINCIPALS_JSON) throw new V2Error('AUTH_CONFIG', 'Configure exactly one isolated test-principal source.');
+      const input = env.V2_TEST_PRINCIPALS_JSON || readFileSync(env.V2_TEST_PRINCIPALS_FILE!, 'utf8');
+      const principals = safeJson(JSON.parse(input), 32_000) as TestPrincipalConfig[];
+      if (principals.some(row => row.owner === PUBLIC_TEST_OWNER || row.subject === PUBLIC_TEST_SUBJECT)) throw new V2Error('AUTH_CONFIG', 'The public sandbox namespace cannot be assigned to a private credential.');
+      privateVerify = testTokenVerifier(principals);
+    }
+    return async authorization => {
+      if (authorization !== undefined) {
+        if (!privateVerify) throw new V2Error('UNAUTHORIZED', 'Supplied V2 credential is not configured.', 401);
+        return privateVerify(authorization);
+      }
+      // Reviewer enables the full test workflow, not authenticated human identity.
+      // Exact-hash, stage, QC and explicit-user-approval gates still apply.
+      return { owner: PUBLIC_TEST_OWNER, subject: PUBLIC_TEST_SUBJECT, role: 'reviewer', auth: 'public-test' };
+    };
+  }
   if (env.V2_AUTH_MODE === 'test-token') {
     if (!!env.V2_TEST_PRINCIPALS_FILE === !!env.V2_TEST_PRINCIPALS_JSON) throw new V2Error('AUTH_CONFIG', 'Configure exactly one isolated test-principal source.');
     const input = env.V2_TEST_PRINCIPALS_JSON || readFileSync(env.V2_TEST_PRINCIPALS_FILE!, 'utf8');
@@ -89,5 +114,5 @@ export function verifierFromEnv(env: NodeJS.ProcessEnv): VerifyPrincipal {
     if (!Array.isArray(clientIds) || !Array.isArray(requiredScopes) || !clientIds.every(x=>typeof x==='string') || !requiredScopes.every(x=>typeof x==='string')) throw new V2Error('AUTH_CONFIG', 'OAuth clients and scopes must be arrays.');
     return jwtVerifier({ issuer: env.V2_JWT_ISSUER || '', audience: env.V2_JWT_AUDIENCE, jwksUrl: env.V2_JWKS_URL || '', members: JSON.parse(env.V2_MEMBERS_JSON || '{}'), clientIds, requiredScopes });
   }
-  throw new V2Error('AUTH_CONFIG', 'Configure isolated V2 authentication; public mode is disabled.');
+  throw new V2Error('AUTH_CONFIG', 'Configure an explicit isolated V2 access mode.');
 }
