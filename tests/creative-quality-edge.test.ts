@@ -1,4 +1,5 @@
 import { attachResearch } from '../supabase/functions/_shared/product-research.ts';
+import { publicClipoNoMatch } from './fixtures/public-clipo-no-match.fixture.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -13,9 +14,10 @@ async function invoke(slug:string, payload:unknown, data:unknown, method='POST')
   const Deno={env:{get:(key:string)=>key==='SUPABASE_URL'?'https://example.supabase.co':key==='SUPABASE_SERVICE_ROLE_KEY'?'test-only':undefined},serve:(fn:any)=>{handler=fn}};
   const rpcCalls:any[]=[];
   const createClient=()=>({rpc:async(...args:any[])=>{rpcCalls.push(args);return {data,error:null}}});
-  new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket','attachResearch',compiled)(Deno,createClient,compileCreativeQuality,buildOnepagePacket,attachResearch);
+  const clipo=publicClipoNoMatch();
+  new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket','attachResearch','fetch',compiled)(Deno,createClient,compileCreativeQuality,buildOnepagePacket,attachResearch,clipo.fetch);
   const response=await handler!(new Request('https://example.test',{method,headers:{'Content-Type':'application/json'},...(method==='POST'?{body:JSON.stringify(payload)}:{})}));
-  return {response,body:await response.json(),rpcCalls};
+  clipo.verify();return {response,body:await response.json(),rpcCalls};
 }
 test('real edge handler paths share quality failure semantics without swallowing missing canonical state', async()=>{
   const dna={brand:{slug:'pawfecthouse'},branch:{slug:'onepage-system',content_md:'current',metadata:{}},brand_dna:{slug:'brand-dna',content_md:'brand',metadata:{}}};

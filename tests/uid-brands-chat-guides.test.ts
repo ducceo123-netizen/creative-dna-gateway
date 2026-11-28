@@ -13,7 +13,7 @@ function guide(overrides: object = {}) {
 test("brief guide is readable and never dispatches", () => {
   const result = buildChatBrief();
   assert.match(result.text, /Bước 1/);
-  assert.match(result.text, /phần còn thiếu/);
+  assert.match(result.text, /phần (?:thiết yếu )?còn thiếu/);
   assert.ok(result.next_actions.every(a => a.execution === "not_dispatched"));
 });
 test("asset guidance uses a complete numbered section list without internal IDs or repeated content approval", () => {
@@ -45,7 +45,7 @@ test("blocked, failed, and in-progress states never offer generation, package or
   for (const status of ["blocked", "failed", "in_progress"]) {
     const result = guide({ workflow_state: { status, message: "Thiếu ảnh gốc của mục đầu trang" } });
     assert.match(result.text, /Thiếu ảnh gốc của mục đầu trang/);
-    assert.deepEqual(result.next_actions.map(a => a.action), [status === "in_progress" ? "check_status" : "inspect_blocker"]);
+    assert.deepEqual(result.next_actions.map(a => a.action), []);
   }
 });
 test("separate feedback blocks preserve separate readable scope and full mapped instructions", () => {
@@ -125,7 +125,7 @@ test("group exclusion keeps separate instructions and echoes only final included
 test("each Onepage outcome offers Render link with same-chat instructions and stage relevance", () => {
   const url = "https://uid-brands-gateway-preview.onrender.com/onepage-panel.html";
   for (const stage of ["content_approval", "asset_review", "packaging", "complete"] as const) {
-    const result = guide({ stage, branch: "onepage-system" });
+    const result = guide({ stage, branch: "onepage-system", ...(stage === "content_approval" ? { execution_mode: "review_first" } : {}) });
     assert.ok(result.text.includes(url));
     assert.match(result.text, /Mở tab Feedback.*chọn các mục.*sao chép prompt.*dán và gửi vào chính cuộc trò chuyện này/);
     assert.match(result.text, /góp ý trực tiếp trong chat/);
@@ -133,7 +133,7 @@ test("each Onepage outcome offers Render link with same-chat instructions and st
     assert.equal(result.guide_data.external_panel?.url, url);
     assert.equal(result.guide_data.external_panel?.opens_automatically, false);
   }
-  const content = guide({ stage: "content_approval", branch: "onepage-system", assets: undefined });
+  const content = guide({ stage: "content_approval", branch: "onepage-system", execution_mode: "review_first", assets: undefined });
   assert.match(content.text, /góp ý câu chữ trực tiếp/);
   assert.match(content.text, /Chỉ chọn vị trí ảnh khi ảnh đó thực sự đã được tạo/);
   assert.match(guide({stage:"packaging", branch:"onepage-system"}).text, /không kiểm tra QC hay ZIP/);

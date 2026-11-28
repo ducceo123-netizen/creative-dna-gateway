@@ -12,6 +12,7 @@ import { compileCreativeQuality as directOnlyCompiler } from './fixtures/creativ
 import { buildOnepagePacket } from '../supabase/functions/_shared/onepage-packet.ts';
 import { attachOnepageUiTemplate } from '../onepage-ui-template.ts';
 import { attachResearch } from '../supabase/functions/_shared/product-research.ts';
+import { publicClipoNoMatch } from './fixtures/public-clipo-no-match.fixture.ts';
 const proposalId = '00000000-0000-4000-8000-000000000001';
 const scope = 'STRUCTURAL content shared by PawfectHouse, GiftSoul and SoulPrise.';
 const canonical = (generalized = 'Content titles must identify the current product or category.', expected = 'Write concise titles of two to four words using the correct product noun.', rejects = '- A generic title with no product noun.\n- The wrong product category.') => `## Generalized Rule\n${generalized}\n\n## Expected Behavior\n${expected}\n\n## Reject Conditions\n${rejects}\n\n## Scope\n${scope}\n\n## Rule Class\nSTRUCTURAL\n\n## Confidence\nHIGH`;
@@ -236,9 +237,10 @@ test('real resolver and Onepage Edge handlers emit sanitized agent provenance, a
     let handler:(req:Request)=>Promise<Response>;
     const Deno={env:{get:(key:string)=>key==='SUPABASE_URL'?'https://example.test':key==='SUPABASE_SERVICE_ROLE_KEY'?'synthetic-only':undefined},serve:(fn:any)=>{handler=fn;}};
     const createClient=()=>({rpc:async()=>({data:clone(dna),error:null})});
-    new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket','attachResearch',code)(Deno,createClient,compileCreativeQuality,buildOnepagePacket,attachResearch);
+    const clipo=publicClipoNoMatch();
+    new Function('Deno','createClient','compileCreativeQuality','buildOnepagePacket','attachResearch','fetch',code)(Deno,createClient,compileCreativeQuality,buildOnepagePacket,attachResearch,clipo.fetch);
     const response=await handler!(new Request('https://example.test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}));
-    assert.equal(response.status,200);return response.json();
+    clipo.verify();assert.equal(response.status,200);return response.json();
   }
   for(const [i,target]of plan.compiler_plan!.targets.entries()) {
     const brand=context.compiler_context.brands[i],dna={brand,branch:{...context.targets[i],...target},brand_dna:context.compiler_context.brand_dna_nodes[i]};

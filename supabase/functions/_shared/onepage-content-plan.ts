@@ -1,12 +1,31 @@
 import { ONEPAGE_UI_CONTENT_CONTRACT, validateOnepageUiCopy } from './onepage-ui-content.ts';
 /** New-run structural checks. This is not a canonical patch, source receipt or approval. */
 export const ONEPAGE_CONTENT_PLAN_VERSION = 'uid-onepage-content-plan/1';
+export type OnepageContentApprovalPolicy = 'AUTO_CONTINUE_WITHIN_AUTHORIZED_SCOPE' | 'REQUIRED_BY_ACTIVE_POLICY' | 'FOLLOW_ACTIVE_POLICY_AND_EXPLICIT_USER_SCOPE';
+export type ContentPlanEvaluationOptions = {
+  contentApprovalPolicy?: OnepageContentApprovalPolicy;
+  /** Server-resolved catalog IDs only; never copy this option from raw research. */
+  namedProductScope?: { catalog_product_ids: readonly string[] };
+};
+export const ONEPAGE_CONTENT_CONTINUATION = {
+  execution_owner: 'HOST_WITH_AVAILABLE_TOOLS', backend_execution_started: false,
+  full_onepage_request: 'After valid research and internal semantic/content review, continue authorized materials and desktop/mobile mapping under the active canonical gates. READY_FOR_HOST_REVIEW asks the executing host to review evidence; it is not a member approval request.',
+  explicit_user_scope: {
+    research_only: 'Finish the requested research deliverable; do not start copy or materials.',
+    content_only: 'Finish the requested content deliverable after internal validation; do not start materials.',
+    review_first: 'Present the requested draft for the explicit user review before continuing beyond that boundary.',
+  },
+  intermediate_content_review: 'Follow active canonical policy and explicit user scope; never invent a new approval pause from this structural assessment.',
+  final_outcome_review_required: true, packaging_requires_explicit_authorization: true,
+  preserved_gates: ['source_authenticity', 'semantic_truth', 'product_pixels', 'asset_qc', 'desktop_mobile_review', 'final_outcome_review'],
+} as const;
 export const ONEPAGE_CONTENT_PLAN_CONTRACT = {
   schema_version: ONEPAGE_CONTENT_PLAN_VERSION,
   required_before: 'BUILD_CONTENT_MAP',
   ui_content: ONEPAGE_UI_CONTENT_CONTRACT,
   provenance: 'Owner-requested banner simplification; enforcement of existing adaptive section and collection evidence rules. No canonical mutation.',
-  instruction: 'Submit analysis.content_plan with the same research object before content authoring. Choose the verified product keyword as the entire banner title on both devices, without an appended emotional phrase, slogan or subtitle. Keep approved desktop support separate; mobile has no support/subtitle. Compare FAQ and Good To Know using unresolved buyer questions, practical visual explanations, source coverage and overlap with existing content. Neither mode is the default. Record why one is more useful and why the other is not selected. Preserve canonical counts: GTK uses three distinct supported notes; FAQ has one row per useful supported answer, no filler. Missing evidence blocks the affected content plan; never invent sources or substitute modes to pass. For collections, enumerate available products, disclose inspected coverage and exceptions, and distinguish shared claims from SKU-only details. Product Details retain one anchor SKU and three distinct factual closeups; choose their features from evidence, never assume board edges, flat print or hooks. Existing approved outcomes are not rewritten. Host semantic, evidence and pixel review plus content approval remain mandatory.',
+  instruction: 'Submit analysis.content_plan with the same research object before content authoring. Choose the verified product keyword as the entire banner title on both devices, without an appended emotional phrase, slogan or subtitle. Keep approved desktop support separate; mobile has no support/subtitle. Compare FAQ and Good To Know using unresolved buyer questions, practical visual explanations, source coverage and overlap with existing content. Neither mode is the default. Record why one is more useful and why the other is not selected. Preserve canonical counts: GTK uses three distinct supported notes; FAQ has one row per useful supported answer, no filler. Missing evidence blocks the affected content plan; never invent sources or substitute modes to pass. For collections, enumerate available products, disclose inspected coverage and exceptions, and distinguish shared claims from SKU-only details. Product Details retain one anchor SKU and three distinct factual closeups; choose their features from evidence, never assume board edges, flat print or hooks. Existing approved outcomes are not rewritten. Host semantic, evidence and pixel review remain mandatory. Internal host review is not member signoff: follow active canonical policy and the actual user request, including research-only, content-only or review-first limits. For an authorized full Onepage with automatic continuation, finish internal content review and continue materials without another content approval turn. Preserve final outcome review and explicit packaging authorization; this assessment does not execute work or prove approval.',
+  continuation: ONEPAGE_CONTENT_CONTINUATION,
   input_shape: {
     schema_version: ONEPAGE_CONTENT_PLAN_VERSION,
     banner: { product_keyword: 'verified product/line descriptor only', keyword_source_ids: ['inspected exact target PDP IDs'], desktop_title: 'exact product_keyword', mobile_title: 'exact product_keyword', desktop_support: 'separate approved support or empty', mobile_support: '', subtitle: '' },
@@ -23,9 +42,16 @@ const rows = (v: unknown): v is Obj[] => Array.isArray(v) && v.length <= 100 && 
 const ids = (v: unknown): v is string[] => Array.isArray(v) && v.length > 0 && v.length <= 100 && v.every(x => text(x)) && new Set(v).size === v.length;
 const normalize = (v: string) => v.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 
-export function evaluateOnepageContentPlan(research: unknown, validation: { status: string; structurally_supported_claim_ids: string[] }, policyBlocked = false, minimumCollectionProducts?: number) {
+export function evaluateOnepageContentPlan(research: unknown, validation: { status: string; structurally_supported_claim_ids: string[] }, policyBlocked = false, minimumCollectionProducts?: number, options: ContentPlanEvaluationOptions = {}) {
   const issues: string[] = [];
-  const finish = (status: string, mode: string | null = null) => ({ schema_version: ONEPAGE_CONTENT_PLAN_VERSION, status, issues: [...new Set(issues)], selected_mode: mode, semantics: 'HOST_REPORTED_REQUIRES_EVIDENCE_AND_SEMANTIC_REVIEW', content_approval: 'STILL_REQUIRED' });
+  const approval = options.contentApprovalPolicy ?? 'FOLLOW_ACTIVE_POLICY_AND_EXPLICIT_USER_SCOPE';
+  const finish = (status: string, mode: string | null = null) => ({ schema_version: ONEPAGE_CONTENT_PLAN_VERSION, status, issues: [...new Set(issues)], selected_mode: mode, semantics: 'HOST_REPORTED_REQUIRES_EVIDENCE_AND_SEMANTIC_REVIEW', content_approval: approval,
+    next_action: status === 'READY_FOR_HOST_REVIEW'
+      ? approval === 'REQUIRED_BY_ACTIVE_POLICY' ? 'The host must verify evidence meaning and preserve the active content-review gate before materials; honor any narrower user scope. Final outcome review and packaging authorization remain separate.'
+        : 'The host must perform internal evidence and semantic review, then continue the authorized next stage under active policy. Research-only/content-only requests stop at their requested deliverable; explicit review-first requests wait at that boundary. Do not ask for member content approval merely because this status says HOST_REVIEW.'
+      : status === 'BLOCKED_BY_EXISTING_POLICY' ? 'Resolve the actual canonical policy blocker before the affected work; continue only independent authorized work.'
+        : status === 'AWAITING_VALID_RESEARCH' ? 'Continue authorized source research and repair its actual evidence gaps; do not generate unsupported content or claim inspection.'
+          : 'Prepare or repair the internal content plan if content is within the user-requested scope; use the reported issues and existing research, then validate again. A research-only request does not authorize materials.' });
   if (policyBlocked) return finish('BLOCKED_BY_EXISTING_POLICY');
   if (!['READY', 'READY_WITH_LIMITATIONS'].includes(validation.status)) return finish('AWAITING_VALID_RESEARCH');
   const p = obj(research) && obj(research.analysis) ? research.analysis.content_plan : undefined;
@@ -80,12 +106,16 @@ export function evaluateOnepageContentPlan(research: unknown, validation: { stat
   else if (new Set(d.items.map((i: Obj) => normalize(i.visible_proof))).size !== 3) issues.push('DISTINCT_DETAIL_PROOFS_REQUIRED');
   if (research.scope.source_type === 'collection') {
     const c = p.collection;
-    if (!obj(c) || !Number.isInteger(c.discovered_product_count) || c.discovered_product_count < research.scope.products.length || !text(c.enumeration_note, 40) || !text(c.exceptions) || !facts(c.shared_claim_ids) || c.shared_claim_ids.some((id: string) => !['collection', 'shared_subset'].includes(claims.get(id)?.scope))) issues.push('COLLECTION_COVERAGE_AND_SHARED_FACTS_REQUIRED');
+    // Distinct variant rows cannot inflate the verified named-family product pool.
+    const namedCatalogIds = options.namedProductScope ? new Set(options.namedProductScope.catalog_product_ids) : undefined;
+    const inspectedProductCount = namedCatalogIds ? new Set(research.scope.products.map((product: Obj) => product.catalog_product_id ?? product.id)).size : research.scope.products.length;
+    if (namedCatalogIds && (!obj(c) || c.discovered_product_count !== namedCatalogIds.size)) issues.push('NAMED_PRODUCT_TYPE_DISCOVERED_COUNT_MISMATCH');
+    if (!obj(c) || !Number.isInteger(c.discovered_product_count) || c.discovered_product_count < inspectedProductCount || !text(c.enumeration_note, 40) || !text(c.exceptions) || !facts(c.shared_claim_ids) || c.shared_claim_ids.some((id: string) => !['collection', 'shared_subset'].includes(claims.get(id)?.scope))) issues.push('COLLECTION_COVERAGE_AND_SHARED_FACTS_REQUIRED');
     else {
-      if (c.discovered_product_count > 1 && research.scope.products.length === 1) issues.push('COLLECTION_SINGLE_DEMO_COVERAGE');
-      if (Number.isInteger(minimumCollectionProducts) && minimumCollectionProducts! > 0 && research.scope.products.length < Math.min(c.discovered_product_count, minimumCollectionProducts!)) issues.push('CANONICAL_COLLECTION_POOL_INSUFFICIENT');
+      if (c.discovered_product_count > 1 && inspectedProductCount === 1) issues.push('COLLECTION_SINGLE_DEMO_COVERAGE');
+      if (Number.isInteger(minimumCollectionProducts) && minimumCollectionProducts! > 0 && inspectedProductCount < Math.min(c.discovered_product_count, minimumCollectionProducts!)) issues.push('CANONICAL_COLLECTION_POOL_INSUFFICIENT');
     }
-    if (obj(c) && research.scope.inventory_complete && c.discovered_product_count !== research.scope.products.length) issues.push('COLLECTION_COMPLETENESS_CONTRADICTION');
+    if (obj(c) && research.scope.inventory_complete && c.discovered_product_count !== inspectedProductCount) issues.push('COLLECTION_COMPLETENESS_CONTRADICTION');
   }
   return finish(issues.length ? 'NEEDS_REVISION' : 'READY_FOR_HOST_REVIEW', issues.length ? null : s.mode);
 }

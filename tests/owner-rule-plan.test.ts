@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { publicClipoNoMatch } from './fixtures/public-clipo-no-match.fixture.ts';
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
 import { attachResearch } from '../supabase/functions/_shared/product-research.ts';
@@ -446,9 +447,10 @@ test('actual public resolver, Onepage Edge handler and gateway expose exact supp
     let handler: (request: Request) => Promise<Response>;
     const Deno = { env: { get: (key: string) => key === 'SUPABASE_URL' ? 'https://example.test' : key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'synthetic-test-only' : undefined }, serve: (fn: any) => { handler = fn; } };
     const createClient = () => ({ rpc: async () => ({ data: clone(dna), error: null }) });
-    new Function('Deno', 'createClient', 'compileCreativeQuality', 'buildOnepagePacket', 'attachResearch', code)(Deno, createClient, compileCreativeQuality, buildOnepagePacket, attachResearch);
+    const clipo=publicClipoNoMatch();
+    new Function('Deno', 'createClient', 'compileCreativeQuality', 'buildOnepagePacket', 'attachResearch', 'fetch', code)(Deno, createClient, compileCreativeQuality, buildOnepagePacket, attachResearch, clipo.fetch);
     const response = await handler!(new Request('https://example.test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
-    assert.equal(response.status, 200); return response.json();
+    clipo.verify();assert.equal(response.status, 200); return response.json();
   }
   for (const [i, target] of plan.plan!.targets.entries()) {
     const brand = s.compiler_context.brands[i];

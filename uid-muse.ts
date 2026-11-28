@@ -10,7 +10,7 @@ type Dependencies = {
   routes: () => Promise<Result>;
   sanitizeRoutes: (data: any) => { routes: any[] };
   resolve: (brand: string, branch: string) => Promise<Result>;
-  compile: (brand: string, source_url?: string, source_type?: string, theme?: string) => Promise<Result>;
+  compile: (brand: string, source_url?: string, source_type?: string, theme?: string, research?: unknown, product_line?: string) => Promise<Result>;
 };
 
 const brand = z.string().trim().min(1).max(100);
@@ -25,6 +25,7 @@ const compileInput = z.object({
   }).optional(),
   source_type: z.enum(['auto', 'product', 'collection']).optional(),
   theme: z.string().trim().max(120).optional(),
+  product_line: z.string().trim().min(1).max(160).optional(),
 }).strict();
 const templateInput = z.object({ version: z.string().max(100).optional() }).strict();
 
@@ -60,11 +61,12 @@ export function museOpenApi(origin: string) {
         parameter('brand', { type: 'string', minLength: 1, maxLength: 100 }, true),
         parameter('branch', { type: 'string', minLength: 1, maxLength: 150 }, true),
       ]) },
-      '/api/muse/compile': { get: operation('compile_onepage_job', 'Compile the current Onepage task packet without creating a job, generating assets, fetching the source URL, or changing canonical data. Preserve every quality/reference gate and revision/hash.', [
+      '/api/muse/compile': { get: operation('compile_onepage_job', 'Compile the current Onepage task packet with bounded read-only source/reference discovery. A name-only product_line resolves exact Shopify product types on the selected brand store. This does not create a job, generate assets or change canonical data. Preserve every quality/reference gate and revision/hash.', [
         parameter('brand', { type: 'string', minLength: 1, maxLength: 100 }, true),
         parameter('source_url', { type: 'string', format: 'uri', maxLength: 2000, description: 'Optional public HTTPS product/collection URL without embedded credentials. No signed/private URLs.' }),
         parameter('source_type', { type: 'string', enum: ['auto', 'product', 'collection'] }),
         parameter('theme', { type: 'string', maxLength: 120, description: 'Optional public creative theme; no personal or confidential information.' }),
+        parameter('product_line', { type: 'string', minLength: 1, maxLength: 160, description: 'Exact Shopify product_type for name-only briefs. An explicit source_url retains precedence.' }),
       ]) },
       '/api/muse/template': { get: operation('get_onepage_ui_template', 'Get the shared versioned template manifest with exact HTML/CSS download URLs and SHA-256 hashes. Returns links and requirements; no render or asset generation.', [
         parameter('version', { type: 'string', maxLength: 100, description: 'Omit to use the current canonical template version.' }),
@@ -93,7 +95,7 @@ export function museBootstrap(origin: string) {
 <p><a href="${base}/api/muse/openapi.json">OpenAPI 3.1 cho bốn thao tác read-only</a>. Tất cả dùng GET, trả JSON, không cần credential. URL ví dụ là request thực tế; có thể mở bằng trình duyệt hoặc công cụ HTTP. Nếu Muse hỗ trợ tạo Custom Connector từ OpenAPI, dùng schema này và tự xác nhận quyền khi Muse hỏi.</p>
 <ul><li>GET /api/muse/routes: không có tham số.</li>
 <li>GET /api/muse/resolve: brand, branch bắt buộc.</li>
-<li>GET /api/muse/compile: brand bắt buộc; source_url, source_type (auto/product/collection), theme tùy chọn. URL-encode từng giá trị. source_url chỉ là đầu vào brief, không được tự tải bởi endpoint.</li>
+<li>GET /api/muse/compile: brand bắt buộc; source_url, source_type (auto/product/collection), theme và product_line tùy chọn. URL-encode từng giá trị. Tên dòng sản phẩm được tra cứu theo đúng Shopify product_type trên store của brand; URL đã cung cấp giữ nguyên phạm vi. Việc tra nguồn/reference chỉ đọc và có giới hạn thời gian.</li>
 <li>GET /api/muse/template: version tùy chọn, mặc định phiên bản hiện hành.</li></ul>
 <h2>Điều cần biết</h2>
 <ul><li>Đây là bản API/browser MVP. Chưa xác minh kết nối công cụ trực tiếp trong tài khoản Muse của bạn; không phải connector được Meta phê duyệt. Không cần tạo kết nối thường trực để thử các link trên.</li>
@@ -138,8 +140,8 @@ export function registerMuseRoutes(app: express.Application, dependencies: Depen
     const input = compileInput.safeParse(req.query);
     if (!input.success) return res.status(400).json({ error: 'Invalid compile parameters; see the Muse OpenAPI schema' });
     try {
-      const { brand, source_url, source_type, theme } = input.data;
-      const result = await dependencies.compile(brand, source_url, source_type, theme);
+      const { brand, source_url, source_type, theme, product_line } = input.data;
+      const result = await dependencies.compile(brand, source_url, source_type, theme, undefined, product_line);
       return res.status(result.status).json(result.ok ? result.data : { error: 'Unable to compile Onepage job' });
     } catch { return res.status(502).json({ error: 'Unable to compile Onepage job' }); }
   });

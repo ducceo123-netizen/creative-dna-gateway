@@ -60,7 +60,7 @@ test('GET adapter preserves canonical results and blocking gates, validates inpu
     assert.equal(compile.headers.get('cache-control'), 'no-store');
     assert.equal(compile.headers.get('referrer-policy'), 'no-referrer');
     assert.deepEqual(await compile.json(), packet);
-    assert.deepEqual(calls, [['routes'], ['resolve', 'PawfectHouse', 'Onepage'], ['compile', 'PawfectHouse', 'https://example.com/p', 'product', 'Christmas']]);
+    assert.deepEqual(calls, [['routes'], ['resolve', 'PawfectHouse', 'Onepage'], ['compile', 'PawfectHouse', 'https://example.com/p', 'product', 'Christmas', undefined, undefined]]);
     const template = await get('/api/muse/template');
     assert.deepEqual(await template.json(), getOnepageUiTemplate());
     assert.equal((await get('/api/muse/template?version=missing')).status, 404);
@@ -92,19 +92,39 @@ test('GET adapter preserves canonical results and blocking gates, validates inpu
 
 test('real application mounts Muse behind existing security/rate limits without altering ChatGPT discovery', async () => {
   const server = await start(createApp());
+  // Keep real security/rate middleware, isolate this client from other Bun files.
+  const clientFetch=(url:string)=>fetch(url,{headers:{'X-Forwarded-For':'192.0.2.152'}});
   try {
-    const bootstrap = await fetch(`${server.origin}/muse`);
+    const bootstrap = await clientFetch(`${server.origin}/muse`);
     assert.equal(bootstrap.status, 200);
     assert.match(bootstrap.headers.get('content-type')!, /text\/html/);
     assert.match(bootstrap.headers.get('content-security-policy')!, /default-src 'none'/);
-    const schemaResponse = await fetch(`${server.origin}/api/muse/openapi.json`);
+    const schemaResponse = await clientFetch(`${server.origin}/api/muse/openapi.json`);
     assert.equal(schemaResponse.headers.get('ratelimit-limit'), '120');
     assert.equal(schemaResponse.headers.get('x-content-type-options'), 'nosniff');
     assert.deepEqual(await schemaResponse.json(), museOpenApi(CANONICAL_PRODUCTION_ORIGIN));
-    assert.equal((await fetch(`${server.origin}/api/muse/admin`)).status, 404);
-    const discovery: any = await (await fetch(`${server.origin}/api/tools`)).json();
+    assert.equal((await clientFetch(`${server.origin}/api/muse/admin`)).status, 404);
+    const discovery: any = await (await clientFetch(`${server.origin}/api/tools`)).json();
     assert.ok(discovery.tools.some((tool: any) => tool.name === 'launch_creative_dna'));
     assert.ok(discovery.tools.some((tool: any) => tool.name === 'submit_training_feedback'));
     assert.equal(discovery.mcpEndpoint, `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`);
+  } finally { await server.close(); }
+});
+
+
+test('Muse forwards a name-only product line without inventing a source URL', async () => {
+  const app = express();
+  let received: unknown[] = [];
+  registerMuseRoutes(app, { origin: 'https://gateway.example',
+    routes: async () => ({status:200,ok:true,data:{}}), sanitizeRoutes: () => ({routes:[]}),
+    resolve: async () => ({status:200,ok:true,data:{}}),
+    compile: async (...args) => { received=args; return {status:200,ok:true,data:{scope:'named_family'}}; },
+  });
+  const server = await start(app);
+  try {
+    const r = await fetch(server.origin+'/api/muse/compile?brand=PawfectHouse&product_line=Oven%20Skirt');
+    assert.equal(r.status,200);
+    assert.deepEqual(received,['PawfectHouse',undefined,undefined,undefined,undefined,'Oven Skirt']);
+    assert.ok(museOpenApi(server.origin).paths['/api/muse/compile'].get.parameters.some(p => p.name==='product_line'));
   } finally { await server.close(); }
 });

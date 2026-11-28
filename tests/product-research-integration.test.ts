@@ -9,8 +9,8 @@ test('gateway overlays research on every brand/material including virtual routes
   const original=globalThis.fetch;
   const requests:any[]=[];
   try {
-    globalThis.fetch=async(_url:any,init:any)=>{
-      const request=JSON.parse(init.body);requests.push(request);
+    globalThis.fetch=async(url:any,init:any)=>{
+      const request=JSON.parse(init.body);requests.push({url:String(url),body:request});
       return Response.json({brand:{slug:request.brand},branch:{slug:request.branch==='Onepage'?'onepage-system':request.branch,content_md:'Original canonical rules'},instruction:'Original rule guidance'});
     };
     for(const brand of ['PawfectHouse','GiftSoul','SoulPrise']) for(const branch of ['Home Hero','Onepage']) {
@@ -24,9 +24,14 @@ test('gateway overlays research on every brand/material including virtual routes
     const combo=await resolveCreativeDna('PawfectHouse','Niche Product Combo',{source_url:source,research:{schema_version:RESEARCH_VERSION}});
     assert.equal(combo.data.research_validation.status,'NEEDS_EVIDENCE');
     assert.equal(combo.data.resolved.branch,'niche-product-combo');
+    const beforeCompile=requests.length;
     await compileOnepageJob('PawfectHouse',source,'auto','Gift',{schema_version:RESEARCH_VERSION});
-    assert.deepEqual(requests.at(-1).research,{schema_version:RESEARCH_VERSION});
-    assert.equal(requests.at(-1).source_url,source);
+    // Compilation also calls Clipo discovery. Verify the actual compiler POST,
+    // not the last auxiliary discovery request or its incidental call order.
+    const compilerRequests=requests.slice(beforeCompile).filter(request=>request.url===(process.env.CREATIVE_DNA_COMPILE_ONEPAGE_URL||'https://wuonwttmkadwsmefjukv.supabase.co/functions/v1/creative-dna-compile-onepage'));
+    assert.equal(compilerRequests.length,1);
+    assert.deepEqual(compilerRequests[0].body.research,{schema_version:RESEARCH_VERSION});
+    assert.equal(compilerRequests[0].body.source_url,source);
   } finally {globalThis.fetch=original;}
 });
 
@@ -81,7 +86,7 @@ test('gateway overlays the selection stage before mapping on older upstream pack
  try{
   globalThis.fetch=async()=>Response.json({execution:['VALIDATE_RESEARCH_BEFORE_CONTENT','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE'],hard_gates:{content_approval:'HARD'},readiness:{asset_generation:'REQUIRES_PRODUCT_PIXEL_INSPECTION'}});
   const result=await compileOnepageJob('PawfectHouse',source);
-  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','SELECT_INCREMENTAL_CUSTOMER_VALUE','VALIDATE_ONEPAGE_CONTENT_PLAN','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
+  assert.deepEqual(result.data.execution,['VALIDATE_RESEARCH_BEFORE_CONTENT','CLIPO_REFERENCE_DISCOVERY','HUMAN_REALISM_REFERENCE_DISCOVERY','SELECT_INCREMENTAL_CUSTOMER_VALUE','VALIDATE_ONEPAGE_CONTENT_PLAN','BUILD_CONTENT_MAP','CONTENT_APPROVAL_GATE']);
   assert.equal(result.data.hard_gates.content_approval,'HARD');
   assert.equal(result.data.insight_value_contract.invoke_with.includes('Same compile_onepage_job'),true);
  }finally{globalThis.fetch=original;}
