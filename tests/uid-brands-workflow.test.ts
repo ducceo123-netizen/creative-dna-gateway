@@ -286,10 +286,30 @@ for(const stage of REVIEW_STAGES)test(`all ${stage} actions only prepare text, n
 });
 test("brief works without send bridge or persistence and copy fallback selects editable text",async()=>{
  const ui=setup({stage:"launcher"},{bridge:false,host:{setWidgetState:undefined}});
- ui.$("url").value="https://example.com/products/doll";await ui.submit();
- assert.match(ui.$("promptText").value,/Product \/ Collection: https:\/\/example.com/);
+ ui.$("url").value="https://pawfecthouse.com/products/doll";await ui.submit();
+ assert.match(ui.$("promptText").value,/Product \/ Collection: https:\/\/pawfecthouse.com/);
  ui.$("promptText").value+="\nMy edit";await ui.$("copyPrompt").click();
  assert.match(ui.$("copyStatus").textContent,/Chưa sao chép/);assert.equal(ui.$("promptText").selectionEnd,ui.$("promptText").value.length);assert.equal(ui.messages.length,0);
+});
+test("legacy launcher accepts exact Onepage product line and rejects a different brand URL",async()=>{
+ const ui=setup({stage:"launcher"});ui.$("url").value="Personalized Ornament";await ui.submit();
+ assert.match(ui.$("promptText").value,/product_line: Personalized Ornament/);assert.doesNotMatch(ui.$("promptText").value,/Product \/ Collection: https/);
+ const prior=ui.$("promptText").value;ui.$("url").value="https://giftsoul.co/products/example";await ui.submit();
+ assert.match(ui.$("error").textContent,/đúng website của brand/);assert.equal(ui.$("promptText").value,prior);assert.equal(ui.messages.length,0);
+});
+test("legacy LDP launcher retains material approval and explicit partial instructions",async()=>{
+ const ui=setup({stage:"launcher",routes:[{brand:"pawfecthouse",branch:"ldp-system",title:"LDP"}]});
+ ui.$("url").value="https://pawfecthouse.com/collections/example";ui.$("theme").value="Chỉ research; chưa tạo content hoặc ảnh.";
+ await ui.submit();assert.match(ui.$("promptText").value,/Giữ các bước content approval và review theo quy tắc hiện hành/);
+ assert.match(ui.$("promptText").value,/Chỉ research; chưa tạo content hoặc ảnh/);
+ assert.doesNotMatch(ui.$("promptText").value,/Với Onepage full outcome, tiếp tục content nội bộ/);
+ assert.equal(ui.messages.length,0);
+});
+test("legacy Onepage full outcome content offers no approval prompt while explicit review-first remains",async()=>{
+ const data={...output(),execution_mode:"full_outcome",review_context:{...output().review_context,branch:"onepage-system"}};
+ const ui=setup(data);assert.equal(ui.$("reviewChoices").children.length,0);assert.equal(ui.$("run").disabled,true);await ui.submit();assert.equal(ui.$("promptText").value,"");
+ assert.match(ui.$("nextAction").textContent,/Trợ lý tiếp tục/);
+ ui.update({...data,execution_mode:"review_first"});assert.equal(ui.$("reviewChoices").children.length,3);await ui.choose("approve");assert.match(ui.$("promptText").value,/Chốt content/);
 });
 test("successful copy says copied only, never sent or running",async()=>{
  let copied="";const ui=setup(output(),{clipboard:{async writeText(text){copied=text;}}});await ui.choose("approve");await ui.$("copyPrompt").click();
@@ -306,7 +326,7 @@ test("new version cannot leave a ready prompt bound to stale result",async()=>{
  const ui=setup(output());await ui.choose("approve");ui.update(output("content_approval","v2"));assert.equal(ui.$("promptDock").hidden,true);await ui.choose("approve");assert.match(ui.$("promptText").value,/"content_version":"v2"/);
 });
 test("composer has compact disclosures and no model dispatch API",()=>{
- assert.doesNotMatch(script,/sendFollowUpMessage/);assert.doesNotMatch(launcherHtml,/58vh/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/OUTCOME HTML REVIEW/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not open the old materials feedback panel/);assert.match(OUTCOME_RENDER_GUIDANCE,/no intermediate content approval/);
+ assert.doesNotMatch(script,/sendFollowUpMessage/);assert.doesNotMatch(launcherHtml,/58vh/);assert.match(launcherHtml,/id="promptText"/);assert.match(OUTCOME_RENDER_GUIDANCE,/OUTCOME HTML REVIEW/);assert.match(OUTCOME_RENDER_GUIDANCE,/Do not open the old materials feedback panel/);assert.match(OUTCOME_RENDER_GUIDANCE,/no unrequested intermediate content approval/);
 });
 
 test("edited prompt drafts survive exact-review remount and remain private",async()=>{
@@ -492,7 +512,7 @@ test("Onepage version changes reset stale targets and hide earlier generated pro
  ui.update(onepageOutput("asset_review","v2"));ui.$("feedbackTab").click();assert.equal(ui.$("variableItems").children.length,0);assert.equal(ui.$("promptDock").hidden,true);await ui.submit();assert.match(ui.$("error").textContent,/nhập feedback/);assert.equal(ui.messages.length,0);
 });
 test("Onepage content feedback and delivered assets reuse exact scope without switching stage",async()=>{
- const content=setup(onepageOutput("content_approval"));content.choose("revise");assert.equal(content.$("feedbackTab").attributes["aria-selected"],"true");content.$("reviewFeedback").value="Shorter title";await content.submit();assert.match(content.$("promptText").value,/Shorter title/);assert.match(content.$("promptText").value,/content_approval/);
+ const content=setup(onepageOutput("content_approval"));content.$("feedbackTab").click();assert.equal(content.$("feedbackTab").attributes["aria-selected"],"true");content.$("reviewFeedback").value="Shorter title";await content.submit();assert.match(content.$("promptText").value,/Shorter title/);assert.match(content.$("promptText").value,/content_approval/);
  const delivered=setup(onepageOutput("complete"));delivered.$("feedbackTab").click();addOverallGroup(delivered);groupArea(delivered).value="Improve artwork";groupArea(delivered).oninput?.();await delivered.submit();assert.match(delivered.$("promptText").value,/Improve artwork/);assert.match(delivered.$("promptText").value,/complete/);assert.match(delivered.$("promptText").value,/"action":"feedback"/);
 });
 test("Onepage missing identity or actual inventory cannot invent selectable assets or generate feedback",async()=>{

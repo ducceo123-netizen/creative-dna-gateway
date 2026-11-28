@@ -1,6 +1,6 @@
 
 import { RESEARCH_GUIDANCE } from "./supabase/functions/_shared/product-research.ts";
-import { REVIEW_STEPS } from "./uid-brands-actions.ts";
+import { REVIEW_STEPS, UID_LAUNCHER_SOURCE_SCRIPT } from "./uid-brands-actions.ts";
 import { ATTACHMENT_UI_SCRIPT, ATTACHMENT_UI_STYLES } from "./uid-brands-attachment-ui.ts";
 
 /**
@@ -67,7 +67,7 @@ body,body.review-mode{padding:12px max(12px,env(safe-area-inset-right)) 16px max
 <div class="task-context" id="taskContext"></div><details class="outcome" id="reviewOutcome" hidden><summary id="outcomeTitle">Xem lại tóm tắt kết quả</summary><div class="outcome-content" id="resultContent" hidden></div><div class="result-summary" id="resultSummary" hidden></div><div class="outcome-images" id="resultImages"></div><ul class="outcome-links" id="resultLinks" hidden></ul><p class="outcome-note" id="outcomeNote"></p></details>
 <div id="taskTabPanel" role="tabpanel" aria-labelledby="taskTab"><section id="launchFields"><div class="launcher-row"><div><label for="brand">Brand</label><select id="brand"></select></div><div><label for="branches">Material / Task</label><select id="branches" aria-label="Select material"></select></div></div>
 <p id="routeStatus" role="status" aria-live="polite"></p><button id="refreshRoutes" class="back-action" type="button" hidden>Tải lại danh sách brand / material</button>
-<label for="url">Product / Collection URL</label><input id="url" type="url" placeholder="https://pawfecthouse.com/collections/..." maxlength="2000" required/>
+<label for="url">Product / Collection URL hoặc tên dòng Onepage</label><input id="url" type="text" placeholder="https://... hoặc tên dòng sản phẩm chính xác" maxlength="2000" required/>
 <details class="optional-brief" id="optionalBrief"><summary>Theme / yêu cầu riêng (tuỳ chọn)</summary><label for="theme">Theme <span class="optional">(không bắt buộc)</span></label><input id="theme" maxlength="120" placeholder="Christmas, Family, Memorial..."/>
 <label for="custom">Yêu cầu riêng <span class="optional">(không bắt buộc)</span></label><textarea id="custom" maxlength="4000" placeholder="Any specific creative angle or requirements"></textarea></details>
 </section><section id="reviewFields"><div id="primaryActions"><p id="reviewHelp">Review the current outcome and choose the next step.</p><div id="reviewChoices" class="review-options"></div></div></section></div><div id="feedbackTabPanel" role="tabpanel" aria-labelledby="feedbackTab"><label for="reviewFeedback" id="feedbackLabel" hidden>Feedback</label><textarea id="reviewFeedback" placeholder="Nhập yêu cầu chỉnh sửa cụ thể..." hidden></textarea><p id="feedbackEmpty" hidden></p><button id="recoverFeedbackContext" type="button" class="back-action" hidden>Tạo prompt mở lại kết quả để góp ý</button><div id="assetFeedbackFields" hidden><div class="mode-tabs"><button type="button" id="modeFeedback" class="mode-tab">Feedback</button><button type="button" id="modeTrain" class="mode-tab">Train</button></div><p id="modeInfo" class="mode-info"></p><label>Chọn variables / section</label><div id="variableKeys" class="variable-keys"></div><div id="groupActions"><button id="createSharedFeedback" type="button">+ Feedback chung cho mục đã chọn</button><button id="clearTargets" type="button">Bỏ chọn</button></div><p id="targetCount" class="selection-count" role="status" aria-live="polite"></p><div id="variableItems"></div><button id="backToReview" type="button" class="back-action">← Quay lại</button></div></div><section id="attachmentSection" class="attachment-wrap"><details><summary>Tệp tham khảo (tuỳ chọn)</summary><p>Ảnh chọn ở đây chưa được gửi cùng prompt. Khi dán prompt vào chat, đính kèm ảnh/tệp gốc để AI xem; tài liệu dài chỉ có trích đoạn trong prompt.</p><div id="attachmentInput"></div></details></section><p class="draft-note" id="draftNote">Bản nháp được giữ khi quay lại hoặc đổi chế độ trong panel này.</p><div class="error" id="error" role="alert"></div><button class="action" id="run" type="button">Run UID Brands</button></section><button class="back-action" id="showPanel" type="button" aria-controls="actionablePanel" aria-expanded="false" hidden>Xem lại nội dung và lựa chọn</button><details id="requestDetails" open><summary id="requestDetailsSummary" hidden>Xem lệnh đã gửi và cách kiểm tra</summary><section class="guidance" id="requestActivity" aria-labelledby="requestActivityTitle" hidden><h2 id="requestActivityTitle">Yêu cầu trong bước này</h2><div id="requestActivityItems" role="status" aria-live="polite"></div><p id="requestRecoveryHint"></p><details id="requestRecovery"><summary>Khôi phục khi mất kết nối</summary><p>Panel không thể kết nối lại hay tiếp tục lượt chạy ChatGPT. Mở lại cuộc trò chuyện gốc; nếu vẫn không có phản hồi, gửi nội dung kiểm tra bên dưới. Nội dung này chỉ yêu cầu đối chiếu, không chạy lại tác vụ.</p><textarea id="requestRecoveryText" readonly aria-label="Nội dung kiểm tra yêu cầu"></textarea></details></section><button class="back-action" id="checkRequest" type="button" hidden>Kiểm tra yêu cầu đã gửi</button><button class="back-action" id="newBrief" type="button" hidden>Tạo brief mới từ thông tin này</button></details>
@@ -76,6 +76,7 @@ body,body.review-mode{padding:12px max(12px,env(safe-area-inset-right)) 16px max
 </div></main>
 <script>
 (function(){
+${UID_LAUNCHER_SOURCE_SCRIPT}
 const $=id=>document.getElementById(id);
 const initialHostState=(window.openai&&window.openai.widgetState)||{};
 const initial=initialHostState.privateContent||initialHostState;
@@ -88,7 +89,7 @@ let fieldsInitialized=false, lastOutputSignature=null,promptBinding="",copyAttem
 const promptDrafts=Object.assign(Object.create(null),initial.promptDrafts||{});
 for(const key of Object.keys(promptDrafts))if(typeof promptDrafts[key]!=="string"||promptDrafts[key].length>64000)delete promptDrafts[key];
 const variableViews=new Map(),expandedGroups=new Set();
-let lastError="", resultSummary="", resultContent="", resultLinks=[], resultImages=[], outcomeEpoch=0;
+let lastError="", resultSummary="", resultContent="", resultLinks=[], resultImages=[], outcomeEpoch=0, executionMode, workflowState;
 // Persist each meaningful edit without rebuilding the focused textarea.
 const reviewSteps=${JSON.stringify(REVIEW_STEPS)};
 const submittedRequests=new Set(Array.isArray(initial.submittedRequests)?initial.submittedRequests.filter(x=>typeof x==="string"):[]);
@@ -123,7 +124,8 @@ while(submittedRequests.size>64)submittedRequests.delete(submittedRequests.value
 try{window.sessionStorage?.setItem("uid-brands-submitted-requests",JSON.stringify([...submittedRequests]));}catch{}
 let refreshingRoutes=false,routeMessage="";
 let routes=[], selected=initial.branch||"", fallbackActive=true, stage="launcher", decision="approve", submitting=false, feedbackStep=false, taskAssets=[], feedbackMode="feedback", variableItems=[], selectedTargets=new Set(), reviewContext=null, reviewKey="";
-function reviewLocked(){return false;}
+function internalContent(){return stage==="content_approval"&&(executionMode==="research_only"||executionMode==="content_only"||(isOnepage()&&executionMode!=="review_first"));}
+function reviewLocked(){return (["research_only","content_only"].includes(executionMode)&&!(stage==="content_approval"&&onepageFeedback()))||(internalContent()&&!onepageFeedback())||["in_progress","blocked","failed"].includes(workflowState?.status);}
 function reviewDetail(){
  if(stage==="content_approval")return (onepageFeedback()||decision==="revise")?$("reviewFeedback").value.trim():"";
  if(!assetFeedbackActive())return "";
@@ -153,16 +155,17 @@ function renderGuidance(){
  const stages=["launcher","content_approval","asset_review","packaging"],labels=["Brief","Content","Assets","Đóng gói"],index=stage==="complete"?3:Math.max(0,stages.indexOf(stage));
  $("workflowSteps").replaceChildren(...labels.map((label,i)=>{const li=document.createElement("li");li.className="workflow-step"+(i===index?" current":i<index?" past":"");li.textContent=(i+1)+". "+label;if(i===index)li.setAttribute("aria-current","step");return li;}));
  const titles={launcher:"Chuẩn bị brief",content_approval:"Duyệt content",asset_review:feedbackStep?(feedbackMode==="train"?"Gửi đề xuất Train":"Góp ý cho assets"):"Duyệt assets",packaging:"Đóng gói kết quả",complete:"Kết quả đóng gói"};
- const hints={launcher:"Chọn brand, material và URL sản phẩm hoặc collection. Thêm yêu cầu và tệp tham khảo nếu cần.",content_approval:"Đọc kết quả bên dưới rồi chọn hành động. Chọn để tạo prompt; chỉ chạy sau khi bạn dán và gửi trong chat.",asset_review:feedbackStep?"Chọn mục cần áp dụng, tạo nhóm feedback rồi mô tả điều cần thay đổi.":"Kiểm tra kết quả bên dưới và ảnh gốc trong cuộc trò chuyện, rồi chọn chỉnh sửa, Train hoặc đóng gói.",packaging:"Kiểm tra kết quả rồi bấm Đóng gói. Link/file chỉ có sau khi thực sự tạo xong.",complete:"Kiểm tra file/link đã trả. Bạn có thể mở lại góp ý cho kết quả hoặc bắt đầu brief mới."};
+ const hints={launcher:"Chọn brand, material và URL đúng brand hoặc tên dòng Onepage chính xác. Thêm yêu cầu và tệp tham khảo nếu cần.",content_approval:"Đọc kết quả bên dưới rồi chọn hành động. Chọn để tạo prompt; chỉ chạy sau khi bạn dán và gửi trong chat.",asset_review:feedbackStep?"Chọn mục cần áp dụng, tạo nhóm feedback rồi mô tả điều cần thay đổi.":"Kiểm tra kết quả bên dưới và ảnh gốc trong cuộc trò chuyện, rồi chọn chỉnh sửa, Train hoặc đóng gói.",packaging:"Kiểm tra kết quả rồi bấm Đóng gói. Link/file chỉ có sau khi thực sự tạo xong.",complete:"Kiểm tra file/link đã trả. Bạn có thể mở lại góp ý cho kết quả hoặc bắt đầu brief mới."};
+ if(internalContent()){titles.content_approval="Nội dung trong tác vụ";hints.content_approval="Giữ phạm vi người dùng đã yêu cầu. Với full outcome, trợ lý tiếp tục materials và QC; không cần chốt content mới.";}
  $("stageTitle").textContent=titles[stage];$("stageHint").textContent=hints[stage]+(stage==="launcher"&&fallbackActive?" Danh sách trực tuyến chưa tải; đang dùng lựa chọn Onepage dự phòng.":"");
  const needs=[];
- if(stage==="launcher"){if(!$("brand").value)needs.push("brand");if(!selected)needs.push("material");if(!$("url").value.trim())needs.push("URL sản phẩm / collection");}
+ if(stage==="launcher"){if(!$("brand").value)needs.push("brand");if(!selected)needs.push("material");if(!$("url").value.trim())needs.push("URL đúng brand hoặc tên dòng Onepage chính xác");}
  if(stage==="content_approval"&&(onepageFeedback()||decision==="revise")&&!$("reviewFeedback").value.trim())needs.push("nội dung cần chỉnh sửa");
  if(assetFeedbackActive()){if(!variableItems.length)needs.push("nhóm mục cần góp ý");else if(variableItems.some(x=>!x.text.trim()))needs.push("feedback cho từng nhóm");}
  if(stage==="launcher"||currentAction()?.requiresFeedback){try{attachments?.validateReady();}catch{needs.push("tệp chưa sẵn sàng (xem trạng thái bên dưới)");}}
  $("missingInputs").textContent=feedbackUnavailable()|| (needs.length?"Còn thiếu: "+needs.join(", ")+".":"Đã đủ thông tin chính. Kiểm tra tệp đính kèm trước khi gửi.");
  const waiting=stage==="launcher"?requestBlocked(briefRequestKey()):requestBlocked(currentRequestKey());
- $("nextAction").textContent=lastError||"Chọn → tạo prompt → sao chép → dán và gửi trong chat.";
+ $("nextAction").textContent=lastError||(reviewLocked()?"Trợ lý tiếp tục phần được phép trong lượt hiện tại; chỉ hỏi khi có input/quyền/capability thực sự thiếu. Không replay write chưa rõ kết quả.":"Chọn → tạo prompt → sao chép → dán và gửi trong chat.");
  $("taskContext").textContent=reviewContext&&stage!=="launcher"?"Task: "+(reviewContext.task_id||"chưa có ID")+" · Phiên bản: "+(reviewContext.content_version||"chưa xác định")+" · Đối chiếu đúng kết quả trước khi gửi.":"Bước 1/4 · Brief mới";
  if(onepageFeedback()&&stage==="launcher"){$("taskContext").textContent="Chưa gắn task / phiên bản để góp ý";$("nextAction").textContent=lastError||"Tạo prompt mở lại kết quả → sao chép → dán và gửi trong chat gốc.";}
  if(onepageFeedback()){$("stageTitle").textContent="Feedback Onepage";$("stageHint").textContent=stage==="launcher"?"Panel chưa được gắn với kết quả cần góp ý.":"Góp ý đúng task và phiên bản hiện tại; tạo prompt tổng để tự dán vào chat.";}
@@ -216,11 +219,11 @@ for(const id of ["taskTab","feedbackTab"])$(id).addEventListener("keydown",event
 function composerBinding(){const key=[stage==="launcher"?briefRequestKey():currentRequestKey(),presentationKey()];if(onepageFeedback())key.push("onepage-feedback");return fingerprint(JSON.stringify(key));}
 function renderSubmissionState(){
  const binding=composerBinding();if(promptBinding&&promptBinding!==binding){$("promptDock").hidden=true;promptBinding="";}
- if(!promptBinding&&typeof promptDrafts[binding]==="string"){promptBinding=binding;$("promptText").value=promptDrafts[binding];$("promptDock").hidden=false;$("copyStatus").textContent="Prompt đã khôi phục · Chưa gửi sang ChatGPT.";}
+ if(!reviewLocked()&&!promptBinding&&typeof promptDrafts[binding]==="string"){promptBinding=binding;$("promptText").value=promptDrafts[binding];$("promptDock").hidden=false;$("copyStatus").textContent="Prompt đã khôi phục · Chưa gửi sang ChatGPT.";}
  renderRouteState();$("checkRequest").hidden=true;$("newBrief").hidden=true;
  $("run").hidden=stage!=="launcher"&&!currentAction()?.requiresFeedback;
- $("run").disabled=!!feedbackUnavailable();$("run").textContent="Tạo prompt";
- $("flowState").textContent="Soạn prompt · Bạn tự dán và gửi trong chat";
+ $("run").disabled=reviewLocked()||!!feedbackUnavailable();$("run").textContent="Tạo prompt";
+ $("flowState").textContent=reviewLocked()?"Tiến độ trong tác vụ · không cần prompt tiếp tục":"Soạn prompt · Bạn tự dán và gửi trong chat";
  $("draftNote").hidden=false;
  if(feedbackStep)$("createSharedFeedback").disabled=!selectedTargets.size;
  renderGuidance();renderPanelLifecycle();
@@ -364,8 +367,10 @@ function renderStage(){
  $("reviewChoices").replaceChildren();
  if(review){
   $("reviewHelp").textContent=(labels[stage]||"Review")+" · Chọn hành động để tạo prompt. Feedback / Train giữ nguyên cách chọn nhóm và nhập góp ý.";
-  const choices=reviewSteps[stage].choices;
-  if(!choices.some(x=>x.value===decision))decision=choices[0].value;
+  const choices=reviewLocked()?[]:reviewSteps[stage].choices;
+  if(choices.length&&!choices.some(x=>x.value===decision))decision=choices[0].value;
+  if(internalContent()){$("flowState").textContent="Content trong phạm vi đã yêu cầu";$("reviewHelp").textContent="Không cần lời tiếp tục hay chốt content mới cho full outcome. Giữ ranh giới research-only/content-only/review-first theo yêu cầu thực tế.";}
+  else if(reviewLocked())$("reviewHelp").textContent="Tiến độ/blocker hiện tại chưa phải bàn giao. Trợ lý đối chiếu thao tác thực tế và tiếp tục phần được phép; không replay write chưa rõ kết quả.";
   choices.forEach(({value,label,requiresFeedback})=>{const b=document.createElement("button");b.type="button";b.className="review-choice"+(requiresFeedback&&decision===value?" selected":"");if(requiresFeedback)b.setAttribute("aria-expanded",String(decision===value));b.textContent=label;b.onclick=()=>{if(reviewLocked())return;if(isOnepage()&&(value==="feedback"||(stage==="content_approval"&&value==="revise"))){selectMasterTab("feedback");return;}decision=value;feedbackStep=stage==="asset_review"&&(value==="feedback"||value==="train");if(feedbackStep)feedbackMode=value;save();renderStage();if(!requiresFeedback)return submitCurrentAction();};$("reviewChoices").appendChild(b);});
   $("reviewChoices").hidden=feedbackStep||onepageFeedback(); $("assetFeedbackFields").hidden=!assetFeedbackActive()||!!feedbackUnavailable();
   $("backToReview").hidden=onepageFeedback();$("modeTrain").hidden=onepageFeedback();$("modeFeedback").hidden=onepageFeedback();
@@ -389,6 +394,7 @@ function load(output){
  const signature=outputSignature(data);
  if(signature!==null&&signature===lastOutputSignature)return;
  lastOutputSignature=signature;$("promptDock").hidden=true;promptBinding="";
+ executionMode=data.execution_mode;workflowState=data.workflow_state;
  rememberDraft();
  const previousStage=stage,previousPresentation=presentationKey(),previousReviewKey=reviewKey;
  const previousSubmitted=scopedRecords().some(record=>record.presentation_id===previousPresentation);
@@ -492,6 +498,7 @@ $("brand").onchange=()=>{draw();save();renderStage();};$("branches").onchange=()
 ["url","theme","custom"].forEach(id=>{$(id).addEventListener("input",()=>{lastError="";save();renderSubmissionState();});$(id).addEventListener("change",save);$(id).addEventListener("blur",flushDraft);});
 $("reviewFeedback").oninput=()=>{lastError="";save();renderSubmissionState();};$("reviewFeedback").addEventListener("blur",flushDraft);
 async function submitCurrentAction(){
+ if(reviewLocked())return;
  showError("");
  if(feedbackUnavailable()){showError(feedbackUnavailable());return;}
  if(stage==="launcher"||currentAction()?.requiresFeedback){try{attachments?.validateReady();}catch(error){showError(error?.message||"Tệp chưa sẵn sàng.");return;}}
@@ -505,8 +512,9 @@ async function submitCurrentAction(){
  }
  const url=$("url").value.trim(),brand=$("brand").value,route=routes.find(r=>r.brand===brand&&r.branch===selected);
  if(!route){showError("Chọn material cần thực hiện.");return;}
- try{const u=new URL(url);if(!/^https?:$/.test(u.protocol)||!u.hostname.includes("."))throw new Error();}catch{showError("Nhập URL PDP hoặc collection hợp lệ (http/https).");return;}
- preparePrompt("Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\nProduct / Collection: "+url+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+attachmentEvidence()+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts. "+${JSON.stringify(RESEARCH_GUIDANCE)}+"\nTrả kết quả và bước tiếp theo trong chat; chỉ mở panel khi cần chọn assets/nhóm hoặc khi tôi yêu cầu.");
+ let source;try{source=uidBriefSource(url,brand,route.branch)}catch(error){showError(error.message);return;}
+ const continuation=route.branch==="onepage-system"?"Với Onepage full outcome, tiếp tục content nội bộ, materials và QC trong cùng lượt; không yêu cầu lời tiếp tục hoặc duyệt content không được yêu cầu.":"Giữ các bước content approval và review theo quy tắc hiện hành của material; không áp dụng chính sách bỏ checkpoint của Onepage cho material này. Tiếp tục phần việc đã được cho phép cho đến đúng checkpoint.";
+ preparePrompt("Creative DNA — Use: "+readable(brand)+" / "+(route.branch==="onepage-system"?"Onepage":route.title||readable(route.branch))+"\n"+source.promptLine+($("theme").value.trim()?"\nTheme: "+$("theme").value.trim():"")+($("custom").value.trim()?"\nCustom content: "+$("custom").value.trim():"")+attachmentEvidence()+"\nExecute this task using the current canonical Creative DNA rules. For Onepage, compile_onepage_job first; do not invent product facts. "+${JSON.stringify(RESEARCH_GUIDANCE)}+"\n"+continuation+" Giữ phạm vi research-only/content-only/review-first nếu người dùng nêu rõ. Final review và quyền đóng gói vẫn bắt buộc; không publish, Train hay hứa background job. Chỉ mở panel khi tôi yêu cầu.");
 }
 
 $("run").onclick=submitCurrentAction;

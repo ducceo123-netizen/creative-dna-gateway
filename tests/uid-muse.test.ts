@@ -60,7 +60,7 @@ test('GET adapter preserves canonical results and blocking gates, validates inpu
     assert.equal(compile.headers.get('cache-control'), 'no-store');
     assert.equal(compile.headers.get('referrer-policy'), 'no-referrer');
     assert.deepEqual(await compile.json(), packet);
-    assert.deepEqual(calls, [['routes'], ['resolve', 'PawfectHouse', 'Onepage'], ['compile', 'PawfectHouse', 'https://example.com/p', 'product', 'Christmas']]);
+    assert.deepEqual(calls, [['routes'], ['resolve', 'PawfectHouse', 'Onepage'], ['compile', 'PawfectHouse', 'https://example.com/p', 'product', 'Christmas', undefined, undefined]]);
     const template = await get('/api/muse/template');
     assert.deepEqual(await template.json(), getOnepageUiTemplate());
     assert.equal((await get('/api/muse/template?version=missing')).status, 404);
@@ -106,5 +106,23 @@ test('real application mounts Muse behind existing security/rate limits without 
     assert.ok(discovery.tools.some((tool: any) => tool.name === 'launch_creative_dna'));
     assert.ok(discovery.tools.some((tool: any) => tool.name === 'submit_training_feedback'));
     assert.equal(discovery.mcpEndpoint, `${CANONICAL_PRODUCTION_ORIGIN}/api/mcp`);
+  } finally { await server.close(); }
+});
+
+
+test('Muse forwards a name-only product line without inventing a source URL', async () => {
+  const app = express();
+  let received: unknown[] = [];
+  registerMuseRoutes(app, { origin: 'https://gateway.example',
+    routes: async () => ({status:200,ok:true,data:{}}), sanitizeRoutes: () => ({routes:[]}),
+    resolve: async () => ({status:200,ok:true,data:{}}),
+    compile: async (...args) => { received=args; return {status:200,ok:true,data:{scope:'named_family'}}; },
+  });
+  const server = await start(app);
+  try {
+    const r = await fetch(server.origin+'/api/muse/compile?brand=PawfectHouse&product_line=Oven%20Skirt');
+    assert.equal(r.status,200);
+    assert.deepEqual(received,['PawfectHouse',undefined,undefined,undefined,undefined,'Oven Skirt']);
+    assert.ok(museOpenApi(server.origin).paths['/api/muse/compile'].get.parameters.some(p => p.name==='product_line'));
   } finally { await server.close(); }
 });

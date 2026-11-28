@@ -1,3 +1,4 @@
+import { UID_HOST_CONTINUITY_GUIDANCE } from "./uid-brands-progress.ts";
 import type { z } from "zod";
 import { createReviewContext, REVIEW_INPUT_SCHEMA } from "./uid-brands-review-contract.ts";
 import { buildFeedbackIndex, resolveFeedbackBlocks } from "./uid-brands-feedback-index.ts";
@@ -17,7 +18,7 @@ export function externalPanelGuidance(stage: string) {
   return context + "\n" + EXTERNAL_PANEL_GUIDANCE;
 }
 
-export const CHAT_BRIEF_GUIDANCE = "Bước 1 · Brief. Cho biết brand, loại sản phẩm thiết kế (material) và link sản phẩm hoặc bộ sưu tập; thêm theme/yêu cầu riêng nếu có. Ví dụ: ‘Brand: thương hiệu của tôi; Material: loại thiết kế tôi cần; Link: link sản phẩm; Theme: tối giản.’ Chỉ hỏi phần còn thiếu. Nếu bạn đang góp ý kết quả cũ, hãy nói ‘Cho tôi xem lại kết quả đang góp ý’, không cần nhập lại brief hay mã kỹ thuật. Ảnh/tệp gốc được gửi trong chat. Đây là hướng dẫn bằng lời, chưa chạy tác vụ hay mở giao diện tương tác." + "\n" + externalPanelGuidance("launcher");
+export const CHAT_BRIEF_GUIDANCE = "Bước 1 · Brief. Cho biết brand, loại sản phẩm thiết kế (material) và link sản phẩm/bộ sưu tập hoặc tên dòng sản phẩm Onepage chính xác; thêm theme/yêu cầu riêng nếu có. Ví dụ: ‘Brand: thương hiệu của tôi; Material: loại thiết kế tôi cần; Link: link sản phẩm; Theme: tối giản.’ Ưu tiên dùng thông tin đã có; chỉ hỏi phần thiết yếu còn thiếu. Khi brief và phạm vi đã đủ, thực hiện tiếp trong lượt hiện tại, không yêu cầu gửi lại. Nếu bạn đang góp ý kết quả cũ, hãy nói ‘Cho tôi xem lại kết quả đang góp ý’, không cần nhập lại brief hay mã kỹ thuật. Ảnh/tệp gốc được gửi trong chat. Đây là hướng dẫn bằng lời, chưa chạy tác vụ hay mở giao diện tương tác." + "\n" + externalPanelGuidance("launcher");
 
 type ReviewInput = z.infer<typeof REVIEW_INPUT_SCHEMA>;
 type ReviewContext = ReturnType<typeof createReviewContext>;
@@ -35,13 +36,14 @@ const packageAction = () => action("package", "Kiểm tra và đóng gói", "Ki�
 export function buildChatBrief() {
   return {
     text: CHAT_BRIEF_GUIDANCE,
-    next_actions: [action("provide_brief", "Gửi phần brief còn thiếu", "Tôi muốn làm [loại thiết kế] cho [brand], dựa trên [link sản phẩm hoặc bộ sưu tập]. Yêu cầu riêng: [nếu có].", ["Brand", "Material", "Link sản phẩm hoặc bộ sưu tập"])],
+    next_actions: [action("provide_brief", "Gửi phần brief còn thiếu", "Tôi muốn làm [loại thiết kế] cho [brand], dựa trên [link sản phẩm hoặc bộ sưu tập]. Yêu cầu riêng: [nếu có].", ["Brand", "Material", "URL sản phẩm/bộ sưu tập hoặc tên dòng sản phẩm Onepage chính xác"])],
   };
 }
 
 /** Text and correlation only. No writes, dispatch, approval inference or preview fetches. */
 export function buildChatReview(input: ReviewInput, context: ReviewContext) {
   const bound = context.binding === "task-version";
+  const mode = input.execution_mode;
   const indexed = buildFeedbackIndex(input);
   const index = indexed.ok ? indexed.index : undefined;
   const feedback_resolution = input.feedback_request
@@ -54,11 +56,11 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
     mapping_is_authorization: false,
     execution: "not_dispatched" as const,
     instruction: "A valid mapping is not authorization. If the original authenticated user message explicitly requests these edits and permission is sufficient, echo each mapped scope and apply that original request directly, preserving all separate block instructions and excluded assets. Do not require a new confirmation, chốt, or apply prompt. Ask only for ambiguous scope, missing permission, or changed outcome identity. Respect actual blockers, in-progress work, host policy, and duplicate-operation checks; this helper dispatches nothing.",
-  } : undefined;
-  const titles = { content_approval: "Bước 2 · Xem content", asset_review: "Bước 3 · Xem assets và góp ý", packaging: "Bước 4 · Kiểm tra đóng gói", complete: "Bước 5 · Bàn giao" };
+  } : { mapping_is_authorization: false, execution: "not_dispatched" as const, instruction: UID_HOST_CONTINUITY_GUIDANCE };
+  const titles = { content_approval: mode === "review_first" ? "Bước 2 · Duyệt content theo yêu cầu" : "Bước 2 · Nội dung", asset_review: "Bước 3 · Xem assets và góp ý", packaging: "Bước 4 · Kiểm tra đóng gói", complete: "Bước 5 · Bàn giao" };
   lines.push(titles[input.stage]);
   if (input.result_summary?.trim()) lines.push("Thông tin kết quả được cung cấp: " + display(input.result_summary, 600));
-  lines.push(bound ? "Hướng dẫn này gắn với đúng kết quả hiện tại. Nếu kết quả đổi, cần đối chiếu lại trước khi sửa." : "Chưa đối chiếu được kết quả đang nói tới. Bạn không cần tìm mã kỹ thuật; hãy yêu cầu xem lại kết quả gốc.");
+  lines.push(bound ? "Hướng dẫn này gắn với đúng kết quả hiện tại. Nếu kết quả đổi, cần đối chiếu lại trước khi sửa." : "Chưa đối chiếu được kết quả trong đầu vào này. Trợ lý cần khôi phục từ ngữ cảnh/kết quả gốc hiện có; chỉ hỏi khi vẫn còn mơ hồ, không yêu cầu người dùng tìm mã kỹ thuật hay nhập lại brief.");
 
   if (index) {
     // Include EVERY selectable ordinal. Abbreviate labels, never remove entries.
@@ -74,7 +76,7 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
     }
     lines.push("Tham chiếu ảnh không chứng minh ảnh đã hiển thị hay được xem. Dùng ảnh/tệp gốc trong chat; nếu thiếu ảnh, yêu cầu gửi lại ảnh của mục cần xem. Số thứ tự chỉ áp dụng cho danh sách hiện tại.");
   } else if (input.stage !== "content_approval") {
-    lines.push("Chưa có danh sách assets đáng tin cậy để chọn mục. Hãy yêu cầu xem lại kết quả và danh sách thực tế; chưa suy đoán mục cần sửa.");
+    lines.push("Chưa có danh sách assets đáng tin cậy trong đầu vào này. Trợ lý cần đối chiếu inventory thực tế từ kết quả hiện có; chỉ hỏi khi còn thiếu hoặc mơ hồ, không suy đoán mục cần sửa.");
   }
 
   if (feedback_resolution?.ok) {
@@ -98,11 +100,11 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
     lines.push(stateLabels[state.status]);
     if (state.message) lines.push("Chi tiết được cung cấp: " + display(state.message, 900));
     if (state.status === "in_progress") {
-      next_actions = [action("check_status", "Kiểm tra tiến độ hiện tại", "Kiểm tra trạng thái tác vụ hiện tại và cho tôi biết kết quả hoặc phần còn đang xử lý; không khởi chạy lại.")];
-      lines.push("Bước tiếp theo: kiểm tra tiến độ hiện tại trước khi gửi thêm yêu cầu; không tạo bản chạy trùng.");
+      next_actions = [];
+      lines.push("Đây là progress, không phải bàn giao cuối hoặc yêu cầu gửi thêm lời tiếp tục. Trợ lý đối chiếu thao tác thực tế: nếu đang có một lượt chạy thì chờ/đọc trạng thái bằng công cụ được hỗ trợ, không tạo bản chạy trùng; nếu không có lượt chạy đang chờ, tiếp tục bước còn thiếu trong phạm vi người dùng đã yêu cầu ngay trong lượt hiện tại. Không suy diễn có background job từ nhãn in_progress.");
     } else {
-      next_actions = [action("inspect_blocker", "Làm rõ cách khắc phục", "Kiểm tra nguyên nhân đang chặn kết quả này, nêu thông tin cần bổ sung và bước khắc phục cụ thể. Đối chiếu lần chạy trước; chưa thử lại hoặc thay đổi dữ liệu.", ["Nguyên nhân thực tế và phần còn thiếu được xác minh"])];
-      lines.push("Bước tiếp theo: làm rõ nguyên nhân và bổ sung đúng phần còn thiếu. Chỉ thử lại sau yêu cầu rõ ràng, trong phạm vi được phép; không tự chạy lại hay ghi dữ liệu.");
+      next_actions = [];
+      lines.push("Trợ lý kiểm tra blocker thực tế và khôi phục phần đọc an toàn hoặc sửa lỗi trong phạm vi đã được yêu cầu, theo giới hạn retry của công cụ. Nếu write trước chưa rõ kết quả, đối chiếu biên nhận trước; không tự gửi lại. Chỉ hỏi đúng quyền, input hoặc capability thiết yếu còn thiếu; tiếp tục phần độc lập có thể làm. Không yêu cầu nhập lại brief hay coi mọi lỗi là cần người dùng gửi tiếp.");
     }
   } else if (!bound) {
     next_actions = [recovery()];
@@ -111,8 +113,14 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
   } else if (feedback_resolution?.ok) {
     lines.push("Nếu bạn đã yêu cầu sửa rõ ràng, không cần gửi lại lời chốt hay câu ‘áp dụng’. Trợ lý dùng yêu cầu gốc để sửa đúng từng phạm vi được phép; chỉ hỏi khi còn mơ hồ, thiếu quyền thực hiện hoặc kết quả đã thay đổi. Công cụ hướng dẫn này chưa thực hiện sửa.");
     next_actions = [];
+  } else if (mode === "research_only" || mode === "content_only") {
+    next_actions = [];
+    lines.push("Giữ đúng phạm vi " + mode + " người dùng đã yêu cầu. Khi phần đó và các kiểm tra liên quan đã hoàn tất, bàn giao đúng phần đó cùng giới hạn thực tế; không tự tạo assets, đóng gói hoặc yêu cầu chốt để mở rộng công việc.");
+  } else if (input.stage === "content_approval" && input.branch === "onepage-system" && mode !== "review_first") {
+    next_actions = [];
+    lines.push("Content là bước nội bộ của yêu cầu full outcome; khi evidence/QC đủ, tiếp tục tạo materials và kiểm tra outcome trong cùng lượt, không cần một lời chốt content mới. Nếu phạm vi thực tế của người dùng là research-only, content-only hoặc review-first, giữ đúng ranh giới đó. execution_mode và tên stage không tự cấp quyền; không suy diễn approval từ guidance.");
   } else if (input.stage === "content_approval") {
-    lines.push("Đọc content thực tế trong chat. Bạn có thể yêu cầu sửa nội dung, tạo phương án khác, hoặc chốt content để tạo assets.");
+    lines.push((mode === "review_first" ? "Người dùng đã yêu cầu review-first: " : "Giữ bước review của material hiện tại: ") + "trả content thực tế để duyệt trước khi tạo assets. Chỉ tiếp tục sau yêu cầu chốt rõ ràng hoặc quyền đã được cấp trong cuộc trò chuyện; trường execution_mode không tự chứng minh quyền đó.");
     next_actions = [
       action("revise", "Góp ý content", "Sửa content hiện tại: [nêu phần cần sửa và mong muốn cụ thể]. Giữ nguyên phần còn lại.", ["Nội dung góp ý cụ thể"]),
       action("regenerate", "Tạo phương án content khác", "Tạo phương án content khác theo brief hiện tại, giữ đúng các yêu cầu đã xác định."),
@@ -160,7 +168,7 @@ export function buildChatReview(input: ReviewInput, context: ReviewContext) {
       action("new_task", "Bắt đầu brief mới", "Tôi muốn bắt đầu brief mới. Hỏi phần thông tin còn thiếu và giữ lại kết quả cũ."),
     ];
   }
-  if (input.branch === "onepage-system") lines.push(externalPanelGuidance(input.stage));
+  if (input.branch === "onepage-system" && (!state || state.status === "ready") && mode !== "research_only" && mode !== "content_only" && (input.stage !== "content_approval" || mode === "review_first")) lines.push(externalPanelGuidance(input.stage));
   if (next_actions.length) lines.push("Bạn có thể gửi một trong các câu sau (đây là mẫu yêu cầu, chưa thực hiện):", ...next_actions.map(item => `${item.label}: “${item.command}”`));
   lines.push("Hướng dẫn này không tự chạy tác vụ, đóng gói hay gửi Train. Feedback không được chuyển thành Train; chỉ khi bạn yêu cầu Train rõ ràng mới có thể gửi đề xuất chờ quản trị duyệt.");
   return { text: lines.join("\n"), next_actions, guide_data: { ...(input.branch === "onepage-system" ? { external_panel: UID_EXTERNAL_PANEL } : {}), ...(index ? { review_index: index } : {}), ...(feedback_resolution ? { feedback_resolution } : {}), ...(scope_echo ? { scope_echo } : {}), ...(execution_guidance ? { execution_guidance } : {}) } };

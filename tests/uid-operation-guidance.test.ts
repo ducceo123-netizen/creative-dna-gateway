@@ -9,10 +9,10 @@ test('research guidance follows actual blocking/readiness while preserving host 
  assert.match(operationPromptGuide('research',response({research_validation:{status:'READY'},readiness:{content_authoring:'BLOCKED'}})),/Chưa thể tạo content/);
  assert.match(operationPromptGuide('research',response({creative_quality_contract:{status:'BLOCKED'}})),/chưa tạo content khi chưa đạt/);
 });
-test('every operation provides a usable next prompt without interpreting reads as completed work',()=>{
+test('operation updates continue authorized work without requiring a new user prompt',()=>{
  for(const op of ['research','training','routes','attachment','template'] as const){
-  assert.match(operationPromptGuide(op,response()),/‘[^’]+’/);
-  assert.match(operationPromptGuide(op,response({},true)),/‘[^’]+’/);
+  assert.doesNotMatch(operationPromptGuide(op,response()),/Bạn có thể nhắn|Ví dụ:|‘[^’]+’/);
+  assert.doesNotMatch(operationPromptGuide(op,response({},true)),/Bạn có thể nhắn|‘[^’]+’/);
  }
  assert.match(operationPromptGuide('training',response({},true)),/đừng gửi lại nếu chưa rõ kết quả/);
  assert.match(operationPromptGuide('training',response()),/không coi là đã duyệt/);

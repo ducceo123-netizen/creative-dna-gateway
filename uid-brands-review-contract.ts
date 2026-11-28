@@ -28,6 +28,7 @@ export const FEEDBACK_REQUEST_SCHEMA = z.object({
 }).strict().describe("Read-only mapping of separate feedback instructions to the exact displayed outcome index. Use only the user's actual selections; mapping does not authorize or execute changes. Ambiguous references require clarification.");
 
 const contextShape = {
+  execution_mode: z.enum(["full_outcome", "research_only", "content_only", "review_first"]).optional().describe("Actual user-requested task scope from this conversation. This is not new authorization. Omit if unknown; preserve explicit partial requests and review-first boundaries."),
   workflow_state: z.object({ status: z.enum(["ready", "in_progress", "blocked", "failed"]), message: z.string().trim().max(1000).optional() }).strict().optional().describe("Observed stage state and verified blocker only, not proof of completed research, quality checks or authorization. Omit if unknown; never invent progress."),
   feedback_request: FEEDBACK_REQUEST_SCHEMA.optional(),
   branch: z.string().trim().min(1).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional().describe("Actual canonical material/branch for this task. Supply onepage-system only for a real Onepage task for version-bound chat review. Omit if unknown; never guess from assets or brand."),

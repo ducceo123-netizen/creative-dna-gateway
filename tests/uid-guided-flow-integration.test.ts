@@ -61,7 +61,7 @@ function safeProse(result: any) {
 test("live stages retain usable natural requests and context-bound prerequisite recovery", async () => {
   await withMcp(async call => {
     for (const name of ["show_uid_brands_review", "get_uid_brands_native_workflow"]) {
-      const content = await call({ ...bound, stage: "content_approval", result_content: "Real reviewed content" }, name);
+      const content = await call({ ...bound, stage: "content_approval", execution_mode: "review_first", result_content: "Real reviewed content" }, name);
       assert.deepEqual(actions(content), ["revise", "regenerate", "approve"]); safeProse(content);
       const review = await call(base, name); safeProse(review);
       assert.ok(actions(review).includes("feedback"));
@@ -88,7 +88,7 @@ test("observed in-progress, blocked and failed states offer recovery, never appr
       for (const status of ["in_progress", "blocked", "failed"]) {
         const result = await call({ ...base, stage, workflow_state: { status, message: "Verified missing source" } });
         safeProse(result);
-        assert.deepEqual(actions(result), [status === "in_progress" ? "check_status" : "inspect_blocker"]);
+        assert.deepEqual(actions(result), []);
         assert.match(result.content[0].text, /Verified missing source/);
       }
     }

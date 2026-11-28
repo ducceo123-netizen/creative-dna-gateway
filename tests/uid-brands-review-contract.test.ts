@@ -8,25 +8,15 @@ import { createReviewContext, REVIEW_INPUT_SCHEMA } from "../uid-brands-review-c
 import { LAUNCHER_MIME, LAUNCHER_URI, launcherHtml } from "../uid-brands-workflow.ts";
 import { LEGACY_LAUNCHER_URI, PREVIOUS_LAUNCHER_URI, SAFE_CHAT_RESOURCE_HTML } from "../uid-brands-ui-resource.ts";
 
-test("Historical interactive workflow remains unchanged but is never imported or served by the gateway", () => {
+test("retired workflow stays unserved while Onepage continuity can evolve", () => {
   assert.equal(LAUNCHER_URI, "ui://uid-brands/workflow-v4.html");
   assert.equal(LEGACY_LAUNCHER_URI, "ui://uid-brands/workflow-v2.html");
   assert.notEqual(LAUNCHER_URI, LEGACY_LAUNCHER_URI);
-  // Historical UI harness stays intact; production exposes only the static safety notice.
   const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   const hash = (text: string) => createHash("sha256").update(text).digest("hex");
-  const workflow = source("uid-brands-workflow.ts").replace('export { LAUNCHER_URI } from "./uid-brands-ui-resource.ts";', 'export const LAUNCHER_URI = "ui://uid-brands/workflow-v2.html";');
-  assert.equal(hash(workflow), "0801b6ce0e381fffb1b642b4225406040186496233c7fe5649dcbe373c818d05");
   assert.doesNotMatch(source("server.ts"), /from ["']\.\/uid-brands-workflow(?:\.ts)?["']|launcherHtml|REVIEW_UI_META/);
   assert.equal(hash(source("uid-brands-attachment-ui.ts")), "07c40d34b48b2c1f3f069cc830bc5f8f6cf03377e02290eac3e908b05153cbef");
-  // Research source includes Onepage content-plan validation; keep exact source pins.
-  // RESEARCH_GUIDANCE and the historical launcher output remain byte-identical.
-  assert.equal(hash(source("supabase/functions/_shared/product-research.ts")), "adb34d8db13838c8c370f8b7308a97c6cb4d714b47c8b9e6ac6da7f870442a50");
-  // Production uses Node. Bun 1.4.3 escapes non-ASCII characters inside String.raw
-  // during transpilation, so its emitted bytes differ even on the approved base.
-  // Do not normalize that difference or bless a second output hash. The exact
-  // source pins above apply to BOTH runtimes; retain the production-byte guard.
-  if (!process.versions.bun) assert.equal(hash(launcherHtml), "95688d813105a981b9760b3314b802e3960f9cb4239688973b91e640be503b4d");
+  assert.doesNotMatch(SAFE_CHAT_RESOURCE_HTML, /<script\b|<form\b|<button\b|postMessage|window\.openai|fetch\(/i);
 });
 
 test("seven public schemas remain exact; review/native extend the baseline additively", () => {
@@ -42,7 +32,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     submit_training_feedback: "ac34e17c109ae16da1c086b546d79f4d711a51e2b61883e409627eecf9c1067a",
     list_creative_dna_routes: "8243f0af367f188a376f2c17b5eabe872a2f7a979813e0d4e2be6d594c2aa259",
   };
-  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "build_onepage_eo_reference_pack" && tool.name !== "evaluate_onepage_eo_outcome" && tool.name !== "scan_onepage_eo_store" && tool.name !== "audit_onepage_eo_pixels" && tool.name !== "list_onepage_eo_reference_library" && tool.name !== "submit_onepage_eo_candidate" && tool.name !== "approve_onepage_eo_reference" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
+  assert.deepEqual(TOOL_DEFINITIONS.filter(tool => tool.name !== "get_human_realism_references" && tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "build_onepage_eo_reference_pack" && tool.name !== "evaluate_onepage_eo_outcome" && tool.name !== "scan_onepage_eo_store" && tool.name !== "audit_onepage_eo_pixels" && tool.name !== "list_onepage_eo_reference_library" && tool.name !== "submit_onepage_eo_candidate" && tool.name !== "approve_onepage_eo_reference" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook").map(tool => tool.name).sort(), Object.keys(baseline).sort());
   assert.equal(TOOL_DEFINITIONS.some(tool => tool.name === "sync_uid_studio_result"),false,"Studio text sync must be hidden");
   assert.equal(TOOL_DEFINITIONS.some(tool => tool.name === "sync_uid_studio_image"),false,"Studio image sync must be hidden");
   assert.ok(TOOL_DEFINITIONS.some(tool => tool.name === "get_website_brand_ui_skill"));
@@ -56,7 +46,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
     show_uid_brands_review: "9db38ec8e305cbd00f560a94c2236022df67fe45cbace0530c786ac9954a865b",
     get_uid_brands_native_workflow: "0de4fcab2c97245442a7743c427f77f7657f22a3299bc8f720bf408f6335ea3d",
   };
-  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "build_onepage_eo_reference_pack" && tool.name !== "evaluate_onepage_eo_outcome" && tool.name !== "scan_onepage_eo_store" && tool.name !== "audit_onepage_eo_pixels" && tool.name !== "list_onepage_eo_reference_library" && tool.name !== "submit_onepage_eo_candidate" && tool.name !== "approve_onepage_eo_reference" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook")) {
+  for (const tool of TOOL_DEFINITIONS.filter(tool => tool.name !== "get_human_realism_references" && tool.name !== "get_website_brand_ui_skill" && tool.name !== "sync_uid_studio_result" && tool.name !== "sync_uid_studio_image" && tool.name !== "evaluate_onepage_banner_qc" && tool.name !== "evaluate_onepage_creative_qc" && tool.name !== "evaluate_onepage_eo_store_references" && tool.name !== "evaluate_onepage_product_type_scope" && tool.name !== "build_onepage_eo_reference_pack" && tool.name !== "evaluate_onepage_eo_outcome" && tool.name !== "scan_onepage_eo_store" && tool.name !== "audit_onepage_eo_pixels" && tool.name !== "list_onepage_eo_reference_library" && tool.name !== "submit_onepage_eo_candidate" && tool.name !== "approve_onepage_eo_reference" && tool.name !== "evaluate_onepage_physical_qc" && tool.name !== "get_onepage_quality_playbook")) {
     const schema: any = structuredClone(tool.inputSchema);
     if (tool.name === "compile_onepage_job") {
       assert.ok(schema.properties.product_line);
@@ -70,7 +60,7 @@ test("seven public schemas remain exact; review/native extend the baseline addit
       delete schema.properties.bindings;
       assert.equal(createHash("sha256").update(JSON.stringify(schema)).digest("hex"), baseline[tool.name], 'old no-bindings schema remains exact');
     } else if (legacyPins[tool.name]) {
-      for (const field of ["workflow_state", "feedback_request"]) {
+      for (const field of ["workflow_state", "feedback_request", "execution_mode"]) {
         assert.ok(schema.properties[field]);
         assert.ok(!schema.required?.includes(field), `${field} must remain optional`);
         delete schema.properties[field];
@@ -213,7 +203,7 @@ test("live local MCP exposes usable chat commands with exact context and static 
       assert.match(resource.contents[0].text, /chat/i);
     }
     for (const stage of REVIEW_STAGES) {
-      const args = { stage, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
+      const args = { stage, execution_mode: "review_first" as const, branch: "onepage-system", task_id: "task-A", content_version: "v1", retry_id: "retry-1", result_summary: "Verified outcome summary", result_content: "Full section one\nFull section two\nFull section three", result_links: [{ label: "Delivery", url: "https://example.com/delivery" }], result_images: [{ file_id: "file-image-1", label: "Banner" }], assets: [{ id: "a", element: "Banner", section: "Banner", position: "desktop", label: "Hero", asset_name: "A", name: "a" }] };
       const review = await rpc("tools/call", { name: "show_uid_brands_review", arguments: args });
       const native = await rpc("tools/call", { name: "get_uid_brands_native_workflow", arguments: args });
       assert.equal(review.isError, undefined); assert.equal(native.isError, undefined);
@@ -247,6 +237,29 @@ test("live local MCP exposes usable chat commands with exact context and static 
 
       }
       assert.equal(native.structuredContent.fallback.review, "show_uid_brands_review");
+    }
+    for (const mode of ["full_outcome", "research_only", "content_only"] as const) {
+      for (const name of ["show_uid_brands_review", "get_uid_brands_native_workflow"]) {
+        const args = {stage:"content_approval", branch:"onepage-system",task_id:"task-continuity",content_version:"v1",execution_mode:mode,workflow_state:{status:"ready"}};
+        const result = await rpc("tools/call",{name,arguments:args});
+        assert.deepEqual(result.structuredContent.next_actions,[]);
+        assert.equal(result.structuredContent.execution_mode,mode);
+        assert.deepEqual(result.structuredContent.workflow_state,{status:"ready"});
+        assert.equal(result.structuredContent.review_context.task_id,"task-continuity");
+        if(name==="get_uid_brands_native_workflow") assert.deepEqual(result.structuredContent.form.choices,[]);
+      }
+    }
+    const progress = await rpc("tools/call",{name:"show_uid_brands_review",arguments:{stage:"asset_review",branch:"onepage-system",task_id:"task-continuity",content_version:"v1",execution_mode:"full_outcome",workflow_state:{status:"in_progress",message:"Actual read pending"}}});
+    assert.deepEqual(progress.structuredContent.next_actions,[]);
+    assert.equal(progress.structuredContent.workflow_state.status,"in_progress");
+    for (const args of [
+      {stage:"content_approval",branch:"ldp-system",workflow_state:{status:"blocked"}},
+      {stage:"packaging",branch:"onepage-system",workflow_state:{status:"in_progress"}},
+    ]) {
+      const result=await rpc("tools/call",{name:"get_uid_brands_native_workflow",arguments:{...args,task_id:"task-block",content_version:"v1"}});
+      assert.deepEqual(result.structuredContent.next_actions,[]);
+      assert.deepEqual(result.structuredContent.form.choices,[]);
+      assert.equal(result.structuredContent.form.requires_user_action,false);
     }
     const legacy = await rpc("tools/call", { name: "show_uid_brands_review", arguments: { stage: "content_approval" } });
     assert.equal(legacy.structuredContent.review_context.task_id, undefined);

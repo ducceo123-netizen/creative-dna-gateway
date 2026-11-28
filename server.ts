@@ -1,3 +1,4 @@
+import { resolveOnepageNamedProductSource, onepageCatalogSourceUrl } from "./uid-onepage-source-resolution.ts";
 import {discoverHumanRealism,HUMAN_REALISM_QC} from "./clipo-human-realism.ts";
 import { verifyMemberBearer,memberResourceMetadata,memberAuthChallenge,UID_MEMBER_OAUTH_METADATA,oauthIssuerReadiness } from "./uid-member-oauth.ts";
 import { discoverClipoReferences } from "./clipo-discovery.ts";
@@ -95,7 +96,7 @@ The returned canonical Creative DNA specification must be treated as source-of-t
 
 export const LIST_CREATIVE_DNA_ROUTES_DESC = `Use for discovering available Creative DNA brands and branches, or when the requested branch cannot be resolved confidently.`;
 
-export const COMPILE_ONEPAGE_DESC = UID_EXECUTION_AUTHORITY_GUIDANCE + " " + RESEARCH_GUIDANCE + " " + ONEPAGE_QUALITY_PACK_DESC + ` Preferred tool for Creative DNA Onepage execution. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation. Apply creative_quality_contract active scoped content, typography, banner and proof rules. Report its revision/hash in execution provenance. Stop the affected stage on BLOCKED/stale/conflicting rules or unavailable required references; inspect actual reference pixels before generation. Matching policy does not guarantee identical pixels or replace human artistic review.`;
+export const COMPILE_ONEPAGE_DESC = UID_EXECUTION_AUTHORITY_GUIDANCE + " " + RESEARCH_GUIDANCE + " " + ONEPAGE_QUALITY_PACK_DESC + ` Preferred tool for Creative DNA Onepage execution. A name-only brief uses product_line, never an invented URL. If source_execution_guard is IN_PROGRESS, follow its next_action automatically in the same task using research.catalog_scan_id; preserve existing research, source and scope. The cursor is server-owned public-catalog progress, not evidence or approval. BLOCKED source scope prevents affected content/assets even if other checks are ready. Compile a compact task packet before doing collection/PDP research or generating assets. It preserves HARD gates while avoiding repeated full-DNA loading. For collection/search sources, obey the verified product-pool diversity gate and product-to-asset allocation before generation. Apply creative_quality_contract active scoped content, typography, banner and proof rules. Report its revision/hash in execution provenance. Stop the affected stage on BLOCKED/stale/conflicting rules or unavailable required references; inspect actual reference pixels before generation. Matching policy does not guarantee identical pixels or replace human artistic review.`;
 
 export const SUBMIT_FEEDBACK_DESC = `MANDATORY for explicit Creative DNA training feedback. BEFORE submission, convert the member's feedback plus all visible conversation/image context into a self-contained training_spec. The stored rule must remain useful after the current chat and image are unavailable. Preserve the member's words in feedback, but put durable learning in training_spec: observed_issue, generalized_rule, expected_behavior, reject_conditions, scope, rule_class, evidence_summary, confidence. ALSO create admin_summary_vi, admin_reason_vi, and admin_change_vi in natural concise Vietnamese for the admin review card. These fields are REQUIRED and review-only context, not canonical database content. The sentence body MUST be Vietnamese; keep only necessary established keywords in English when they are clearer or canonical, such as Banner, Product Details, Good To Know, Asset ID, Before/After, Studio Soft Shadow, WYL, PDP, UGC. Do not output English prose like "No additional evidence summary" or "ADMIN QUICK SCAN Case". admin_summary_vi should let an admin understand the case at a glance; admin_reason_vi should say why this wisdom was extracted; admin_change_vi should state the proposed behavior change plainly. Never write vague evidence such as "this image" or "make it like above"; describe the visible problem and desired behavior concretely. Distinguish STRUCTURAL reusable system rules from BRAND_STYLE rules. For Onepage, structural presentation/format/mechanics feedback should be scoped for shared cross-brand behavior when supported; brand vibe/style stays brand-specific. The image itself is optional evidence: if attachment bytes cannot be passed to the tool, DO NOT block submission and DO NOT ask the member to leave ChatGPT merely to upload it. Instead, encode what was observed from the image in evidence_summary.  When the user says "Creative DNA — Train: Brand / Branch", asks to train Creative DNA, or supplies feedback intended for Creative DNA, call this tool instead of refusing due to read-only canonical access. This creates only a Pending proposal. When the feedback concerns generated images OR the conversation contains any image/file that materially explains why the wisdom was learned, ALWAYS attach that visual context to the proposal. Capture the smallest useful evidence set: the output being critiqued, the approved/reference target when one exists, and any product reference needed to understand fidelity. Use OUTPUT_BEING_REVIEWED for the actual outcome/problem, STYLE_REFERENCE for the desired visual target, PRODUCT_REFERENCE for PDP/design truth, and GENERATION_CONTEXT only for other necessary context. Every attached item MUST have a concise caption that tells an admin what to notice without reopening the chat (for example: "v1 rejected — icon has black specks and orange fringe" or "approved reference — clean peach badge and single brown stroke"). Preserve iteration identity or Asset ID in reference_id/caption when available so the admin can scan v1 -> v2 -> approved. Do not attach unrelated conversation images. Preferred durable flow: upload image bytes first to Creative DNA's /api/feedback/context-assets/upload surface and pass the returned asset_id in context_asset_ids. When direct image bytes are already available inside the tool invocation, context_image_uploads is also supported. Use context_images.image_url only for URLs that are genuinely cross-site accessible. Never use chatgpt.com Library download URLs as image_url. If bytes are unavailable, pass the exact file/library/reference identifier in context_images.reference_id plus a concise caption. References are review evidence only and never become canonical style references automatically.`;
 
@@ -250,21 +251,65 @@ export async function submitTrainingFeedback(brand:string, branch:string, feedba
   return response;
 }
 
-export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown, product_line?:string, memberAuthorization?:string|null) {
+export const COMPILE_ONEPAGE_INPUT_SCHEMA = z.object({
+  brand: z.string().trim().min(1).max(100),
+  source_url: z.string().trim().max(2000).optional(),
+  source_type: z.enum(["auto", "product", "collection"]).optional(),
+  theme: z.string().trim().max(120).optional(),
+  product_line: z.string().trim().max(160).optional(),
+  research: z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description),
+});
+
+export async function compileOnepageJob(brand:string, source_url?:string, source_type?:string, theme?:string, research?:unknown, product_line?:string, memberAuthorization?:string|null, sourceResolver:typeof resolveOnepageNamedProductSource=resolveOnepageNamedProductSource) {
  const validated=validateResolveInput(brand,"onepage-system");
- const response=await gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true });
- const data = response.data;
- if(!response.ok)return {status:response.status,ok:response.ok,data};
- const output:any={...attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),{source_url,source_type,theme,research,require_pdp_coverage:true}),
-   ...(product_line&&!source_url?{named_product_scope:{requested_product_type:product_line,match_policy:"SHOPIFY_PRODUCT_TYPE_EXACT",requires_store_catalog_scan:true,evaluator:"evaluate_onepage_product_type_scope",no_title_or_handle_contains_fallback:true}}:{})};
- // Backward-compatible automatic reference discovery. Old ChatGPT tool schemas
- // still see this field on the EXISTING compile_onepage_job response.
  const slug=String(validated.brand).toLowerCase().replace(/[^a-z]/g,"");
  const supplied=research&&typeof research==="object"&&!Array.isArray(research)?research as Record<string,unknown>:{};
- // Resolve the exact Shopify product type for PDP-only briefs, including
- // clients whose compile_onepage_job tool schema does not expose product_line.
- // Collection URLs are not inferred from one product.
- let line=(product_line||String(supplied.product_type||"")).trim();
+ // The opaque continuation token controls gateway reads, never canonical research.
+ const catalogScanId=supplied.catalog_scan_id as string | undefined;
+ if(Object.hasOwn(supplied,"catalog_scan_id")){
+   const cleanResearch={...supplied};delete cleanResearch.catalog_scan_id;
+   research=Object.keys(cleanResearch).length?cleanResearch:undefined;
+ }
+ const declaredScope=supplied.scope&&typeof supplied.scope==="object"&&!Array.isArray(supplied.scope)?supplied.scope as Record<string,unknown>:{};
+ let line=(product_line||String(supplied.product_type||declaredScope.product_type||"")).trim();
+ const originalSource=source_url;
+ const catalogUrl=onepageCatalogSourceUrl(slug);
+ const namedRequest=Boolean((line && !source_url) || (catalogUrl && source_url===catalogUrl));
+ // Use a real catalog evidence endpoint for canonical collection gates. It is
+ // never presented as a storefront collection or substituted with the first PDP.
+ if(namedRequest && catalogUrl){source_url=catalogUrl;source_type="collection";}
+ const [response,namedScope]=await Promise.all([
+   gatewayJson(COMPILE_ONEPAGE_URL,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","User-Agent":"Creative-DNA-Gateway/1.0"},body:JSON.stringify({brand:validated.brand,source_url,source_type,theme,research})}, { operation:"compile", timeoutMs:GATEWAY_TIMEOUTS.compile, readOnly:true }),
+   namedRequest?sourceResolver({brand:slug,product_line:line,scan_id:catalogScanId}):Promise.resolve(undefined),
+ ]);
+ const data=response.data;
+ if(!response.ok)return {status:response.status,ok:response.ok,data:{...data,...(namedScope?.scan_id?{source_resolution_resume:{brand:validated.brand,product_line:line,catalog_scan_id:namedScope.scan_id,instruction:"Preserve this server scan when retrying the failed read; canonical compilation is still required."}}:{})}};
+ const trustedScope=namedScope?.status==="RESOLVED" && namedScope.catalog_complete && namedScope.source_url
+   ? {...namedScope,status:"RESOLVED" as const,catalog_complete:true as const,source_url:namedScope.source_url}:undefined;
+ const output:any=attachResearch(attachOnepageUiTemplate(data,validated.brand,"onepage-system"),
+   {source_url,source_type,theme,research,require_pdp_coverage:true,...(trustedScope?{named_product_scope:trustedScope}:{})});
+ if(namedScope){
+   output.named_product_scope={...namedScope,scope_kind:"NAMED_PRODUCT_FAMILY",storefront_collection_url:null,
+     supplied_source_url:originalSource||null,
+     research_binding:"Preserve product_line and research.catalog_scan_id on resubmission; the cursor reuses this observed public-catalog snapshot until expiry, never replaces fresh PDP/media inspection. Use the catalog source_url with source_type collection; keep every selected catalog ID and PDP URL. Research variant IDs may use catalog_product_id. Only claim inventory_complete after inspecting every matched product; catalog discovery is not PDP/pixel inspection."};
+   output.dynamic_job={...output.dynamic_job,product_line:line,scope_kind:"NAMED_PRODUCT_FAMILY"};
+   if(!trustedScope){
+     output.readiness={...output.readiness,source_acquisition:"BLOCKED_NAMED_PRODUCT_SCOPE",content_authoring:"BLOCKED_NAMED_PRODUCT_SCOPE",asset_generation:"BLOCKED_NAMED_PRODUCT_SCOPE"};
+     // Preserve canonical policy; this is a failed source acquisition, not new DNA.
+     const scanning=namedScope.status==="IN_PROGRESS";
+     output.source_execution_guard={status:scanning?"IN_PROGRESS":"BLOCKED",issues:namedScope.issues,
+       next_action:scanning?{
+         action:"CONTINUE_CATALOG_SCAN",tool:"compile_onepage_job",
+         arguments:{brand:validated.brand,product_line:line,source_url,source_type,...(theme?{theme}:{}),research:{product_type:line,catalog_scan_id:namedScope.scan_id}},
+         preserve_existing_research:true,
+         instruction:"Call this existing read-only tool again in the same authorized task. Merge product_type and catalog_scan_id into existing research if present; preserve the rest of the brief. If the client schema lacks product_line, carry the exact selector as research.product_type instead. Do not hand off a partial catalog or ask the member to say continue. No background job is running; progress advances only on the next call. Stop affected creative work until RESOLVED; honor narrower user scope and real catalog errors."
+       }:namedScope.recovery};
+     output.reference_discovery_deferred="UNTIL_SOURCE_RESOLUTION";
+     return {status:response.status,ok:response.ok,data:output};
+   }
+ }
+ // Old clients still receive discovery/continuation on this existing compiler.
+ // Explicit PDP/collection inputs retain their original scope even with a line.
  let sourceTypeResolution:any={status:line?"EXPLICIT_PRODUCT_TYPE":"NO_PRODUCT_TYPE"};
  if(!line&&source_url&&["pawfecthouse","giftsoul","soulprise"].includes(slug)){
    sourceTypeResolution=await resolveOnepagePdpProductType(
@@ -485,7 +530,7 @@ function applyNicheProductComboOverlay(data: any, requestedBrand: string, reques
   };
 }
 
-export async function withHumanRealism(reference: {ok:boolean,data:any},brand:string,branch:string,context:ResearchContext) {
+export async function withHumanRealism<T extends {ok:boolean,data:any}>(reference: T,brand:string,branch:string,context:ResearchContext) {
   if(!reference.ok||!reference.data)return reference;
   const visual=/onepage|ldp|hero|banner|ugc|recipient|shop.by|product.combo|creative/i.test(branch);
   // Non-visual routes retain the policy, without unnecessary external image reads.
@@ -510,7 +555,7 @@ export async function withHumanRealism(reference: {ok:boolean,data:any},brand:st
   }};
 }
 
-async function resolveCreativeDna(brand: string, branch: string, researchContext: ResearchContext = {}) {
+export async function resolveCreativeDna(brand: string, branch: string, researchContext: ResearchContext = {}) {
   const validated = validateResolveInput(brand, branch);
 
   if (isPawfectHouseNicheProductCombo(validated.brand, validated.branch)) {
@@ -896,8 +941,8 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     const review_context = createReviewContext(input);
     const chat = buildChatReview(input, review_context);
     return withUidProgress({
-      content: [{ type: "text" as const, text: ["asset_review","packaging","complete"].includes(input.stage) && !input.feedback_request && (!input.workflow_state || input.workflow_state.status === "ready") ? "UID Brands HTML outcome review: open a version-bound HTML overall preview from result_links, select elements/sections and send grouped feedback into this same task chat. Check research/QC and actual files before packaging; opening this view never executes packaging. Supplied result links (not independently verified by this tool): " + (input.result_links || []).map(link => link.label + ": " + link.url).join("; ") + ". When HTML preview is absent, report the missing deliverable rather than inventing a link." : chat.text }],
-      structuredContent: { ui_status: { response: "prepared", render: "enabled", stage: input.stage }, renderer: "embedded", next_actions: chat.next_actions, ...chat.guide_data, ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], review_context },
+      content: [{ type: "text" as const, text: ["asset_review","packaging","complete"].includes(input.stage) && !["research_only","content_only"].includes(input.execution_mode || "") && !input.feedback_request && (!input.workflow_state || input.workflow_state.status === "ready") ? "UID Brands HTML outcome review: open a version-bound HTML overall preview from result_links, select elements/sections and send grouped feedback into this same task chat. Check research/QC and actual files before packaging; opening this view never executes packaging. Supplied result links (not independently verified by this tool): " + (input.result_links || []).map(link => link.label + ": " + link.url).join("; ") + ". When HTML preview is absent, report the missing deliverable rather than inventing a link." : chat.text }],
+      structuredContent: { ui_status: { response: "prepared", render: "enabled", stage: input.stage }, renderer: "embedded", next_actions: chat.next_actions, ...chat.guide_data, ...(input.navigation_id ? { navigation_id: input.navigation_id } : {}), stage: input.stage, assets: input.assets || [], result_summary: input.result_summary || "", result_content: input.result_content || "", result_links: input.result_links || [], result_images: input.result_images || [], workflow_state: input.workflow_state, execution_mode: input.execution_mode, review_context },
     });
   });
   server.registerTool("get_uid_brands_native_workflow", uidProgressTool("get_uid_brands_native_workflow", {
@@ -905,7 +950,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     description: NATIVE_WORKFLOW_DESCRIPTION,
     inputSchema: NATIVE_INPUT_SCHEMA.shape,
     annotations: READ_ONLY_TOOL_ANNOTATIONS,
-  }), async ({ stage, branch, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images, workflow_state, feedback_request }) => {
+  }), async ({ stage, branch, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images, workflow_state, execution_mode, feedback_request }) => {
     let routes: any[] = [];
     let routeFailure: Record<string, unknown> = {};
     if (!stage || stage === "launcher") {
@@ -917,10 +962,10 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
     }
     const currentStage = stage || "launcher";
     const review_context = currentStage !== "launcher" ? createReviewContext({ stage: currentStage, branch, task_id, content_version, retry_id, assets }) : undefined;
-    const chat = currentStage !== "launcher" ? buildChatReview({ stage: currentStage, branch, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images, workflow_state, feedback_request }, review_context!) : undefined;
+    const chat = currentStage !== "launcher" ? buildChatReview({ stage: currentStage, branch, assets, task_id, content_version, retry_id, result_summary, result_content, result_links, result_images, workflow_state, execution_mode, feedback_request }, review_context!) : undefined;
     return withUidProgress({
       content: [{ type: "text" as const, text: chat?.text || CHAT_BRIEF_GUIDANCE }],
-      structuredContent: { ...UID_NATIVE_WORKFLOW, ...(currentStage === "launcher" ? { external_panel: UID_EXTERNAL_PANEL } : {}), stage: currentStage, ui_status: { response: "prepared", render: "disabled", stage: currentStage }, next_actions: chat?.next_actions || [], ...(chat?.guide_data || {}), form: UID_NATIVE_WORKFLOW.steps[currentStage], routes, ...routeFailure, assets: assets || [], result_summary: result_summary || "", result_content: result_content || "", result_links: result_links || [], result_images: result_images || [],
+      structuredContent: { ...UID_NATIVE_WORKFLOW, ...(currentStage === "launcher" ? { external_panel: UID_EXTERNAL_PANEL } : {}), stage: currentStage, ui_status: { response: "prepared", render: "disabled", stage: currentStage }, next_actions: chat?.next_actions || [], ...(chat?.guide_data || {}), form: ((workflow_state && workflow_state.status !== "ready") || ["research_only","content_only"].includes(execution_mode || "") || (currentStage === "content_approval" && branch === "onepage-system" && execution_mode !== "review_first")) ? { title: "Current requested scope", choices: [], requires_user_action: false } : UID_NATIVE_WORKFLOW.steps[currentStage], workflow_state, execution_mode, routes, ...routeFailure, assets: assets || [], result_summary: result_summary || "", result_content: result_content || "", result_links: result_links || [], result_images: result_images || [],
         ...(review_context ? { review_context } : {}) },
     });
   });
@@ -1033,7 +1078,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   }),async(input)=>{
     const result=await submitEoCandidate(input,requestAuthorization);
     return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
-      isError:result.status==="INVALID_REFERENCE_SOURCE"},"research");
+      isError:result.status==="INVALID_REFERENCE_SOURCE"},"write");
   });
   server.registerTool("approve_onepage_eo_reference",uidProgressTool("approve_onepage_eo_reference",{
     title:"Approve Inspected EO Reference",description:EO_REFERENCE_APPROVE_DESCRIPTION,annotations:PENDING_WRITE_TOOL_ANNOTATIONS,
@@ -1043,7 +1088,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   }),async(input)=>{
     const result=await approveEoReference(input,requestAuthorization);
     return withUidProgress({content:[{type:"text",text:JSON.stringify(result)}],structuredContent:result,
-      isError:result.status!=="ADMIN_APPROVAL_COMMITTED"},"research");
+      isError:result.status!=="ADMIN_APPROVAL_COMMITTED"},"write");
   });
 
   server.registerTool("build_onepage_eo_reference_pack",uidProgressTool("build_onepage_eo_reference_pack",{
@@ -1102,7 +1147,7 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
       source_pixels_independently_measured:pixelInspected,shared_library_status:libraryStatus,
       discovered_candidates_persisted_unapproved:persisted,
       note:"Gateway fetched source PDP/images only when auto-discover ran. Only explicitly admin-approved references contribute to EO Quality Bar. No scan is owner approval or visual similarity target."};
-    return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},"research");
+    return withUidProgress({content:[{type:"text",text:JSON.stringify(output)}],structuredContent:output,isError:result.status==="INVALID_INPUT"},input.persist_discovered ? "write" : "research");
   });
   server.registerTool("evaluate_onepage_eo_outcome",uidProgressTool("evaluate_onepage_eo_outcome",{
     title:"Compare Onepage EO Outcome Quality",description:EO_OUTCOME_COMPARISON_DESCRIPTION,annotations:READ_ONLY_TOOL_ANNOTATIONS,
@@ -1236,13 +1281,13 @@ export function createMcpServer(requestAuthorization?: string | null): McpServer
   // Preferred Onepage compiler: compact execution contract, no canonical mutation
   server.registerTool("compile_onepage_job",uidProgressTool("compile_onepage_job", {
     title:"Compile Onepage Job",description:COMPILE_ONEPAGE_DESC,
-    inputSchema:{brand:z.string().trim().min(1).max(100),source_url:z.string().trim().max(2000).optional(),source_type:z.enum(["auto","product","collection"]).optional(),theme:z.string().trim().max(120).optional(),product_line:z.string().trim().max(160).optional(),research:z.unknown().optional().describe(RESEARCH_INPUT_SCHEMA.description)},annotations:READ_ONLY_TOOL_ANNOTATIONS
+    inputSchema:COMPILE_ONEPAGE_INPUT_SCHEMA.shape,annotations:READ_ONLY_TOOL_ANNOTATIONS
   }),async({brand,source_url,source_type,theme,research,product_line})=>{try{const u=await compileOnepageJob(brand,source_url,source_type,theme,research,product_line,requestAuthorization);return withUidProgress({content:[{type:"text",text:JSON.stringify(u.data)}],isError:!u.ok}, "research")}catch(err:any){return withUidProgress({content:[{type:"text",text:JSON.stringify({error:sanitizePublicError(err,"Unable to compile Onepage job")})}],isError:true}, "research")}});
 
   // Global image-quality lane, independent of brand DNA and usable by all UID visual tasks.
   server.registerTool("get_human_realism_references",uidProgressTool("get_human_realism_references",{
     title:"Clipo Human Realism References",
-    description:"Public Clipo Cloud human pose and physics photo references sorted by action, camera, body focus, interaction and setting. Use before any image generation featuring people; visually inspect source photos. No login required.",
+    description:"Search and open photographed human anatomy, gestures, physical interaction and camera-angle reference images from the public Clipo Human Realism Library. For Onepage, UGC, LDP and banners depicting people. Sort by action, camera angle, body focus, interaction and setting. The result does not prove model nationality or identity and does not modify Creative DNA.",
     inputSchema:{brief:z.string().trim().min(3).max(1200),action:z.string().max(100).optional(),
       camera_angle:z.string().max(100).optional(),body_focus:z.string().max(100).optional(),
       interaction:z.string().max(100).optional(),setting:z.string().max(100).optional()},
@@ -1487,8 +1532,8 @@ export function createApp(): express.Application {
   app.post("/api/tools/compile_onepage_job", async (req: Request, res: Response) => {
     const input = req.body?.arguments || req.body || {};
     try {
-      const parsed = z.object({ brand: z.string().trim().min(1).max(100), source_url: z.string().max(2000).optional(), source_type: z.enum(["auto", "product", "collection"]).optional(), theme: z.string().max(120).optional(), research:z.unknown().optional() }).parse(input);
-      const result = await compileOnepageJob(parsed.brand, parsed.source_url, parsed.source_type, parsed.theme, parsed.research);
+      const parsed = COMPILE_ONEPAGE_INPUT_SCHEMA.parse(input);
+      const result = await compileOnepageJob(parsed.brand, parsed.source_url, parsed.source_type, parsed.theme, parsed.research, parsed.product_line, req.get("Authorization"));
       return res.status(result.status).json(result.data);
     } catch (err: any) { return res.status(err instanceof z.ZodError ? 400 : 502).json({ error: sanitizePublicError(err, "Unable to compile Onepage job") }); }
   });
